@@ -53,6 +53,34 @@ export interface Trail {
   segments: TrailSegment[];
 }
 
+/** One edge of a bypass with its own risk, so the map colors the detour by level. */
+export interface BypassPiece {
+  /** Null for an unnamed connector path. */
+  trail: string | null;
+  probability: number;
+  level: RiskLevel;
+  geom: LineString;
+}
+
+/** The detour around a hazard's miles (step 19). Every meter is a mapped trail. */
+export interface Bypass {
+  name: string;
+  via: string[];
+  leaves_at_mile: number;
+  rejoins_at_mile: number;
+  length_km: number;
+  replaced_km: number;
+  /** Negative when the detour is shorter than the miles it replaces. */
+  added_km: number;
+  /** Climb on the detour minus climb on the miles it replaces. */
+  added_elevation_m: number;
+  max_probability: number;
+  level: RiskLevel;
+  /** In walking order. */
+  geom: LineString;
+  pieces: BypassPiece[];
+}
+
 export interface Hazard {
   id: string;
   run_id: string | null;
@@ -72,6 +100,8 @@ export interface Hazard {
   trail_name: string | null;
   start_mile: number | null;
   end_mile: number | null;
+  /** Step 19. Null when no trail runs around the miles: the advice is to turn back. */
+  bypass: Bypass | null;
 }
 
 /** GET /mountains/{slug}/layers/{layer}: a raster layer served as XYZ tiles. */

@@ -28,7 +28,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 16. Toggle susceptibility and historical pins (the Past landslides toggle stays disabled until the step 10 landslide points exist)
 - [ ] 17. Score 72-hour probability from live rain
 - [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
-- [ ] 19. Add one bypass around the worst segment
+- [x] 19. Add one bypass around the worst segment (routed on the OpenStreetMap network per run; where no trail runs around the flagged miles, the answer is to turn back)
 - [ ] 20. Define agent schemas, tools, and prompts
 - [ ] 21. Run the five-agent pipeline
 - [ ] 22. Expose analyze, run status, and the live stream

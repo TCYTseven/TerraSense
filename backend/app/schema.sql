@@ -70,7 +70,9 @@ CREATE TABLE IF NOT EXISTS hazards (
   -- Step 18: the hero trail miles the zone covers.
   trail_id     uuid REFERENCES trails (id) ON DELETE SET NULL,
   start_mile   double precision,
-  end_mile     double precision
+  end_mile     double precision,
+  -- Step 19: the detour around those miles (app/bypass.py), null when none exists.
+  bypass       jsonb
 );
 
 CREATE TABLE IF NOT EXISTS alerts (
@@ -90,6 +92,7 @@ CREATE TABLE IF NOT EXISTS alerts (
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS trail_id uuid REFERENCES trails (id) ON DELETE SET NULL;
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS start_mile double precision;
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS end_mile double precision;
+ALTER TABLE hazards ADD COLUMN IF NOT EXISTS bypass jsonb;
 
 CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);

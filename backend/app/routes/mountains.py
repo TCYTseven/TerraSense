@@ -71,7 +71,7 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
         """
         SELECT h.id, h.run_id, h.type, h.severity, h.probability, h.confidence, h.geom, h.drivers,
                h.what, h.why, h.how_to_avoid, h.needs_review, h.created_at,
-               h.trail_id, t.name AS trail_name, h.start_mile, h.end_mile
+               h.trail_id, t.name AS trail_name, h.start_mile, h.end_mile, h.bypass
         FROM hazards h LEFT JOIN trails t ON t.id = h.trail_id
         WHERE h.mountain_id = %s ORDER BY h.created_at DESC LIMIT 1
         """,

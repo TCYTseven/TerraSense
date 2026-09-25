@@ -116,21 +116,26 @@ def _grid_xy(coordinates: list[list[float]], crs: str) -> np.ndarray:
     return np.column_stack([xs, ys])
 
 
+def sample_max(probability: ProbabilityMap, coordinates: list[list[float]]) -> float:
+    """The worst probability along a [lon, lat, ...] line, sampled every SAMPLE_STEP_M. 0 off the grid."""
+    values = probability.values
+    line = shapely.LineString(_grid_xy(coordinates, probability.crs))
+    count = max(2, math.ceil(line.length / SAMPLE_STEP_M) + 1)
+    points = shapely.get_coordinates(shapely.line_interpolate_point(line, np.linspace(0, line.length, count)))
+    cols, rows = ~probability.transform * (points[:, 0], points[:, 1])
+    cols, rows = np.floor(cols).astype(int), np.floor(rows).astype(int)
+    inside = (rows >= 0) & (rows < values.shape[0]) & (cols >= 0) & (cols < values.shape[1])
+    if not inside.any():
+        return 0.0
+    worst = float(np.nanmax(values[rows[inside], cols[inside]], initial=0.0))
+    return round(min(max(worst, 0.0), 1.0), 3)
+
+
 def segment_risks(probability: ProbabilityMap, segments: list[SegmentLine]) -> list[SegmentRisk]:
     """Each segment's probability and level, in trail order."""
-    values = np.nan_to_num(probability.values, nan=0.0)
-    inverse = ~probability.transform
-    rows_n, cols_n = values.shape
     risks = []
     for segment in sorted(segments, key=lambda s: s.seq):
-        line = shapely.LineString(_grid_xy(segment.coordinates, probability.crs))
-        count = max(2, math.ceil(line.length / SAMPLE_STEP_M) + 1)
-        points = shapely.get_coordinates(shapely.line_interpolate_point(line, np.linspace(0, line.length, count)))
-        cols, rows = inverse * (points[:, 0], points[:, 1])
-        cols, rows = np.floor(cols).astype(int), np.floor(rows).astype(int)
-        inside = (rows >= 0) & (rows < rows_n) & (cols >= 0) & (cols < cols_n)
-        value = float(values[rows[inside], cols[inside]].max()) if inside.any() else 0.0
-        value = round(min(max(value, 0.0), 1.0), 3)
+        value = sample_max(probability, segment.coordinates)
         risks.append(SegmentRisk(segment.id, segment.seq, segment.start_mile, segment.end_mile, value, risk_level(value)))
     return risks
 

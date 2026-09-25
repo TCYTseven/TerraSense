@@ -15,9 +15,12 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import psycopg
+import shapely
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+from rasterio.warp import transform as warp_transform
 
+from app.bypass import Bypass, find_bypass
 from app.db import connect
 from app.ml import probability as prob
 from app.ml.hazard import (
@@ -67,6 +70,7 @@ class Assessment:
     segments: list[SegmentRisk]
     flagged: FlaggedRun | None
     zone: HazardZone | None
+    bypass: Bypass | None
     computed_at: datetime
     elapsed_s: float
 
@@ -123,6 +127,7 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
         segments=risks,
         flagged=flagged,
         zone=zone,
+        bypass=find_bypass(flagged, probability),
         computed_at=datetime.now(UTC),
         elapsed_s=round(time.perf_counter() - started, 2),
     )
@@ -144,6 +149,22 @@ def mile_text(start: float, end: float) -> str:
     return f"mile {start:.1f} to {end:.1f}"
 
 
+KM_PER_MILE = 1.609344
+FEET_PER_METER = 3.28084
+
+
+def signed_miles(km: float) -> str:
+    """-1.53 km to '-1.0 mi'. US units, as the design addendum's Units table sets them."""
+    miles = round(km / KM_PER_MILE, 1) + 0.0  # + 0.0 turns -0.0 into 0.0
+    return f"{miles:+.1f} mi"
+
+
+def signed_feet(meters: float) -> str:
+    """-94 m to '-310 ft', to the nearest 10 ft."""
+    feet = int(round(meters * FEET_PER_METER / 10) * 10)
+    return f"{feet:+,} ft"
+
+
 def describe(assessment: Assessment) -> dict:
     """Plain what, why, and how-to-avoid lines from the facts alone.
 
@@ -159,7 +180,14 @@ def describe(assessment: Assessment) -> dict:
     reasons = [DRIVER_WORDS[d] for d in zone.drivers_hint]
     why = f"The {source} peaks at {flagged.max_probability:.2f} on these miles"
     why += f", with {_join(reasons)}." if reasons else "."
-    how = f"Stay off {mile_text(flagged.start_mile, flagged.end_mile)} until the slopes drain."
+    bypass = assessment.bypass
+    if bypass is not None:
+        how = (f"Leave the {assessment.trail.name} at mile {bypass.leaves_at_mile:.1f} and take the {bypass.name} "
+               f"to mile {bypass.rejoins_at_mile:.1f} ({signed_miles(bypass.added_km)}, "
+               f"{signed_feet(bypass.added_elevation_m)}).")
+    else:
+        how = (f"No trail runs around {mile_text(flagged.start_mile, flagged.end_mile)}. "
+               f"Turn back before mile {flagged.start_mile:.1f}.")
     return {"what": what, "why": why, "how_to_avoid": how}
 
 
@@ -204,19 +232,32 @@ def save_hazard(
         assessment.trail.trail_id,
         flagged.start_mile,
         flagged.end_mile,
+        Jsonb(assessment.bypass.to_json()) if assessment.bypass else None,
     )
     with conn.cursor(row_factory=dict_row) as cur:
         row = cur.execute(
             """
             INSERT INTO hazards
               (mountain_id, run_id, type, severity, probability, confidence, geom, drivers,
-               what, why, how_to_avoid, needs_review, trail_id, start_mile, end_mile)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               what, why, how_to_avoid, needs_review, trail_id, start_mile, end_mile, bypass)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             values,
         ).fetchone()
     return str(row["id"])
+
+
+def overlap_check(assessment: Assessment) -> float:
+    """Meters between the bypass line and the flagged segments: 0 would mean the detour touches them."""
+    crs = assessment.probability.crs
+
+    def utm(coords):
+        xs, ys = warp_transform("EPSG:4326", crs, [c[0] for c in coords], [c[1] for c in coords])
+        return shapely.LineString(list(zip(xs, ys, strict=True)))
+
+    flagged = shapely.union_all([utm(s.coordinates) for s in assessment.flagged_lines()])
+    return utm(assessment.bypass.geom["coordinates"]).distance(flagged)
 
 
 def level_runs(segments: list[SegmentRisk]) -> list[dict]:
@@ -257,6 +298,15 @@ def main() -> None:
             print(f"zone: {zone.type_hint}, {zone.area_km2} km2 ({zone.cells} cells), peak {zone.max_probability}, "
                   f"mean {zone.mean_probability}, centroid {zone.centroid}, drivers {list(zone.drivers_hint)}, "
                   f"{len(zone.polygon['coordinates'][0])} outline vertices")
+        bypass = assessment.bypass
+        if flagged is not None and bypass is None:
+            print("bypass: none. No trail in the network runs around the flagged miles")
+        elif bypass is not None:
+            print(f"bypass: {bypass.name}, leaves mile {bypass.leaves_at_mile} and rejoins mile {bypass.rejoins_at_mile}, "
+                  f"{bypass.length_km} km instead of {bypass.replaced_km} km ({signed_miles(bypass.added_km)}, "
+                  f"{signed_feet(bypass.added_elevation_m)}), via {', '.join(bypass.via)}, worst ground "
+                  f"{bypass.max_probability} ({bypass.level}), {len(bypass.geom['coordinates'])} vertices")
+            print(f"  closest approach to the flagged miles: {overlap_check(assessment):.0f} m")
         print(f"scored in {assessment.elapsed_s} s")
 
         if args.save:

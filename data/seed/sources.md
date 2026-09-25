@@ -14,6 +14,7 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 | `data/raw/rainier_landcover_worldcover2021.tif` | ESA WorldCover 2021 v200 | 2026-09-25 | Done |
 | `data/seed/landslides.geojson` | NASA Global Landslide Catalog | Pending | Blocked. See below |
 | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` | OpenStreetMap via Overture Maps | 2026-09-25 | Done. Written by `ml/scripts/import_trails.py` |
+| `data/seed/trail_network.geojson` | Derived from the two above and the DEM | 2026-09-25 | Done. Written by `ml/scripts/build_trail_network.py` |
 
 ## Elevation: `data/raw/rainier_dem_cop30.tif`
 
@@ -58,3 +59,9 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 - **Heights:** gain comes from the Copernicus DEM above, sampled every 30 m. It is a surface model, so forest trails read a few percent high.
 - **Rerun:** `python ml/scripts/import_trails.py` (add `--force` to read Overture again). The bucket keeps only recent releases; if `2026-09-23.0` is gone, the script lists the ones available.
 
+## Trail network: `data/seed/trail_network.geojson`
+
+- **Source:** derived, no new download. The walkable OpenStreetMap segments cached by step 14 (`data/raw/rainier_trail_segments.geojson`, Overture release `2026-09-23.0`), elevations from the Copernicus DEM above.
+- **Licence:** ODbL 1.0, as a derived database of OpenStreetMap. Attribution: "© OpenStreetMap contributors".
+- **Contents:** the Skyline loop cut at its 24 junctions (from the same simplified line as the mile segments), plus the 114 walkable edges within 2.5 km of the loop that connect to it (34 km). Vertices every 30 m or closer carry the DEM elevation, so the bypass can report added climb.
+- **Rerun:** `python ml/scripts/build_trail_network.py` after `import_trails.py`.

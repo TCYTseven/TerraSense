@@ -19,3 +19,5 @@ mercantile~=1.2
 
 # The hazard zone and trail risk (step 18): polygons and lines on the 30 m grid.
 shapely>=2.0
+# The bypass (step 19): shortest detours on the trail network.
+networkx>=3

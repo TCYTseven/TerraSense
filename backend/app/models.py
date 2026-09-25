@@ -46,6 +46,32 @@ class Trail(BaseModel):
     segments: list[TrailSegment]
 
 
+class BypassPiece(BaseModel):
+    """One edge of a bypass, with its own risk, so the map colors the detour by level."""
+
+    trail: str | None  # null for an unnamed connector path
+    probability: float
+    level: RiskLevel
+    geom: Geometry  # LineString
+
+
+class Bypass(BaseModel):
+    """The detour around a hazard's miles (step 19). Every meter is a mapped trail."""
+
+    name: str
+    via: list[str]
+    leaves_at_mile: float
+    rejoins_at_mile: float
+    length_km: float
+    replaced_km: float
+    added_km: float  # negative when the detour is shorter than the miles it replaces
+    added_elevation_m: int  # climb on the detour minus climb on the miles it replaces
+    max_probability: float
+    level: RiskLevel
+    geom: Geometry  # LineString, in walking order
+    pieces: list[BypassPiece]
+
+
 class Hazard(BaseModel):
     id: UUID
     run_id: UUID | None
@@ -65,6 +91,7 @@ class Hazard(BaseModel):
     trail_name: str | None
     start_mile: float | None
     end_mile: float | None
+    bypass: Bypass | None  # step 19; null when no trail runs around the miles
 
 
 class LayerTiles(BaseModel):
