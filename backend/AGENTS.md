@@ -47,7 +47,16 @@ curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
 curl localhost:8000/mountains/mount-rainier/layers/probability
-python -m pytest                # schemas, router, providers (mocked), and tools (needs DATABASE_URL)
+python -m pytest                # schemas, router, providers, tools, and the pipeline (fake LLMs; needs DATABASE_URL)
+python -m app.agents.pipeline   # step 21: the five agents once, printed. Needs GEMINI_API_KEY or XAI_API_KEY
+```
+
+No keys, or no network to the providers? Run the fake APIs and point the providers at them. Every answer is labeled `fake-...`:
+
+```bash
+uvicorn tests.fake_llm:app --port 8090 &
+GEMINI_API_KEY=fake XAI_API_KEY=fake GEMINI_BASE_URL=http://localhost:8090 XAI_BASE_URL=http://localhost:8090 \
+  python -m app.agents.pipeline --fixture-rain
 ```
 
 `DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).

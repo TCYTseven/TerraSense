@@ -117,6 +117,7 @@ class Router:
         tier = TIERS[agent]
         rules: list[RouteRule] = []
         deciding: RouteRule
+        explaining: RouteRule | None = None  # the most specific rule behind the choice
         if self.forced in self.providers:
             choice: ProviderName = self.forced  # type: ignore[assignment]
             deciding = RouteRule(rule="forced", verdict=choice,
@@ -128,12 +129,13 @@ class Router:
             rules.append(deciding)
             task_rule = _TASK_RULES[agent](signals, choice)
             rules.append(task_rule)
+            explaining = task_rule
             if task_rule.verdict and task_rule.verdict != choice:
                 choice, deciding = task_rule.verdict, task_rule
             budget_rule = self._budget(signals, choice, available)
             rules.append(budget_rule)
             if budget_rule.verdict and budget_rule.verdict != choice:
-                choice, deciding = budget_rule.verdict, budget_rule
+                choice, deciding, explaining = budget_rule.verdict, budget_rule, budget_rule
 
         if not available[choice]:
             other = next(name for name in PROVIDER_ORDER if available.get(name))
@@ -141,6 +143,7 @@ class Router:
             deciding = RouteRule(rule="availability", verdict=other,
                                  detail=f"{self._label(choice)} {why}, so {self._label(other)} takes the call.")
             rules.append(deciding)
+            explaining = deciding
             choice = other
         else:
             rules.append(RouteRule(rule="availability", verdict=None, detail=self._availability_note(available)))
@@ -151,7 +154,7 @@ class Router:
             model=provider.model,
             label=provider.label,
             tier=tier,
-            reason=f"{provider.label} for the {AGENT_LABELS[agent]}: {deciding.detail}",
+            reason=f"{provider.label} for the {AGENT_LABELS[agent]}. {(explaining or deciding).detail}",
             rules=rules,
             fallback=[name for name in PROVIDER_ORDER if name != choice and available.get(name)],
             available={name: bool(ok) for name, ok in available.items()},
@@ -164,12 +167,12 @@ class Router:
                              detail=f"The run has used {used:.0f} s of its {RUN_BUDGET_S} s budget, so the faster "
                                     "model keeps the alert on time.")
         return RouteRule(rule="latency budget", verdict=None,
-                         detail=f"{used:.0f} s of the {RUN_BUDGET_S} s budget used: no change.")
+                         detail=f"{used:.0f} s of the {RUN_BUDGET_S} s budget used, so no change.")
 
     def _availability_note(self, available: dict[ProviderName, bool]) -> str:
         down = [self._label(n) for n, ok in available.items() if not ok]
         if not down:
-            return "Both providers are ready: the other one is the fallback."
+            return "Both providers are ready, so the other one is the fallback."
         return f"{' and '.join(down)} cannot take calls right now, so there is no fallback."
 
     def _label(self, name: ProviderName) -> str:
@@ -184,7 +187,7 @@ _TIER_DETAIL: dict[Tier, str] = {
 
 def _terrain(signals: Signals, choice: ProviderName) -> RouteRule:
     if signals.zone_peak is None:
-        return RouteRule(rule="ambiguity", verdict=None, detail="No hazard zone: nothing borderline to judge.")
+        return RouteRule(rule="ambiguity", verdict=None, detail="There is no hazard zone, so nothing is borderline.")
     edge = min(BIN_EDGES, key=lambda e: abs(signals.zone_peak - e))
     gap = abs(signals.zone_peak - edge)
     if gap <= EDGE_MARGIN:
@@ -192,8 +195,8 @@ def _terrain(signals: Signals, choice: ProviderName) -> RouteRule:
                          detail=f"The zone peaks at {signals.zone_peak:.2f}, {gap:.2f} from the {edge} bin edge, "
                                 "so its level is a close call for the stronger model.")
     return RouteRule(rule="ambiguity", verdict=None,
-                     detail=f"The zone peaks at {signals.zone_peak:.2f}, {gap:.2f} from the nearest bin edge: "
-                            "the level is clear.")
+                     detail=f"The zone peaks at {signals.zone_peak:.2f}, {gap:.2f} from the nearest bin edge, "
+                            "so its level is clear.")
 
 
 def _weather(signals: Signals, choice: ProviderName) -> RouteRule:
@@ -206,7 +209,7 @@ def _weather(signals: Signals, choice: ProviderName) -> RouteRule:
                          detail=f"Rain is {ratio:.1f}x the 72-hour threshold, near the line, so it is a judgment call.")
     side = "above" if ratio > high else "below"
     return RouteRule(rule="ambiguity", verdict=None,
-                     detail=f"Rain is {ratio:.1f}x the 72-hour threshold, well {side} the line: a clear read.")
+                     detail=f"Rain is {ratio:.1f}x the 72-hour threshold, well {side} the line, so the read is clear.")
 
 
 def _trail(signals: Signals, choice: ProviderName) -> RouteRule:
@@ -217,7 +220,7 @@ def _trail(signals: Signals, choice: ProviderName) -> RouteRule:
         return RouteRule(rule="stakes", verdict="grok",
                          detail=f"The bypass crosses {signals.bypass_level} ground itself, so weighing two risky "
                                 "routes goes to the stronger model.")
-    return RouteRule(rule="stakes", verdict=None, detail="The bypass stays on safer ground: a straight explanation.")
+    return RouteRule(rule="stakes", verdict=None, detail="The bypass stays on safer ground, so the explanation is routine.")
 
 
 def _synthesizer(signals: Signals, choice: ProviderName) -> RouteRule:
@@ -228,10 +231,10 @@ def _synthesizer(signals: Signals, choice: ProviderName) -> RouteRule:
     top = max(levels, key=level_index)
     if spread == 0 and level_index(top) <= level_index("moderate"):
         return RouteRule(rule="stakes", verdict="gemini",
-                         detail=f"All three reports say {top}: a clear, low-stakes call the fast model can make.")
+                         detail=f"All three reports say {top}, a clear, low-stakes call the fast model can make.")
     agreement = "agree" if spread == 0 else f"span {spread} level{'s' if spread > 1 else ''}"
     return RouteRule(rule="stakes", verdict=None,
-                     detail=f"The reports {agreement} and the top rating is {top}: the stronger model decides.")
+                     detail=f"The reports {agreement} and the top rating is {top}, so the stronger model decides.")
 
 
 def _writer(signals: Signals, choice: ProviderName) -> RouteRule:
@@ -243,7 +246,7 @@ def _writer(signals: Signals, choice: ProviderName) -> RouteRule:
         return RouteRule(rule="stakes", verdict="gemini",
                          detail=f"A {level} monitor notice is routine copy for the fast model.")
     return RouteRule(rule="stakes", verdict=None,
-                     detail=f"The final level is {level}: public-safety copy stays on the stronger model.")
+                     detail=f"The final level is {level}, so public-safety copy stays on the stronger model.")
 
 
 _TASK_RULES: dict[AgentName, Callable[[Signals, ProviderName], RouteRule]] = {

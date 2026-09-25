@@ -101,6 +101,18 @@ def get_hourly_rain(lat: float = PEAK_LAT, lon: float = PEAK_LON) -> HourlyRain:
     return rain
 
 
+def try_hourly_rain(lat: float = PEAK_LAT, lon: float = PEAK_LON) -> tuple[HourlyRain | None, str | None]:
+    """get_hourly_rain(), or (None, why) when Open-Meteo or the fixture cannot give an answer."""
+    try:
+        return get_hourly_rain(lat, lon), None
+    except httpx.HTTPStatusError as exc:
+        return None, f"Open-Meteo answered HTTP {exc.response.status_code}"
+    except httpx.HTTPError as exc:
+        return None, f"Open-Meteo did not answer ({type(exc).__name__})"
+    except (OSError, ValueError, KeyError) as exc:
+        return None, f"the rain data could not be read ({type(exc).__name__}: {exc})"
+
+
 def daily_totals_before_now(rain: HourlyRain, days: int) -> list[float]:
     """Totals for each of the last `days` 24-hour periods, most recent first."""
     return [rain.total(-24 * (d + 1), -24 * d) for d in range(days)]
