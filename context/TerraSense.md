@@ -58,6 +58,7 @@ As of Friday, Sep 25, 2026. [implementation-steps.md](implementation-steps.md) s
 - **Landslide points.** The NASA Global Landslide Catalog was unreachable from the build container, so there are no labels and no historical pins. The **Past landslides** toggle is disabled.
 - **LightGBM.** It is untrained, so there is no AUC yet. Susceptibility is a knowledge-driven index with named weights: slope 0.35, distance to drainage 0.20, land cover 0.20, wetness 0.15, curvature 0.10, stretched between the 2nd and 98th percentile of the box. See `ml/artifacts/metrics.json`.
 - **Model B (step 17)** was pulled and is being rebuilt. Until it lands, the heat map is the susceptibility stand-in, and every layer, hazard, and prompt says so. Rain does not move the map yet. `backend/app/ml/probability.py` switches to Model B as soon as `backend/app/ml/model_b.py` exists.
+- **Mountain panel and simulation** (6.8, added Sep 25, 2026). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
 
 Example copy in this file ("Ridge Trail mile 4.2 to 5.1", "Cedar Loop") is illustrative. The live trail is the Skyline loop, and the bypass comes from the trail network.
@@ -79,14 +80,15 @@ Build one convincing loop, not a platform.
 - Five agents that stream their work into the UI.
 - The ranger alert in the app, with a side panel that shows how each agent reasoned.
 - A hiker forecast card in plain language.
+- A mountain panel over the globe: the mountain's pressure points and a runout simulation with AI callouts for rangers and the public (team decision, Sep 25, 2026). See [6.8](#68-mountain-panel-and-simulation).
 
 **Out**
 
-See [Out of Scope](#out-of-scope). The short version: no simulation mode, no extra hazard types, no SMS or email, no accounts, no GPX export, no InSAR.
+See [Out of Scope](#out-of-scope). The short version: no rain what-if inputs, no extra hazard types (the simulation is landslide and debris flow runout only), no SMS or email (public notices are drafts), no accounts, no GPX export, no InSAR.
 
 **Demo proof**
 
-A judge can spin the globe with smooth, clean animations, click on mountains to fly in with a seamless transition, open Rainier, see the heat map appear, watch the agents run, open their reasoning, and read a hiker card that names a bypass.
+A judge can spin the globe with smooth, clean animations, click Rainier to open its panel, read the pressure points, watch a simulated debris flow run down the slope with ranger and public callouts, fly into the mountain with a seamless transition, see the heat map appear, watch the agents run, open their reasoning, and read a hiker card that names a bypass.
 
 ---
 
@@ -136,8 +138,8 @@ The first screen is a full-screen 3D Earth.
 - Three markers. Color encodes overall risk on all four levels (see the design addendum's Risk mapping). Rainier is live and gets an extra ring. The other two use a fixed risk value loaded from seed data.
 - Drag, zoom, and a slow idle rotation that pauses on hover and during a flight.
 - Hover shows mountain name, elevation, region, risk level, and last refresh time.
-- Click flies the camera in over 1.5 s, fades to the background, and opens the mountain view.
-- A search box accepts "Mount Rainier" (or "mt rainier") and flies there.
+- Click turns the globe to face the mountain and opens the mountain panel (6.8). **Open ranger view** in the panel flies the camera in over 1.5 s, fades to the background, and opens the mountain view. (Built today: the click flies straight in. Steps 29 and 30 move it behind the panel.)
+- A search box accepts "Mount Rainier" (or "mt rainier") and opens the same panel.
 
 The globe is the demo hook. Keep it small and fast. Three markers is enough.
 
@@ -237,6 +239,27 @@ The Alert Writer produces the sentence. The bypass values come from the API, nev
 
 Added Sep 25, 2026 (team decision). **Reasoning**, or a click on an agent row, opens a panel over the map beside the ranger panel. For each agent it shows the model the router picked and why (rule by rule), the tool calls and the facts they returned, the provider's thinking summary and the agent's steps, what the code changed afterwards, every call with its time and error, and the raw answer. It updates live during a run. It explains a run and never changes one.
 
+### 6.8 Mountain Panel and Simulation
+
+Added Sep 25, 2026 (team decision). Not built yet: steps 26 to 30.
+
+A click on any globe marker opens one panel in the center of the screen, over the paused globe.
+
+**Left: the mountain.** A 3D terrain map with the 72-hour heat map and numbered pins on the pressure points.
+
+**Right: the pressure points.** Up to five slopes most likely to fail, worst first. Each gives where it is, its level and peak value, and the terrain that drives it. The first is selected.
+
+**Actions.** **Simulate** runs the selected point. **Open ranger view** flies into the mountain page (6.2).
+
+**Simulate.** The right side becomes the simulation, and the left map plays it:
+
+- **Runout.** Code routes the failure down the 30 m DEM from the pressure point's high cells. It uses multiple-flow-direction spreading and stops at a travel angle (`REACH_ANGLE_DEG`, 11°, a common debris flow minimum) or `MAX_RUNOUT_M`. The time of arrival is path distance divided by `FRONT_SPEED_MS` (5 m/s). Intensity is the share of the flow through a cell, 0 to 1, on the shared bins. All constants are named. It takes a few seconds, no model call.
+- **Heat map in motion.** The flow footprint advances frame by frame on the risk ramp, and each trail it crosses is marked where it crosses.
+- **Steps.** Code derives them from the runout: the slope releases, the flow enters the channel, it reaches a trail (name and mile range), and it stops (distance and drop). Each step has its simulated time.
+- **Callouts.** One model call, routed like the agents (strong tier, so Grok first and Gemini as the fallback), reads the steps and writes two to four callouts. Rangers get what to do now, such as closing miles or sending a patrol. The public notice is the message people nearby would get. It is a draft, and nothing is sent. Code checks every trail, mile, and time against the steps and falls back to templates.
+
+It is labeled as an illustrative runout, not a forecast of timing. There are no inputs: no rain slider, no speed control, no hazard picker. Avalanches stay out: there is no snowpack data, and the model is landslide only. Static mountains open the panel with terrain and their fixed level, with no pressure points and no **Simulate**.
+
 ---
 
 ## User Flows
@@ -258,12 +281,14 @@ Added Sep 25, 2026 (team decision). **Reasoning**, or a click on an agent row, o
 ### Judge demo
 
 1. Land on the rotating globe.
-2. Search or click Mount Rainier. Fly in.
-3. Show the probability heat map, then toggle susceptibility and historical pins.
-4. Open the hazard pin and read the four fields.
-5. Click **Analyze now**. The agent rows fill in.
-6. Open **Reasoning** on the Trail row: the model the router picked, and why.
-7. Open the hiker card and the bypass.
+2. Search or click Mount Rainier. The mountain panel opens. Read the pressure points.
+3. Press **Simulate**. Watch the flow reach the trail and the callouts appear.
+4. **Open ranger view.** Fly in.
+5. Show the probability heat map, then toggle susceptibility and historical pins.
+6. Open the hazard pin and read the four fields.
+7. Click **Analyze now**. The agent rows fill in.
+8. Open **Reasoning** on the Trail row: the model the router picked, and why.
+9. Open the hiker card and the bypass.
 
 ---
 
@@ -272,14 +297,16 @@ Added Sep 25, 2026 (team decision). **Reasoning**, or a click on an agent row, o
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                     FRONTEND (Next.js)                      │
-│   3D Globe (R3F)  →  Mountain map (MapLibre) →  Hiker card  │
+│   3D Globe (R3F) → Mountain panel + simulation              │
+│   → Mountain map (MapLibre) → Hiker card                    │
 │   Ranger panel + reasoning panel                            │
 │              WebSocket (agent stream)    REST               │
 └──────────────────────────┬─────────────────────────────────┘
                            │
 ┌──────────────────────────▼─────────────────────────────────┐
 │                    API (FastAPI)                            │
-│   /mountains   /layers   /analyze   /runs   /forecast       │
+│   /mountains /layers /analyze /runs /forecast               │
+│   /pressure-points /simulate /simulations                   │
 │   in-process run registry, WebSocket relay, /tiles          │
 └────────────┬───────────────────────┬───────────────────────┘
              │                       │
@@ -523,7 +550,15 @@ GET  /runs/{run_id}
 WS   /runs/{run_id}/stream              → RunUpdate and AgentEvent messages
 GET  /forecast?mountain_id&trail_id
 GET  /tiles/{layer}/{z}/{x}/{y}.png
+
+Planned for 6.8 (steps 26 to 28):
+GET  /mountains/{slug}/pressure-points  → PressurePoint[]
+POST /mountains/{slug}/simulate         → { simulation_id }   body { pressure_point_id }
+GET  /simulations/{simulation_id}
+WS   /simulations/{simulation_id}/stream → the frames and steps, then each callout, then done
 ```
+
+Simulations live in the API process, keyed by `simulation_id`, like runs. They write nothing to Postgres.
 
 `/analyze` is allowed only when `is_live` is true (409 otherwise). A second call while a run is going returns the running run's id. Other mountains return their static seed risk.
 
@@ -567,10 +602,11 @@ GET  /tiles/{layer}/{z}/{x}/{y}.png
 
 If you are behind, drop in this order:
 
-1. The two extra globe markers (Rainier alone still demos).
-2. The susceptibility toggle (keep the 72-hour heat map).
-3. A computed bypass (show a named bypass in text).
-4. The Synthesizer as its own call (let Alert Writer merge the three reports).
+1. The simulation's callouts, then the simulation itself (keep the panel's pressure points, or let the click fly straight in as it does today).
+2. The two extra globe markers (Rainier alone still demos).
+3. The susceptibility toggle (keep the 72-hour heat map).
+4. A computed bypass (show a named bypass in text).
+5. The Synthesizer as its own call (let Alert Writer merge the three reports).
 
 Do not drop the globe, the heat map, or the agent stream.
 
@@ -578,15 +614,17 @@ Do not drop the globe, the heat map, or the agent stream.
 
 ## Demo Script
 
-About two minutes.
+About two and a half minutes.
 
 1. **(0:00)** Globe, rotating. "Hikers check the weather. Almost nobody checks the ground."
-2. **(0:15)** Open Mount Rainier. The heat map fades in. "This is 72-hour landslide risk from terrain and recent rain."
-3. **(0:35)** Open the hazard pin. Read what, why, confidence, and what to do.
-4. **(0:55)** **Analyze now.** Agents stream. "Five agents check the slope, the forecast, and the trail, then agree."
-5. **(1:20)** Open **Reasoning** on the Trail row. "A router sends each agent to Gemini Flash or Grok, and the ranger can see why."
-6. **(1:40)** Hiker card and the bypass on the map. "A hiker gets one sentence and a way around it."
-7. **(1:55)** Back to the globe. "TerraSense. Know the ground before you go."
+2. **(0:10)** Click Mount Rainier. The panel opens. "These are the five slopes most likely to fail in the next 72 hours."
+3. **(0:25)** **Simulate.** The flow runs down to the trail, and the callouts appear. "If the worst one goes, here's where it reaches the trail, what rangers do, and what nearby hikers would be told."
+4. **(0:50)** **Open ranger view.** Fly in. The heat map fades in.
+5. **(1:00)** Open the hazard pin. Read what, why, confidence, and what to do.
+6. **(1:15)** **Analyze now.** Agents stream. "Five agents check the slope, the forecast, and the trail, then agree."
+7. **(1:40)** Open **Reasoning** on the Trail row. "A router sends each agent to Gemini Flash or Grok, and the ranger can see why."
+8. **(2:00)** Hiker card and the bypass on the map. "A hiker gets one sentence and a way around it."
+9. **(2:20)** Back to the globe. "TerraSense. Know the ground before you go."
 
 ---
 
@@ -600,7 +638,7 @@ Hikers check the forecast. They cannot easily check whether the slope above the 
 
 ### What it does
 
-TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D globe opens onto a terrain map with a risk heat map, past landslide pins, and trails colored by segment. Five agents turn the scores into a ranger alert and a hiker forecast, and a side panel shows how each one reasoned. The forecast names a bypass.
+TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A click on the 3D globe opens a panel with the slopes most likely to fail, and a simulation plays a debris flow from the worst one down to the trail, with AI callouts for rangers and a draft notice for people nearby. The globe then opens onto a terrain map with a risk heat map, past landslide pins, and trails colored by segment. Five agents turn the scores into a ranger alert and a hiker forecast, and a side panel shows how each one reasoned. The forecast names a bypass.
 
 ### How we built it
 
@@ -644,9 +682,9 @@ More mountains, a real ranger feedback loop, and slower signals such as InSAR. N
 
 Do not build these during HackGT. They are real follow-ons, and they will sink the demo if you start them.
 
-- Simulation mode ("what if it rains 6 inches").
+- Rain what-if inputs ("what if it rains 6 inches"), or any other input to the simulation. The runout simulation in 6.8 replays today's worst slope and takes no inputs.
 - Hazard types other than landslide / debris flow: rockfall, flash flood, avalanche, exposure, river crossings, lightning, heat, wildlife, closures.
-- SMS, email, Slack, Discord, push, ranger signup, districts, acknowledge / escalate / dismiss.
+- Sending anything: SMS, email, Slack, Discord, push. Public notices in the simulation are drafts. Ranger signup, districts, acknowledge / escalate / dismiss.
 - Auth.
 - GPX download, public share pages, Open Graph images, browser geolocation.
 - InSAR and Sentinel-1, SMAP as a required input, earthquake triggers, a CNN on DEM patches, SHAP plots.
@@ -670,6 +708,7 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Two LLM providers, Gemini Flash and Grok, with a router in code and a reasoning panel |
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
+| Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
 
 ---
 
@@ -683,6 +722,8 @@ Changes to this spec after the build started. Each one is also reflected in the 
 - **LHASA.** NASA's global landslide hazard assessment model. Prior art for the nowcast, not for the trail instruction.
 - **Stand-in.** The susceptibility map served as the 72-hour layer until Model B lands. Labeled everywhere it shows.
 - **Hero trail.** The Skyline loop from Paradise, the trail the assessment scores by mile.
+- **Pressure point.** One of the up to five slopes most likely to fail on the 72-hour map: a connected cluster at Moderate or above, ranked by peak and size.
+- **Runout.** How far and where a failed slope's material travels before it stops. The simulation traces it on the DEM.
 - **Skip-route.** The bypass that avoids the flagged trail segment.
 - **Router.** The code that picks Gemini Flash or Grok for each agent call and records why.
 - **Run.** One pass of the probability map plus the five agents for Mount Rainier.

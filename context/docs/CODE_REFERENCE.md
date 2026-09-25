@@ -201,8 +201,12 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 | Path | Step | Role |
 |---|---|---|
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
+| `backend/app/ml/pressure.py` | 26 | Up to five ranked pressure points from the probability map |
+| `backend/app/ml/runout.py` | 27 | Runout frames and steps from one pressure point, no model call |
+| `backend/app/simulations.py` | 28 | In-process simulations keyed by id, and the callouts call through the router |
+| `backend/app/routes/simulations.py` | 26, 28 | `GET /mountains/{slug}/pressure-points`, `POST /mountains/{slug}/simulate`, `GET /simulations/{id}`, `WS /simulations/{id}/stream` |
 
-API the frontend should call, from the spec. All of it exists:
+API the frontend should call, from the spec. All of it exists except the step 26 and 28 routes above:
 
 ```
 GET  /health
@@ -216,6 +220,13 @@ GET  /forecast?mountain_id&trail_id                     (step 25)
 ```
 
 `POST /analyze` is rejected with 409 when `is_live` is false.
+
+### Frontend
+
+| Path | Step | Role |
+|---|---|---|
+| `frontend/components/mountain-panel/` | 29, 30 | The centered panel over the globe: panel map, pressure point list, simulation column, callouts |
+| `frontend/lib/simulation-stream.ts` | 30 | Follows `WS /simulations/{id}/stream` |
 
 ### Data and ML
 

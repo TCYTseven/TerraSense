@@ -6,7 +6,7 @@ TerraSense is a HackGT build: landslide hazard intelligence for one mountain, Mo
 
 1. [`context/docs/TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md): status and tracks.
 2. [`context/TerraSense.md`](context/TerraSense.md): the product. If a feature is not in its Hackathon Scope, do not build it.
-3. [`context/implementation-steps.md`](context/implementation-steps.md): the 25 steps, in order, and the shared facts.
+3. [`context/implementation-steps.md`](context/implementation-steps.md): the 30 steps, split into pending and done, and the shared facts.
 4. The `AGENTS.md` in the folder you are about to change.
 5. [`context/docs/CODE_REFERENCE.md`](context/docs/CODE_REFERENCE.md) before you add, rename, or delete a file.
 
@@ -14,9 +14,9 @@ TerraSense is a HackGT build: landslide hazard intelligence for one mountain, Mo
 
 | Folder | Process | Track | Steps |
 |---|---|---|---|
-| `frontend/` | Next.js on port 3000 | Frontend | 2, 7–9, 15–16, 23, 25 |
-| `backend/` | FastAPI on port 8000 | Backend and agents | 3–6, 20–22, 24 |
-| `ml/` | Offline Python scripts. No server | ML and data | 10–14, 17–19 |
+| `frontend/` | Next.js on port 3000 | Frontend | 2, 7–9, 15–16, 23, 25, 29–30 |
+| `backend/` | FastAPI on port 8000 | Backend and agents | 3–6, 20–22, 24, 28 |
+| `ml/` | Offline Python scripts. No server | ML and data | 10–14, 17–19, 26–27 |
 | `data/` | Files only | ML and data | 5, 10, 14 |
 | `context/` | Spec, steps, team docs | Product | Demo script, Devpost |
 

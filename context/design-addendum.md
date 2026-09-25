@@ -2,7 +2,7 @@
 
 The design decisions that the spec and UX.md leave open, closed for this build.
 
-[TerraSense.md](TerraSense.md) sets the tokens under [Design Language](TerraSense.md#design-language). [UX.md](UX.md) decides whether a control belongs on screen. [implementation-steps.md](implementation-steps.md) sets the build order. This file picks among the options the spec lists and specifies the details none of them state. It extends those files. It does not repeat them, and it adds no screen, control, or layer.
+[TerraSense.md](TerraSense.md) sets the tokens under [Design Language](TerraSense.md#design-language). [UX.md](UX.md) decides whether a control belongs on screen. [implementation-steps.md](implementation-steps.md) sets the build order. This file picks among the options the spec lists and specifies the details none of them state. It extends those files. It does not repeat them, and it adds no screen, control, or layer that UX.md does not list.
 
 ## Precedence
 
@@ -21,6 +21,8 @@ The design decisions that the spec and UX.md leave open, closed for this build.
 | implementation-steps.md, step 16 | Susceptibility fades in over 400 ms | It appears at once. Rule 10 lists only the heat map fade. |
 | Spec 6.1 | Globe markers are green, amber, or red | Markers use all four levels through [Risk mapping](#risk-mapping). |
 | Design Language, Copy | The hiker example runs three sentences | One sentence plus the bypass, per spec 6.6 and UX.md rule 6. See [Copy](#copy). |
+| Spec 6.1, step 9 | A marker click flies into the mountain page | A click opens the [mountain panel](#mountain-panel) over the globe (team decision, Sep 25, 2026). **Open ranger view** runs the fly-in. |
+| Spec Out of Scope | No simulation mode | Out of scope still means a rain what-if. The [runout simulation](#simulation) has no inputs and replays today's worst slope (team decision, Sep 25, 2026). |
 
 ## Direction
 
@@ -52,6 +54,12 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Static mountains | Hide everything that implies analysis | [Static mountains](#static-mountains) | Step 23 |
 | Reasoning panel | Over the map, beside the ranger panel | [Reasoning panel](#reasoning-panel) | Step 23 |
 | Narrow layout | Stack below 768 px | [Layout](#layout) | Step 25 |
+| Mountain panel size | 60/40 split, `min(1200px, 100vw − 64px)` by `min(760px, 100vh − 128px)` | [Panel frame](#panel-frame) | Step 29 |
+| Globe while the panel is open | Turned to face the mountain at altitude 1.2, spin paused, 60% scrim | [Panel frame](#panel-frame) | Step 29 |
+| Pressure point count | Up to five, worst first | [Pressure points](#pressure-points) | Step 26 |
+| Flow color | Stepped on the risk ramp, heat map dimmed to 35% under it | [Simulation map](#simulation-map) | Step 30 |
+| Playback length | One frame every 500 ms, at most 40 frames (20 s) | [Motion](#motion) | Step 30 |
+| Callout count | Two to four: at least one for rangers and one public notice | [Callouts](#callouts) | Step 28 |
 
 ## Which step reads what
 
@@ -65,6 +73,11 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Review sheet | Before 23 | Frontend |
 | Panel, States | 23 | Frontend |
 | Hiker card, States | 25 | Frontend |
+| Pressure points | 26 | ML and data |
+| Simulation map, Copy (steps) | 27 | ML and data |
+| Callouts, Copy | 28 | Backend and agents |
+| Mountain panel, Panel frame, Pressure points, States | 29 | Frontend |
+| Simulation, Motion, States | 30 | Frontend |
 
 ## Tokens
 
@@ -143,7 +156,7 @@ The Alert Writer prompt (step 20) uses the same formats.
 | `extreme` | Extreme | Red |
 
 1. **Color never carries the level alone.** On the panel and the hiker card, every risk color sits beside its level word. The map's colors match those words, so the map gets no legend.
-2. **Risk color appears only on** globe markers, trail lines, the two raster layers, the hazard polygon and pin, level words, and the High and Extreme treatment. Never on agent status, success or error lines, buttons, or historical pins.
+2. **Risk color appears only on** globe markers, trail lines, the two raster layers, the hazard polygon and pin, pressure point pins and chips, the simulated flow and its trail marks, level words, and the High and Extreme treatment. Never on agent status, simulation steps, callouts, success or error lines, buttons, or historical pins.
 3. **No level, no color.** A live mountain with no hazard yet (no finished run and no preview hazard from step 18) shows muted text and "Not analyzed yet." Rainier's seeded placeholder (`moderate`, step 5) never reaches the screen. Static mountains show their seeded level.
 4. **`needs_review` keeps the level color** and adds a "Needs review" tag beside the level word: meta size, muted text, 1 px border.
 
@@ -161,7 +174,82 @@ Step 8 builds it with `react-globe.gl`. Property names below are that library's.
   2. The level dot and word.
   3. For Rainier, "Updated 12 min ago" or "Not analyzed yet." For a static mountain, "Display marker. Not analyzed live." (UX.md rule 8).
 - **Wordmark. [confirm]** "TerraSense" at the top left, 24 px in. On the mountain page it stays at the top left over the map, on a panel-surface pill with an 8 px radius, and a click returns to the globe. This is demo step 7's return to the globe.
-- **Search. [confirm]** Top center, level with the wordmark. 360 px wide, 40 px tall, inset surface, border, 6 px radius. Placeholder "Search mountains". Typing lists up to three matching names below the field on a panel surface. Enter flies to the top match, a click flies to the chosen one, and arrow keys move through the list.
+- **Click.** A marker click or a search pick opens the [mountain panel](#mountain-panel). It no longer routes straight to the mountain page.
+- **Search. [confirm]** Top center, level with the wordmark. 360 px wide, 40 px tall, inset surface, border, 6 px radius. Placeholder "Search mountains". Typing lists up to three matching names below the field on a panel surface. Enter opens the top match, a click opens the chosen one, and arrow keys move through the list. Search stays above the scrim while the panel is open, and a pick swaps the panel to that mountain.
+
+## Mountain panel
+
+Added at the team's direction on Sep 25, 2026 (UX.md, Mountain panel). It is the first view of any mountain: a click on the globe opens it, and **Open ranger view** leaves it for the mountain page. It reuses the tokens, type, glyphs, and level treatments below. It adds no new color, face, or radius.
+
+### Panel frame
+
+- **Globe behind it. [confirm]** The click turns the globe to face the mountain at altitude 1.2 (about 0.9 s, ease-in-out, the first leg of the [fly-to](#motion)). The spin pauses, and a flat scrim in the dark background at 60% covers the globe. The panel then appears at once. The wordmark and search stay above the scrim.
+- **Size. [confirm]** Centered, `min(1200px, 100vw − 64px)` wide and `min(760px, 100vh − 128px)` tall, never closer than 80 px to the top so the wordmark row stays clear. Panel surface, 1 px border, 8 px radius (it floats over the globe), no shadow.
+- **Split.** The map takes the left 60%. The right column takes 40%, at least 380 px, with a 1 px left border, 20 px side padding, and its own scroll. Its footer is pinned to the bottom, like the ranger panel's.
+- **Narrow, below 768 px.** The panel fills the screen under the wordmark row with a square edge. The map is on top at 45% of the viewport height, the right column below it.
+- **Close.** A close button (X, top right of the right column), Escape, or a click on the scrim. Closing restores the spin at once from the current view. Focus moves into the panel when it opens and back to the marker or search when it closes.
+- **Address.** The panel adds `?m=<slug>` to `/` with a shallow route change, so a reload reopens it. Closing removes it.
+
+### Panel map
+
+The same MapLibre style as the [mountain page](#map), with a smaller frame and fewer layers.
+
+- **Camera.** Fits every pressure point with 48 px of padding, pitch 60, and the bearing that turns the selected point toward the camera. Selecting another point does not move the camera. Drag, scroll, and rotate stay on. No controls beyond the required attribution.
+- **Layers.** The probability heat map (with its fade on first show), all trails with the hero trail colored by segment, and the pressure point pins. No toggles, no historical pins, no hazard pin, no bypass.
+- **Pressure point pins.** A 24 px circle in the point's level color, a 2 px dark ring, and the point's number in the dark background color at meta size, 600. The selected pin takes the hazard pin's accent ring and 1 px dark outer edge, and its zone gets the 2 px outline in its level color.
+- **Static mountains.** Terrain only, framed on the summit.
+
+### Pressure points
+
+The right column before a simulation, top to bottom:
+
+1. **Header.** The mountain name at panel-title size. Elevation and region on one meta line, 12 px apart.
+2. **Overall risk.** The level dot and word at lead size, 600, with the [High and Extreme](#high-and-extreme) treatment when it applies. While the heat map is the stand-in, one muted meta line under it: "Heat map is the susceptibility stand-in until Model B lands."
+3. **Pressure points. [confirm]** The label "Pressure points", then up to five rows, worst first. Each row:
+   - Left, a 16 px chip in the point's level color with its number, matching the pin.
+   - First line, body size: where it is (see [Copy](#copy)). Right-aligned on the same line: the level dot, word, and peak value.
+   - Second line, meta, muted: the drivers, such as "Slope 38°  60 ft from a channel  Sparse cover", 12 px apart with no separator.
+   - The selected row gets a 2 px accent left border and the text color at 4% behind it. A row is a button, and a click selects the point and its pin.
+4. **Footer.** **Simulate** and **Open ranger view**. See [Panel actions](#panel-actions).
+
+### Panel actions
+
+- **Simulate.** Primary, styled like **Analyze now**: accent fill, 40 px, full width. It starts the simulation from the selected point. Hidden on static mountains (UX.md rule 8), and disabled with the meta line "Nothing reaches Moderate today, so there's nothing to simulate." when the list is empty.
+- **Open ranger view.** Secondary, styled like **Hiker forecast**, 8 px below. It closes the panel and runs the [fly-to](#motion) from the current globe view into `/mountains/[slug]`.
+- **Back to pressure points** (simulation only). An accent text button at body size at the top of the column, like the hiker card's back button.
+- **Replay** (simulation only). Secondary, in place of **Simulate**, disabled while playing. It restarts playback from the frames already loaded; nothing is recomputed.
+
+### Simulation
+
+After **Simulate**, the right column's content swaps in place, at once. The header row and footer stay. The left map plays the flow.
+
+**Right column, top to bottom**
+
+1. **Back to pressure points.**
+2. **Title row.** "Simulating pressure point 1" at body size, 600. Right-aligned on the same line, the simulated clock in mono, such as `T+04:30`.
+3. **Method line.** Meta, muted: "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing." (UX.md rule 11). It never hides.
+4. **Steps.** The label "Steps", then one row per step in order. The rows reuse the [agent row](#agent-rows) glyphs: a hollow circle for steps not reached, the 8 px dot with the work pulse for the current step, a check for steps passed. Each row has a title at body size, then a meta line with the simulated time and the step's values, 12 px apart. A trail step adds the level dot and word of the flow where it crosses. Steps never take a risk-colored glyph or background.
+5. **Callouts.** The label "Callouts", then each callout as its step is reached. See [Callouts](#callouts).
+6. **Status line.** When playback ends: "Simulation finished. The flow ran 1.4 mi and crossed 2 trails." in the status line style from [States](#states).
+7. **Footer.** **Replay** and **Open ranger view**.
+
+### Simulation map
+
+- **Flow. [confirm]** The footprint at each frame is a fill on the same stepped ramp as the rasters: intensity below 0.20 transparent, then amber 0.40, orange 0.55, red 0.70. While a simulation shows, the heat map drops to 35% `raster-opacity` at once, so the flow reads on top of it. Back to pressure points restores it.
+- **Edge.** A 1.5 px line in the text color at 70% traces the footprint's current edge. It is geometry, not a level, so it is not a risk color.
+- **Trail marks.** Where the flow first crosses a trail, a 20 px version of the hazard pin (level color, dark ring, warning triangle) appears when that step is reached. The crossed miles of the hero trail keep their segment colors.
+- **Camera.** It does not move during playback. If the final footprint falls outside the frame, fit its bounds with `duration: 0` before playback starts.
+- **Other pins.** Pressure point pins other than the source hide while a simulation shows.
+
+### Callouts
+
+Two to four notes from the AI, one model call routed like the agents (see [Copy](#copy) for wording). **[confirm]** At least one for rangers and one public notice.
+
+- Each callout sits under the "Callouts" label: a meta line with the audience on the left and the step's simulated time in mono on the right, then the text at body size. A 2 px left border in the text color at 40% runs beside it. No fill, no card, no accent, no risk color.
+- Audience labels: "Rangers" and "Public notice, draft, not sent". The public label never shortens.
+- A callout appears at once when playback reaches its step. Under reduced motion, all of them show at once.
+- While the model call is out, one meta line reads "Writing callouts…" with the work pulse. If the call fails, code templates stand in and the status line adds "Callouts came from templates. The AI didn't answer."
+- Callouts have no buttons: no send, copy, or share (UX.md, What would make the UX wrong).
 
 ## Map
 
@@ -300,6 +388,16 @@ UX.md asks for empty, loading, and error states on every view, and step 25 build
 | Globe | API unreachable | Globe keeps spinning, no markers | Can't reach the TerraSense API. Retrying every 5 seconds. |
 | Globe | No mountains | Globe, no markers | No mountains in the database. Run the seed script. |
 | Globe | Search finds nothing | One line in place of the list | No mountain matches "‹query›". |
+| Mountain panel | Loading | Panel frame, map loading, header from the globe's data, skeleton bars for the rows | None |
+| Mountain panel | Pressure points fail | Map with the heat map, no pins, Simulate disabled | Couldn't load the pressure points. Open ranger view still works. |
+| Mountain panel | No pressure points | Map, empty list, Simulate disabled | Nothing reaches Moderate today, so there's nothing to simulate. |
+| Mountain panel | Static mountain | Terrain, header, fixed level, Open ranger view | Display marker. Live analysis runs on Mount Rainier only. |
+| Simulation | Starting | Steps listed and not reached, Replay disabled | Tracing the flow… (on the title row, until the first frame) |
+| Simulation | Playing | Flow advances, current step pulses, callouts appear | None |
+| Simulation | Finished | Final flow stays, all steps checked | Simulation finished. The flow ran 1.4 mi and crossed 2 trails. |
+| Simulation | Callouts from templates | As finished | Simulation finished. … Callouts came from templates. The AI didn't answer. |
+| Simulation | Failed | Pressure points restored, heat map at full opacity | The simulation didn't run. The pressure points still show. |
+| Simulation | Stream lost | Frames already loaded keep playing, missing callouts stay out | Lost the connection. Some callouts may be missing. |
 | Mountain | Loading | Map loading; panel header from the globe's data; skeleton bars for risk, rain, and trails | None |
 | Mountain | Unknown slug | Panel only | No mountain at this address. Back to the globe (link) |
 | Mountain | API unreachable | Map without trails, panel header only | Can't load ‹mountain›. Retrying every 5 seconds. |
@@ -323,9 +421,11 @@ UX.md rule 10 is the complete list. This section sets the values.
 | Idle globe spin | About one turn every 2 minutes (`controls().autoRotateSpeed = 0.5`) | Always on the globe. Pauses on marker hover or drag, and resumes after 3 s idle |
 | Fly-to | 1.5 s total, in the sequence below | Marker click or search |
 | Heat map fade | `raster-opacity` from 0 to 1 over 600 ms (`raster-opacity-transition`) | When the probability layer first shows, and when new tiles arrive after a finished run |
-| Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent rows and skeleton bars only |
+| Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent rows, the current simulation step, "Writing callouts…", and skeleton bars only |
+| Turn to face | The first leg of the fly-to alone: about 0.9 s, ease-in-out, ending at altitude 1.2 | Marker click or search, before the mountain panel opens |
+| Simulation playback | **[confirm]** One frame every 500 ms, at most 40 frames. Each frame replaces the flow at once, with no tween between frames | After **Simulate** and **Replay** |
 
-**Fly-to sequence. [confirm]** the split.
+**Fly-to sequence. [confirm]** the split. **Open ranger view** starts it from the view the panel left, so the first leg is short.
 
 1. The globe camera moves to the mountain at low altitude (`pointOfView`, about 0.9 s, ease-in-out).
 2. The route changes. The globe stays mounted under the map (mount it in the root layout), so no blank frame shows.
@@ -340,8 +440,9 @@ These four parts are one fly-to. Tune the split at step 9 until the last globe f
 - `transition-*` utilities. Hover, focus, open, and close states change instantly.
 - Toasts. Status lines live in the panel.
 - Marker pulses, number count-ups, and any Mapbox `flyTo` or `easeTo` outside step 3 of the fly-to.
+- Panel enter and exit animations, and any camera move on the panel map during playback.
 
-**Reduced motion** (`prefers-reduced-motion: reduce`): no spin. The fly-to becomes an instant route change to the default camera. The heat map appears without the fade. The pulse stops, and a running row reads "Running".
+**Reduced motion** (`prefers-reduced-motion: reduce`): no spin. The turn to face and the fly-to become instant. The heat map appears without the fade. The pulse stops, and a running row reads "Running". A simulation shows its final flow, every step checked, and every callout at once, with no playback.
 
 ## Copy
 
@@ -353,6 +454,11 @@ Design Language and UX.md rules 5 and 6 set the voice. These templates keep the 
 - **Hiker sentence.** One sentence of 25 words or fewer. It names the cause and the bypass. No numbers and no model words ("probability", "confidence", "model", "susceptibility").
   Example: "Days of heavy rain could send mud and rock onto the Ridge Trail above the east fork, so take the Cedar Loop instead."
 - **Bypass values** come from the API and render in the card's bypass block. The model never writes them.
+- **Pressure point place.** `<Facing>-facing slope above <trail>, mi <a>–<b>` when a trail runs below it within 0.5 mi, else `<Facing>-facing slope, <elevation>`. Example: "SE-facing slope above Skyline Trail, mi 1.2–1.5".
+- **Simulation steps.** Code writes them from the runout facts, never the model: "Slope releases", "Flow enters the channel", "Reaches <trail>, mi <a>–<b>", "Flow stops". Meta values: time (`T+02:10`), distance from the release (`0.8 mi`), and drop (`−1,240 ft`).
+- **Ranger callout.** One or two imperative sentences, 25 words or fewer. Names the trail and mile range from the steps. Example: "Close Skyline Trail mile 1.2 to 1.5 and hold hikers at the Paradise trailhead until someone checks the channel."
+- **Public notice.** One or two plain sentences, 30 words or fewer, for people nearby. Names the trail and the place to avoid. No numbers except mile markers, and no model words. Example: "Mud and rock may cross the Skyline Trail above Paradise. Stay off the trail until rangers reopen it."
+- **Callout facts.** Every trail, mile, and time in a callout must match a step. Code checks this like the Alert Writer's copy and uses templates when the model keeps failing.
 - **Level words.** "Low", "Moderate", "High", and "Extreme" in the UI. All caps in ranger copy only.
 - **UI strings.** Sentence case, plain verbs, no apologies. An action keeps its name through the flow: **Analyze now**, then "Analyzing…", then "Finished". Button labels stay exactly as the spec writes them.
 
@@ -360,7 +466,7 @@ Design Language and UX.md rules 5 and 6 set the voice. These templates keep the 
 
 Before step 23, build one component sheet in Claude Design from this file. It is a review surface, not a spec.
 
-- **On the sheet:** the panel sections in order at Moderate and at High, each agent row status, the hazard block, the toggle group on and off, the hover card, search with results and with no match, the hiker card, and every state in [States](#states) with its copy.
+- **On the sheet:** the panel sections in order at Moderate and at High, each agent row status, the hazard block, the toggle group on and off, the hover card, search with results and with no match, the hiker card, the mountain panel's pressure point list with one row selected, the simulation column mid-playback and finished (steps and both callout audiences), and every state in [States](#states) with its copy.
 - **Off the sheet:** new screens or controls, the globe (judge it moving, at step 8), and the raster layers (judge them on terrain, at steps 16 and 18).
 - The sheet uses this file's tokens and type. It may propose changes only to lines tagged [confirm]. Write accepted changes back here before Claude Code uses the handoff bundle.
 
@@ -375,4 +481,7 @@ UX.md's check still holds: run the frontend and walk the demo order. A still scr
 5. A static mountain page shows no **Analyze now**, agent rows, **Hiker forecast**, or toggles.
 6. Stop the API mid-run. The failure copy shows, the last good hazard stays, and nothing turns red.
 7. Walk the path once with reduced motion on.
-8. No component uses a Tailwind gray, slate, zinc, neutral, or stone color class.
+8. Click Rainier on the globe: the panel opens over a paused, dimmed globe. Escape closes it and the spin resumes.
+9. Run **Simulate** to the end. The method line never hides, every public notice says "draft, not sent", and no callout has a button.
+10. Open a static mountain's panel: no pressure points and no **Simulate**.
+11. No component uses a Tailwind gray, slate, zinc, neutral, or stone color class.

@@ -1,6 +1,6 @@
 # Implementation steps
 
-Twenty-five steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md).
+Thirty steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8).
 
 This file has two parts:
 
@@ -9,7 +9,7 @@ This file has two parts:
 
 Status as of Friday, Sep 25, 2026. Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
 
-Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, five agents, one hiker card. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
+Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, five agents, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
 
@@ -20,6 +20,11 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [ ] 17. Score 72-hour probability from live rain (pulled for a rebuild; the heat map is the labeled susceptibility stand-in until it lands)
+- [ ] 26. Rank the pressure points
+- [ ] 27. Trace a runout from a pressure point
+- [ ] 28. Expose simulate, the stream, and the callouts
+- [ ] 29. Open the mountain panel over the globe
+- [ ] 30. Play the simulation in the panel
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -79,10 +84,11 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 Drop work in this order. The demo still holds.
 
-1. The two static globe markers (step 5's extra mountains, and their markers in step 8).
-2. The susceptibility toggle (step 16). Keep the 72-hour heat map.
-3. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
-4. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
+1. The callouts (step 28's model call; keep template callouts), then the simulation (steps 27, 28, 30). Keep step 29's panel, or let the click fly straight in as it does today.
+2. The two static globe markers (step 5's extra mountains, and their markers in step 8).
+3. The susceptibility toggle (step 16). Keep the 72-hour heat map.
+4. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
+5. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
 
 Keep the globe, the heat map, and the agent stream.
 
@@ -158,6 +164,83 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 - Map probability through the shared bins.
 
 **Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` then reads `model b`, and the stand-in note leaves the panel.
+
+## 26. Rank the pressure points
+
+**Track.** ML and data, with the route in `backend/`.
+
+**Outcome.** The panel can list the slopes most likely to fail.
+
+**Build.**
+
+- In `backend/app/ml/pressure.py` (free of API imports, like `hazard.py`), find 8-connected clusters at Moderate or above on the current probability map. Rank them by peak probability times area, and drop clusters under 0.05 km² or within 500 m of a better one. Keep up to `MAX_PRESSURE_POINTS` (5).
+- For each point, return id, rank, level, peak probability, centroid, a simplified polygon, facing, elevation, the terrain drivers from the feature stack, and the nearest trail below it within 0.5 mi with its mile range.
+- `GET /mountains/{slug}/pressure-points` returns `PressurePoint[]` (empty for static mountains). Add the Pydantic model and its mirror in `frontend/lib/types.ts` in the same commit.
+
+**Done when.** `GET /mountains/mount-rainier/pressure-points` returns up to five ranked points in under a second, and the first matches the worst cluster on the heat map.
+
+## 27. Trace a runout from a pressure point
+
+**Track.** ML and data.
+
+**Outcome.** One function turns a pressure point into frames and steps, with no model call.
+
+**Build.**
+
+- `backend/app/ml/runout.py`: from the point's cells at High or above, spread downslope on the 30 m DEM with multiple-flow-direction routing (Holmgren, exponent 4). Stop where the travel angle from the release drops below `REACH_ANGLE_DEG` (11) or the path passes `MAX_RUNOUT_M` (6000).
+- Arrival time is path distance over `FRONT_SPEED_MS` (5). Intensity is the flow share through a cell, 0 to 1. All four constants are named and documented.
+- Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
+- Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
+
+**Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically.
+
+## 28. Expose simulate, the stream, and the callouts
+
+**Track.** Backend and agents.
+
+**Outcome.** The browser can start a simulation and receive frames, steps, and callouts.
+
+**Build.**
+
+- `POST /mountains/{slug}/simulate` with `{ pressure_point_id }` returns `{ simulation_id }`. 409 for a static mountain, 404 for an unknown point. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
+- `WS /simulations/{id}/stream` sends one message with the frames and steps, then each callout, then a final message. `GET /simulations/{id}` returns the same, finished or not.
+- Callouts: one model call through the existing router, strong tier. It reads the steps and the pressure point and returns two to four `{ step_id, audience: rangers | public, text }`, at least one of each. The schema is closed, like the agents'.
+- Code checks every trail, mile, and time in the text against the steps, and enforces the word limits in the design addendum's Copy. On a failed check it runs one repair round, then the fallback provider, then templates. The trace records which.
+- Add the models and their mirrors in `frontend/lib/types.ts` in the same commit. Test against `backend/tests/fake_llm.py`.
+
+**Done when.** A socket client gets the frames and steps within 3 seconds of `POST`, then the callouts, then the final message, and a run with both providers down still ends with template callouts.
+
+## 29. Open the mountain panel over the globe
+
+**Track.** Frontend.
+
+**Outcome.** A globe click opens the centered panel instead of routing to the mountain page.
+
+**Build.**
+
+- A marker click or search pick turns the globe to face the mountain (the first leg of the fly-to), pauses the spin, lays the scrim, and opens the panel. `?m=<slug>` reopens it on reload.
+- Left: a compact MapLibre map from the same style module, with the heat map, trails, and numbered pressure point pins. Right: header, overall risk, the pressure point list, **Simulate**, and **Open ranger view**. Follow the design addendum's Mountain panel.
+- **Open ranger view** closes the panel and runs the existing fly-to into `/mountains/[slug]`.
+- Static mountains: terrain, fixed level, the display-marker line, and no pressure points or **Simulate**.
+- Loading, error, and empty states from the addendum's States table.
+
+**Done when.** Clicking Rainier opens the panel with the pins matching the list, a row click moves the selection, Escape restores the spinning globe, and **Open ranger view** lands on the mountain page with no jump cut.
+
+## 30. Play the simulation in the panel
+
+**Track.** Frontend.
+
+**Outcome.** **Simulate** plays the flow on the map and the steps and callouts on the right.
+
+**Build.**
+
+- **Simulate** calls `POST /simulate`, follows the stream, and swaps the right column to the simulation view.
+- Playback: one frame every 500 ms, replacing the flow fill at once. Dim the heat map to 35%. Mark each trail crossing when its step is reached. The camera does not move.
+- Steps use the agent row glyphs, and the current one pulses. Callouts appear when their step is reached, with their audience labels. The method line always shows.
+- **Replay** replays the loaded frames. **Back to pressure points** restores the list and the heat map.
+- Reduced motion: final flow, all steps, and all callouts at once.
+
+**Done when.** On Rainier, **Simulate** plays to the end in about 20 seconds, the flow reaches the trail step at the same moment its mark appears, at least one ranger callout and one public draft show, and a person who has not seen the app can follow it.
 
 ## Before the demo
 
