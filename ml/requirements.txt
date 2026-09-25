@@ -8,3 +8,6 @@ scipy>=1.13
 pandas>=2.2
 pyarrow>=17
 pysheds>=0.5
+# Step 12, train_susceptibility.py:
+lightgbm>=4.5
+scikit-learn>=1.5

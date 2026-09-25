@@ -12,7 +12,7 @@ The product contract is [`../TerraSense.md`](../TerraSense.md). The build order 
 frontend/          Next.js app. Runs with npm run dev.
 backend/           FastAPI service: health, mountain reads, schema, seed.
 ml/scripts/        Offline scripts: download_sources.py (step 10).
-ml/artifacts/      Model outputs. Empty until step 12.
+ml/artifacts/      Model outputs: metrics.json, feature_importance.json (the .tif is gitignored).
 data/seed/         Committed seed files: mountains, trails.
 context/           Spec and the 25 implementation steps.
 context/docs/      Team brief, handoff, UX, this file.
@@ -22,8 +22,6 @@ README.md          Pitch, the three commands, folder owners.
 .env.example       Every environment variable, with a comment. CORS_ORIGINS is optional.
 .gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, virtualenvs.
 ```
-
-`ml/artifacts/` holds a `.gitkeep` until step 12 writes the first artifact.
 
 ## Agent harness
 
@@ -124,6 +122,11 @@ Hazard         { id, run_id | null, type (landslide | debris_flow), severity, pr
 | `ml/requirements.txt` | `rasterio`, `numpy` (below 2.4 for pysheds), `requests`, `scipy`, `pandas`, `pyarrow`, `pysheds` for the offline scripts. |
 | `ml/scripts/build_features.py` | Step 11. `python ml/scripts/build_features.py [--landslides PATH]`. Builds a 30 m grid in UTM zone 10N (1004 x 757 cells) and writes `data/processed/features.tif` with seven bands: elevation, Horn slope, aspect (compass bearing, NaN on flats), Zevenbergen-Thorne curvature (negative = concave), distance to drainage (D8 channels at 0.2 km2, via pysheds), WorldCover land cover (mode resampled), and topographic wetness index. When landslide points exist it writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives 1:3 from ground over 500 m away, `label`, `region` (7.5 km blocks), `row`, `col`. |
 | `data/processed/features.tif` | Gitignored. The step 11 feature stack. |
+| `ml/scripts/train_susceptibility.py` | Step 12. `python ml/scripts/train_susceptibility.py [--table PATH] [--artifacts DIR]`. With the labeled table: LightGBM, held-out spatial regions (at least 20% of positives), AUC and precision at 0.45, gain importance, refit on all rows, full-map prediction. Without it: a knowledge-driven index (weights in `INDEX_WEIGHTS`, stretched between the 2nd and 98th percentile of the box) and `trained: false`. |
+| `ml/artifacts/metrics.json` | Method, `trained`, AUC, precision at the high threshold, map summary. Committed so the current status is visible. |
+| `ml/artifacts/feature_importance.json` | Gain importance (LightGBM) or the index weights. |
+| `ml/artifacts/susceptibility.tif` | Gitignored. 0-1 susceptibility on the 30 m UTM grid. Input to tiles (step 13) and Model B (step 17). |
+| `ml/artifacts/susceptibility_lgbm.txt` | The trained model, written only when labels exist. |
 | `ml/scripts/download_sources.py` | Step 10. `python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force] [--glc-csv URL_OR_PATH]`. Reads the bbox window of the Copernicus DEM and ESA WorldCover COGs over HTTP ranges, writes `data/raw/`, and prints a check that each file covers the bbox. Filters the NASA Global Landslide Catalog CSV to the bbox into `data/seed/landslides.geojson`. A failed stage does not stop the others. |
 
 ## Planned layout
@@ -172,7 +175,6 @@ GET  /forecast?mountain_id&trail_id
 | Path | Step | Role |
 |---|---|---|
 | `data/seed/landslides.geojson` | 10, 14 | Pin source. Pending: `download_sources.py --only landslides` needs data.nasa.gov |
-| `ml/scripts/train_susceptibility.py` | 12 | LightGBM, spatial holdout, `ml/artifacts/metrics.json` |
 | `ml/scripts/render_tiles.py` | 13, 18 | XYZ tiles in EPSG:3857 |
 
 ## Invariants

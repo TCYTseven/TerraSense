@@ -28,7 +28,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Record every download's URL and access date in `data/seed/sources.md`.
 - Resample every layer to one 30 m grid before building features.
 - Split train and test by space, using the region column. Never shuffle pixels across the box.
-- Publish the AUC you measure in `artifacts/metrics.json`. 0.85 is not a gate.
+- Publish the AUC you measure in `artifacts/metrics.json`. 0.85 is not a gate. Until landslide labels exist, `metrics.json` says `trained: false` and `auc: null`: never present the knowledge-driven index as a trained model.
 - Tiles are XYZ PNG in EPSG:3857 so they sit on Mapbox terrain.
 - Model B weights are named constants with a comment on each.
 
@@ -41,6 +41,7 @@ python3.11 -m venv ml/.venv && source ml/.venv/bin/activate
 pip install -r ml/requirements.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
+python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
 ```
 
 Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

@@ -1,0 +1,25 @@
+{
+  "method": "knowledge-driven index",
+  "trained": false,
+  "auc": null,
+  "precision_at_high": null,
+  "high_threshold": 0.45,
+  "weights": {
+    "slope": 0.35,
+    "dist_drainage": 0.2,
+    "landcover": 0.2,
+    "twi": 0.15,
+    "curvature": 0.1
+  },
+  "stretch_percentiles": [
+    2,
+    98
+  ],
+  "note": "No labeled table at data/processed/features.parquet: the landslide points are not downloaded yet, so no model was trained and no AUC was measured. Rerun steps 10 to 12 once they exist.",
+  "created_at": "2026-09-25T12:14:25+00:00",
+  "map": {
+    "cells": 735786,
+    "mean": 0.4783,
+    "share_at_or_above_high": 0.5387
+  }
+}
