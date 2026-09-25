@@ -26,7 +26,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [x] 15. Open the Mapbox mountain view (built on MapLibre GL with AWS Terrain Tiles, so no token is needed. A Mapbox token switches the relief to satellite)
 - [ ] 16. Toggle susceptibility and historical pins
-- [ ] 17. Score 72-hour probability from live rain
+- [ ] 17. Score 72-hour probability from live rain (Model B done and checked on a synthetic storm. The live Open-Meteo fetch is written but untested: the build container cannot reach api.open-meteo.com)
 - [ ] 18. Draw the heat map, hazard polygon, and trail risk
 - [ ] 19. Add one bypass around the worst segment
 - [ ] 20. Define agent schemas, tools, and prompts

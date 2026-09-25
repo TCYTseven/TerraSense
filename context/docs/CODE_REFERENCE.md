@@ -101,6 +101,9 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 | `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, removes every trail the file no longer lists (for all mountains), and rejects a name repeated for one mountain. `load_trail_segments(conn)` upserts `data/seed/trail_segments.geojson` by trail and `seq`, keeps a segment's risk only while its line and miles are unchanged, and removes segments the file no longer lists. |
 | `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `HistoricalEvent`, `LayerTiles`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
 | `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, `active_hazard` (latest by `created_at`, or null), and `historical_events`. `GET /mountains/{slug}/layers/{layer}`: `LayerTiles` for a rendered layer in `LAYERS` (susceptibility); 404 for static mountains, unknown layers, or layers not rendered yet. 404 for an unknown slug. |
+| `backend/app/weather.py` | Step 17. `get_hourly_rain()`: hourly precipitation for the Rainier peak from Open-Meteo, downscaled to 1,650 m (Paradise), past 7 days and next 4, cached 5 minutes. With `OPEN_METEO_FIXTURE` set it loads that file instead, shifted so its `fixture_now` is the current hour, and says `source: "fixture"`. `HourlyRain.total(start_hour, end_hour)`, `daily_totals_before_now`, `window_hours`, `as_of`. |
+| `backend/app/ml/model_b.py` | Step 17. `python -m app.ml.model_b` (from `backend/`). `P = sigmoid(W_SUSCEPTIBILITY * susceptibility + W_RAIN * exceedance + W_MOISTURE * moisture + BIAS)` on every cell of `ml/artifacts/susceptibility.tif`. Exceedance is the log2 ratio of the worst 6 to 72 hour rain in the 72 hours either side of now to Guzzetti et al. (2008)'s threshold, I = 2.20 D^-0.44. Moisture is a 7-day antecedent precipitation index over 40 mm. Weights are named constants, set by hand against three documented scenarios. `rain_signal`, `probability`, `run`, `summarize`, `risk_level`, `write_probability` (to `ml/artifacts/probability.tif`). |
+| `backend/fixtures/open_meteo_storm.json` | A synthetic storm in Open-Meteo's response shape, for offline work only: 83 mm in the past 72 hours, 30 mm in the next 24. Marked synthetic in its `_note`. |
 | `backend/app/history.py` | Step 14. `historical_events(slug)`: the catalog points in `data/seed/landslides.geojson` as `HistoricalEvent`s, for `mount-rainier` only. Re-read when the file changes. Empty while the file is missing. |
 | `backend/app/ml/tiles.py` | Shared tiler, free of API imports so `ml/scripts/` can use it. `warp_tile` resamples a raster onto one 256 px EPSG:3857 tile. `palette_image` writes 8-bit PNGs on the risk ramp (64 levels, transparent at low values and nodata). `render_xyz(raster, layer)` renders every tile over the bbox into `backend/tiles/<layer>/` via a temp folder swap and writes `metadata.json` with a `version`. `read_metadata(layer)`. |
 
@@ -139,6 +142,7 @@ LayerTiles     { layer, tiles ("{API}/tiles/<layer>/{z}/{x}/{y}.png?v=<version>"
 | `ml/artifacts/metrics.json` | Method, `trained`, AUC, precision at the high threshold, map summary. Committed so the current status is visible. |
 | `ml/artifacts/feature_importance.json` | Gain importance (LightGBM) or the index weights. |
 | `ml/artifacts/susceptibility.tif` | Gitignored. 0-1 susceptibility on the 30 m UTM grid. Input to tiles (step 13) and Model B (step 17). |
+| `ml/artifacts/probability.tif` | Gitignored. Model B's 72-hour probability on the same grid, written by `write_probability`. |
 | `ml/artifacts/susceptibility_lgbm.txt` | The trained model, written only when labels exist. |
 | `ml/scripts/render_tiles.py` | Steps 13 and 18. `python ml/scripts/render_tiles.py [--layer NAME] [--raster PATH] [--zooms 10-14]`. Thin CLI over `backend/app/ml/tiles.py`. Susceptibility: 383 tiles, z10-z14, about 3.5 s. |
 | `backend/tiles/` | Gitignored. Rendered layers, one folder each, with `metadata.json`. |
@@ -167,7 +171,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
 | `backend/app/agents/` | 20–21 | Schemas, tools, five agents, orchestrator |
 | `backend/app/alerts/discord.py` | 24 | Webhook post |
 
