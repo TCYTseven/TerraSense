@@ -1,6 +1,6 @@
 ---
 name: frontend-builder
-description: Builds one TerraSense frontend step (2, 7-9, 15-16, 23, 25) inside frontend/. Use for Next.js pages, the globe, the Mapbox view, and the side panel.
+description: Builds one TerraSense frontend step (2, 7-9, 15-16, 23, 25) inside frontend/. Use for Next.js pages, the globe, the MapLibre terrain map, and the side panel.
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 

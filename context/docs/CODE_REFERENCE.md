@@ -20,7 +20,7 @@ context/docs/      Team brief, handoff, UX, this file.
 AGENTS.md          Agent guide: folder owners, team rules, shared facts.
 README.md          Pitch, the three commands, folder owners.
 .env.example       Every environment variable, with a comment. CORS_ORIGINS is optional.
-.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, backend/tiles/, virtualenvs.
+.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, backend/tiles/, frontend/public/maplibre/, virtualenvs.
 ```
 
 ## Agent harness
@@ -46,10 +46,10 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 
 | File | What it is |
 |---|---|
-| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`next typegen && tsc --noEmit`, which works on a fresh clone). Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`. |
+| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`next typegen && tsc --noEmit`, which works on a fresh clone), `postinstall` (copies the MapLibre worker). Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`, `maplibre-gl`. |
 | `frontend/app/layout.tsx` | Root layout, full height. Loads Geist (UI) and Geist Mono (numbers) as CSS variables. Sets metadata and a dark `viewport`. |
 | `frontend/app/page.tsx` | Home: the full-screen globe with the TerraSense name at the top left. |
-| `frontend/app/mountains/[slug]/page.tsx` | Mountain page, server-rendered from `GET /mountains/{slug}`: map area (about 70%, a coordinate placeholder until the Mapbox view in step 15) and the ranger panel with name, region, elevation, summit, overall risk, and last refresh. **Analyze now** renders only when `is_live` (disabled until step 23). Static mountains show a fixed-risk note. Fades in. |
+| `frontend/app/mountains/[slug]/page.tsx` | Mountain page, server-rendered from `GET /mountains/{slug}`: the terrain map (about 70% of the width, keyed by slug) and the ranger panel with name, region, elevation, summit, overall risk, last refresh, one sentence (the Synthesizer's summary replaces it in step 23), and the trail list: the hero trail with its miles and segments, then the other trails behind a disclosure. **Analyze now** renders only when `is_live` (disabled until step 23). Static mountains show a fixed-risk note. Fades in. |
 | `frontend/app/mountains/[slug]/loading.tsx` | Plain dark screen while the page loads. Lets the globe prefetch the route. |
 | `frontend/app/mountains/[slug]/error.tsx` | API failure: message, **Try again** (`retry()` refetches), link back to the globe. |
 | `frontend/app/mountains/[slug]/not-found.tsx` | Unknown slug. |
@@ -70,14 +70,20 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/components/globe/mountain-marker.tsx` | One marker: unlit dot and halo in the risk color, an extra ring for live mountains, an invisible hit sphere, and a hover card (name, elevation, region, risk, last refresh) anchored with drei `Html`. Fades out near the horizon so no marker floats past the globe's edge. Hover is checked on pointer over and move, so a marker that turns toward a resting pointer still hovers. A click (under 5 px of drag) on a marker that faces the camera calls `onSelect`. |
 | `frontend/components/globe/geo.ts` | `latLonToVector3(lat, lon, radius)`: a point on a three.js SphereGeometry that matches the equirectangular texture. |
 | `frontend/components/risk-badge.tsx` | `RiskBadge`: risk-colored dot plus "High risk" style label. |
-| `frontend/lib/format.ts` | `riskLabel`, `formatUtc` ("Sep 25, 10:50 UTC"), `refreshLabel` (last analysis, "Not analyzed yet", or "Static marker, fixed risk"), `formatElevation`, `formatLatLon` ("46.8523° N, 121.7603° W"). |
+| `frontend/lib/format.ts` | `riskLabel`, `formatUtc` ("Sep 25, 10:50 UTC"), `refreshLabel` (last analysis, "Not analyzed yet", or "Static marker, fixed risk"), `formatElevation`, `formatMiles` (km to "5.5 mi"), `formatLatLon` ("46.8523° N, 121.7603° W"). |
 | `frontend/public/globe/` | `earth-day.jpg` (4096×2048 color) and `earth-topology.png` (2048×1024 bump map). |
 | `frontend/next.config.ts` | Loads the repo root `.env` with `process.loadEnvFile` so the app and the API share one file. Variables already set win. |
 | `frontend/postcss.config.mjs` | Tailwind PostCSS plugin. |
 | `frontend/tsconfig.json` | Strict TypeScript. Path alias `@/*` → repo root of `frontend/`. |
-| `frontend/eslint.config.mjs` | `eslint-config-next`. |
+| `frontend/eslint.config.mjs` | `eslint-config-next`. Ignores the copied worker in `public/maplibre/`. |
+| `frontend/components/map/mountain-map.tsx` | `MountainMap`: loads the terrain map with `ssr: false`, showing the surface color meanwhile. |
+| `frontend/components/map/terrain-map.tsx` | `TerrainMap({ name, lon, lat, elevationM, trails })`: the MapLibre map. 3D terrain, navigation and scale controls, a summit label on the terrain, and the trails from `GET /mountains/{slug}`. Opens framed on the summit and the hero trail (or on the summit alone), pitched 55°. Shows "Loading terrain…" until the map loads, and a message when WebGL is off or the map fails. |
+| `frontend/components/map/map-style.ts` | The style: AWS Terrain Tiles (Terrarium) for terrain, an elevation tint (`color-relief`, gray valleys to white summit) and hillshade for the light relief, or Mapbox satellite when `NEXT_PUBLIC_MAPBOX_TOKEN` is set. Trail layers: other trails thin and dashed, the hero trail's segments cased and colored by `risk_level` (ink while unscored). Exports `CAMERA`, `MAP_COLORS`, `SOURCE`, `LAYER`, `TERRAIN_EXAGGERATION`, `mountainStyle`, `trailFeatures`, `openingBounds`, `isHero`. |
+| `frontend/scripts/copy-maplibre-worker.mjs` | `postinstall`: copies MapLibre's worker modules to `frontend/public/maplibre/` (gitignored), where the map loads them. |
 
 Routes: `/` (globe) and `/mountains/[slug]`.
+
+The map loads terrain tiles from `s3.amazonaws.com` in the browser, and Mapbox imagery from `api.mapbox.com` when a token is set.
 
 ## Backend (exists)
 
@@ -148,7 +154,7 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `frontend/components/map/` | 15–16, 18 | Mapbox terrain, tiles, trails, pins. Mounts in the map area of `/mountains/[slug]` |
+| `frontend/components/map/` | 16, 18 | Layer toggles, historical pins, the heat map, the hazard polygon |
 | `frontend/components/panel/` | 23, 25 | Side panel, agent rows, hazard detail, hiker card |
 
 `AgentEvent` shape, fixed in step 7 (`frontend/lib/types.ts`):
@@ -191,5 +197,5 @@ GET  /forecast?mountain_id&trail_id
 - Risk levels are `low`, `moderate`, `high`, `extreme`.
 - Bins: low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7.
 - Rainier bbox: west -121.93, south 46.76, east -121.54, north 46.96.
-- Tiles are Web Mercator XYZ. A tile that is offset from the ridges is a broken step 13 or 18, not a Mapbox setting to tweak later.
+- Tiles are Web Mercator XYZ. A tile that is offset from the ridges is a broken step 13 or 18, not a map setting to tweak later.
 - Agents return Pydantic-validated JSON. Tools return precomputed facts. They do not scan the raster and they do not invent trail geometry.

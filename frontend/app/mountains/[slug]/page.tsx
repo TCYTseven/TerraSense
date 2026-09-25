@@ -2,9 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import MountainMap from "@/components/map/mountain-map";
 import RiskBadge from "@/components/risk-badge";
 import { getMountain } from "@/lib/api";
-import { formatElevation, formatLatLon, refreshLabel } from "@/lib/format";
+import { formatElevation, formatLatLon, formatMiles, refreshLabel } from "@/lib/format";
+import type { MountainDetail } from "@/lib/types";
 
 // One API call per request, shared by the metadata and the page.
 const loadMountain = cache((slug: string) => getMountain(slug));
@@ -22,9 +24,17 @@ export async function generateMetadata({
   }
 }
 
+/** The sentence under the overall risk. The Risk Synthesizer's summary replaces it in step 23. */
+function riskSentence(mountain: MountainDetail): string {
+  if (!mountain.is_live) {
+    return "A fixed risk for this globe marker. TerraSense runs live analysis for Mount Rainier.";
+  }
+  return "Analyze now checks the next 72 hours of rain against this terrain and flags the trail miles at risk.";
+}
+
 /**
- * The mountain page: a map area (the Mapbox terrain view arrives in step 15) and the
- * ranger panel. Static mountains show their fixed risk and no Analyze now.
+ * The mountain page: the terrain map (about 70% of the width) and the ranger panel.
+ * Static mountains show their fixed risk and no Analyze now.
  */
 export default async function MountainPage({ params }: PageProps<"/mountains/[slug]">) {
   const { slug } = await params;
@@ -32,20 +42,24 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
   if (!mountain) {
     notFound();
   }
+  // The hero trail has segments: the model scores it mile by mile. The rest are context.
+  const heroTrails = mountain.trails.filter((trail) => trail.segments.length > 0);
+  const otherTrails = mountain.trails.filter((trail) => trail.segments.length === 0);
 
   return (
     <main className="flex min-h-dvh animate-fade-in flex-col motion-reduce:animate-none lg:h-dvh lg:flex-row">
       <section
         aria-label="Terrain map"
-        className="relative h-[42dvh] shrink-0 overflow-hidden border-b border-line bg-surface bg-grid lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
+        className="relative h-[52dvh] shrink-0 overflow-hidden border-b border-line bg-surface lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
       >
-        <div className="absolute inset-0 grid place-items-center">
-          <div className="text-center">
-            <span aria-hidden className="mx-auto mb-4 block size-3 rounded-full border border-muted" />
-            <p className="font-mono text-sm text-foreground">{formatLatLon(mountain.lat, mountain.lon)}</p>
-            <p className="mt-1 text-xs text-muted">Summit</p>
-          </div>
-        </div>
+        <MountainMap
+          key={mountain.slug}
+          name={mountain.name}
+          lon={mountain.lon}
+          lat={mountain.lat}
+          elevationM={mountain.elevation_m}
+          trails={mountain.trails}
+        />
       </section>
 
       <aside className="flex flex-col gap-6 bg-panel px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
@@ -75,12 +89,41 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
           </h2>
           <RiskBadge level={mountain.current_risk_level} className="mt-2 text-lg font-medium" />
           <p className="mt-1 font-mono text-xs text-muted">{refreshLabel(mountain)}</p>
-          {!mountain.is_live && (
-            <p className="mt-3 text-sm text-muted">
-              A fixed risk for this globe marker. TerraSense runs live analysis for Mount Rainier.
-            </p>
-          )}
+          <p className="mt-3 text-sm text-muted">{riskSentence(mountain)}</p>
         </section>
+
+        {mountain.trails.length > 0 && (
+          <section aria-labelledby="trails-heading">
+            <h2 id="trails-heading" className="text-xs text-muted">
+              Trails
+            </h2>
+            <ul className="mt-2 divide-y divide-line border-y border-line">
+              {heroTrails.map((trail) => (
+                <li key={trail.id} className="flex items-baseline justify-between gap-4 py-2.5">
+                  <span className="text-sm font-medium">{trail.name}</span>
+                  <span className="shrink-0 font-mono text-xs text-muted">
+                    {trail.length_km !== null && `${formatMiles(trail.length_km)} · `}
+                    {trail.segments.length} segments
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {otherTrails.length > 0 && (
+              <details className="group mt-2">
+                <summary className="cursor-pointer text-xs text-accent hover:underline">
+                  {otherTrails.length} more trails on the map
+                </summary>
+                <ul className="mt-2 columns-2 gap-4 text-xs text-muted">
+                  {otherTrails.map((trail) => (
+                    <li key={trail.id} className="break-inside-avoid py-0.5">
+                      {trail.name}
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </section>
+        )}
 
         {mountain.is_live && (
           <div className="mt-auto">

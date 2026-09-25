@@ -27,3 +27,6 @@ __pycache__/
 
 # Claude Code agent worktrees (isolated checkouts). Never commit them.
 .claude/worktrees/
+
+# MapLibre worker copies, written by frontend/scripts/copy-maplibre-worker.mjs on npm install
+frontend/public/maplibre/

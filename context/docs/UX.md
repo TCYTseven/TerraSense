@@ -43,7 +43,7 @@ The camera move and the route change are one gesture. The page does not cut.
 
 ### Mountain
 
-Mapbox satellite terrain. Default layer is the 72-hour probability heat map. Toggles: susceptibility, historical pins. Trails colored by segment. One hazard pin.
+3D terrain on a light shaded relief, or Mapbox satellite when a token is set. Default layer is the 72-hour probability heat map. Toggles: susceptibility, historical pins. Trails colored by segment. One hazard pin.
 
 Panel contents, top to bottom: mountain name and elevation, overall risk and one sentence, rain totals, trail list, agent rows, **Analyze now**, **Hiker forecast**.
 

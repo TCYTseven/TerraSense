@@ -29,7 +29,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Resample every layer to one 30 m grid before building features.
 - Split train and test by space, using the region column. Never shuffle pixels across the box.
 - Publish the AUC you measure in `artifacts/metrics.json`. 0.85 is not a gate. Until landslide labels exist, `metrics.json` says `trained: false` and `auc: null`: never present the knowledge-driven index as a trained model.
-- Tiles are XYZ PNG in EPSG:3857 so they sit on Mapbox terrain.
+- Tiles are XYZ PNG in EPSG:3857 so they sit on the map's 3D terrain.
 - Model B weights are named constants with a comment on each.
 
 ## Environment
