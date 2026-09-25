@@ -1,8 +1,8 @@
 "use client";
 
 import { OrbitControls, useTexture } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
+import { type ReactNode, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BackSide,
@@ -12,6 +12,8 @@ import {
   SRGBColorSpace,
 } from "three";
 import { THEME } from "@/lib/theme";
+import type { Mountain } from "@/lib/types";
+import MountainMarker from "./mountain-marker";
 
 /** Radians per second. One full turn takes about 100 seconds. */
 const IDLE_SPIN_RADIANS_PER_SECOND = 0.06;
@@ -40,10 +42,15 @@ const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
   }
 `;
 
+/** Stops a pointer event here, so markers on the far side of the globe cannot be hovered. */
+function blockPointer(event: ThreeEvent<PointerEvent>) {
+  event.stopPropagation();
+}
+
 /**
- * Satellite Earth that rotates on its axis.
+ * Satellite Earth that rotates on its axis. Children ride on the surface and turn with it.
  */
-function Earth() {
+function Earth({ spinning, children }: { spinning: boolean; children?: ReactNode }) {
   const earthRef = useRef<Mesh>(null);
   const [colorMap, bumpMap] = useTexture(
     ["/globe/earth-day.jpg", "/globe/earth-topology.png"],
@@ -55,7 +62,7 @@ function Earth() {
   );
 
   useFrame((_, delta) => {
-    if (!earthRef.current) {
+    if (!earthRef.current || !spinning) {
       return;
     }
 
@@ -65,7 +72,7 @@ function Earth() {
 
   return (
     <group rotation={[0, 0, AXIAL_TILT_RADIANS]}>
-      <mesh ref={earthRef}>
+      <mesh ref={earthRef} onPointerOver={blockPointer} onPointerMove={blockPointer}>
         <sphereGeometry args={[EARTH_RADIUS, 96, 96]} />
         <meshStandardMaterial
           map={colorMap}
@@ -74,6 +81,7 @@ function Earth() {
           roughness={0.9}
           metalness={0.02}
         />
+        {children}
       </mesh>
     </group>
   );
@@ -114,12 +122,15 @@ function Atmosphere() {
 }
 
 /**
- * Full-viewport globe. Drag to orbit and scroll to zoom. The surface keeps turning.
+ * Full-viewport globe with one marker per mountain. Drag to orbit and scroll to zoom.
+ * The surface keeps turning, except while a marker is hovered.
  */
-export default function SpinningGlobe() {
+export default function SpinningGlobe({ mountains }: { mountains: Mountain[] }) {
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+
   return (
     <Canvas
-      camera={{ position: [0, 0.2, 2.85], fov: 40 }}
+      camera={{ position: [0, 0.25, 3.4], fov: 40 }}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
@@ -128,7 +139,17 @@ export default function SpinningGlobe() {
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
       <Suspense fallback={null}>
-        <Earth />
+        <Earth spinning={hoveredSlug === null}>
+          {mountains.map((mountain) => (
+            <MountainMarker
+              key={mountain.slug}
+              mountain={mountain}
+              radius={EARTH_RADIUS}
+              hovered={hoveredSlug === mountain.slug}
+              onHoverChange={setHoveredSlug}
+            />
+          ))}
+        </Earth>
       </Suspense>
       <Atmosphere />
       <OrbitControls
