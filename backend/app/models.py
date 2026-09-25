@@ -61,6 +61,18 @@ class Hazard(BaseModel):
     created_at: datetime
 
 
+class LayerTiles(BaseModel):
+    """A raster map layer served as XYZ tiles."""
+
+    layer: str
+    tiles: str  # URL template with {z}/{x}/{y}
+    bounds: list[float]  # [west, south, east, north]
+    minzoom: int
+    maxzoom: int
+    method: str | None  # how the values were made, e.g. "knowledge-driven index" or "lightgbm"
+    updated_at: datetime
+
+
 class MountainDetail(Mountain):
     trails: list[Trail]
     active_hazard: Hazard | None

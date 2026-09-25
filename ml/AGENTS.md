@@ -42,6 +42,7 @@ pip install -r ml/requirements.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
+python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
 ```
 
 Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

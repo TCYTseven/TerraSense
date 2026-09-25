@@ -10,6 +10,9 @@ data/processed/
 # Large model outputs. metrics.json and small artifacts stay in git.
 ml/artifacts/*.tif
 
+# Rendered map tiles. Recreate with ml/scripts/render_tiles.py.
+backend/tiles/
+
 # Python
 .venv/
 venv/

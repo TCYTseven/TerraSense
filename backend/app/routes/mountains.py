@@ -3,15 +3,19 @@
 from typing import Annotated
 
 import psycopg
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg.rows import DictRow
 
 from app.db import get_conn
-from app.models import Hazard, Mountain, MountainDetail, Trail, TrailSegment
+from app.ml.tiles import read_metadata
+from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
 
 router = APIRouter(prefix="/mountains", tags=["mountains"])
 
 Conn = Annotated[psycopg.Connection[DictRow], Depends(get_conn)]
+
+# Raster layers the map can request. Step 18 adds "probability".
+LAYERS = ("susceptibility",)
 
 MOUNTAIN_COLUMNS = """
     id, name, slug, lat, lon, elevation_m, region,
@@ -69,4 +73,31 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
         **mountain,
         trails=[Trail(**row, segments=segments_by_trail[row["id"]]) for row in trail_rows],
         active_hazard=Hazard(**hazard) if hazard else None,
+    )
+
+
+@router.get("/{slug}/layers/{layer}")
+def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles:
+    """The tile URL template for one raster layer. Only live mountains have layers."""
+    mountain = conn.execute("SELECT is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    if mountain is None:
+        raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
+    if not mountain["is_live"]:
+        raise HTTPException(status_code=404, detail=f"{slug!r} is a static marker and has no map layers")
+    if layer not in LAYERS:
+        raise HTTPException(status_code=404, detail=f"Unknown layer {layer!r}. Layers: {', '.join(LAYERS)}")
+    metadata = read_metadata(layer)
+    if metadata is None:
+        raise HTTPException(status_code=404, detail=f"Layer {layer!r} is not rendered yet. Run ml/scripts/render_tiles.py")
+
+    # The version query makes browsers drop cached tiles after a re-render.
+    base = str(request.base_url).rstrip("/")
+    return LayerTiles(
+        layer=layer,
+        tiles=f"{base}/tiles/{layer}/{{z}}/{{x}}/{{y}}.png?v={metadata['version']}",
+        bounds=metadata["bounds"],
+        minzoom=metadata["minzoom"],
+        maxzoom=metadata["maxzoom"],
+        method=metadata.get("method"),
+        updated_at=metadata["created_at"],
     )

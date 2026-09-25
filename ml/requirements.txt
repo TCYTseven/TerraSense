@@ -11,3 +11,6 @@ pysheds>=0.5
 # Step 12, train_susceptibility.py:
 lightgbm>=4.5
 scikit-learn>=1.5
+# Step 13, render_tiles.py (imports the tiler in backend/app/ml/tiles.py):
+mercantile>=1.2
+pillow>=11

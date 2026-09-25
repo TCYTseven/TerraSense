@@ -1,4 +1,4 @@
-import type { Mountain, MountainDetail } from "./types";
+import type { LayerTiles, Mountain, MountainDetail } from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -34,6 +34,21 @@ export function getMountains(init?: RequestInit): Promise<Mountain[]> {
 export async function getMountain(slug: string, init?: RequestInit): Promise<MountainDetail | null> {
   try {
     return await getJson<MountainDetail>(`/mountains/${encodeURIComponent(slug)}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The tile template for a map layer. Resolves to null when the layer is not available. */
+export async function getLayer(slug: string, layer: string, init?: RequestInit): Promise<LayerTiles | null> {
+  try {
+    return await getJson<LayerTiles>(
+      `/mountains/${encodeURIComponent(slug)}/layers/${encodeURIComponent(layer)}`,
+      init,
+    );
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;

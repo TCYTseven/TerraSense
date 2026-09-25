@@ -69,6 +69,20 @@ export interface Hazard {
   created_at: string;
 }
 
+/** GET /mountains/{slug}/layers/{layer}: a raster layer served as XYZ tiles. */
+export interface LayerTiles {
+  layer: string;
+  /** URL template with {z}/{x}/{y}. */
+  tiles: string;
+  /** [west, south, east, north]. */
+  bounds: [number, number, number, number];
+  minzoom: number;
+  maxzoom: number;
+  /** How the values were made, such as "knowledge-driven index" or "lightgbm". */
+  method: string | null;
+  updated_at: string;
+}
+
 /** GET /mountains/{slug}. */
 export interface MountainDetail extends Mountain {
   trails: Trail[];

@@ -7,10 +7,12 @@ import psycopg
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from psycopg_pool import PoolTimeout
 
 from app.config import cors_origins
 from app.db import close_pool
+from app.ml.tiles import TILES_DIR
 from app.routes import mountains
 
 # The Next.js dev server, plus any deployed origins from CORS_ORIGINS.
@@ -34,6 +36,8 @@ app.add_middleware(
 )
 
 app.include_router(mountains.router)
+# Map tiles rendered by ml/scripts/render_tiles.py. The folder may not exist until then.
+app.mount("/tiles", StaticFiles(directory=TILES_DIR, check_dir=False), name="tiles")
 
 
 @app.exception_handler(PoolTimeout)

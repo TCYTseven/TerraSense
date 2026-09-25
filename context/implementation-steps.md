@@ -22,7 +22,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
 - [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
 - [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
-- [ ] 13. Render susceptibility map tiles
+- [x] 13. Render susceptibility map tiles
 - [ ] 14. Import trails and historical landslide pins
 - [ ] 15. Open the Mapbox mountain view
 - [ ] 16. Toggle susceptibility and historical pins

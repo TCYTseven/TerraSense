@@ -10,3 +10,9 @@ psycopg-pool~=3.3.3
 
 # Loads the repo root .env.
 python-dotenv~=1.2
+
+# Rasters and map tiles (step 13 on). numpy stays below 2.4 to match ml/ (pysheds).
+numpy>=2,<2.4
+rasterio~=1.4
+pillow>=11
+mercantile~=1.2

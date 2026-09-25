@@ -20,7 +20,7 @@ context/docs/      Team brief, handoff, UX, this file.
 AGENTS.md          Agent guide: folder owners, team rules, shared facts.
 README.md          Pitch, the three commands, folder owners.
 .env.example       Every environment variable, with a comment. CORS_ORIGINS is optional.
-.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, virtualenvs.
+.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, backend/tiles/, virtualenvs.
 ```
 
 ## Agent harness
@@ -57,8 +57,8 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. `animate-fade-in` and the `bg-grid` utility. Dark base styles. |
 | `frontend/app/icon.svg` | Favicon. |
 | `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS` (keyed by `RiskLevel`): the same palette for WebGL code. Mirrors `globals.css`. |
-| `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
-| `frontend/lib/api.ts` | `API_URL` from `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). `getMountains(init?)`, `getMountain(slug, init?)` (null on 404), `ApiError` with `status`. Requests use `cache: "no-store"`. |
+| `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`, `LayerTiles`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
+| `frontend/lib/api.ts` | `API_URL` from `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). `getMountains(init?)`, `getMountain(slug, init?)` (null on 404), `getLayer(slug, layer, init?)` (null on 404), `ApiError` with `status`. Requests use `cache: "no-store"`. |
 | `frontend/lib/agent-events.ts` | `isAgentEvent(value)` and `parseAgentEvents(value)`: runtime checks for JSON that claims to be `AgentEvent`s. |
 | `frontend/lib/fixtures/run.json` | One finished five-agent run, 10 events in stream order. Illustrative values: Skyline Trail miles 1.2 to 2.1, bypass Golden Gate Trail, severity high, confidence 0.81. |
 | `frontend/lib/fixtures/index.ts` | `FIXTURE_RUN: AgentEvent[]`, parsed from `run.json`. Throws on import if the file drifts. |
@@ -85,16 +85,17 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 
 | File | What it is |
 |---|---|
-| `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`, `python-dotenv`. Compatible-release pins. |
+| `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`, `python-dotenv`, and `numpy`, `rasterio`, `pillow`, `mercantile` for tiles. |
 | `backend/app/__init__.py` | Package marker. |
-| `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. Plus any origins in `CORS_ORIGINS`. Mounts the mountains router. A pool timeout or connection error returns 503 `{"detail": "Database unavailable"}`. `GET /health` returns `{"status": "ok"}` without touching the database. |
+| `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. Plus any origins in `CORS_ORIGINS`. Mounts the mountains router and serves `backend/tiles/` at `/tiles`. A pool timeout or connection error returns 503 `{"detail": "Database unavailable"}`. `GET /health` returns `{"status": "ok"}` without touching the database. |
 | `backend/app/config.py` | Loads the repo root `.env`. `database_url()` returns `DATABASE_URL` or raises with the fix. `cors_origins()` reads extra origins from `CORS_ORIGINS`. `REPO_ROOT`. |
 | `backend/app/db.py` | `connect()` opens one psycopg connection for scripts. `get_pool()` makes the API's pool on first use, under a lock (dict rows, connections checked before use so hosted Postgres idling is safe, `POOL_TIMEOUT_S` = 5 s wait). `get_conn()` is the FastAPI dependency. `close_pool()` runs at shutdown. |
 | `backend/app/schema.sql` | Six tables: `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, `alerts`. UUID keys, geometry as `jsonb`, CHECK constraints for risk levels, run status, hazard type, and alert action. Every statement is `IF NOT EXISTS`. |
 | `backend/app/schema.py` | `python -m app.schema [--reset]`. `apply_schema(reset)` runs `schema.sql` and returns the tables present. `--reset` drops the six tables first. |
 | `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, removes every trail the file no longer lists (for all mountains), and rejects a name repeated for one mountain. |
-| `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
-| `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, and `active_hazard` (latest by `created_at`, or null). 404 for an unknown slug. Steps 13 and 18 add the layer endpoint here. |
+| `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `LayerTiles`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
+| `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, and `active_hazard` (latest by `created_at`, or null). `GET /mountains/{slug}/layers/{layer}`: `LayerTiles` for a rendered layer in `LAYERS` (susceptibility); 404 for static mountains, unknown layers, or layers not rendered yet. 404 for an unknown slug. |
+| `backend/app/ml/tiles.py` | Shared tiler, free of API imports so `ml/scripts/` can use it. `warp_tile` resamples a raster onto one 256 px EPSG:3857 tile. `palette_image` writes 8-bit PNGs on the risk ramp (64 levels, transparent at low values and nodata). `render_xyz(raster, layer)` renders every tile over the bbox into `backend/tiles/<layer>/` via a temp folder swap and writes `metadata.json` with a `version`. `read_metadata(layer)`. |
 
 ### API responses
 
@@ -107,6 +108,8 @@ Trail          { id, name, geom (LineString), length_km | null, elevation_gain_m
 TrailSegment   { id, seq, geom (LineString), start_mile, end_mile, risk_level | null, probability | null }
 Hazard         { id, run_id | null, type (landslide | debris_flow), severity, probability, confidence | null,
                  geom (Polygon), drivers: string[], what | null, why | null, how_to_avoid | null, needs_review, created_at }
+LayerTiles     { layer, tiles ("{API}/tiles/<layer>/{z}/{x}/{y}.png?v=<version>"), bounds [w, s, e, n], minzoom, maxzoom,
+                 method | null, updated_at }
 ```
 
 ## Data and ML (exists)
@@ -127,6 +130,8 @@ Hazard         { id, run_id | null, type (landslide | debris_flow), severity, pr
 | `ml/artifacts/feature_importance.json` | Gain importance (LightGBM) or the index weights. |
 | `ml/artifacts/susceptibility.tif` | Gitignored. 0-1 susceptibility on the 30 m UTM grid. Input to tiles (step 13) and Model B (step 17). |
 | `ml/artifacts/susceptibility_lgbm.txt` | The trained model, written only when labels exist. |
+| `ml/scripts/render_tiles.py` | Steps 13 and 18. `python ml/scripts/render_tiles.py [--layer NAME] [--raster PATH] [--zooms 10-14]`. Thin CLI over `backend/app/ml/tiles.py`. Susceptibility: 383 tiles, z10-z14, about 3.5 s. |
+| `backend/tiles/` | Gitignored. Rendered layers, one folder each, with `metadata.json`. |
 | `ml/scripts/download_sources.py` | Step 10. `python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force] [--glc-csv URL_OR_PATH]`. Reads the bbox window of the Copernicus DEM and ESA WorldCover COGs over HTTP ranges, writes `data/raw/`, and prints a check that each file covers the bbox. Filters the NASA Global Landslide Catalog CSV to the bbox into `data/seed/landslides.geojson`. A failed stage does not stop the others. |
 
 ## Planned layout
@@ -153,7 +158,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
 | `backend/app/agents/` | 20–21 | Schemas, tools, five agents, orchestrator |
 | `backend/app/alerts/discord.py` | 24 | Webhook post |
-| `backend/tiles/` | 13, 18 | XYZ PNGs for susceptibility and probability |
 
 API the frontend should call, from the spec:
 
@@ -161,7 +165,7 @@ API the frontend should call, from the spec:
 GET  /health
 GET  /mountains
 GET  /mountains/{slug}
-GET  /mountains/{slug}/layers/{layer}
+GET  /mountains/{slug}/layers/{layer}   (step 13: susceptibility)
 POST /mountains/{slug}/analyze          → { run_id }
 GET  /runs/{run_id}
 WS   /runs/{run_id}/stream
@@ -175,7 +179,6 @@ GET  /forecast?mountain_id&trail_id
 | Path | Step | Role |
 |---|---|---|
 | `data/seed/landslides.geojson` | 10, 14 | Pin source. Pending: `download_sources.py --only landslides` needs data.nasa.gov |
-| `ml/scripts/render_tiles.py` | 13, 18 | XYZ tiles in EPSG:3857 |
 
 ## Invariants
 
