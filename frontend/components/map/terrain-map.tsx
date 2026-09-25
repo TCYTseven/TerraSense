@@ -37,10 +37,10 @@ export interface TerrainMapProps {
 function summitLabel(name: string): HTMLElement {
   const label = document.createElement("div");
   label.className =
-    "pointer-events-none flex items-center gap-1.5 rounded-full bg-panel px-2.5 py-1 text-xs font-medium text-foreground shadow-sm ring-1 ring-line";
+    "pointer-events-none flex items-center gap-1.5 rounded-full bg-popover px-2.5 py-1 text-xs font-medium text-popover-foreground ring-1 ring-border";
   const peak = document.createElement("span");
   peak.setAttribute("aria-hidden", "true");
-  peak.className = "text-[0.6rem] text-muted";
+  peak.className = "text-[0.6rem] text-muted-foreground";
   peak.textContent = "▲";
   const text = document.createElement("span");
   text.textContent = name;
@@ -116,7 +116,7 @@ export default function TerrainMap({ name, lon, lat, elevationM, trails }: Terra
       <div ref={container} className="h-full w-full" />
       {status !== "ready" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
-          <p className="rounded-md bg-panel px-3 py-2 text-sm text-muted shadow-sm">{STATUS_TEXT[status]}</p>
+          <p className="rounded-lg border border-border bg-popover px-3 py-2 text-sm text-muted-foreground">{STATUS_TEXT[status]}</p>
         </div>
       )}
     </div>

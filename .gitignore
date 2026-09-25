@@ -30,3 +30,10 @@ __pycache__/
 
 # MapLibre worker copies, written by frontend/scripts/copy-maplibre-worker.mjs on npm install
 frontend/public/maplibre/
+
+# design-sync (Claude Design): staged converter, build output, machine state
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

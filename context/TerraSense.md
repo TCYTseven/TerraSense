@@ -387,11 +387,11 @@ Dark and operational, like a small dispatch screen. The hiker card is the only s
 
 **Color**
 
-- Background `#0A0E14` to `#0F1419`.
-- Panels `#151B23`, 1 px border at about 10% white.
-- Interactive accent `#22D3EE`.
+- Background `#0D0C0A` to `#13120F`.
+- Panels `#1A1814`, 1 px border at about 10% of the text color.
+- Interactive accent `#7FDDE6`.
 - Risk only: green `#22C55E`, amber `#F59E0B`, orange `#F97316`, red `#EF4444`.
-- Text `#E6EDF3`, muted `#8B949E`.
+- Text `#ECE6DC`, muted `#9C9387`.
 
 **Type**
 

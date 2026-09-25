@@ -54,9 +54,9 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/app/mountains/[slug]/error.tsx` | API failure: message, **Try again** (`retry()` refetches), link back to the globe. |
 | `frontend/app/mountains/[slug]/not-found.tsx` | Unknown slug. |
 | `frontend/app/not-found.tsx` | Site-wide dark 404. |
-| `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. `animate-fade-in` and the `bg-grid` utility. Dark base styles. |
-| `frontend/app/icon.svg` | Favicon. |
-| `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS` (keyed by `RiskLevel`): the same palette for WebGL code. Mirrors `globals.css`. |
+| `frontend/app/globals.css` | Basalt and glacier tokens with the shadcn role names from the design addendum (`--background`, `--muted`, `--card`, `--popover`, `--secondary`, `--foreground`, `--muted-foreground`, `--primary`, `--ring`, `--border`, `--input`, `--accent`, `--destructive`), mapped to Tailwind colors, plus `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. `animate-fade-in` and the `bg-grid` utility. Dark base styles. |
+| `frontend/app/icon.tsx` | Favicon, generated with `ImageResponse` from `THEME` colors. |
+| `frontend/lib/theme.ts` | `THEME` (neutral and accent hex values by role) and `RISK_COLORS` (keyed by `RiskLevel`) for WebGL, Mapbox, and the app icon. Mirrors `globals.css`. |
 | `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `HistoricalEvent`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`, `LayerTiles`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
 | `frontend/lib/api.ts` | `API_URL` from `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). `getMountains(init?)`, `getMountain(slug, init?)` (null on 404), `getLayer(slug, layer, init?)` (null on 404), `ApiError` with `status`. Requests use `cache: "no-store"`. |
 | `frontend/lib/agent-events.ts` | `isAgentEvent(value)` and `parseAgentEvents(value)`: runtime checks for JSON that claims to be `AgentEvent`s. |

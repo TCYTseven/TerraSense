@@ -1,16 +1,19 @@
 import type { RiskLevel } from "./types";
 
 /**
- * The dark dispatch palette for code that cannot use CSS classes, such as the
- * WebGL globe. Mirrors the tokens in app/globals.css. Change both together.
+ * The neutral and accent palette (basalt and glacier) for code that cannot read
+ * CSS variables, such as the WebGL globe, Mapbox paint, and the generated app icon.
+ * Values come from the Design Language section of context/TerraSense.md. Keys follow
+ * the role names in context/design-addendum.md's Tokens table. Mirrors the tokens in
+ * app/globals.css. Change both together.
  */
 export const THEME = {
-  background: "#0A0E14",
-  surface: "#0F1419",
-  panel: "#151B23",
-  foreground: "#E6EDF3",
-  muted: "#8B949E",
-  accent: "#22D3EE",
+  background: "#0D0C0A",
+  muted: "#13120F",
+  card: "#1A1814",
+  foreground: "#ECE6DC",
+  mutedForeground: "#9C9387",
+  primary: "#7FDDE6",
 } as const;
 
 /** Risk colors. They mark risk and nothing else. */

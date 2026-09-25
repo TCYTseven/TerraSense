@@ -1,0 +1,133 @@
+/*
+ * TerraSense design tokens for Claude Design.
+ * Sources, in precedence order:
+ *   - Hex values: context/TerraSense.md, Design Language (the addendum defers color to it).
+ *   - Variable names, roles, radius, type, motion: context/design-addendum.md (Tokens, Type, Motion).
+ * build-pkg.mjs compiles this file with Tailwind v4. frontend/app/globals.css is NOT
+ * read here: it predates the addendum and uses different names. See NOTES.md.
+ */
+@import "tailwindcss" source(none);
+
+:root {
+  /* Design Language: background #0A0E14 to #0F1419. */
+  --background: #0a0e14; /* dark end: page, globe backdrop edge, map fog */
+  --muted: #0f1419; /* light end: inset fields, skeleton bars, globe backdrop center */
+
+  /* Design Language: panels #151B23. */
+  --card: #151b23;
+  --popover: #151b23;
+  --secondary: #151b23;
+
+  /* Design Language: text #E6EDF3, muted #8B949E. */
+  --foreground: #e6edf3;
+  --card-foreground: #e6edf3;
+  --popover-foreground: #e6edf3;
+  --secondary-foreground: #e6edf3;
+  --accent-foreground: #e6edf3;
+  --muted-foreground: #8b949e;
+
+  /* Design Language: interactive accent #22D3EE. Addendum: it is --primary, never --accent. */
+  --primary: #22d3ee;
+  --ring: #22d3ee;
+  --primary-foreground: #0a0e14;
+
+  /* Design Language: 1 px border at about 10% white. */
+  --border: rgb(255 255 255 / 0.1);
+  --input: rgb(255 255 255 / 0.1);
+
+  /* Addendum: shadcn's hover surface for list rows. White at 6%. Not the cyan. */
+  --accent: rgb(255 255 255 / 0.06);
+
+  /* Addendum: errors never borrow risk red. */
+  --destructive: #e6edf3;
+
+  /* Design Language: risk only. */
+  --risk-low: #22c55e;
+  --risk-moderate: #f59e0b;
+  --risk-high: #f97316;
+  --risk-extreme: #ef4444;
+
+  /* Addendum: controls 6 px. Floating surfaces 8 px. Side panel square. */
+  --radius: 6px;
+}
+
+@theme {
+  /* Only the palette above exists. Tailwind's default colors are removed, because color is information. */
+  --color-*: initial;
+
+  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Addendum, Motion: the work pulse. Running agent rows and skeleton bars only. */
+  --animate-work: work-pulse 1.2s ease-in-out infinite;
+
+  @keyframes work-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-secondary: var(--secondary);
+  --color-foreground: var(--foreground);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
+  --color-risk-low: var(--risk-low);
+  --color-risk-moderate: var(--risk-moderate);
+  --color-risk-high: var(--risk-high);
+  --color-risk-extreme: var(--risk-extreme);
+
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* Addendum, Motion: reduced motion stops the pulse. */
+  @media (prefers-reduced-motion: reduce) {
+    .animate-work {
+      animation: none;
+    }
+  }
+}

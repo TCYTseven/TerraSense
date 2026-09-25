@@ -115,7 +115,7 @@ function Atmosphere() {
     () =>
       new ShaderMaterial({
         uniforms: {
-          glowColor: { value: new Color("#9fd4ff") },
+          glowColor: { value: new Color(THEME.foreground) },
         },
         vertexShader: ATMOSPHERE_VERTEX_SHADER,
         fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,

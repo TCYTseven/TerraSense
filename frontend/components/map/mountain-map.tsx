@@ -6,7 +6,7 @@ import type { TerrainMapProps } from "./terrain-map";
 // MapLibre needs WebGL and the DOM, so the map renders in the browser only.
 const TerrainMap = dynamic(() => import("./terrain-map"), {
   ssr: false,
-  loading: () => <div className="absolute inset-0 bg-surface" />,
+  loading: () => <div className="absolute inset-0 bg-muted" />,
 });
 
 /** The map area of /mountains/[slug]. */

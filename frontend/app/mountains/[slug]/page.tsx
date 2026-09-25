@@ -50,7 +50,7 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
     <main className="flex min-h-dvh animate-fade-in flex-col motion-reduce:animate-none lg:h-dvh lg:flex-row">
       <section
         aria-label="Terrain map"
-        className="relative h-[52dvh] shrink-0 overflow-hidden border-b border-line bg-surface lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
+        className="relative h-[52dvh] shrink-0 overflow-hidden border-b border-border bg-muted lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
       >
         <MountainMap
           key={mountain.slug}
@@ -62,46 +62,46 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
         />
       </section>
 
-      <aside className="flex flex-col gap-6 bg-panel px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
-        <Link href="/" className="self-start text-sm text-accent hover:underline">
+      <aside className="flex flex-col gap-6 bg-card px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
+        <Link href="/" className="self-start text-sm text-primary underline decoration-1 underline-offset-3">
           ← Globe
         </Link>
 
         <header>
           <h1 className="text-2xl font-semibold tracking-tight">{mountain.name}</h1>
-          <p className="mt-1 text-sm text-muted">{mountain.region}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{mountain.region}</p>
         </header>
 
-        <dl className="grid grid-cols-2 gap-4 border-y border-line py-4">
+        <dl className="grid grid-cols-2 gap-4 border-y border-border py-4">
           <div>
-            <dt className="text-xs text-muted">Elevation</dt>
+            <dt className="text-xs text-muted-foreground">Elevation</dt>
             <dd className="mt-1 font-mono text-sm">{formatElevation(mountain.elevation_m)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted">Summit</dt>
+            <dt className="text-xs text-muted-foreground">Summit</dt>
             <dd className="mt-1 font-mono text-sm">{formatLatLon(mountain.lat, mountain.lon)}</dd>
           </div>
         </dl>
 
         <section aria-labelledby="risk-heading">
-          <h2 id="risk-heading" className="text-xs text-muted">
+          <h2 id="risk-heading" className="text-xs text-muted-foreground">
             Overall risk
           </h2>
           <RiskBadge level={mountain.current_risk_level} className="mt-2 text-lg font-medium" />
-          <p className="mt-1 font-mono text-xs text-muted">{refreshLabel(mountain)}</p>
-          <p className="mt-3 text-sm text-muted">{riskSentence(mountain)}</p>
+          <p className="mt-1 font-mono text-xs text-muted-foreground">{refreshLabel(mountain)}</p>
+          <p className="mt-3 text-sm text-muted-foreground">{riskSentence(mountain)}</p>
         </section>
 
         {mountain.trails.length > 0 && (
           <section aria-labelledby="trails-heading">
-            <h2 id="trails-heading" className="text-xs text-muted">
+            <h2 id="trails-heading" className="text-xs text-muted-foreground">
               Trails
             </h2>
-            <ul className="mt-2 divide-y divide-line border-y border-line">
+            <ul className="mt-2 divide-y divide-border border-y border-border">
               {heroTrails.map((trail) => (
                 <li key={trail.id} className="flex items-baseline justify-between gap-4 py-2.5">
                   <span className="text-sm font-medium">{trail.name}</span>
-                  <span className="shrink-0 font-mono text-xs text-muted">
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
                     {trail.length_km !== null && `${formatMiles(trail.length_km)} · `}
                     {trail.segments.length} segments
                   </span>
@@ -110,10 +110,10 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
             </ul>
             {otherTrails.length > 0 && (
               <details className="group mt-2">
-                <summary className="cursor-pointer text-xs text-accent hover:underline">
+                <summary className="cursor-pointer text-xs text-primary underline decoration-1 underline-offset-3">
                   {otherTrails.length} more trails on the map
                 </summary>
-                <ul className="mt-2 columns-2 gap-4 text-xs text-muted">
+                <ul className="mt-2 columns-2 gap-4 text-xs text-muted-foreground">
                   {otherTrails.map((trail) => (
                     <li key={trail.id} className="break-inside-avoid py-0.5">
                       {trail.name}
@@ -130,11 +130,11 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
             <button
               type="button"
               disabled
-              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               Analyze now
             </button>
-            <p className="mt-2 text-xs text-muted">
+            <p className="mt-2 text-xs text-muted-foreground">
               Starts the five-agent analysis once the pipeline is connected.
             </p>
           </div>
