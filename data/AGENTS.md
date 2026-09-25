@@ -10,7 +10,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 |---|---|---|
 | `seed/` | Yes | Small JSON and GeoJSON the API loads, plus `sources.md` |
 | `raw/` | No | Downloads such as the DEM and land cover. Recreate them with `ml/scripts/download_sources.py` |
-| `processed/` | No | Derived rasters and the feature table |
+| `processed/` | No | Derived rasters and the feature table: `features.tif` (7-band stack on the 30 m UTM grid) and `features.parquet` (labeled sample). Rebuild with `ml/scripts/build_features.py` |
 
 ## Seed files
 

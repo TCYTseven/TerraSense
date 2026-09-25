@@ -40,6 +40,7 @@ Run from the repo root:
 python3.11 -m venv ml/.venv && source ml/.venv/bin/activate
 pip install -r ml/requirements.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
+python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 ```
 
 Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

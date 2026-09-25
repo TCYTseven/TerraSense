@@ -121,7 +121,9 @@ Hazard         { id, run_id | null, type (landslide | debris_flow), severity, pr
 | `data/seed/sources.md` | URL, access date, licence, grid, and checks for each step 10 file. The landslide entry is pending, with the command that finishes it. |
 | `data/raw/rainier_dem_cop30.tif` | Gitignored. Copernicus DEM GLO-30 clipped to the bbox, EPSG:4326, 1405 x 721 px. Rebuild with the step 10 script. |
 | `data/raw/rainier_landcover_worldcover2021.tif` | Gitignored. ESA WorldCover 2021 class codes clipped to the bbox, EPSG:4326, 4680 x 2400 px. |
-| `ml/requirements.txt` | `rasterio`, `numpy`, `requests` for the offline scripts. |
+| `ml/requirements.txt` | `rasterio`, `numpy` (below 2.4 for pysheds), `requests`, `scipy`, `pandas`, `pyarrow`, `pysheds` for the offline scripts. |
+| `ml/scripts/build_features.py` | Step 11. `python ml/scripts/build_features.py [--landslides PATH]`. Builds a 30 m grid in UTM zone 10N (1004 x 757 cells) and writes `data/processed/features.tif` with seven bands: elevation, Horn slope, aspect (compass bearing, NaN on flats), Zevenbergen-Thorne curvature (negative = concave), distance to drainage (D8 channels at 0.2 km2, via pysheds), WorldCover land cover (mode resampled), and topographic wetness index. When landslide points exist it writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives 1:3 from ground over 500 m away, `label`, `region` (7.5 km blocks), `row`, `col`. |
+| `data/processed/features.tif` | Gitignored. The step 11 feature stack. |
 | `ml/scripts/download_sources.py` | Step 10. `python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force] [--glc-csv URL_OR_PATH]`. Reads the bbox window of the Copernicus DEM and ESA WorldCover COGs over HTTP ranges, writes `data/raw/`, and prints a check that each file covers the bbox. Filters the NASA Global Landslide Catalog CSV to the bbox into `data/seed/landslides.geojson`. A failed stage does not stop the others. |
 
 ## Planned layout
@@ -170,8 +172,6 @@ GET  /forecast?mountain_id&trail_id
 | Path | Step | Role |
 |---|---|---|
 | `data/seed/landslides.geojson` | 10, 14 | Pin source. Pending: `download_sources.py --only landslides` needs data.nasa.gov |
-| `data/processed/` | 11 | Feature table and derived rasters. Gitignored |
-| `ml/scripts/build_features.py` | 11 | Slope, aspect, curvature, elevation, distance to drainage, land cover, wetness |
 | `ml/scripts/train_susceptibility.py` | 12 | LightGBM, spatial holdout, `ml/artifacts/metrics.json` |
 | `ml/scripts/render_tiles.py` | 13, 18 | XYZ tiles in EPSG:3857 |
 
