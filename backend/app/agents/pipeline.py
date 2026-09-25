@@ -428,7 +428,7 @@ class Pipeline:
             },
             "note": out.note,
         }
-        run.trace.checks.append("The miles and the bypass come from code (steps 18 and 19); the model only explains them.")
+        run.trace.checks.append("The flagged miles and the bypass come from the map and the trail network, not the model: it only explains them.")
         if flagged is None:
             summary = f"No mile of the {trail} reaches high."
         elif bypass is None:

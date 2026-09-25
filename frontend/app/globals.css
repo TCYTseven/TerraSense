@@ -74,6 +74,19 @@
   /* Pages fade in after the globe's fly-to fades out. */
   --animate-fade-in: fade-in 320ms ease-out both;
 
+  /* The work pulse: running agent rows and skeleton bars only (design addendum, Motion). */
+  --animate-work: work-pulse 1.2s ease-in-out infinite;
+
+  @keyframes work-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
   @keyframes fade-in {
     from {
       opacity: 0;

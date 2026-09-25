@@ -32,7 +32,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
 - [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet)
 - [x] 22. Expose analyze, run status, and the live stream
-- [ ] 23. Show the agent stream and the hazard panel
+- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel)
 - [ ] 24. Post the ranger alert to Discord
 - [ ] 25. Show the hiker card and rehearse the demo
 

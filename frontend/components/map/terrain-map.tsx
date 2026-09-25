@@ -5,6 +5,7 @@ import {
   type GeoJSONSource,
   type MapLayerMouseEvent,
   MapLibreMap,
+  type MapMouseEvent,
   type MapSourceDataEvent,
   Marker,
   NavigationControl,
@@ -14,8 +15,9 @@ import {
   setWorkerUrl,
 } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
-import { formatDate, humanize } from "@/lib/format";
-import type { Hazard, HistoricalEvent, LayerTiles, Trail } from "@/lib/types";
+import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
+import { RISK_COLORS, THEME } from "@/lib/theme";
+import type { Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
   CAMERA,
@@ -58,8 +60,13 @@ export interface TerrainMapProps {
   probability: LayerTiles | null;
   /** The susceptibility tiles, or null when the layer is not rendered. */
   susceptibility: LayerTiles | null;
-  /** The latest hazard, outlined on the map. */
+  /** The latest hazard, outlined on the map, with its pin. */
   hazard: Hazard | null;
+  /** The pin is selected: the panel shows the hazard. */
+  hazardSelected: boolean;
+  onHazardClick: () => void;
+  /** A click on the map that hits no pin. */
+  onMapClick: () => void;
   /** Past landslides for the pins. Empty until the catalog is downloaded. */
   historicalEvents: HistoricalEvent[];
 }
@@ -190,6 +197,82 @@ function fadeIn(map: MapLibreMap, layer: string, source: string): () => void {
   };
 }
 
+/** A point inside the zone for the pin: the centroid, or the grid point inside nearest to it. */
+function pinPoint(ring: Position[]): Position {
+  let area = 0;
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < ring.length - 1; i += 1) {
+    const [x0, y0] = ring[i];
+    const [x1, y1] = ring[i + 1];
+    const cross = x0 * y1 - x1 * y0;
+    area += cross;
+    x += (x0 + x1) * cross;
+    y += (y0 + y1) * cross;
+  }
+  const centroid: Position = area ? [x / (3 * area), y / (3 * area)] : ring[0];
+  if (inside(centroid, ring)) {
+    return centroid;
+  }
+  const xs = ring.map((p) => p[0]);
+  const ys = ring.map((p) => p[1]);
+  const [west, east, south, north] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  let best: Position = ring[0];
+  let bestDistance = Infinity;
+  for (let i = 1; i < 24; i += 1) {
+    for (let j = 1; j < 24; j += 1) {
+      const candidate: Position = [west + ((east - west) * i) / 24, south + ((north - south) * j) / 24];
+      const distance = (candidate[0] - centroid[0]) ** 2 + (candidate[1] - centroid[1]) ** 2;
+      if (distance < bestDistance && inside(candidate, ring)) {
+        best = candidate;
+        bestDistance = distance;
+      }
+    }
+  }
+  return best;
+}
+
+/** Ray casting: is a point inside a polygon ring? */
+function inside([px, py]: Position, ring: Position[]): boolean {
+  let result = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const [xi, yi] = ring[i];
+    const [xj, yj] = ring[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+      result = !result;
+    }
+  }
+  return result;
+}
+
+/**
+ * The hazard pin (design addendum, Trails, bypass, and pins): a 28 px circle in its level color
+ * with a 2 px dark ring and a warning triangle. Selected, an accent ring sits outside the dark
+ * ring, with a thin dark edge so it reads over snow. A button, so the keyboard reaches it.
+ */
+function stylePin(button: HTMLButtonElement, hazard: Hazard, selected: boolean) {
+  button.style.background = RISK_COLORS[hazard.severity];
+  button.style.boxShadow = selected
+    ? `0 0 0 2px ${THEME.background}, 0 0 0 4px ${THEME.primary}, 0 0 0 5px ${THEME.background}`
+    : `0 0 0 2px ${THEME.background}`;
+  button.setAttribute("aria-pressed", String(selected));
+  button.setAttribute(
+    "aria-label",
+    `${hazardLabel(hazard.type)} hazard, ${riskLabel(hazard.severity)}. ${selected ? "Hide" : "Show"} its details.`,
+  );
+}
+
+function pinElement(): HTMLButtonElement {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "grid size-7 cursor-pointer place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-4";
+  button.innerHTML =
+    `<svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="${THEME.background}" ` +
+    'stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/>' +
+    '<path d="M12 9v4M12 17h.01"/></svg>';
+  return button;
+}
+
 function hasWebGL(): boolean {
   try {
     return Boolean(document.createElement("canvas").getContext("webgl2"));
@@ -213,6 +296,9 @@ export default function TerrainMap({
   probability,
   susceptibility,
   hazard,
+  hazardSelected,
+  onHazardClick,
+  onMapClick,
   historicalEvents,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -223,6 +309,14 @@ export default function TerrainMap({
   const [showHistory, setShowHistory] = useState(false);
   // The camera frames the trails the page opened with. Later updates only restyle the lines.
   const trailsAtOpen = useRef(trails);
+  // The latest callbacks, so listeners registered once always call the current ones.
+  const hazardClick = useRef(onHazardClick);
+  const mapClick = useRef(onMapClick);
+  const pin = useRef<{ marker: Marker; button: HTMLButtonElement } | null>(null);
+  useEffect(() => {
+    hazardClick.current = onHazardClick;
+    mapClick.current = onMapClick;
+  });
 
   useEffect(() => {
     if (!container.current || !webgl) {
@@ -349,6 +443,49 @@ export default function TerrainMap({
       LAYER.otherTrails,
     );
   }, [map, isLive, hazard]);
+
+  // The hazard pin, on a point inside the zone.
+  useEffect(() => {
+    if (!map || !isLive || !hazard) {
+      pin.current?.marker.remove();
+      pin.current = null;
+      return;
+    }
+    if (!pin.current) {
+      const button = pinElement();
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        hazardClick.current();
+      });
+      pin.current = { button, marker: new Marker({ element: button, anchor: "center" }) };
+    }
+    stylePin(pin.current.button, hazard, hazardSelected);
+    pin.current.marker.setLngLat(pinPoint(hazard.geom.coordinates[0])).addTo(map);
+  }, [map, isLive, hazard, hazardSelected]);
+
+  useEffect(
+    () => () => {
+      pin.current?.marker.remove();
+    },
+    [],
+  );
+
+  // A click on the empty map closes the hazard. Historical pins handle their own clicks.
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+    const onClick = (event: MapMouseEvent) => {
+      const onPin = map.getLayer(LAYER.history) && map.queryRenderedFeatures(event.point, { layers: [LAYER.history] }).length;
+      if (!onPin) {
+        mapClick.current();
+      }
+    };
+    map.on("click", onClick);
+    return () => {
+      map.off("click", onClick);
+    };
+  }, [map]);
 
   // Past landslide pins sit above the trails.
   useEffect(() => {

@@ -49,6 +49,10 @@ Panel contents, top to bottom: mountain name and elevation, overall risk and one
 
 The hiker card replaces the dense panel content with larger type. It draws the bypass on the same map. It does not navigate to a separate marketing page.
 
+### Reasoning panel (team decision, Sep 25, 2026)
+
+The one surface beyond "a map plus one panel". **Reasoning** in the Agents section, or a click on any agent row, opens a side panel over the map, beside the ranger panel. For each agent it shows which model the router picked (Gemini Flash or Grok) and why, rule by rule; the facts the agent's tools returned; the model's own thinking summary and the steps it gave; what the code changed afterwards; and every call it took, fallbacks included. It updates live during a run and closes with Escape. It serves the same ranger: it answers "why should I trust this alert?" It is not a third audience's screen.
+
 ## What would make the UX wrong
 
 - A third audience (search and rescue, insurance, event organizers) gets its own screen.
@@ -56,6 +60,7 @@ The hiker card replaces the dense panel content with larger type. It draws the b
 - The ranger panel hides the mile range.
 - Layer toggles grow past probability, susceptibility, and historical pins.
 - The globe gains a dashboard of live counters before the three markers and the fly-to feel finished.
+- The reasoning panel opens on its own, or grows controls that change a run.
 
 ## How to check a UI change
 

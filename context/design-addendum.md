@@ -50,6 +50,7 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Hazard block placement | Under overall risk, opens with the pin | [Sections](#sections-top-to-bottom) | Step 23 |
 | High and Extreme treatment | 3 px left border and an 8% tint | [High and Extreme](#high-and-extreme) | Step 23 |
 | Static mountains | Hide everything that implies analysis | [Static mountains](#static-mountains) | Step 23 |
+| Reasoning panel | Over the map, beside the ranger panel | [Reasoning panel](#reasoning-panel) | Step 23 |
 | Narrow layout | Stack below 768 px | [Layout](#layout) | Step 25 |
 
 ## Which step reads what
@@ -245,11 +246,24 @@ Five rows in pipeline order: Terrain, Weather, Trail, Synthesizer, Alert Writer.
 
 Status never uses a risk color: green for done or red for failed would claim a risk level. The running row gets a background of the text color at 4% and the work pulse (see [Motion](#motion)).
 
+Each row also names the model the router picked for it, such as "Gemini 3.8 Flash", at meta size and muted, right-aligned on the name's line. A row is a button: a click opens the [reasoning panel](#reasoning-panel) on that agent. **Reasoning**, a text button at meta size beside the "Agents" label, opens it on Terrain. When **Analyze now** starts a run, the panel scrolls the rows into view at once.
+
 ### Actions
 
 - **Analyze now.** Primary. Accent fill, dark background text, 40 px tall, full width, 6 px radius, Button type role. While a run is in progress it reads "Analyzing…", drops to 40% opacity, and ignores clicks (step 23). Hidden when `is_live` is false (UX.md rule 8).
 - **Hiker forecast.** Secondary. No fill, a 1 px accent border, accent text, the same size, 8 px below. Disabled until the first finished run, with the meta line "Available after the first finished run."
 - **Hover and focus.** Primary hover lowers the fill to 90% opacity. Secondary hover adds an accent background at 10%. Every control shows a 2 px accent focus ring with a 2 px offset on `focus-visible`. Every state change is instant. Accent text never relies on hue alone. Toggles and the secondary button have borders; text buttons and links are underlined (1 px, 3 px offset).
+
+### Reasoning panel
+
+Added at the team's direction on Sep 25, 2026 (UX.md, Reasoning panel). It explains the agents; it adds no control that changes a run.
+
+- **Placement.** Wide: over the right side of the map, flush against the ranger panel, full height, `min(520px, 100%)` wide, panel surface, a 1 px left border, no radius (it docks to the panel). Narrow: it fills the screen. It appears and closes at once. Escape and the close button (X, top right) close it, and it takes focus when it opens.
+- **Header.** "Reasoning" at body size, 600, then one meta line: "A router sends each agent to Gemini Flash or Grok. Pick an agent to see why, what it read, and how it reasoned." and the run's time.
+- **Tabs.** One per agent in pipeline order, each with the row's status glyph. The selected tab takes the toggle treatment: accent text and a 1 px accent border.
+- **Sections, top to bottom,** each a meta label over body text, separated by the 1 px border: Model (label, tier, the model that actually answered, time, tokens), Why this model (the router's sentence, then each rule with its verdict, "→ Gemini", "→ Grok", or "no change", in a bordered meta tag, then the fallback), What it read (each tool call as code, with its facts behind a disclosure), How it reasoned (the provider's thinking summary as a quote with the 2 px muted rule, then the agent's steps as a numbered list), What the code did, Calls (every attempt with its time and error), Answer (the model's JSON and the payload, behind disclosures).
+- **Type.** Tool calls and JSON are code and use the mono face; everything else follows [Type](#type).
+- **Color.** No risk colors: this is about the reasoning, not the level. Status glyphs match the agent rows.
 
 ### Static mountains
 
