@@ -178,3 +178,46 @@ class AgentEvent(BaseModel):
     summary: str
     payload: dict[str, Any]
     trace: AgentTrace | None = None
+
+
+# --- Runs (step 22), mirrored in frontend/lib/types.ts -----------------------------------------
+
+RunStatus = Literal["running", "done", "error"]
+RunPhase = Literal["starting", "scoring", "agents", "saving", "alert", "finished"]
+
+
+class RainTotals(BaseModel):
+    """The rain lines on the panel: past 72 hours and the next 24, from the run's Open-Meteo fetch."""
+
+    source: str  # "open-meteo" or "fixture"
+    as_of: datetime
+    past_72h_mm: float
+    next_24h_mm: float
+
+
+class Run(BaseModel):
+    """GET /runs/{run_id}, and the snapshot a stream sends on connect and at each phase."""
+
+    id: str
+    mountain_slug: str
+    status: RunStatus
+    phase: RunPhase
+    message: str  # the status line under the agent rows
+    started_at: datetime
+    finished_at: datetime | None
+    elapsed_s: float | None
+    agents: dict[AgentName, AgentEvent]  # the latest event per agent; an agent not listed is waiting
+    hazard_id: str | None
+    severity: RiskLevel | None
+    needs_review: bool | None
+    method: str | None  # how the heat map was made, such as the stand-in label
+    rain: RainTotals | None
+    error: str | None
+    failed_agent: AgentName | None
+
+
+class RunUpdate(BaseModel):
+    """A stream message about the run as a whole. Agent messages are plain AgentEvents."""
+
+    kind: Literal["run"] = "run"
+    run: Run

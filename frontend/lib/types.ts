@@ -146,6 +146,8 @@ export interface MountainDetail extends Mountain {
   active_hazard: Hazard | null;
   /** Empty until the landslide catalog is downloaded (step 10). */
   historical_events: HistoricalEvent[];
+  /** The run going right now, so a page that opens mid-run can follow it (step 22). */
+  active_run_id: string | null;
 }
 
 export const AGENT_NAMES = ["terrain", "weather", "trail", "synthesizer", "writer"] as const;
@@ -232,4 +234,46 @@ export interface AgentEvent {
   payload: Record<string, unknown>;
   /** The router's decision, tool calls, and reasoning (step 20). Absent on fixtures. */
   trace?: AgentTrace | null;
+}
+
+export const RUN_STATUSES = ["running", "done", "error"] as const;
+export type RunStatus = (typeof RUN_STATUSES)[number];
+export type RunPhase = "starting" | "scoring" | "agents" | "saving" | "alert" | "finished";
+
+/** The panel's rain lines, from the run's Open-Meteo fetch. */
+export interface RainTotals {
+  /** "open-meteo", or "fixture" for a saved test storm. */
+  source: string;
+  as_of: string;
+  past_72h_mm: number;
+  next_24h_mm: number;
+}
+
+/** GET /runs/{run_id}, and the snapshot a stream sends on connect and at each phase (step 22). */
+export interface Run {
+  id: string;
+  mountain_slug: string;
+  status: RunStatus;
+  phase: RunPhase;
+  /** The status line under the agent rows. */
+  message: string;
+  started_at: string;
+  finished_at: string | null;
+  elapsed_s: number | null;
+  /** The latest event per agent. An agent not listed is waiting. */
+  agents: Partial<Record<AgentName, AgentEvent>>;
+  hazard_id: string | null;
+  severity: RiskLevel | null;
+  needs_review: boolean | null;
+  /** How the heat map was made, such as "susceptibility stand-in (Model B pending)". */
+  method: string | null;
+  rain: RainTotals | null;
+  error: string | null;
+  failed_agent: AgentName | null;
+}
+
+/** A stream message about the run as a whole. Agent messages are plain AgentEvents. */
+export interface RunUpdate {
+  kind: "run";
+  run: Run;
 }

@@ -10,6 +10,7 @@ from app.db import get_conn
 from app.history import historical_events
 from app.ml.tiles import read_metadata
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
+from app.runs import registry
 
 router = APIRouter(prefix="/mountains", tags=["mountains"])
 
@@ -83,6 +84,7 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
         trails=[Trail(**row, segments=segments_by_trail[row["id"]]) for row in trail_rows],
         active_hazard=Hazard(**hazard) if hazard else None,
         historical_events=historical_events(slug),
+        active_run_id=running.id if (running := registry.active_run(slug)) and running.status == "running" else None,
     )
 
 

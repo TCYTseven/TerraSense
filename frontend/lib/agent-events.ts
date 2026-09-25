@@ -1,4 +1,4 @@
-import { AGENT_NAMES, AGENT_STATUSES, type AgentEvent, PROVIDER_NAMES } from "./types";
+import { AGENT_NAMES, AGENT_STATUSES, type AgentEvent, PROVIDER_NAMES, RUN_STATUSES, type RunUpdate } from "./types";
 
 /**
  * True when a value has the AgentEvent shape. Use it on anything parsed from
@@ -54,4 +54,24 @@ export function parseAgentEvents(value: unknown): AgentEvent[] {
     throw new TypeError(`Agent event ${badIndex} does not match AgentEvent`);
   }
   return value as AgentEvent[];
+}
+
+/** True when a stream message is a RunUpdate: the run's snapshot or a phase change. */
+export function isRunUpdate(value: unknown): value is RunUpdate {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const message = value as Record<string, unknown>;
+  const run = message.run as Record<string, unknown> | undefined;
+  return (
+    message.kind === "run" &&
+    typeof run === "object" &&
+    run !== null &&
+    typeof run.id === "string" &&
+    (RUN_STATUSES as readonly unknown[]).includes(run.status) &&
+    typeof run.message === "string" &&
+    typeof run.agents === "object" &&
+    run.agents !== null &&
+    Object.values(run.agents).every(isAgentEvent)
+  );
 }

@@ -98,3 +98,13 @@ def test_success_clears_failures():
     r.record_success("grok")
     r.record_failure("grok")
     assert r.route("synthesizer", Signals(report_levels=("high", "high", "high"))).provider == "grok"
+
+
+def test_all_resting_still_routes():
+    r = router()
+    for name in ("gemini", "grok"):
+        r.record_failure(name)
+        r.record_failure(name)
+    decision = r.route("terrain", Signals(zone_peak=0.96))
+    assert decision.provider == "gemini"
+    assert "tries again" in decision.rules[-1].detail

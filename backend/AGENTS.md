@@ -47,6 +47,8 @@ curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
 curl localhost:8000/mountains/mount-rainier/layers/probability
+curl -X POST localhost:8000/mountains/mount-rainier/analyze   # step 22: { run_id }; follow ws://localhost:8000/runs/<run_id>/stream
+curl localhost:8000/runs/<run_id>
 python -m pytest                # schemas, router, providers, tools, and the pipeline (fake LLMs; needs DATABASE_URL)
 python -m app.agents.pipeline   # step 21: the five agents once, printed. Needs GEMINI_API_KEY or XAI_API_KEY
 ```

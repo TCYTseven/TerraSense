@@ -126,3 +126,5 @@ class MountainDetail(Mountain):
     trails: list[Trail]
     active_hazard: Hazard | None
     historical_events: list[HistoricalEvent]
+    # The run going right now, so a page that opens mid-run can follow it (step 22).
+    active_run_id: str | None

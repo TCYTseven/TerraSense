@@ -12,7 +12,8 @@ the reasoning panel. It checks, in order:
    moderate, or a routine monitor notice.
 3. Latency budget. Past 70% of the run's 60 s budget, a Grok pick moves to Gemini.
 4. Availability. A provider needs its API key, and one that failed twice in two minutes rests
-   for a minute. When the pick is out, the other provider takes the call.
+   for a minute. When the pick is out, the other provider takes the call. When every provider
+   with a key is resting, the router tries them anyway rather than fail the run.
 
 LLM_ROUTER=gemini or LLM_ROUTER=grok forces one provider for every call, for testing.
 The provider the router did not pick is the fallback when the pick fails.
@@ -108,11 +109,14 @@ class Router:
 
     def route(self, agent: AgentName, signals: Signals) -> RouteDecision:
         available = self.available()
+        recovering = False
         if not any(available.values()):
-            missing = [n for n, p in self.providers.items() if not p.configured]
-            if missing:
+            configured = {name: provider.configured for name, provider in self.providers.items()}
+            if not any(configured.values()):
                 raise NoProviderError("No LLM provider has an API key. Set GEMINI_API_KEY or XAI_API_KEY in .env.")
-            raise NoProviderError("Both LLM providers failed repeatedly in the last two minutes. Try again shortly.")
+            # Resting steers calls away from a failing provider while another can take them. With
+            # every configured provider resting, trying again beats failing the run outright.
+            available, recovering = configured, True
 
         tier = TIERS[agent]
         rules: list[RouteRule] = []
@@ -145,6 +149,10 @@ class Router:
             rules.append(deciding)
             explaining = deciding
             choice = other
+        elif recovering:
+            rules.append(RouteRule(rule="availability", verdict=None,
+                                   detail="Every provider failed in the last two minutes, so the router tries again "
+                                          "instead of giving up."))
         else:
             rules.append(RouteRule(rule="availability", verdict=None, detail=self._availability_note(available)))
 
