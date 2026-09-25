@@ -34,4 +34,4 @@ The root [`README.md`](../../README.md) is the one-line pitch. This folder is th
 | Env vars | [`.env.example`](../../.env.example) at the repo root |
 | Frontend app | `frontend/` |
 | Agent rules and folder owners | [`AGENTS.md`](../../AGENTS.md) at the repo root, plus one per folder |
-| API, model, tiles | Not created yet. Planned paths are in [`CODE_REFERENCE.md`](CODE_REFERENCE.md) |
+| API, model, tiles | The API is in `backend/`, offline scripts in `ml/`. Current and planned paths are in [`CODE_REFERENCE.md`](CODE_REFERENCE.md) |

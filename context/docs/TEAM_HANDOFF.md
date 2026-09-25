@@ -1,6 +1,6 @@
 # Team handoff
 
-State of TerraSense at the start of the build (Thursday, Sep 24, 2026). Written for the HackGT team and for an agent picking the repo up.
+State of TerraSense, written at the start of the build (Thursday, Sep 24, 2026) and updated after steps 1 to 10 (Friday, Sep 25, 2026). Written for the HackGT team and for an agent picking the repo up.
 
 The two-minute version is [`TEAM_BRIEF.md`](TEAM_BRIEF.md). The product contract is [`../TerraSense.md`](../TerraSense.md). The ordered work is [`../implementation-steps.md`](../implementation-steps.md).
 
@@ -10,7 +10,7 @@ When this file and the code disagree, the code wins and this file gets fixed in 
 
 1. Read the decisions below. They are closed.
 2. Open the checklist in [`../implementation-steps.md`](../implementation-steps.md). Do the first unchecked step on your track.
-3. Frontend is `cd frontend && npm run dev`. There is no API process yet.
+3. Frontend: `cd frontend && npm run dev` (port 3000). API: `cd backend && uvicorn app.main:app --reload --port 8000`. Setup is in the root README and each folder's `AGENTS.md`.
 4. Before adding a control, read [`UX.md`](UX.md).
 
 ## The one-paragraph version
@@ -21,13 +21,15 @@ TerraSense shows landslide risk for Mount Rainier. A Next.js globe opens a Mapbo
 
 | Path | State |
 |---|---|
-| `frontend/` | Next.js 16.3.6, React 19, Tailwind 4, App Router, TypeScript. Stock starter page. Geist fonts loaded. No Mapbox, no globe, no API client. |
+| `frontend/` | Next.js 16.3.6, React 19, Tailwind 4, TypeScript. Dark dispatch theme, typed API client, the React Three Fiber globe with risk markers, search, fly-in, and `/mountains/[slug]`. No Mapbox yet. |
+| `backend/` | FastAPI with `/health`, `/mountains`, `/mountains/{slug}`. Six-table schema in `app/schema.sql`, seed loader in `app/seed.py`. |
+| `ml/` | `scripts/download_sources.py` (step 10). No model yet. |
+| `data/` | `seed/mountains.json`, a rough `seed/trails.geojson`, `seed/sources.md`. `raw/` holds the DEM and land cover after the step 10 script runs. `seed/landslides.geojson` is pending. |
 | `context/TerraSense.md` | Hackathon spec. This is the build target. |
-| `context/implementation-steps.md` | Steps 1–25. |
-| `docs/` | This set. |
-| `backend/`, `ml/`, `data/` | Not created. |
+| `context/implementation-steps.md` | Steps 1 to 25, ticked through step 9. |
+| `context/docs/` | This set. |
 
-Proven: `npx create-next-app` completed and installed dependencies. Unproven: every product behavior in the demo script.
+Proven in a browser against a local API and Postgres: the globe loads three markers in their risk colors, hover shows name, risk, and refresh, search and marker clicks fly in and open the mountain page, and loading, error, and not-found states work. Unproven: everything from the Mapbox view on, and a hosted database.
 
 ## Decisions already made
 
@@ -51,9 +53,9 @@ Shared numbers (bbox, peak, risk bins) live in the implementation steps under "S
 
 | Track | Now | Then |
 |---|---|---|
-| Frontend | Step 2, the dark shell. Replace the starter page. | Globe (steps 8–9) as soon as `GET /mountains` exists. Until then, three hardcoded markers are acceptable only if they match the seed file. |
-| Backend | Steps 3–6. Health check, schema, seed, mountain reads. | Analyze and the socket (step 22) after the agents exist. |
-| ML and data | Step 10. Download the Rainier DEM, one land-cover raster, and landslide points. | Feature table and LightGBM (steps 11–12) before anyone waits on tiles. |
+| Frontend | Step 15, the Mapbox terrain view in the map area of `/mountains/[slug]`. Needs `NEXT_PUBLIC_MAPBOX_TOKEN`. | Layer toggles (step 16), then the agent panel (step 23). |
+| Backend | Provision the hosted Postgres and run the schema and seed. Then steps 20–21, the agent schemas and pipeline. | Analyze and the socket (step 22) after the agents exist. |
+| ML and data | Finish step 10: run `download_sources.py --only landslides` on a network that reaches data.nasa.gov. | Feature table and LightGBM (steps 11–12) before anyone waits on tiles. |
 | Product | Create the Discord webhook and put the URL in an untracked env file. Read the demo script aloud once. | Fill Devpost brackets after step 12 has a real AUC. |
 
 ## How an agent resumes
