@@ -16,8 +16,6 @@ export interface MountainDashboardProps {
   susceptibility: LayerTiles | null;
   /** The run the rows start with: one going now, or the one behind the active hazard. */
   run: Run | null;
-  /** Open the hazard at load, as the Discord link does. */
-  openHazard: boolean;
 }
 
 type Problem = { kind: "lost" } | { kind: "start"; detail: string } | { kind: "reload" } | null;
@@ -33,7 +31,7 @@ export default function MountainDashboard(props: MountainDashboardProps) {
   const [run, setRun] = useState<Run | null>(props.run);
   // The run this page started or joined: its status line reads as news, not history.
   const [followedHere, setFollowedHere] = useState<string | null>(props.mountain.active_run_id);
-  const [hazardOpen, setHazardOpen] = useState(props.openHazard && Boolean(props.mountain.active_hazard));
+  const [hazardOpen, setHazardOpen] = useState(false);
   const [reasoning, setReasoning] = useState<AgentName | null>(null);
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);

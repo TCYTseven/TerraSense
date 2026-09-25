@@ -14,7 +14,6 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 6 | `GET /mountains`, `GET /mountains/{slug}` |
 | 13, 18 | `GET /mountains/{slug}/layers/{layer}` returns a tile URL template. Tiles live in `tiles/` |
 | 20–22 | Agent schemas, tools, the five-agent pipeline, `POST /analyze`, `GET /runs/{id}`, `WS /runs/{id}/stream` |
-| 24 | Discord webhook post |
 
 `app/ml/model_b.py` (step 17) sits here but belongs to the ML track. Nothing imports it directly: `app/ml/probability.py` is the seam. It calls `model_b.run(rain)` when the module exists and uses the susceptibility map as a labeled stand-in until then, so steps 18 onward run before Model B lands.
 
@@ -24,7 +23,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Geometry is GeoJSON stored in `jsonb` columns.
 - Response shapes are a contract with `frontend/lib/types.ts`. Change both in the same commit.
 - Only `mount-rainier` is live. Reject analyze when `is_live` is false.
-- Read settings from the root `.env`. Never log `DATABASE_URL`, `GEMINI_API_KEY`, `XAI_API_KEY`, or `DISCORD_WEBHOOK_URL`.
+- Read settings from the root `.env`. Never log `DATABASE_URL`, `GEMINI_API_KEY`, or `XAI_API_KEY`.
 - CORS allows the local Next.js origins. Add a deployed frontend with `CORS_ORIGINS`, not by editing code.
 - A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
 - Tools that agents call return precomputed facts. They do not scan rasters or invent trail geometry.

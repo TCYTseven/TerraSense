@@ -17,8 +17,8 @@ BIN_EDGES = (0.2, 0.45, 0.7)
 # The lower edge of "high": the segments a bypass avoids and the cells a hazard zone holds.
 HIGH_THRESHOLD = BIN_EDGES[1]
 
-# Level colors from Design Language. The backend needs them for the map tiles and the
-# Discord embed. The frontend keeps its own copies in globals.css and lib/theme.ts.
+# Level colors from Design Language. The backend needs them for the map tiles. The frontend
+# keeps its own copies in globals.css and lib/theme.ts.
 RISK_HEX: dict[RiskLevel, str] = {
     "low": "#22C55E",
     "moderate": "#F59E0B",

@@ -61,7 +61,7 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Raster layers | 13, 18 | ML and data |
 | Globe, Motion | 8, 9 | Frontend |
 | Map | 15, 16, 18, 19 | Frontend |
-| Copy | 20, 21, 24 | Backend and agents |
+| Copy | 20, 21 | Backend and agents |
 | Review sheet | Before 23 | Frontend |
 | Panel, States | 23 | Frontend |
 | Hiker card, States | 25 | Frontend |
@@ -131,7 +131,7 @@ Geist is the create-next-app default, so a Geist screen reads as a starter templ
 | Time since | Largest whole unit | 12 min ago |
 | Clock time | 24-hour local, no seconds | 14:05 |
 
-The Alert Writer prompt (step 20) and the Discord message (step 24) use the same formats.
+The Alert Writer prompt (step 20) uses the same formats.
 
 ## Risk mapping
 
@@ -221,7 +221,7 @@ UX.md sets the order. The hazard block is the one addition, and it shows only wh
 
 1. **Header.** The mountain name at panel-title size. Below it, elevation and region on one line in muted text, 12 px apart, with no separator character.
 2. **Overall risk.** The level dot and word at lead size, 600, in the level color. Then the one sentence at lead size.
-3. **Hazard. [confirm]** Opens under overall risk when the pin is selected: by a click, when a run finishes, or from the Discord link (`?hazard={id}`, step 24). Four rows in the spec's order, each a meta label over a body value: "What it is", "Why it was flagged", "Confidence", "How to avoid it". "What it is" names the trail and the mile range. A second click on the pin, or a click on the empty map, closes it.
+3. **Hazard. [confirm]** Opens under overall risk when the pin is selected: by a click, or when a run finishes. Four rows in the spec's order, each a meta label over a body value: "What it is", "Why it was flagged", "Confidence", "How to avoid it". "What it is" names the trail and the mile range. A second click on the pin, or a click on the empty map, closes it.
 4. **Rain.** The label "Rain", then two rows with words left and values right: "Past 72 hours" and "Next 24 hours". Text only (UX.md rule 7).
 5. **Trails.** The label "Trails", then one row per trail: the name left; the level dot, word, and score right. The flagged trail adds a second line, "Flagged mi 4.2–5.1", whether or not the pin is open. The mile range is never hidden.
 6. **Agents.** The label "Agents", then the five rows in [Agent rows](#agent-rows).
@@ -306,9 +306,8 @@ UX.md asks for empty, loading, and error states on every view, and step 25 build
 | Mountain | Tiles fail | Map without the raster, trails still colored | The heat map didn't load. Trail colors still show segment risk. |
 | Mountain | Live, no hazard yet | Muted risk section, no pin, rows waiting, Hiker forecast disabled | Not analyzed yet. Analyze now scores the next 72 hours. |
 | Run | Running | Rows update, Analyze now disabled | Analyzing… (on the button) |
-| Run | Finished | Pin selected, panel updated, heat map fades in | Finished in 48 s. Alert posted to Discord. |
-| Run | Finished, needs review | As finished, plus the tag | Finished in 48 s. Agents disagree on severity, so the alert went out as an advisory. |
-| Run | Finished, Discord failed | As finished | Finished in 48 s. Discord send failed. The alert text is saved in the panel. |
+| Run | Finished | Pin selected, panel updated, heat map fades in | Finished in 48 s. |
+| Run | Finished, needs review | As finished, plus the tag | Finished in 48 s. Agents disagree on severity, so this is an advisory. |
 | Run | Failed | Failed row, later rows skipped, last good hazard stays, Analyze now enabled | Run failed at the Weather step. The map still shows the hazard from 14:05. |
 | Run | Failed, no earlier hazard | As failed, no pin | Run failed at the Weather step. There's no earlier hazard to show. |
 | Run | Stream lost | Treated as failed | Lost the connection to this run. The map still shows the hazard from 14:05. |
@@ -346,7 +345,7 @@ These four parts are one fly-to. Tune the split at step 9 until the last globe f
 
 ## Copy
 
-Design Language and UX.md rules 5 and 6 set the voice. These templates keep the UI, the Alert Writer (steps 20 and 21), and Discord (step 24) saying the same thing.
+Design Language and UX.md rules 5 and 6 set the voice. These templates keep the UI and the Alert Writer (steps 20 and 21) saying the same thing.
 
 - **Ranger line.** `<Hazard> risk <LEVEL>. <Place>, <trail> mile <a> to <b>. Confidence <0.00>.`
   Example: "Debris flow risk HIGH. East fork drainage, Ridge Trail mile 4.2 to 5.1. Confidence 0.82." This adds the trail and mile range to the spec's example, because UX.md never lets the ranger view hide them.
@@ -355,7 +354,6 @@ Design Language and UX.md rules 5 and 6 set the voice. These templates keep the 
   Example: "Days of heavy rain could send mud and rock onto the Ridge Trail above the east fork, so take the Cedar Loop instead."
 - **Bypass values** come from the API and render in the card's bypass block. The model never writes them.
 - **Level words.** "Low", "Moderate", "High", and "Extreme" in the UI. All caps in ranger copy only.
-- **Discord.** The embed title is the ranger line. The embed color is the level color. The link text is "Open the hazard". Fields follow step 24 and use the formats in [Units and numbers](#units-and-numbers).
 - **UI strings.** Sentence case, plain verbs, no apologies. An action keeps its name through the flow: **Analyze now**, then "Analyzing…", then "Finished". Button labels stay exactly as the spec writes them.
 
 ## Review sheet

@@ -51,7 +51,7 @@ Build one convincing loop, not a platform.
 - Historical landslide pins from a public catalog.
 - Trails colored by risk, plus one alternate route that avoids the worst segment.
 - Five agents that stream their work into the UI.
-- One live Discord alert with a link back to the hazard.
+- The ranger alert in the app, with a side panel that shows how each agent reasoned.
 - A hiker forecast card in plain language.
 
 **Out**
@@ -60,7 +60,7 @@ See [Out of Scope](#out-of-scope). The short version: no simulation mode, no ext
 
 **Demo proof**
 
-A judge can spin the globe with smooth, clean animations, click on mountains to fly in with a seamless transition, open Rainier, see the heat map appear, watch the agents run, see a Discord message arrive, and read a hiker card that names a bypass.
+A judge can spin the globe with smooth, clean animations, click on mountains to fly in with a seamless transition, open Rainier, see the heat map appear, watch the agents run, open their reasoning, and read a hiker card that names a bypass.
 
 ---
 
@@ -83,7 +83,7 @@ The data already exists: elevation models, land cover, precipitation, and landsl
 1. **Ingest.** Use a preprocessed terrain stack for Mount Rainier, plus a live precipitation forecast.
 2. **Predict.** Score each terrain cell for long-term landslide susceptibility, then for short-term probability given recent and forecast rain.
 3. **Decide.** Five agents read the scores, the weather, and the trail geometry, then agree on a severity and a sentence a person can act on.
-4. **Deliver.** Show it on a 3D globe and a terrain map. Push one alert to Discord. Show the hiker a forecast card and a bypass.
+4. **Deliver.** Show it on a 3D globe and a terrain map. Give the ranger the alert in the side panel. Show the hiker a forecast card and a bypass.
 
 The output is a label, not a chart. Example: "Trail closed between mile 4.2 and 5.1. Debris flow risk high. Use the Cedar Loop bypass."
 
@@ -173,7 +173,7 @@ Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
 ### 6.4 Agents
 
-Five LLM calls with separate prompts. A Discord send is ordinary code, not an agent.
+Five LLM calls with separate prompts.
 
 | Agent | Job | Output |
 |---|---|---|
@@ -189,11 +189,9 @@ Consensus rule: if severity ratings differ by two or more levels, set `needs_rev
 
 ### 6.5 Ranger Alert
 
-After Alert Writer finishes, the server posts to a Discord webhook.
+The alert stays in the app. When a run finishes, the hazard pin opens and the panel shows the four fields: what it is, why it was flagged, confidence, and how to avoid it. The reasoning panel holds the Alert Writer's ranger title and paragraph and the Synthesizer's recommended action (monitor or close).
 
-The message includes hazard type, severity, trail and mile marker, confidence, the recommended action (monitor or close), a one-paragraph reason, and a link that opens the map on that hazard.
-
-Hardcode the webhook URL. There is no ranger account, no inbox, and no acknowledge button.
+Discord was dropped on Sep 25, 2026 (team decision). There is no ranger account, no inbox, and no acknowledge button.
 
 ### 6.6 Hiker Forecast
 
@@ -214,8 +212,8 @@ The Alert Writer produces the sentence. No account, no share image, no file down
 1. The demo starts from **Analyze now** (a scheduled overnight job is out of scope).
 2. Model B runs on the cached Rainier stack plus fresh Open-Meteo rain.
 3. Terrain and Weather run together. Trail Analyst names the affected segment and a bypass. The Synthesizer sets High or flags `needs_review`. Alert Writer drafts both texts.
-4. The server posts to Discord.
-5. The judge opens the link and sees the pin, the heat map, and the four-field panel.
+4. The run finishes. The pin opens on the new heat map with the four-field panel.
+5. **Reasoning** shows which model each agent ran on, why the router picked it, and what the agent read.
 
 ### Hiker check
 
@@ -230,7 +228,7 @@ The Alert Writer produces the sentence. No account, no share image, no file down
 3. Show the probability heat map, then toggle susceptibility and historical pins.
 4. Open the hazard pin and read the four fields.
 5. Click **Analyze now**. The agent rows fill in.
-6. Show the Discord message on a second screen.
+6. Open **Reasoning** on the Trail row: the model the router picked, and why.
 7. Open the hiker card and the bypass.
 
 ---
@@ -375,7 +373,6 @@ Target: the five calls finish in about a minute. Cap each output at a short JSON
 | ML | LightGBM, rasterio, GeoPandas or Shapely |
 | Database | Postgres (Neon or Supabase). Geometries as GeoJSON |
 | LLMs | Gemini Flash and Grok, picked per call by a router in code. Either key alone works |
-| Alert | Discord webhook |
 | Deploy | Vercel for the frontend. API on Railway, Modal, or a laptop tunnel |
 
 Skip auth, Redis, PostGIS, object storage, Docker-as-a-requirement, Twilio, and email for this build.
@@ -491,7 +488,7 @@ GET  /forecast?mountain_id&trail_id
 ### Before the event
 
 - Clip Rainier DEM, land cover, trails, and landslide points. Build the feature table.
-- Keys: Gemini and xAI (either alone works), Discord webhook. Open-Meteo and the terrain tiles need none. Mapbox is optional, for satellite imagery.
+- Keys: Gemini and xAI (either alone works). Open-Meteo and the terrain tiles need none. Mapbox is optional, for satellite imagery.
 - Pick the two static marker mountains and their display risk.
 
 ### Hours 0–8: Something on screen
@@ -510,7 +507,6 @@ GET  /forecast?mountain_id&trail_id
 
 ### Hours 18–28: The two audiences
 
-- Discord post at the end of a run, with a deep link.
 - Hiker card using Alert Writer text, bypass drawn on the map.
 - Empty, loading, and error states. If a run fails, the UI says so.
 
@@ -528,7 +524,7 @@ If you are behind, drop in this order:
 3. A computed bypass (show a named bypass in text).
 4. The Synthesizer as its own call (let Alert Writer merge the three reports).
 
-Do not drop the globe, the heat map, the agent stream, or the Discord message.
+Do not drop the globe, the heat map, or the agent stream.
 
 ---
 
@@ -540,7 +536,7 @@ About two minutes.
 2. **(0:15)** Open Mount Rainier. Turn on the heat map. "This is 72-hour landslide probability from terrain and recent rain."
 3. **(0:35)** Open the hazard pin. Read what, why, confidence, and what to do.
 4. **(0:55)** **Analyze now.** Agents stream. "Five agents check the slope, the forecast, and the trail, then agree."
-5. **(1:20)** Discord message on the second screen. "A ranger gets the segment, the severity, and a link."
+5. **(1:20)** Open **Reasoning** on the Trail row. "A router sends each agent to Gemini Flash or Grok, and the ranger can see why."
 6. **(1:40)** Hiker card and the bypass on the map. "A hiker gets one sentence and a way around it."
 7. **(1:55)** Back to the globe. "TerraSense. Know the ground before you go."
 
@@ -556,7 +552,7 @@ Hikers check the forecast. They cannot easily check whether the slope above the 
 
 ### What it does
 
-TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D globe opens onto a terrain map with a risk heat map, past landslide pins, and trails colored by segment. Five agents turn the scores into a ranger alert and a hiker forecast. The alert posts to Discord. The forecast names a bypass.
+TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D globe opens onto a terrain map with a risk heat map, past landslide pins, and trails colored by segment. Five agents turn the scores into a ranger alert and a hiker forecast, and a side panel shows how each one reasoned. The forecast names a bypass.
 
 ### How we built it
 
@@ -565,8 +561,6 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D 
 **Agents.** [Five agents, parallel first step, Pydantic outputs, WebSocket stream, disagreement flagged as needs review.]
 
 **Frontend.** Next.js, React Three Fiber for the globe, MapLibre GL for 3D terrain.
-
-**Alerting.** Discord webhook with a deep link. No accounts.
 
 ### Challenges
 
@@ -591,7 +585,6 @@ More mountains, a real ranger feedback loop, and slower signals such as InSAR. N
 | Agents exceed a minute | Parallelize Terrain and Weather. Short JSON schemas. Fast models for the first three |
 | Heat map does not sit on the terrain | XYZ tiles in EPSG:3857. Check in the first map session |
 | Globe stutters | Three markers, modest textures |
-| Discord fails on stage | Keep a screenshot of a successful alert, and keep the in-app alert text visible |
 | "Is this real science?" | Cite Guzzetti rainfall thresholds and NASA LHASA. Say this is a prototype of the last mile, trail to alert, not a replacement for an operational USGS product |
 | Placeholder casualty stats | Source them or cut them from the slides |
 
@@ -612,7 +605,7 @@ Do not build these during HackGT. They are real follow-ons, and they will sink t
 - Redis, PostGIS, S3 or R2, and a multi-service deploy you do not already know how to run.
 - Writing trail closures back to a park system.
 
-If the core loop is done and rehearsed, the only acceptable extra is a second live mountain using the same pipeline. Do not start that until the Discord alert has succeeded twice.
+If the core loop is done and rehearsed, the only acceptable extra is a second live mountain using the same pipeline. Do not start that until a live run with real keys has finished twice.
 
 ---
 

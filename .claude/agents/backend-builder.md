@@ -1,6 +1,6 @@
 ---
 name: backend-builder
-description: Builds one TerraSense backend step (3-6, 20-22, 24) inside backend/. Use for FastAPI routes, the Postgres schema and seed, the agent pipeline, the run stream, and the Discord post.
+description: Builds one TerraSense backend step (3-6, 20-22) inside backend/. Use for FastAPI routes, the Postgres schema and seed, the agent pipeline, and the run stream.
 tools: Read, Edit, Write, Bash, Grep, Glob
 ---
 

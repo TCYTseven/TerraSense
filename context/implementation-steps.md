@@ -6,7 +6,7 @@ Finish each step on a track before you start the next one on that track. After s
 
 The frontend app already exists in `frontend/`. Treat step 1 as done for that folder, then keep going.
 
-Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide risk only, five agents, one Discord alert, one hiker card.
+Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide risk only, five agents, one hiker card. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
 
@@ -33,7 +33,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet)
 - [x] 22. Expose analyze, run status, and the live stream
 - [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel)
-- [ ] 24. Post the ranger alert to Discord
+- [x] 24. ~~Post the ranger alert to Discord~~ (dropped by the team on Sep 25, 2026. The ranger reads the alert in the app)
 - [ ] 25. Show the hiker card and rehearse the demo
 
 ## Shared facts
@@ -74,7 +74,7 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 - Add `backend/`, `ml/scripts/`, `ml/artifacts/`, and `data/seed/`.
 - Gitignore `data/raw/`, `data/processed/`, `.env`, `ml/artifacts/*.tif`, and Python virtualenvs.
-- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, the LLM key and models (since step 20: `GEMINI_API_KEY`, `GEMINI_MODEL`, `XAI_API_KEY`, `GROK_MODEL`), and `DISCORD_WEBHOOK_URL`.
+- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, and the LLM keys and models (since step 20: `GEMINI_API_KEY`, `GEMINI_MODEL`, `XAI_API_KEY`, `GROK_MODEL`).
 - Add a root README with three commands: frontend dev server, API dev server, and "where the spec lives."
 
 **Done when.** A new shell can read `.env.example` and name the folder for the UI, the API, and the offline model.
@@ -369,19 +369,9 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 **Done when.** One click on Rainier streams all five rows and opens a pin whose four fields match the saved hazard.
 
-## 24. Post the ranger alert to Discord
+## 24. Post the ranger alert to Discord (dropped)
 
-**Outcome.** A finished run lands in a Discord channel with a link back to the pin.
-
-**Build.**
-
-- After Alert Writer succeeds, `POST` the webhook in `DISCORD_WEBHOOK_URL`.
-- The message includes hazard type, severity, trail name, mile range, confidence, recommended action (`monitor` or `close`), the ranger paragraph, and a link to `/mountains/mount-rainier?hazard={id}`.
-- That query opens the mountain page with the pin selected and the heat map on.
-- Store the alert row. If Discord returns an error, keep the in-app alert text and show a send failure. The map still works.
-- Send a real message twice before you call this step done.
-
-**Done when.** A full analyze posts one Discord message, and the link opens the hazard pin.
+Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and the mountain page has no `?hazard=` deep link. The ranger reads the alert in the app: when a run finishes, the hazard pin opens with the four fields, and the reasoning panel holds the Alert Writer's ranger title and paragraph. The `alerts` table from step 4 stays in the schema, unused.
 
 ## 25. Show the hiker card and rehearse the demo
 
@@ -393,10 +383,10 @@ data/seed/                Small JSON and GeoJSON committed to git
 - **Hiker forecast** opens a larger-type card on the same dark background and draws the bypass on the map.
 - Add empty, loading, and error states for the globe, the mountain, and the run.
 - Write the real AUC, the real weights, and the real data sources into the Devpost draft in `TerraSense.md`.
-- Rehearse the script in that file three times: globe, fly-in, heat map, pin, analyze, Discord, hiker card.
+- Rehearse the script in that file three times: globe, fly-in, heat map, pin, analyze, reasoning panel, hiker card.
 - Keep one finished run visible as a fallback if the live call fails on stage.
 
-**Done when.** A person who has not seen the app can follow the demo script and reach the Discord message and a hiker card that names the bypass.
+**Done when.** A person who has not seen the app can follow the demo script and reach the reasoning panel and a hiker card that names the bypass.
 
 ## If you are behind
 
@@ -407,4 +397,4 @@ Drop work in this order. The demo still holds.
 3. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
 4. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
 
-Keep the globe, the heat map, the agent stream, and the Discord message.
+Keep the globe, the heat map, and the agent stream.

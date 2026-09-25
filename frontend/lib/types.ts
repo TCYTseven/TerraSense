@@ -238,7 +238,7 @@ export interface AgentEvent {
 
 export const RUN_STATUSES = ["running", "done", "error"] as const;
 export type RunStatus = (typeof RUN_STATUSES)[number];
-export type RunPhase = "starting" | "scoring" | "agents" | "saving" | "alert" | "finished";
+export type RunPhase = "starting" | "scoring" | "agents" | "saving" | "finished";
 
 /** The panel's rain lines, from the run's Open-Meteo fetch. */
 export interface RainTotals {

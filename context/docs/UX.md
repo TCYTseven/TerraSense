@@ -18,7 +18,7 @@ A heat map alone serves neither person. A paragraph of model features serves nei
 
 **The globe is the way in. The mountain page is a dispatch board for the ranger. The hiker card is the only place that reads like a consumer app.**
 
-The judge demo walks that order on purpose: globe, mountain, agents, Discord, hiker card. Each surface has one job. A control that serves a third job does not ship this weekend.
+The judge demo walks that order on purpose: globe, mountain, agents, reasoning, hiker card. Each surface has one job. A control that serves a third job does not ship this weekend.
 
 ## Rules
 

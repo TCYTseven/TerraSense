@@ -183,7 +183,7 @@ class AgentEvent(BaseModel):
 # --- Runs (step 22), mirrored in frontend/lib/types.ts -----------------------------------------
 
 RunStatus = Literal["running", "done", "error"]
-RunPhase = Literal["starting", "scoring", "agents", "saving", "alert", "finished"]
+RunPhase = Literal["starting", "scoring", "agents", "saving", "finished"]
 
 
 class RainTotals(BaseModel):

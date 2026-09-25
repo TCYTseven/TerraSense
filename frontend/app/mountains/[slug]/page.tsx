@@ -67,7 +67,6 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
       probability={probability}
       susceptibility={susceptibility}
       run={run}
-      openHazard={false}
     />
   );
 }
