@@ -1,8 +1,8 @@
 "use client";
 
 import { OrbitControls, useTexture } from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
+import { type ReactNode, type RefObject, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
   BackSide,
@@ -11,6 +11,10 @@ import {
   ShaderMaterial,
   SRGBColorSpace,
 } from "three";
+import { THEME } from "@/lib/theme";
+import type { Mountain } from "@/lib/types";
+import CameraFlight from "./camera-flight";
+import MountainMarker from "./mountain-marker";
 
 /** Radians per second. One full turn takes about 100 seconds. */
 const IDLE_SPIN_RADIANS_PER_SECOND = 0.06;
@@ -39,11 +43,25 @@ const ATMOSPHERE_FRAGMENT_SHADER = /* glsl */ `
   }
 `;
 
+/** Stops a pointer event here, so markers on the far side of the globe cannot be hovered or clicked. */
+function blockPointer(event: ThreeEvent<PointerEvent> | ThreeEvent<MouseEvent>) {
+  event.stopPropagation();
+}
+
 /**
- * Satellite Earth that rotates on its axis.
+ * Satellite Earth that rotates on its axis. Children ride on the surface and turn with it.
  */
-function Earth() {
-  const earthRef = useRef<Mesh>(null);
+function Earth({
+  meshRef,
+  spinning,
+  onReady,
+  children,
+}: {
+  meshRef: RefObject<Mesh | null>;
+  spinning: boolean;
+  onReady: () => void;
+  children?: ReactNode;
+}) {
   const [colorMap, bumpMap] = useTexture(
     ["/globe/earth-day.jpg", "/globe/earth-topology.png"],
     (textures) => {
@@ -53,18 +71,28 @@ function Earth() {
     },
   );
 
+  // Earth suspends until its textures load, so this runs once the globe is on screen.
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
+
   useFrame((_, delta) => {
-    if (!earthRef.current) {
+    if (!meshRef.current || !spinning) {
       return;
     }
 
     const step = Math.min(delta, 0.05);
-    earthRef.current.rotation.y += step * IDLE_SPIN_RADIANS_PER_SECOND;
+    meshRef.current.rotation.y += step * IDLE_SPIN_RADIANS_PER_SECOND;
   });
 
   return (
     <group rotation={[0, 0, AXIAL_TILT_RADIANS]}>
-      <mesh ref={earthRef}>
+      <mesh
+        ref={meshRef}
+        onPointerOver={blockPointer}
+        onPointerMove={blockPointer}
+        onClick={blockPointer}
+      >
         <sphereGeometry args={[EARTH_RADIUS, 96, 96]} />
         <meshStandardMaterial
           map={colorMap}
@@ -73,6 +101,7 @@ function Earth() {
           roughness={0.9}
           metalness={0.02}
         />
+        {children}
       </mesh>
     </group>
   );
@@ -86,7 +115,7 @@ function Atmosphere() {
     () =>
       new ShaderMaterial({
         uniforms: {
-          glowColor: { value: new Color("#9fd4ff") },
+          glowColor: { value: new Color(THEME.foreground) },
         },
         vertexShader: ATMOSPHERE_VERTEX_SHADER,
         fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
@@ -113,24 +142,56 @@ function Atmosphere() {
 }
 
 /**
- * Full-viewport globe. Drag to orbit and scroll to zoom. The surface keeps turning.
+ * Full-viewport globe with one marker per mountain. Drag to orbit and scroll to zoom.
+ * The surface keeps turning, except while a marker is hovered or the camera is flying.
+ * Clicking a marker calls onSelect. Set flyTarget to fly there; onArrive fires on landing.
+ * onReady fires once the textured globe is on screen.
  */
-export default function SpinningGlobe() {
+export default function SpinningGlobe({
+  mountains,
+  flyTarget,
+  onSelect,
+  onArrive,
+  onReady,
+}: {
+  mountains: Mountain[];
+  flyTarget: Mountain | null;
+  onSelect: (mountain: Mountain) => void;
+  onArrive: (mountain: Mountain) => void;
+  onReady: () => void;
+}) {
+  const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  const earthRef = useRef<Mesh>(null);
+  const flying = flyTarget !== null;
+
   return (
     <Canvas
-      camera={{ position: [0, 0.2, 2.85], fov: 40 }}
+      camera={{ position: [0, 0.25, 3.4], fov: 40 }}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
-      <color attach="background" args={["#0A0E14"]} />
+      <color attach="background" args={[THEME.background]} />
       <ambientLight intensity={0.22} />
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
       <Suspense fallback={null}>
-        <Earth />
+        <Earth meshRef={earthRef} spinning={hoveredSlug === null && !flying} onReady={onReady}>
+          {mountains.map((mountain) => (
+            <MountainMarker
+              key={mountain.slug}
+              mountain={mountain}
+              radius={EARTH_RADIUS}
+              hovered={!flying && hoveredSlug === mountain.slug}
+              onHoverChange={setHoveredSlug}
+              onSelect={onSelect}
+            />
+          ))}
+        </Earth>
       </Suspense>
+      <CameraFlight target={flyTarget} earth={earthRef} onArrive={onArrive} />
       <Atmosphere />
       <OrbitControls
+        enabled={!flying}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}

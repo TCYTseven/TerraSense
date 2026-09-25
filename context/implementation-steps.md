@@ -10,23 +10,23 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 
 ## Checklist
 
-- [ ] 1. Lay out the repo and environment
-- [ ] 2. Apply the dark dispatch theme
-- [ ] 3. Stand up the FastAPI service
-- [ ] 4. Create the Postgres schema
-- [ ] 5. Seed mountains and empty Rainier trails
-- [ ] 6. Ship the mountain read API
-- [ ] 7. Add the typed frontend API client
-- [ ] 8. Render the 3D globe and risk markers
-- [ ] 9. Search, fly to a mountain, and open its page
-- [ ] 10. Download the Rainier source layers
-- [ ] 11. Build the terrain feature table
-- [ ] 12. Train the susceptibility model
-- [ ] 13. Render susceptibility map tiles
-- [ ] 14. Import trails and historical landslide pins
-- [ ] 15. Open the Mapbox mountain view
+- [x] 1. Lay out the repo and environment
+- [x] 2. Apply the dark dispatch theme
+- [x] 3. Stand up the FastAPI service
+- [x] 4. Create the Postgres schema
+- [x] 5. Seed mountains and empty Rainier trails
+- [x] 6. Ship the mountain read API
+- [x] 7. Add the typed frontend API client
+- [x] 8. Render the 3D globe and risk markers
+- [x] 9. Search, fly to a mountain, and open its page
+- [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
+- [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
+- [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
+- [x] 13. Render susceptibility map tiles
+- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
+- [x] 15. Open the Mapbox mountain view (built on MapLibre GL with AWS Terrain Tiles, so no token is needed. A Mapbox token switches the relief to satellite)
 - [ ] 16. Toggle susceptibility and historical pins
-- [ ] 17. Score 72-hour probability from live rain
+- [ ] 17. Score 72-hour probability from live rain (Model B done and checked on a synthetic storm. The live Open-Meteo fetch is written but untested: the build container cannot reach api.open-meteo.com)
 - [ ] 18. Draw the heat map, hazard polygon, and trail risk
 - [ ] 19. Add one bypass around the worst segment
 - [ ] 20. Define agent schemas, tools, and prompts
@@ -48,7 +48,7 @@ Use these values everywhere so the globe, the model, and the map describe the sa
 | Static markers | Two other peaks. Name, lat, lon, and a fixed risk level only |
 | Risk levels | `low`, `moderate`, `high`, `extreme` |
 | Probability bins | Low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7 |
-| Tiles | XYZ, EPSG:3857, so they sit on Mapbox terrain |
+| Tiles | XYZ, EPSG:3857, so they sit on the map's 3D terrain |
 
 Rainier bounding box as numbers: `[-121.93, 46.76, -121.54, 46.96]`.
 

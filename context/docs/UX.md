@@ -2,7 +2,7 @@
 
 Why TerraSense has two surfaces, and the rules for adding anything to either one.
 
-The visual tokens (colors, type, motion) are in [`../context/TerraSense.md`](../context/TerraSense.md) under Design Language. This file decides whether a control belongs on screen. When they disagree about a color, the spec wins. When they disagree about whether to add a control, this file wins.
+The visual tokens (colors, type, motion) are in [`../TerraSense.md`](../TerraSense.md) under Design Language. This file decides whether a control belongs on screen. When they disagree about a color, the spec wins. When they disagree about whether to add a control, this file wins.
 
 ## The problem
 
@@ -43,7 +43,7 @@ The camera move and the route change are one gesture. The page does not cut.
 
 ### Mountain
 
-Mapbox satellite terrain. Default layer is the 72-hour probability heat map. Toggles: susceptibility, historical pins. Trails colored by segment. One hazard pin.
+3D terrain on a light shaded relief, or Mapbox satellite when a token is set. Default layer is the 72-hour probability heat map. Toggles: susceptibility, historical pins. Trails colored by segment. One hazard pin.
 
 Panel contents, top to bottom: mountain name and elevation, overall risk and one sentence, rain totals, trail list, agent rows, **Analyze now**, **Hiker forecast**.
 

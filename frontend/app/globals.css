@@ -1,19 +1,121 @@
 @import "tailwindcss";
 
+/*
+ * Dark dispatch theme, basalt and glacier. Hex values come from the Design
+ * Language section of context/TerraSense.md. Variable names and roles follow the
+ * Tokens table in context/design-addendum.md, which shadcn/ui reads as well.
+ * lib/theme.ts mirrors the neutral and accent values for WebGL and Mapbox code.
+ * Change both together.
+ */
 :root {
-  --background: #0a0e14;
-  --foreground: #e6edf3;
+  /* Background, dark end and light end. */
+  --background: #0d0c0a;
+  --muted: #13120f;
+
+  /* Panels: side panel, toggle group, hover card, popups, search results. */
+  --card: #1a1814;
+  --popover: #1a1814;
+  --secondary: #1a1814;
+
+  /* Text. Every *-foreground not set below is the text color. */
+  --foreground: #ece6dc;
+  --card-foreground: var(--foreground);
+  --popover-foreground: var(--foreground);
+  --secondary-foreground: var(--foreground);
+  --accent-foreground: var(--foreground);
+  --muted-foreground: #9c9387;
+
+  /* The interactive accent: primary buttons, links, focus rings, selection. */
+  --primary: #7fdde6;
+  --ring: var(--primary);
+  --primary-foreground: var(--background);
+
+  /* Every 1 px border: the text color at 10%. */
+  --border: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --input: var(--border);
+
+  /* shadcn's hover surface for list rows: the text color at 6%. Never the accent. */
+  --accent: color-mix(in srgb, var(--foreground) 6%, transparent);
+
+  /* Errors never borrow risk red. */
+  --destructive: var(--foreground);
 }
 
+/* Each --color-* token becomes a Tailwind utility, for example bg-card,
+ * text-muted-foreground, border-border, text-primary, and bg-risk-high. */
 @theme inline {
   --color-background: var(--background);
+  --color-muted: var(--muted);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-secondary: var(--secondary);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-ring: var(--ring);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-accent: var(--accent);
+  --color-destructive: var(--destructive);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+@theme {
+  /* Risk only: markers, trails, heat, and severity. Use them nowhere else. */
+  --color-risk-low: #22c55e;
+  --color-risk-moderate: #f59e0b;
+  --color-risk-high: #f97316;
+  --color-risk-extreme: #ef4444;
+
+  /* Pages fade in after the globe's fly-to fades out. */
+  --animate-fade-in: fade-in 320ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/* next/font sets --font-geist-* on <html>, so these resolve inline. */
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Faint coordinate grid for map areas. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    color: var(--foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }

@@ -1,0 +1,113 @@
+[
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "terrain",
+    "status": "running",
+    "summary": "Reading the 72-hour probability raster for Mount Rainier.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "weather",
+    "status": "running",
+    "summary": "Checking past and forecast rain at the peak.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "terrain",
+    "status": "done",
+    "summary": "Debris flow cluster below Mazama Ridge. Severity high, peak probability 0.71.",
+    "payload": {
+      "hazard_zone": {
+        "id": "hz_001",
+        "type": "debris_flow",
+        "severity": "high",
+        "max_probability": 0.71,
+        "drivers": ["slope_angle", "drainage_proximity", "recent_rain"],
+        "confidence": 0.84,
+        "notes": "Cluster below Mazama Ridge where the loop crosses steep drainages. Sparse vegetation."
+      }
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "weather",
+    "status": "done",
+    "summary": "61 mm in the past 72 hours and 18 mm more in the next 24. The zone is getting worse.",
+    "payload": {
+      "modifier": "worse",
+      "severity": "high",
+      "confidence": 0.78,
+      "rain_past_72h_mm": 61.2,
+      "rain_next_24h_mm": 18.4,
+      "note": "Saturated soil and more rain on the way keep the drainage loaded through tomorrow."
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "trail",
+    "status": "running",
+    "summary": "Intersecting the zone with Rainier trails.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "trail",
+    "status": "done",
+    "summary": "Skyline Trail miles 1.2 to 2.1 cross the zone. Bypass: Golden Gate Trail.",
+    "payload": {
+      "trail_name": "Skyline Trail",
+      "start_mile": 1.2,
+      "end_mile": 2.1,
+      "severity": "high",
+      "confidence": 0.8,
+      "bypass": {
+        "name": "Golden Gate Trail",
+        "added_km": -0.8,
+        "added_elevation_m": 0
+      },
+      "note": "The Golden Gate Trail climbs Edith Creek and rejoins the loop above the flagged miles."
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "synthesizer",
+    "status": "running",
+    "summary": "Combining the terrain, weather, and trail reports.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "synthesizer",
+    "status": "done",
+    "summary": "Final severity high, confidence 0.81. The three reports agree.",
+    "payload": {
+      "severity": "high",
+      "confidence": 0.81,
+      "needs_review": false,
+      "reports": { "terrain": "high", "weather": "high", "trail": "high" }
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "writer",
+    "status": "running",
+    "summary": "Drafting the ranger alert and the hiker card.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "writer",
+    "status": "done",
+    "summary": "Ranger alert and hiker sentence ready.",
+    "payload": {
+      "recommended_action": "close",
+      "ranger": {
+        "title": "Debris flow risk HIGH: Skyline Trail miles 1.2 to 2.1",
+        "body": "Debris flow risk HIGH on the Skyline Trail between miles 1.2 and 2.1, below Mazama Ridge. The slopes took 61 mm of rain in 72 hours and 18 mm more is forecast. Confidence 0.81. Close the segment and route hikers up the Golden Gate Trail."
+      },
+      "hiker": "Heavy rain has soaked the slopes above the Skyline Trail between miles 1.2 and 2.1, and mud and rock could come down on the trail. Take the Golden Gate Trail instead. It skips that stretch and is 0.8 km shorter."
+    }
+  }
+]

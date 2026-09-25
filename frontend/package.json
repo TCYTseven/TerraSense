@@ -6,11 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "postinstall": "node scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.8",
     "@react-three/fiber": "^9.8.1",
+    "maplibre-gl": "^6.11.2",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8",

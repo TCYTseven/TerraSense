@@ -117,7 +117,7 @@ The globe is the demo hook. Keep it small and fast. Three markers is enough.
 
 ### 6.2 Mountain View
 
-Clicking Rainier opens a Mapbox GL map with 3D terrain (exaggeration about 1.5) and a satellite basemap.
+Clicking Rainier opens a MapLibre GL map (the open-source fork of Mapbox GL) with 3D terrain (exaggeration about 1.5) and a light shaded relief. With a Mapbox token it shows Mapbox satellite imagery instead.
 
 **Layers**
 
@@ -240,7 +240,7 @@ The Alert Writer produces the sentence. No account, no share image, no file down
 ```
 ┌────────────────────────────────────────────────────────────┐
 │                     FRONTEND (Next.js)                      │
-│   3D Globe (R3F)  →  Mountain map (Mapbox)  →  Hiker card   │
+│   3D Globe (R3F)  →  Mountain map (MapLibre) →  Hiker card  │
 │              WebSocket (agent stream)    REST               │
 └──────────────────────────┬─────────────────────────────────┘
                            │
@@ -287,7 +287,7 @@ Download and clip these before the event. Everything is for Mount Rainier unless
 | Landslide points | NASA Global Landslide Catalog and/or a USGS/state inventory for the Rainier area | Model A labels and map pins |
 | Precipitation | Open-Meteo | Model B, live |
 | Trails | OpenStreetMap, saved ahead of time | Trail risk and the bypass |
-| Basemap | Mapbox satellite | Mountain view |
+| Basemap | AWS Terrain Tiles (elevation, shaded relief). Mapbox satellite when a token is set | Mountain view |
 
 The other two globe markers need a name, a coordinate, and a static risk level. They do not need rasters.
 
@@ -308,7 +308,7 @@ The other two globe markers need a name, a coordinate, and a static risk level. 
 
 1. Train LightGBM if you did not finish training beforehand. Spatial split: hold out one part of the box, or a nearby area, as the test set.
 2. Write the Model B function so it only needs the cached susceptibility raster and an Open-Meteo response.
-3. Turn the probability raster into XYZ tiles in Web Mercator (EPSG:3857) so Mapbox lines up with the terrain. Check alignment early.
+3. Turn the probability raster into XYZ tiles in Web Mercator (EPSG:3857) so the map lines up with the terrain. Check alignment early.
 4. Extract the worst cluster as one polygon for the hazard pin.
 
 Target: Model B plus tiling finishes in under 30 seconds. If tiling is slow, pre-tile susceptibility and only recolor the probability overlay from a coarse grid.
@@ -368,7 +368,7 @@ Target: the five calls finish in about a minute. Cap each output at a short JSON
 | Frontend | Next.js (App Router) + TypeScript |
 | UI | Tailwind CSS + shadcn/ui |
 | Globe | React Three Fiber + Three.js |
-| Map | Mapbox GL JS with 3D terrain |
+| Map | MapLibre GL JS with 3D terrain from AWS Terrain Tiles. No key needed |
 | Realtime | FastAPI WebSocket |
 | API and agents | FastAPI, Pydantic |
 | ML | LightGBM, rasterio, GeoPandas or Shapely |
@@ -387,11 +387,11 @@ Dark and operational, like a small dispatch screen. The hiker card is the only s
 
 **Color**
 
-- Background `#0A0E14` to `#0F1419`.
-- Panels `#151B23`, 1 px border at about 10% white.
-- Interactive accent `#22D3EE`.
+- Background `#0D0C0A` to `#13120F`.
+- Panels `#1A1814`, 1 px border at about 10% of the text color.
+- Interactive accent `#7FDDE6`.
 - Risk only: green `#22C55E`, amber `#F59E0B`, orange `#F97316`, red `#EF4444`.
-- Text `#E6EDF3`, muted `#8B949E`.
+- Text `#ECE6DC`, muted `#9C9387`.
 
 **Type**
 
@@ -490,13 +490,13 @@ GET  /forecast?mountain_id&trail_id
 ### Before the event
 
 - Clip Rainier DEM, land cover, trails, and landslide points. Build the feature table.
-- Keys: Mapbox, an LLM provider, Discord webhook, Open-Meteo (no key).
+- Keys: an LLM provider, Discord webhook. Open-Meteo and the terrain tiles need none. Mapbox is optional, for satellite imagery.
 - Pick the two static marker mountains and their display risk.
 
 ### Hours 0–8: Something on screen
 
 - Globe with three markers and a fly-to.
-- Mapbox terrain for Rainier, trail lines, satellite basemap.
+- 3D terrain for Rainier, trail lines, shaded relief (satellite with a Mapbox token).
 - FastAPI and Postgres seeded.
 - Susceptibility raster tiled and visible as a toggle.
 
@@ -563,7 +563,7 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D 
 
 **Agents.** [Five agents, parallel first step, Pydantic outputs, WebSocket stream, disagreement flagged as needs review.]
 
-**Frontend.** Next.js, React Three Fiber for the globe, Mapbox GL for 3D terrain.
+**Frontend.** Next.js, React Three Fiber for the globe, MapLibre GL for 3D terrain.
 
 **Alerting.** Discord webhook with a deep link. No accounts.
 

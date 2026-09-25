@@ -1,0 +1,18 @@
+# TerraSense API. Python 3.11 or newer.
+fastapi~=0.141.1
+uvicorn[standard]~=0.54.0
+pydantic~=2.13
+httpx~=0.28.1
+
+# Postgres driver and connection pool (schema, seed, and reads from step 4).
+psycopg[binary]~=3.3.6
+psycopg-pool~=3.3.3
+
+# Loads the repo root .env.
+python-dotenv~=1.2
+
+# Rasters and map tiles (step 13 on). numpy stays below 2.4 to match ml/ (pysheds).
+numpy>=2,<2.4
+rasterio~=1.4
+pillow>=11
+mercantile~=1.2

@@ -5,16 +5,14 @@ import GlobeView from "@/components/globe/globe-view";
  */
 export default function Home() {
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-[#0A0E14]">
+    <main className="relative h-dvh w-full overflow-hidden bg-background">
       <GlobeView />
-      <div className="pointer-events-none absolute left-6 top-6">
-        <p className="font-mono text-xs tracking-[0.28em] text-[#22D3EE]">
-          TERRASENSE
-        </p>
-        <h1 className="mt-1 text-sm text-[#8B949E]">
-          Landslide hazard intelligence
+      <header className="pointer-events-none absolute left-6 top-6">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          TerraSense
         </h1>
-      </div>
+        <p className="mt-0.5 text-sm text-muted-foreground">Landslide hazard intelligence</p>
+      </header>
     </main>
   );
 }

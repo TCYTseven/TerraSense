@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Mount Rainier",
+    "slug": "mount-rainier",
+    "lat": 46.8523,
+    "lon": -121.7603,
+    "elevation_m": 4392,
+    "region": "Cascade Range, Washington, USA",
+    "current_risk_level": "moderate",
+    "is_live": true
+  },
+  {
+    "name": "Huascarán",
+    "slug": "huascaran",
+    "lat": -9.1219,
+    "lon": -77.6042,
+    "elevation_m": 6768,
+    "region": "Cordillera Blanca, Peru",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Mount Fuji",
+    "slug": "mount-fuji",
+    "lat": 35.3606,
+    "lon": 138.7274,
+    "elevation_m": 3776,
+    "region": "Honshu, Japan",
+    "current_risk_level": "low",
+    "is_live": false
+  }
+]
