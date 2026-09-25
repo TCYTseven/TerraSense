@@ -556,9 +556,9 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A 3D 
 
 ### How we built it
 
-**Data and ML.** [DEM features, land cover, landslide labels, LightGBM with a spatial split, rainfall-threshold trigger using Open-Meteo. Report AUC and the threshold you used.]
+**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover, combined into a knowledge-driven susceptibility index with named weights. No AUC yet: the landslide labels (NASA Global Landslide Catalog) were unreachable from the build container, so LightGBM is untrained. The 72-hour map uses that index as a labeled stand-in until Model B lands. [Replace with the AUC once step 12 runs.]
 
-**Agents.** [Five agents, parallel first step, Pydantic outputs, WebSocket stream, disagreement flagged as needs review.]
+**Agents.** Five agents with Pydantic outputs: Terrain and Weather in parallel, then Trail, Synthesizer, and Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
 
 **Frontend.** Next.js, React Three Fiber for the globe, MapLibre GL for 3D terrain.
 

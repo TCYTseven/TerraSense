@@ -54,6 +54,22 @@ export interface Trail {
 }
 
 /** One edge of a bypass with its own risk, so the map colors the detour by level. */
+/** GET /forecast (step 25): the hiker card's facts from the latest finished run. */
+export interface Forecast {
+  mountain_slug: string;
+  run_id: string;
+  hazard_id: string;
+  trail_id: string | null;
+  trail_name: string | null;
+  level: RiskLevel;
+  /** The Alert Writer's hiker sentence. */
+  sentence: string;
+  start_mile: number | null;
+  end_mile: number | null;
+  /** Added distance and climb come from here, never from the model's text. */
+  bypass: Bypass | null;
+}
+
 export interface BypassPiece {
   /** Null for an unnamed connector path. */
   trail: string | null;

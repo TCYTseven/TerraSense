@@ -7,7 +7,7 @@ import type {
   StyleSpecification,
 } from "maplibre-gl";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { Hazard, HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
+import type { Bypass, Hazard, HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
 
 /**
  * The mountain map's style: 3D terrain from open elevation tiles under a light shaded relief.
@@ -68,6 +68,7 @@ export const SOURCE = {
   susceptibility: "susceptibility",
   probability: "probability",
   hazard: "hazard",
+  bypass: "bypass",
   history: "historical-events",
 } as const;
 
@@ -82,6 +83,7 @@ export const LAYER = {
   otherTrails: "trails-other",
   heroCasing: "trail-hero-casing",
   heroLine: "trail-hero",
+  bypass: "bypass-line",
   history: "historical-pins",
 } as const;
 
@@ -126,6 +128,23 @@ export const HAZARD_OUTLINE_COLOR: ExpressionSpecification = [
   RISK_COLORS.high,
   RISK_COLORS.extreme,
 ];
+
+/** The bypass, piece by piece, each colored by its own level (step 25, hiker card only). */
+export function bypassFeatures(
+  bypass: Bypass | null,
+): GeoJSON.FeatureCollection<GeoJSON.LineString, { severity: RiskLevel }> {
+  return {
+    type: "FeatureCollection",
+    features: (bypass?.pieces ?? []).map((piece) => ({
+      type: "Feature",
+      geometry: piece.geom,
+      properties: { severity: piece.level },
+    })),
+  };
+}
+
+/** Other trails drop to this opacity while the hiker card draws the bypass. */
+export const DIMMED_TRAIL_OPACITY = 0.35;
 
 type HistoryProperties = {
   id: string;

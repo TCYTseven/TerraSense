@@ -17,10 +17,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
+import type { Bypass, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
+  bypassFeatures,
   CAMERA,
+  DIMMED_TRAIL_OPACITY,
   HAZARD_OUTLINE_COLOR,
   hazardFeatures,
   HEAT_FADE_MS,
@@ -69,6 +71,8 @@ export interface TerrainMapProps {
   onMapClick: () => void;
   /** Past landslides for the pins. Empty until the catalog is downloaded. */
   historicalEvents: HistoricalEvent[];
+  /** The hiker card's bypass: drawn dashed while the card is open, null otherwise. */
+  bypass?: Bypass | null;
 }
 
 /** A small label pinned to the summit. MapLibre lifts it onto the 3D terrain. */
@@ -300,6 +304,7 @@ export default function TerrainMap({
   onHazardClick,
   onMapClick,
   historicalEvents,
+  bypass = null,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -443,6 +448,37 @@ export default function TerrainMap({
       LAYER.otherTrails,
     );
   }, [map, isLive, hazard]);
+
+  // The hiker card's bypass: dashed, colored by its own levels, above the trails. Other trails dim.
+  useEffect(() => {
+    if (!map || !isLive) {
+      return;
+    }
+    const data = bypassFeatures(bypass);
+    const source = map.getSource<GeoJSONSource>(SOURCE.bypass);
+    if (source) {
+      source.setData(data);
+    } else {
+      map.addSource(SOURCE.bypass, { type: "geojson", data });
+      map.addLayer({
+        id: LAYER.bypass,
+        type: "line",
+        source: SOURCE.bypass,
+        layout: { "line-join": "round", "line-cap": "butt" },
+        paint: { "line-color": HAZARD_OUTLINE_COLOR, "line-width": ["interpolate", ["linear"], ["zoom"], 11, 3, 15, 6], "line-dasharray": [2, 1.5] },
+      });
+    }
+    map.setPaintProperty(LAYER.otherTrails, "line-opacity", bypass ? DIMMED_TRAIL_OPACITY : 1);
+    if (bypass) {
+      const coords = bypass.geom.coordinates;
+      const bounds = map.getBounds();
+      if (!coords.every(([x, y]) => bounds.contains([x, y]))) {
+        const lons = coords.map((c) => c[0]);
+        const lats = coords.map((c) => c[1]);
+        map.fitBounds([Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)], { padding: 60, duration: 0 });
+      }
+    }
+  }, [map, isLive, bypass]);
 
   // The hazard pin, on a point inside the zone.
   useEffect(() => {

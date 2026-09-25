@@ -3,6 +3,7 @@ import { formatFeet, formatInches, formatMileRange, formatScore, timeAgo } from 
 import { RISK_LEVELS, type AgentName, type Hazard, type MountainDetail, type RiskLevel, type Run } from "@/lib/types";
 import AgentRows, { type RowState } from "./agent-rows";
 import HazardBlock from "./hazard-block";
+import HikerCard, { type HikerCardState } from "./hiker-card";
 import { LEVEL_TREATMENT, LevelWord, NeedsReviewTag } from "./level";
 
 export interface RangerPanelProps {
@@ -20,6 +21,12 @@ export interface RangerPanelProps {
   heatMapIsStandIn: boolean;
   onAnalyze: () => void;
   onOpenReasoning: (agent: AgentName) => void;
+  /** The hiker card, open in place of the panel content, or null. */
+  hiker: HikerCardState | null;
+  /** Hiker forecast needs a finished run. */
+  hikerAvailable: boolean;
+  onOpenHiker: () => void;
+  onCloseHiker: () => void;
 }
 
 function highest(levels: (RiskLevel | null)[]): RiskLevel | null {
@@ -56,7 +63,8 @@ export default function RangerPanel(props: RangerPanelProps) {
 
   return (
     <aside className="flex min-h-0 flex-col border-t border-border bg-card md:w-[clamp(360px,30vw,440px)] md:shrink-0 md:border-l md:border-t-0">
-      <div className="min-h-0 flex-1 md:overflow-y-auto">
+      {props.hiker && <HikerCard state={props.hiker} onBack={props.onCloseHiker} />}
+      <div className={`min-h-0 flex-1 md:overflow-y-auto ${props.hiker ? "hidden" : ""}`}>
         <header className="px-5 pb-4 pt-5">
           <Link href="/" className="text-xs text-primary underline decoration-1 underline-offset-3">
             Back to the globe
@@ -192,7 +200,7 @@ export default function RangerPanel(props: RangerPanelProps) {
         )}
       </div>
 
-      {live && (
+      {live && !props.hiker && (
         <footer className="border-t border-border px-5 py-4">
           <button
             type="button"
@@ -202,6 +210,17 @@ export default function RangerPanel(props: RangerPanelProps) {
           >
             {props.analyzing ? "Analyzing…" : "Analyze now"}
           </button>
+          <button
+            type="button"
+            onClick={props.onOpenHiker}
+            disabled={!props.hikerAvailable}
+            className="mt-2 h-10 w-full rounded-md border border-primary text-sm font-medium text-primary hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent"
+          >
+            Hiker forecast
+          </button>
+          {!props.hikerAvailable && (
+            <p className="mt-2 text-xs text-muted-foreground">Available after the first finished run.</p>
+          )}
         </footer>
       )}
     </aside>

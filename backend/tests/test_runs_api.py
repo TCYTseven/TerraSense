@@ -119,6 +119,11 @@ def test_analyze_streams_and_saves(api):
     hero = next(t for t in mountain["trails"] if t["segments"])
     assert all(s["risk_level"] for s in hero["segments"])
 
+    forecast = client.get("/forecast", params={"mountain_id": "mount-rainier", "trail_id": hero["id"]}).json()
+    assert forecast["run_id"] == run_id and forecast["level"] == run["severity"]
+    assert forecast["sentence"] == run["agents"]["writer"]["payload"]["hiker"]
+    assert forecast["bypass"]["name"] == "Golden Gate Trail" and forecast["trail_name"] == hero["name"]
+
     # A new process has no runs in memory: the finished run comes back from its row.
     fresh = RunRegistry(providers={})
     runs_route.registry = fresh
@@ -146,4 +151,5 @@ def test_rejects(api):
     assert client.post("/mountains/nowhere/analyze").status_code == 404
     assert client.get("/runs/not-a-uuid").status_code == 404
     assert client.get(f"/runs/{uuid.uuid4()}").status_code == 404
+    assert client.get("/forecast", params={"mountain_id": "nowhere"}).status_code == 404
     assert follow(client, str(uuid.uuid4()))[0]["kind"] == "error"

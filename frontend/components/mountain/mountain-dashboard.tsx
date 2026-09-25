@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import MountainMap from "@/components/map/mountain-map";
 import { rowStates } from "@/components/panel/agent-rows";
 import RangerPanel from "@/components/panel/ranger-panel";
+import type { HikerCardState } from "@/components/panel/hiker-card";
 import ReasoningPanel from "@/components/panel/reasoning-panel";
-import { ApiError, getLayer, getMountain, startAnalysis } from "@/lib/api";
+import { ApiError, getForecast, getLayer, getMountain, startAnalysis } from "@/lib/api";
 import { formatClock } from "@/lib/format";
 import { followRun } from "@/lib/run-stream";
 import type { AgentName, LayerTiles, MountainDetail, Run } from "@/lib/types";
@@ -35,6 +36,7 @@ export default function MountainDashboard(props: MountainDashboardProps) {
   const [reasoning, setReasoning] = useState<AgentName | null>(null);
   const [starting, setStarting] = useState(false);
   const [problem, setProblem] = useState<Problem>(null);
+  const [hiker, setHiker] = useState<HikerCardState | null>(null);
   const stop = useRef<(() => void) | null>(null);
   const slug = mountain.slug;
 
@@ -82,8 +84,19 @@ export default function MountainDashboard(props: MountainDashboardProps) {
     return () => stop.current?.();
   }, [activeAtOpen, follow]);
 
+  async function openHiker() {
+    setHiker({ kind: "loading" });
+    try {
+      const forecast = await getForecast(slug, mountain.active_hazard?.trail_id);
+      setHiker(forecast ? { kind: "ready", forecast } : { kind: "error" });
+    } catch {
+      setHiker({ kind: "error" });
+    }
+  }
+
   async function analyze() {
     setStarting(true);
+    setHiker(null);
     setProblem(null);
     // The five rows are the moment to watch: bring them into view, at once (no smooth scroll).
     document.getElementById("agents")?.scrollIntoView({ block: "nearest" });
@@ -138,6 +151,7 @@ export default function MountainDashboard(props: MountainDashboardProps) {
           onHazardClick={() => setHazardOpen((open) => !open)}
           onMapClick={() => setHazardOpen(false)}
           historicalEvents={mountain.historical_events}
+          bypass={hiker?.kind === "ready" ? hiker.forecast.bypass : null}
         />
         {reasoning && (
           <ReasoningPanel
@@ -161,6 +175,10 @@ export default function MountainDashboard(props: MountainDashboardProps) {
         heatMapIsStandIn={probability?.method?.includes("stand-in") ?? false}
         onAnalyze={analyze}
         onOpenReasoning={setReasoning}
+        hiker={hiker}
+        hikerAvailable={Boolean(hazard?.run_id) && !running}
+        onOpenHiker={openHiker}
+        onCloseHiker={() => setHiker(null)}
       />
     </main>
   );

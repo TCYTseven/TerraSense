@@ -1,4 +1,4 @@
-import type { LayerTiles, Mountain, MountainDetail, Run } from "./types";
+import type { Forecast, LayerTiles, Mountain, MountainDetail, Run } from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -87,6 +87,22 @@ export async function startAnalysis(slug: string, init?: RequestInit): Promise<s
 export async function getRun(runId: string, init?: RequestInit): Promise<Run | null> {
   try {
     return await getJson<Run>(`/runs/${encodeURIComponent(runId)}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The hiker card's facts from the latest finished run. Resolves to null before any. */
+export async function getForecast(mountainId: string, trailId?: string | null, init?: RequestInit): Promise<Forecast | null> {
+  const query = new URLSearchParams({ mountain_id: mountainId });
+  if (trailId) {
+    query.set("trail_id", trailId);
+  }
+  try {
+    return await getJson<Forecast>(`/forecast?${query}`, init);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;

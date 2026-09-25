@@ -34,7 +34,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 22. Expose analyze, run status, and the live stream
 - [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel)
 - [x] 24. ~~Post the ranger alert to Discord~~ (dropped by the team on Sep 25, 2026. The ranger reads the alert in the app)
-- [ ] 25. Show the hiker card and rehearse the demo
+- [x] 25. Show the hiker card and rehearse the demo (walked in Chromium against the fake LLM APIs. Rehearse once more with real Gemini and xAI keys)
 
 ## Shared facts
 

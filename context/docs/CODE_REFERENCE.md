@@ -83,6 +83,7 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/components/mountain/mountain-dashboard.tsx` | Step 23. `MountainDashboard`: the page's live state. Holds the mountain, the heat map layer, the run the rows show, the pin selection, and the reasoning panel. **Analyze now** calls `startAnalysis`, scrolls the rows into view, and follows the stream; a finished run reloads the mountain and heat map and opens the new hazard; a failed or lost run keeps the last good hazard and says so in the status line. Follows a run that was going when the page opened. |
 | `frontend/components/panel/ranger-panel.tsx` | Step 23. `RangerPanel`: the dispatch board in the design addendum's order: header (feet, region), overall risk (level word, the Synthesizer's sentence, needs-review tag, High and Extreme treatment, no color before any level, the stand-in note), the hazard block while the pin is selected, rain in inches, trails (the hero trail's level, score, and flagged miles), the agent rows with **Reasoning**, the status line, and **Analyze now** pinned at the bottom. Static mountains keep only the header and the fixed risk. |
 | `frontend/components/panel/hazard-block.tsx` | Step 23. `HazardBlock`: what it is, why it was flagged, confidence, how to avoid it, always in that order, with the level treatment and a close button. Says so when the hazard is a preview. |
+| `frontend/components/panel/hiker-card.tsx` | Step 25. `HikerCard({state, onBack})`: replaces the ranger panel's content. Trail name, level word, the hiker sentence, the bypass name, and its added distance and climb from `GET /forecast`. Loading skeleton and error line. Never shows drivers, probability, or confidence. |
 | `frontend/components/panel/agent-rows.tsx` | Step 23. `AgentRows` (five buttons: status glyph, name, the routed model, the latest summary; the running row pulses), `rowStates(run)` (waiting, running, done, error, or skipped after a failure), `AGENT_LABELS`. |
 | `frontend/components/panel/reasoning-panel.tsx` | Step 23. `ReasoningPanel`: the side panel. Tabs per agent; for the selected one, the model and its tier, why the router picked it (each rule's verdict and the fallback), the tool calls with their facts, the provider's thinking summary and the agent's steps, what the code did, every call, and the raw answer. Live during a run. Escape closes it. |
 | `frontend/components/panel/level.tsx` | Step 23. `LevelWord` (dot and word in the level color), `NeedsReviewTag`, `LEVEL_TEXT`, `LEVEL_TREATMENT` (the High and Extreme border and tint). |
@@ -128,6 +129,7 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 | `backend/app/agents/router.py` | Step 20. `Router.route(agent, Signals)` picks Gemini Flash or Grok and returns a `RouteDecision` with every rule it checked: tier (fast tasks to Gemini, strong to Grok), the task (a zone peak within 0.05 of a bin edge, rain within a third of the 72-hour threshold, or a missing or risky bypass escalates to Grok; three reports agreeing at moderate or below, or a routine monitor notice, moves to Gemini), the latency budget (past 42 s of 60, Grok moves to Gemini), and availability (a missing key, or two failures in two minutes rests a provider for a minute). `LLM_ROUTER` forces one provider. `record_failure`, `record_success`, `NoProviderError`. |
 | `backend/app/agents/pipeline.py` | Step 21. `python -m app.agents.pipeline [--fixture-rain]` runs the five agents once and prints each payload, the final severity, and both texts. `Pipeline(ctx, router, providers, emit).run()`: Terrain and Weather together, then Trail, Synthesizer, Writer. Per agent: route, tools, one model call validated against the schema (two tries per provider: a retry after a temporary failure, or a repair round after a failed check; then the fallback provider). Emits an `AgentEvent` on start and on finish or failure, with the trace. Code sets the final confidence (`CONFIDENCE_WEIGHTS` 0.40, 0.35, 0.25), `needs_review` (spread of 2 levels), and the Synthesizer's guard rails; the ranger title is `ranger_line()`; `writer_problems()` holds the copy checks, with plain templates when the model keeps failing them. Returns a `PipelineResult` with a `Final`. |
 | `backend/app/runs.py` | Step 22. Runs in the API process, keyed by `run_id`. `registry.start(slug, mountain)` starts one in the background (or returns the one running), which inserts its `analysis_runs` row, fetches rain once, scores the assessment, runs the pipeline while relaying each `AgentEvent`, then in one transaction renders the probability tiles, stores segment risk, saves the hazard with the agents' text, and sets the mountain's level and `last_analyzed_at`. A failed run writes none of that. The final `Run` view is stored on the row. `RunState.view()`, `subscribe`, `unsubscribe`, `load_run(run_id)` (a finished run from the database), `STEP_NAMES`. |
+| `backend/app/routes/forecast.py` | Step 25. `GET /forecast?mountain_id=&trail_id=` (`mountain_id` takes the id or the slug): the latest finished run's hazard as the hiker card's facts: level, the Alert Writer's hiker sentence, the trail and miles, and the bypass with its added distance and climb. 404 until a run has finished with a hazard. |
 | `backend/app/routes/runs.py` | Step 22. `POST /mountains/{slug}/analyze` (202 with `run_id`; 200 with the running run's id; 409 for a static marker; 404 unknown), `GET /runs/{run_id}` (memory, then the database; 404 unknown), `WS /runs/{run_id}/stream` (a `RunUpdate` snapshot, then each `AgentEvent` and `RunUpdate`, closed after the final one; an unknown run gets `{kind: "error"}` and close code 4404). |
 
 ### API responses
@@ -188,12 +190,6 @@ AgentEvent     { run_id, agent, status, summary, payload, trace: AgentTrace | nu
 
 Create these as the steps call for them. Paths match [`../implementation-steps.md`](../implementation-steps.md).
 
-### Frontend
-
-| Path | Step | Role |
-|---|---|---|
-| `frontend/components/panel/hiker-card.tsx` | 25 | The hiker card |
-
 `AgentEvent` shape, fixed in step 7 (`frontend/lib/types.ts`):
 
 ```json
@@ -206,7 +202,7 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 |---|---|---|
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
 
-API the frontend should call, from the spec. Everything but `/forecast` exists:
+API the frontend should call, from the spec. All of it exists:
 
 ```
 GET  /health
