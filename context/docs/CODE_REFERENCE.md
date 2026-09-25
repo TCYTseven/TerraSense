@@ -11,7 +11,7 @@ The product contract is [`../TerraSense.md`](../TerraSense.md). The build order 
 ```
 frontend/          Next.js app. Runs with npm run dev.
 backend/           FastAPI service. Only the agent guide until step 3.
-ml/scripts/        Offline scripts. Empty until step 10.
+ml/scripts/        Offline scripts: download_sources.py (step 10).
 ml/artifacts/      Model outputs. Empty until step 12.
 data/seed/         Committed seed files: mountains, trails.
 context/           Spec and the 25 implementation steps.
@@ -23,7 +23,7 @@ README.md          Pitch, the three commands, folder owners.
 .gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, virtualenvs.
 ```
 
-`ml/scripts/` and `ml/artifacts/` hold a `.gitkeep` until their first real file lands.
+`ml/artifacts/` holds a `.gitkeep` until step 12 writes the first artifact.
 
 ## Agent harness
 
@@ -111,13 +111,18 @@ Hazard         { id, run_id | null, type (landslide | debris_flow), severity, pr
                  geom (Polygon), drivers: string[], what | null, why | null, how_to_avoid | null, needs_review, created_at }
 ```
 
-## Data (exists)
+## Data and ML (exists)
 
 | File | What it is |
 |---|---|
 | `data/seed/mountains.json` | Mount Rainier (`is_live: true`, placeholder risk `moderate`), Huascarán (`high`), Mount Fuji (`low`). Fields in `data/AGENTS.md`. |
 | `data/seed/trails.geojson` | One rough Skyline Trail loop at Paradise for Rainier, 17 points. NPS length 8.9 km, gain 518 m. Step 14 replaces the line. |
 | `data/AGENTS.md` | Seed formats and data rules. |
+| `data/seed/sources.md` | URL, access date, licence, grid, and checks for each step 10 file. The landslide entry is pending, with the command that finishes it. |
+| `data/raw/rainier_dem_cop30.tif` | Gitignored. Copernicus DEM GLO-30 clipped to the bbox, EPSG:4326, 1405 x 721 px. Rebuild with the step 10 script. |
+| `data/raw/rainier_landcover_worldcover2021.tif` | Gitignored. ESA WorldCover 2021 class codes clipped to the bbox, EPSG:4326, 4680 x 2400 px. |
+| `ml/requirements.txt` | `rasterio`, `numpy`, `requests` for the offline scripts. |
+| `ml/scripts/download_sources.py` | Step 10. `python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force] [--glc-csv URL_OR_PATH]`. Reads the bbox window of the Copernicus DEM and ESA WorldCover COGs over HTTP ranges, writes `data/raw/`, and prints a check that each file covers the bbox. Filters the NASA Global Landslide Catalog CSV to the bbox into `data/seed/landslides.geojson`. A failed stage does not stop the others. |
 
 ## Planned layout
 
@@ -164,9 +169,7 @@ GET  /forecast?mountain_id&trail_id
 
 | Path | Step | Role |
 |---|---|---|
-| `data/seed/landslides.geojson` | 10, 14 | Pin source |
-| `data/seed/sources.md` | 10 | URL and access date for each download |
-| `data/raw/` | 10 | DEM and land cover. Gitignored |
+| `data/seed/landslides.geojson` | 10, 14 | Pin source. Pending: `download_sources.py --only landslides` needs data.nasa.gov |
 | `data/processed/` | 11 | Feature table and derived rasters. Gitignored |
 | `ml/scripts/build_features.py` | 11 | Slope, aspect, curvature, elevation, distance to drainage, land cover, wetness |
 | `ml/scripts/train_susceptibility.py` | 12 | LightGBM, spatial holdout, `ml/artifacts/metrics.json` |

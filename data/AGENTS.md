@@ -18,7 +18,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 |---|---|---|
 | `seed/mountains.json` | 5 | `backend/app/seed.py` |
 | `seed/trails.geojson` | 5, replaced in 14 | `backend/app/seed.py` |
-| `seed/landslides.geojson` | 10, used in 14 | Map pins and model labels |
+| `seed/landslides.geojson` | 10, used in 14 | Map pins and model labels. Pending: data.nasa.gov was unreachable from the build container. See `seed/sources.md` |
 | `seed/sources.md` | 10 | People. One entry per downloaded file |
 
 ## Seed formats

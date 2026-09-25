@@ -34,9 +34,12 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 
 ## Environment
 
-The ML requirements file lands with step 10. From then on:
+Run from the repo root:
 
 ```bash
 python3.11 -m venv ml/.venv && source ml/.venv/bin/activate
 pip install -r ml/requirements.txt
+python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 ```
+
+Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

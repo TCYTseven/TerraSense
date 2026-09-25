@@ -1,0 +1,5 @@
+# Offline data and model scripts in ml/scripts/. Python 3.11 or newer.
+# Step 10, download_sources.py:
+rasterio>=1.4
+numpy>=2
+requests>=2.32
