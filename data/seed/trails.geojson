@@ -1,0 +1,37 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "mount-rainier",
+        "name": "Skyline Trail",
+        "length_km": 8.9,
+        "elevation_gain_m": 518,
+        "note": "Rough loop hand-drawn through Paradise landmarks: Myrtle Falls, Panorama Point, Glacier Vista. Length and gain are the NPS figures for the loop (5.5 mi, 1,700 ft). Step 14 replaces this line with OpenStreetMap geometry."
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [-121.7355, 46.7862],
+          [-121.7322, 46.7876],
+          [-121.7297, 46.7889],
+          [-121.7262, 46.7908],
+          [-121.7222, 46.7930],
+          [-121.7199, 46.7960],
+          [-121.7221, 46.8003],
+          [-121.7257, 46.8027],
+          [-121.7292, 46.8046],
+          [-121.7315, 46.8068],
+          [-121.7340, 46.8078],
+          [-121.7367, 46.8052],
+          [-121.7392, 46.8018],
+          [-121.7390, 46.7975],
+          [-121.7378, 46.7930],
+          [-121.7368, 46.7895],
+          [-121.7355, 46.7862]
+        ]
+      }
+    }
+  ]
+}

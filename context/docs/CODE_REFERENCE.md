@@ -13,7 +13,7 @@ frontend/          Next.js app. Runs with npm run dev.
 backend/           FastAPI service. Only the agent guide until step 3.
 ml/scripts/        Offline scripts. Empty until step 10.
 ml/artifacts/      Model outputs. Empty until step 12.
-data/seed/         Committed seed files. Empty until step 5.
+data/seed/         Committed seed files: mountains, trails.
 context/           Spec and the 25 implementation steps.
 context/docs/      Team brief, handoff, UX, this file.
 .claude/agents/    Subagent definitions: one builder per track and a reviewer.
@@ -23,7 +23,7 @@ README.md          Pitch, the three commands, folder owners.
 .gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, virtualenvs.
 ```
 
-`ml/scripts/`, `ml/artifacts/`, and `data/seed/` hold a `.gitkeep` until their first real file lands.
+`ml/scripts/` and `ml/artifacts/` hold a `.gitkeep` until their first real file lands.
 
 ## Agent harness
 
@@ -77,6 +77,15 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 | `backend/app/db.py` | `connect()` opens one psycopg connection to `DATABASE_URL`. |
 | `backend/app/schema.sql` | Six tables: `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, `alerts`. UUID keys, geometry as `jsonb`, CHECK constraints for risk levels, run status, hazard type, and alert action. Every statement is `IF NOT EXISTS`. |
 | `backend/app/schema.py` | `python -m app.schema [--reset]`. `apply_schema(reset)` runs `schema.sql` and returns the tables present. `--reset` drops the six tables first. |
+| `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, and removes that mountain's trails missing from the file. |
+
+## Data (exists)
+
+| File | What it is |
+|---|---|
+| `data/seed/mountains.json` | Mount Rainier (`is_live: true`, placeholder risk `moderate`), Huascarán (`high`), Mount Fuji (`low`). Fields in `data/AGENTS.md`. |
+| `data/seed/trails.geojson` | One rough Skyline Trail loop at Paradise for Rainier, 17 points. NPS length 8.9 km, gain 518 m. Step 14 replaces the line. |
+| `data/AGENTS.md` | Seed formats and data rules. |
 
 ## Planned layout
 
@@ -104,7 +113,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/app/seed.py` | 5 | Loads `data/seed/` |
 | `backend/app/routes/mountains.py` | 6, 13, 18 | List, detail, layer tile templates |
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
 | `backend/app/agents/` | 20–21 | Schemas, tools, five agents, orchestrator |
@@ -130,8 +138,6 @@ GET  /forecast?mountain_id&trail_id
 
 | Path | Step | Role |
 |---|---|---|
-| `data/seed/mountains.json` | 5 | Rainier plus two static peaks |
-| `data/seed/trails.geojson` | 5, then replaced in 14 | Trail lines |
 | `data/seed/landslides.geojson` | 10, 14 | Pin source |
 | `data/seed/sources.md` | 10 | URL and access date for each download |
 | `data/raw/` | 10 | DEM and land cover. Gitignored |

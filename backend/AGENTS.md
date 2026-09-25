@@ -36,6 +36,7 @@ python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
 python -m app.schema --reset    # drop the six tables, then recreate them
+python -m app.seed               # load data/seed/: three mountains, Rainier's trails. Safe to re-run
 uvicorn app.main:app --reload --port 8000
 curl localhost:8000/health
 ```

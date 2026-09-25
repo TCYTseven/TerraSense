@@ -21,6 +21,24 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `seed/landslides.geojson` | 10, used in 14 | Map pins and model labels |
 | `seed/sources.md` | 10 | People. One entry per downloaded file |
 
+## Seed formats
+
+`seed/mountains.json` is a list. Each entry:
+
+| Field | Type | Notes |
+|---|---|---|
+| `name` | string | Display name. UTF-8, accents allowed |
+| `slug` | string | URL key and upsert key. Rainier is `mount-rainier` |
+| `lat`, `lon` | number | Summit, WGS84 |
+| `elevation_m` | integer | Summit elevation |
+| `region` | string | Shown under the name |
+| `current_risk_level` | string | Placeholder until the first real analysis. Static mountains keep it for good |
+| `is_live` | boolean | `true` only for Rainier |
+
+The two static peaks, Huascarán (`high`) and Mount Fuji (`low`), are globe markers. Their risk values are display placeholders picked to show the color range. They are not assessments.
+
+`seed/trails.geojson` is a FeatureCollection of LineStrings. Each feature's properties: `mountain_slug`, `name`, `length_km`, `elevation_gain_m`, and an optional `note`. The seed removes a mountain's trails that are no longer in the file.
+
 ## Rules
 
 - Keep each seed file small and readable. Large data belongs in `raw/` or `processed/`.
