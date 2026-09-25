@@ -122,7 +122,7 @@ def sample_max(probability: ProbabilityMap, coordinates: list[list[float]]) -> f
     line = shapely.LineString(_grid_xy(coordinates, probability.crs))
     count = max(2, math.ceil(line.length / SAMPLE_STEP_M) + 1)
     points = shapely.get_coordinates(shapely.line_interpolate_point(line, np.linspace(0, line.length, count)))
-    cols, rows = ~probability.transform * (points[:, 0], points[:, 1])
+    cols, rows = ~probability.transform @ (points[:, 0], points[:, 1])
     cols, rows = np.floor(cols).astype(int), np.floor(rows).astype(int)
     inside = (rows >= 0) & (rows < values.shape[0]) & (cols >= 0) & (cols < values.shape[1])
     if not inside.any():

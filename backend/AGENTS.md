@@ -24,10 +24,11 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Geometry is GeoJSON stored in `jsonb` columns.
 - Response shapes are a contract with `frontend/lib/types.ts`. Change both in the same commit.
 - Only `mount-rainier` is live. Reject analyze when `is_live` is false.
-- Read settings from the root `.env`. Never log `DATABASE_URL`, `LLM_API_KEY`, or `DISCORD_WEBHOOK_URL`.
+- Read settings from the root `.env`. Never log `DATABASE_URL`, `GEMINI_API_KEY`, `XAI_API_KEY`, or `DISCORD_WEBHOOK_URL`.
 - CORS allows the local Next.js origins. Add a deployed frontend with `CORS_ORIGINS`, not by editing code.
 - A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
 - Tools that agents call return precomputed facts. They do not scan rasters or invent trail geometry.
+- Every model call goes through the router in `app/agents/router.py`, which picks Gemini Flash or Grok and records why. Do not call a provider directly.
 
 ## Commands
 
@@ -35,7 +36,7 @@ Run these from `backend/`:
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
 python -m app.schema --reset    # drop the six tables, then recreate them
 python -m app.seed               # load data/seed/: three mountains, Rainier's trails, the hero trail's segments. Safe to re-run
@@ -46,6 +47,7 @@ curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
 curl localhost:8000/mountains/mount-rainier/layers/probability
+python -m pytest                # schemas, router, providers (mocked), and tools (needs DATABASE_URL)
 ```
 
 `DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).

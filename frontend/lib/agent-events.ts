@@ -1,4 +1,4 @@
-import { AGENT_NAMES, AGENT_STATUSES, type AgentEvent } from "./types";
+import { AGENT_NAMES, AGENT_STATUSES, type AgentEvent, PROVIDER_NAMES } from "./types";
 
 /**
  * True when a value has the AgentEvent shape. Use it on anything parsed from
@@ -17,7 +17,30 @@ export function isAgentEvent(value: unknown): value is AgentEvent {
     typeof event.summary === "string" &&
     typeof event.payload === "object" &&
     event.payload !== null &&
-    !Array.isArray(event.payload)
+    !Array.isArray(event.payload) &&
+    (event.trace === undefined || event.trace === null || isTrace(event.trace))
+  );
+}
+
+/** The parts of an AgentTrace the reasoning panel reads without checking again. */
+function isTrace(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const trace = value as Record<string, unknown>;
+  const route = trace.route as Record<string, unknown> | undefined;
+  return (
+    typeof route === "object" &&
+    route !== null &&
+    (PROVIDER_NAMES as readonly unknown[]).includes(route.provider) &&
+    typeof route.label === "string" &&
+    typeof route.reason === "string" &&
+    Array.isArray(route.rules) &&
+    Array.isArray(trace.tools) &&
+    Array.isArray(trace.attempts) &&
+    Array.isArray(trace.thoughts) &&
+    Array.isArray(trace.reasoning) &&
+    Array.isArray(trace.checks)
   );
 }
 

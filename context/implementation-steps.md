@@ -29,7 +29,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [ ] 17. Score 72-hour probability from live rain
 - [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
 - [x] 19. Add one bypass around the worst segment (routed on the OpenStreetMap network per run; where no trail runs around the flagged miles, the answer is to turn back)
-- [ ] 20. Define agent schemas, tools, and prompts
+- [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
 - [ ] 21. Run the five-agent pipeline
 - [ ] 22. Expose analyze, run status, and the live stream
 - [ ] 23. Show the agent stream and the hazard panel
@@ -74,7 +74,7 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 - Add `backend/`, `ml/scripts/`, `ml/artifacts/`, and `data/seed/`.
 - Gitignore `data/raw/`, `data/processed/`, `.env`, `ml/artifacts/*.tif`, and Python virtualenvs.
-- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, `LLM_API_KEY`, `LLM_FAST_MODEL`, `LLM_STRONG_MODEL`, and `DISCORD_WEBHOOK_URL`.
+- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, the LLM key and models (since step 20: `GEMINI_API_KEY`, `GEMINI_MODEL`, `XAI_API_KEY`, `GROK_MODEL`), and `DISCORD_WEBHOOK_URL`.
 - Add a root README with three commands: frontend dev server, API dev server, and "where the spec lives."
 
 **Done when.** A new shell can read `.env.example` and name the folder for the UI, the API, and the offline model.
@@ -323,7 +323,7 @@ data/seed/                Small JSON and GeoJSON committed to git
 - Tools return precomputed facts only: `get_raster_summary`, `get_trail_segments`, `get_weather`, `get_historical_events`.
 - `get_raster_summary` returns the cluster from step 18. The model does not scan pixels.
 - The trail tool returns the bypass from step 19.
-- Terrain, Weather, and Trail use `LLM_FAST_MODEL`. Synthesizer and Alert Writer use `LLM_STRONG_MODEL`.
+- A router picks the model for every call (user direction, Sep 25, 2026): Gemini Flash or Grok. Terrain, Weather, and Trail start on Gemini Flash; Synthesizer and Alert Writer start on Grok. A borderline or high-stakes fast task moves up to Grok, a clear low-stakes strong task moves down to Gemini, a run past 70% of its minute moves to Gemini, and the other provider is the fallback. Each decision and its rules go into the agent's trace for the reasoning panel.
 
 **Done when.** Each schema rejects a missing field, and each tool returns data for `mount-rainier` with no LLM call.
 

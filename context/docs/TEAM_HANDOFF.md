@@ -39,6 +39,7 @@ Do not reopen these during the hackathon unless the demo is already rehearsed an
 - **Landslide and debris flow only.** Other hazard types stay out.
 - **Two models.** LightGBM susceptibility is offline. The live score blends that raster with Open-Meteo rain. Weights stay named constants.
 - **Five agents.** Terrain and Weather run in parallel, then Trail, Synthesizer, and Alert Writer. Discord is a webhook call, not an agent. History is a tool, not an agent.
+- **Two LLM providers and a router** (Sep 25, 2026). Gemini Flash and Grok. A router in code picks one per call and records why; the reasoning shows in a side panel. Either key alone works.
 - **One alert channel.** Discord. No SMS, email, Slack, accounts, or ack/dismiss.
 - **Geometry is GeoJSON in JSON.** No PostGIS. Run state lives in the API process. No Redis.
 - **Tiles are XYZ in EPSG:3857**, served by the API. No object storage.

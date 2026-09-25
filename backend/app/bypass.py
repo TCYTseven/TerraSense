@@ -102,6 +102,17 @@ def _load(path: Path, mtime_ns: int) -> Network:
     )
 
 
+def junctions_near(network: Network, start_mile: float, end_mile: float, margin_mi: float) -> list[dict]:
+    """Junctions on the hero trail within margin_mi of a mile range, with the trails that meet there."""
+    near = []
+    for node, miles in network.junctions.items():
+        for mile in miles:
+            if start_mile - margin_mi <= mile <= end_mile + margin_mi:
+                trails = sorted({data["edge"].trail or CONNECTOR for data in network.off_trail[node].values()})
+                near.append({"mile": round(mile, 2), "trails": trails})
+    return sorted(near, key=lambda junction: junction["mile"])
+
+
 def load_network(path: Path = NETWORK_PATH) -> Network | None:
     """The trail network, or None until ml/scripts/build_trail_network.py has written it."""
     if not path.exists():

@@ -154,6 +154,75 @@ export type AgentName = (typeof AGENT_NAMES)[number];
 export const AGENT_STATUSES = ["waiting", "running", "done", "error"] as const;
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
 
+export const PROVIDER_NAMES = ["gemini", "grok"] as const;
+/** The two LLM providers the router picks between. */
+export type ProviderName = (typeof PROVIDER_NAMES)[number];
+
+/** One rule the router checked, and the provider it pointed to (null when it changed nothing). */
+export interface RouteRule {
+  rule: string;
+  verdict: ProviderName | null;
+  detail: string;
+}
+
+/** Why an agent's call went to Gemini Flash or Grok. */
+export interface RouteDecision {
+  provider: ProviderName;
+  model: string;
+  /** "Gemini 3.8 Flash", "Grok 4.7". */
+  label: string;
+  tier: "fast" | "strong";
+  /** One sentence. */
+  reason: string;
+  rules: RouteRule[];
+  /** Tried in order if the chosen provider fails. */
+  fallback: ProviderName[];
+  available: Record<string, boolean>;
+}
+
+/** A tool the agent's code ran before its model call. Tools return precomputed facts. */
+export interface ToolCall {
+  name: string;
+  args: Record<string, unknown>;
+  result: unknown;
+  ms: number;
+}
+
+export interface Attempt {
+  provider: ProviderName;
+  model: string;
+  ok: boolean;
+  latency_ms: number;
+  error: string | null;
+  /** This call re-asked the model after its answer failed a check. */
+  repair: boolean;
+}
+
+export interface Usage {
+  input_tokens: number | null;
+  output_tokens: number | null;
+  reasoning_tokens: number | null;
+}
+
+/** Everything the reasoning panel shows for one agent. */
+export interface AgentTrace {
+  route: RouteDecision;
+  tools: ToolCall[];
+  attempts: Attempt[];
+  /** The provider's own reasoning summary, when it returns one. */
+  thoughts: string[];
+  /** The steps the agent gave in its JSON. */
+  reasoning: string[];
+  /** What the code did with the answer: merges, clamps, overrides, fallbacks. */
+  checks: string[];
+  /** The model's validated JSON, before the code merged facts into the payload. */
+  output: Record<string, unknown> | null;
+  usage: Usage | null;
+  started_at: string | null;
+  finished_at: string | null;
+  latency_ms: number | null;
+}
+
 /** One message on WS /runs/{run_id}/stream: an agent started, finished, or failed. */
 export interface AgentEvent {
   run_id: string;
@@ -161,4 +230,6 @@ export interface AgentEvent {
   status: AgentStatus;
   summary: string;
   payload: Record<string, unknown>;
+  /** The router's decision, tool calls, and reasoning (step 20). Absent on fixtures. */
+  trace?: AgentTrace | null;
 }

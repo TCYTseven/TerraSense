@@ -323,6 +323,7 @@ Each agent is a function that receives the `run_id`, calls one model with a fixe
 
 - Terrain, Weather, and Trail: a fast model.
 - Synthesizer and Alert Writer: a stronger model. These two judge and write.
+- Two providers, picked per call by a router in code (team decision, Sep 25, 2026): Gemini Flash is the fast model and Grok the stronger one. The router escalates a borderline fast task to Grok (a zone peak near a bin edge, rain near the threshold, a trail without a safe bypass), moves a clear low-stakes strong task to Gemini, favors Gemini once a run nears its minute, and falls back to the other provider when one fails. Every decision, the rules behind it, the tool facts, and the model's reasoning show in a side panel on the mountain page.
 
 **Tools**
 
@@ -373,7 +374,7 @@ Target: the five calls finish in about a minute. Cap each output at a short JSON
 | API and agents | FastAPI, Pydantic |
 | ML | LightGBM, rasterio, GeoPandas or Shapely |
 | Database | Postgres (Neon or Supabase). Geometries as GeoJSON |
-| LLMs | One provider is enough. A second provider is optional |
+| LLMs | Gemini Flash and Grok, picked per call by a router in code. Either key alone works |
 | Alert | Discord webhook |
 | Deploy | Vercel for the frontend. API on Railway, Modal, or a laptop tunnel |
 
@@ -490,7 +491,7 @@ GET  /forecast?mountain_id&trail_id
 ### Before the event
 
 - Clip Rainier DEM, land cover, trails, and landslide points. Build the feature table.
-- Keys: an LLM provider, Discord webhook. Open-Meteo and the terrain tiles need none. Mapbox is optional, for satellite imagery.
+- Keys: Gemini and xAI (either alone works), Discord webhook. Open-Meteo and the terrain tiles need none. Mapbox is optional, for satellite imagery.
 - Pick the two static marker mountains and their display risk.
 
 ### Hours 0–8: Something on screen

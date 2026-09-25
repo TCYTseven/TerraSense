@@ -23,7 +23,7 @@ Two other mountains are dots on the globe with a fixed risk color. They do not r
 
 1. Read [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md) section "Decisions already made" before you pick a library.
 2. Copy `.env.example` to `.env` at the repo root, then follow the three commands in the root [`README.md`](../../README.md): the API on port 8000, the frontend on port 3000.
-3. Keys you will need, and do not commit: Mapbox token, one LLM provider key, `DATABASE_URL`, Discord webhook URL. Open-Meteo needs no key.
+3. Keys you will need, and do not commit: a Gemini key and an xAI key (either alone works), `DATABASE_URL`, Discord webhook URL. A Mapbox token is optional. Open-Meteo needs no key.
 4. Agree on the shared facts in the implementation steps (Rainier bbox, slugs, risk bins) and use them in every track.
 
 ## Tracks
