@@ -15,7 +15,7 @@ When this file and the code disagree, the code wins and this file gets fixed in 
 
 ## The one-paragraph version
 
-TerraSense shows landslide risk for Mount Rainier. A Next.js globe opens a Mapbox terrain view. A precomputed susceptibility model plus live rain from Open-Meteo produce a 72-hour probability layer. Five agents turn that layer into a ranger alert and a hiker sentence. The alert posts to Discord. Hikers see the sentence and one bypass. The demo is one mountain, run on demand with **Analyze now**.
+TerraSense shows landslide risk for Mount Rainier. A Next.js globe opens a Mapbox terrain view. A precomputed susceptibility model plus live rain from Open-Meteo produce a 72-hour probability layer. Five agents turn that layer into a ranger alert and a hiker sentence. Rangers read the alert in the app. Hikers see the sentence and one bypass. The demo is one mountain, run on demand with **Analyze now**.
 
 ## What exists
 
@@ -38,8 +38,9 @@ Do not reopen these during the hackathon unless the demo is already rehearsed an
 - **One live mountain.** Mount Rainier, slug `mount-rainier`. Two other peaks are static globe markers.
 - **Landslide and debris flow only.** Other hazard types stay out.
 - **Two models.** LightGBM susceptibility is offline. The live score blends that raster with Open-Meteo rain. Weights stay named constants.
-- **Five agents.** Terrain and Weather run in parallel, then Trail, Synthesizer, and Alert Writer. Discord is a webhook call, not an agent. History is a tool, not an agent.
-- **One alert channel.** Discord. No SMS, email, Slack, accounts, or ack/dismiss.
+- **Five agents.** Terrain and Weather run in parallel, then Trail, Synthesizer, and Alert Writer. History is a tool, not an agent.
+- **Two LLM providers and a router** (Sep 25, 2026). Gemini Flash and Grok. A router in code picks one per call and records why; the reasoning shows in a side panel. Either key alone works.
+- **No alert channel** (Sep 25, 2026). Discord was dropped. The alert stays in the app. No SMS, email, Slack, accounts, or ack/dismiss.
 - **Geometry is GeoJSON in JSON.** No PostGIS. Run state lives in the API process. No Redis.
 - **Tiles are XYZ in EPSG:3857**, served by the API. No object storage.
 - **The bypass is computed in Python** or hand-authored from a real second trail. The Trail Analyst explains it and does not invent a line.
@@ -56,7 +57,7 @@ Shared numbers (bbox, peak, risk bins) live in the implementation steps under "S
 | Frontend | Step 15, the Mapbox terrain view in the map area of `/mountains/[slug]`. Needs `NEXT_PUBLIC_MAPBOX_TOKEN`. | Layer toggles (step 16), then the agent panel (step 23). |
 | Backend | Provision the hosted Postgres and run the schema and seed. Then steps 20–21, the agent schemas and pipeline. | Analyze and the socket (step 22) after the agents exist. |
 | ML and data | Finish step 10: run `download_sources.py --only landslides` on a network that reaches data.nasa.gov. | Feature table and LightGBM (steps 11–12) before anyone waits on tiles. |
-| Product | Create the Discord webhook and put the URL in an untracked env file. Read the demo script aloud once. | Fill Devpost brackets after step 12 has a real AUC. |
+| Product | Read the demo script aloud once. | Fill Devpost brackets after step 12 has a real AUC. |
 
 ## How an agent resumes
 
@@ -75,7 +76,7 @@ Drop work in this order. The demo still holds.
 3. A computed bypass. Keep a named bypass in the hiker sentence.
 4. The Synthesizer as its own model call. Let Alert Writer merge the three reports.
 
-Keep the globe, the heat map, the agent stream, and the Discord message.
+Keep the globe, the heat map, and the agent stream.
 
 ## Known risks
 
@@ -84,5 +85,4 @@ Keep the globe, the heat map, the agent stream, and the Discord message.
 | Raster work eats the weekend | Precompute Model A. Only Model B runs live |
 | The heat map misses the ridges | XYZ tiles in EPSG:3857. Check alignment in step 16, not the night before the demo |
 | Agents run long | Parallelize Terrain and Weather. Short JSON. Fast models for the first three |
-| Discord fails on stage | Keep the alert text on screen, and keep a screenshot of a successful post |
 | The starter UI leaks into the demo | Step 2 deletes the create-next-app page before any feature work |

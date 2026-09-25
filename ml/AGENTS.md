@@ -11,10 +11,10 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 10 | `scripts/download_sources.py` | DEM and land cover in `data/raw/`, `data/seed/landslides.geojson`. Record each download in `data/seed/sources.md` by hand |
 | 11 | `scripts/build_features.py` | `data/processed/features.parquet` |
 | 12 | `scripts/train_susceptibility.py` | Model, `artifacts/metrics.json`, feature importance, susceptibility GeoTIFF |
-| 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/` |
+| 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/`. The API renders the probability layer itself on each run (`backend/app/assessment.py`) |
 | 14 | `scripts/import_trails.py` | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` (the hero trail's mile segments), and the walkable network cache in `data/raw/` |
-| 17 | `backend/app/ml/model_b.py` | Live 72-hour probability from susceptibility plus Open-Meteo rain |
-| 19 | Bypass | One bypass line that avoids the worst segment |
+| 17 | `backend/app/ml/model_b.py` | Live 72-hour probability from susceptibility plus Open-Meteo rain. `backend/app/ml/probability.py` calls `run(rain)` and reads `.probability`, `.transform`, and `.crs` from the result; until the module exists the heat map is the susceptibility stand-in |
+| 19 | `scripts/build_trail_network.py` | `data/seed/trail_network.geojson`: the walkable network around the hero loop, with elevations. `backend/app/bypass.py` routes the bypass on it during each run |
 
 ## Layout
 
@@ -44,6 +44,7 @@ python ml/scripts/build_features.py        # step 11: 30 m feature stack, labele
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
 python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
 python ml/scripts/import_trails.py         # step 14: OpenStreetMap trails via Overture, the hero trail's segments
+python ml/scripts/build_trail_network.py  # step 19: the network the bypass routes on (needs step 14's cache and the DEM)
 ```
 
 Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

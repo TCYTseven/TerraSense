@@ -50,6 +50,7 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Hazard block placement | Under overall risk, opens with the pin | [Sections](#sections-top-to-bottom) | Step 23 |
 | High and Extreme treatment | 3 px left border and an 8% tint | [High and Extreme](#high-and-extreme) | Step 23 |
 | Static mountains | Hide everything that implies analysis | [Static mountains](#static-mountains) | Step 23 |
+| Reasoning panel | Over the map, beside the ranger panel | [Reasoning panel](#reasoning-panel) | Step 23 |
 | Narrow layout | Stack below 768 px | [Layout](#layout) | Step 25 |
 
 ## Which step reads what
@@ -60,7 +61,7 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Raster layers | 13, 18 | ML and data |
 | Globe, Motion | 8, 9 | Frontend |
 | Map | 15, 16, 18, 19 | Frontend |
-| Copy | 20, 21, 24 | Backend and agents |
+| Copy | 20, 21 | Backend and agents |
 | Review sheet | Before 23 | Frontend |
 | Panel, States | 23 | Frontend |
 | Hiker card, States | 25 | Frontend |
@@ -130,7 +131,7 @@ Geist is the create-next-app default, so a Geist screen reads as a starter templ
 | Time since | Largest whole unit | 12 min ago |
 | Clock time | 24-hour local, no seconds | 14:05 |
 
-The Alert Writer prompt (step 20) and the Discord message (step 24) use the same formats.
+The Alert Writer prompt (step 20) uses the same formats.
 
 ## Risk mapping
 
@@ -171,6 +172,7 @@ Step 8 builds it with `react-globe.gl`. Property names below are that library's.
 - **Terrain.** Exaggeration 1.5 (spec 6.2).
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
+  - *Recorded at step 18:* the map keeps step 15's opening frame, the summit plus the Skyline loop fitted with 150 px of top padding, pitch 55, bearing -14 (about zoom 12.2 at 1440 x 900). The flagged miles move with each run, and every one of them, with any bypass, sits on or inside the loop, so one frame serves every run.
 - **Controls.** None beyond the attribution and logo that Mapbox's terms require. No navigation, fullscreen, or geolocate control. Drag, scroll, pinch, and rotate stay on.
 
 ### Raster layers
@@ -187,7 +189,7 @@ Probability (the default layer, step 18) and susceptibility (step 16) share one 
 1. **Low is transparent.** A mountain painted green buries the hazard. Green stays on trails, where "this segment is fine" is the useful message.
 2. **Stepped, not blended,** so every color on the map equals a level word in the panel.
 3. **Susceptibility uses the same edges.** If the ML owner moves them for Model A, record the new edges here.
-4. **Color and alpha are baked into the PNG tiles.** `raster-opacity` stays at 1 except during the heat map fade. Set `raster-fade-duration` to 0 on both layers so tile loads add no fade of their own.
+4. **Color and alpha are baked into the PNG tiles.** `raster-opacity` stays at 1 except during the heat map fade. Set `raster-fade-duration` to 0 on both layers so tile loads add no fade of their own. On 3D terrain MapLibre caches draped layers as textures that ignore paint changes, so the fade redraws them each frame (`terrain-map.tsx`).
 5. **One raster at a time. [confirm]** Turning Susceptibility on hides probability. Turning it off brings probability back. The same ramp stacked twice cannot be read.
 
 ### Trails, bypass, and pins
@@ -219,7 +221,7 @@ UX.md sets the order. The hazard block is the one addition, and it shows only wh
 
 1. **Header.** The mountain name at panel-title size. Below it, elevation and region on one line in muted text, 12 px apart, with no separator character.
 2. **Overall risk.** The level dot and word at lead size, 600, in the level color. Then the one sentence at lead size.
-3. **Hazard. [confirm]** Opens under overall risk when the pin is selected: by a click, when a run finishes, or from the Discord link (`?hazard={id}`, step 24). Four rows in the spec's order, each a meta label over a body value: "What it is", "Why it was flagged", "Confidence", "How to avoid it". "What it is" names the trail and the mile range. A second click on the pin, or a click on the empty map, closes it.
+3. **Hazard. [confirm]** Opens under overall risk when the pin is selected: by a click, or when a run finishes. Four rows in the spec's order, each a meta label over a body value: "What it is", "Why it was flagged", "Confidence", "How to avoid it". "What it is" names the trail and the mile range. A second click on the pin, or a click on the empty map, closes it.
 4. **Rain.** The label "Rain", then two rows with words left and values right: "Past 72 hours" and "Next 24 hours". Text only (UX.md rule 7).
 5. **Trails.** The label "Trails", then one row per trail: the name left; the level dot, word, and score right. The flagged trail adds a second line, "Flagged mi 4.2–5.1", whether or not the pin is open. The mile range is never hidden.
 6. **Agents.** The label "Agents", then the five rows in [Agent rows](#agent-rows).
@@ -244,11 +246,24 @@ Five rows in pipeline order: Terrain, Weather, Trail, Synthesizer, Alert Writer.
 
 Status never uses a risk color: green for done or red for failed would claim a risk level. The running row gets a background of the text color at 4% and the work pulse (see [Motion](#motion)).
 
+Each row also names the model the router picked for it, such as "Gemini 3.8 Flash", at meta size and muted, right-aligned on the name's line. A row is a button: a click opens the [reasoning panel](#reasoning-panel) on that agent. **Reasoning**, a text button at meta size beside the "Agents" label, opens it on Terrain. When **Analyze now** starts a run, the panel scrolls the rows into view at once.
+
 ### Actions
 
 - **Analyze now.** Primary. Accent fill, dark background text, 40 px tall, full width, 6 px radius, Button type role. While a run is in progress it reads "Analyzing…", drops to 40% opacity, and ignores clicks (step 23). Hidden when `is_live` is false (UX.md rule 8).
 - **Hiker forecast.** Secondary. No fill, a 1 px accent border, accent text, the same size, 8 px below. Disabled until the first finished run, with the meta line "Available after the first finished run."
 - **Hover and focus.** Primary hover lowers the fill to 90% opacity. Secondary hover adds an accent background at 10%. Every control shows a 2 px accent focus ring with a 2 px offset on `focus-visible`. Every state change is instant. Accent text never relies on hue alone. Toggles and the secondary button have borders; text buttons and links are underlined (1 px, 3 px offset).
+
+### Reasoning panel
+
+Added at the team's direction on Sep 25, 2026 (UX.md, Reasoning panel). It explains the agents; it adds no control that changes a run.
+
+- **Placement.** Wide: over the right side of the map, flush against the ranger panel, full height, `min(520px, 100%)` wide, panel surface, a 1 px left border, no radius (it docks to the panel). Narrow: it fills the screen. It appears and closes at once. Escape and the close button (X, top right) close it, and it takes focus when it opens.
+- **Header.** "Reasoning" at body size, 600, then one meta line: "A router sends each agent to Gemini Flash or Grok. Pick an agent to see why, what it read, and how it reasoned." and the run's time.
+- **Tabs.** One per agent in pipeline order, each with the row's status glyph. The selected tab takes the toggle treatment: accent text and a 1 px accent border.
+- **Sections, top to bottom,** each a meta label over body text, separated by the 1 px border: Model (label, tier, the model that actually answered, time, tokens), Why this model (the router's sentence, then each rule with its verdict, "→ Gemini", "→ Grok", or "no change", in a bordered meta tag, then the fallback), What it read (each tool call as code, with its facts behind a disclosure), How it reasoned (the provider's thinking summary as a quote with the 2 px muted rule, then the agent's steps as a numbered list), What the code did, Calls (every attempt with its time and error), Answer (the model's JSON and the payload, behind disclosures).
+- **Type.** Tool calls and JSON are code and use the mono face; everything else follows [Type](#type).
+- **Color.** No risk colors: this is about the reasoning, not the level. Status glyphs match the agent rows.
 
 ### Static mountains
 
@@ -291,9 +306,8 @@ UX.md asks for empty, loading, and error states on every view, and step 25 build
 | Mountain | Tiles fail | Map without the raster, trails still colored | The heat map didn't load. Trail colors still show segment risk. |
 | Mountain | Live, no hazard yet | Muted risk section, no pin, rows waiting, Hiker forecast disabled | Not analyzed yet. Analyze now scores the next 72 hours. |
 | Run | Running | Rows update, Analyze now disabled | Analyzing… (on the button) |
-| Run | Finished | Pin selected, panel updated, heat map fades in | Finished in 48 s. Alert posted to Discord. |
-| Run | Finished, needs review | As finished, plus the tag | Finished in 48 s. Agents disagree on severity, so the alert went out as an advisory. |
-| Run | Finished, Discord failed | As finished | Finished in 48 s. Discord send failed. The alert text is saved in the panel. |
+| Run | Finished | Pin selected, panel updated, heat map fades in | Finished in 48 s. |
+| Run | Finished, needs review | As finished, plus the tag | Finished in 48 s. Agents disagree on severity, so this is an advisory. |
 | Run | Failed | Failed row, later rows skipped, last good hazard stays, Analyze now enabled | Run failed at the Weather step. The map still shows the hazard from 14:05. |
 | Run | Failed, no earlier hazard | As failed, no pin | Run failed at the Weather step. There's no earlier hazard to show. |
 | Run | Stream lost | Treated as failed | Lost the connection to this run. The map still shows the hazard from 14:05. |
@@ -331,7 +345,7 @@ These four parts are one fly-to. Tune the split at step 9 until the last globe f
 
 ## Copy
 
-Design Language and UX.md rules 5 and 6 set the voice. These templates keep the UI, the Alert Writer (steps 20 and 21), and Discord (step 24) saying the same thing.
+Design Language and UX.md rules 5 and 6 set the voice. These templates keep the UI and the Alert Writer (steps 20 and 21) saying the same thing.
 
 - **Ranger line.** `<Hazard> risk <LEVEL>. <Place>, <trail> mile <a> to <b>. Confidence <0.00>.`
   Example: "Debris flow risk HIGH. East fork drainage, Ridge Trail mile 4.2 to 5.1. Confidence 0.82." This adds the trail and mile range to the spec's example, because UX.md never lets the ranger view hide them.
@@ -340,7 +354,6 @@ Design Language and UX.md rules 5 and 6 set the voice. These templates keep the 
   Example: "Days of heavy rain could send mud and rock onto the Ridge Trail above the east fork, so take the Cedar Loop instead."
 - **Bypass values** come from the API and render in the card's bypass block. The model never writes them.
 - **Level words.** "Low", "Moderate", "High", and "Extreme" in the UI. All caps in ranger copy only.
-- **Discord.** The embed title is the ranger line. The embed color is the level color. The link text is "Open the hazard". Fields follow step 24 and use the formats in [Units and numbers](#units-and-numbers).
 - **UI strings.** Sentence case, plain verbs, no apologies. An action keeps its name through the flow: **Analyze now**, then "Analyzing…", then "Finished". Button labels stay exactly as the spec writes them.
 
 ## Review sheet

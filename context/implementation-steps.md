@@ -6,7 +6,7 @@ Finish each step on a track before you start the next one on that track. After s
 
 The frontend app already exists in `frontend/`. Treat step 1 as done for that folder, then keep going.
 
-Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide risk only, five agents, one Discord alert, one hiker card.
+Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide risk only, five agents, one hiker card. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
 
@@ -25,16 +25,16 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 13. Render susceptibility map tiles
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [x] 15. Open the Mapbox mountain view (built on MapLibre GL with AWS Terrain Tiles, so no token is needed. A Mapbox token switches the relief to satellite)
-- [ ] 16. Toggle susceptibility and historical pins
+- [x] 16. Toggle susceptibility and historical pins (the Past landslides toggle stays disabled until the step 10 landslide points exist)
 - [ ] 17. Score 72-hour probability from live rain
-- [ ] 18. Draw the heat map, hazard polygon, and trail risk
-- [ ] 19. Add one bypass around the worst segment
-- [ ] 20. Define agent schemas, tools, and prompts
-- [ ] 21. Run the five-agent pipeline
-- [ ] 22. Expose analyze, run status, and the live stream
-- [ ] 23. Show the agent stream and the hazard panel
-- [ ] 24. Post the ranger alert to Discord
-- [ ] 25. Show the hiker card and rehearse the demo
+- [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
+- [x] 19. Add one bypass around the worst segment (routed on the OpenStreetMap network per run; where no trail runs around the flagged miles, the answer is to turn back)
+- [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
+- [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet)
+- [x] 22. Expose analyze, run status, and the live stream
+- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel)
+- [x] 24. ~~Post the ranger alert to Discord~~ (dropped by the team on Sep 25, 2026. The ranger reads the alert in the app)
+- [x] 25. Show the hiker card and rehearse the demo (walked in Chromium against the fake LLM APIs. Rehearse once more with real Gemini and xAI keys)
 
 ## Shared facts
 
@@ -74,7 +74,7 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 - Add `backend/`, `ml/scripts/`, `ml/artifacts/`, and `data/seed/`.
 - Gitignore `data/raw/`, `data/processed/`, `.env`, `ml/artifacts/*.tif`, and Python virtualenvs.
-- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, `LLM_API_KEY`, `LLM_FAST_MODEL`, `LLM_STRONG_MODEL`, and `DISCORD_WEBHOOK_URL`.
+- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, and the LLM keys and models (since step 20: `GEMINI_API_KEY`, `GEMINI_MODEL`, `XAI_API_KEY`, `GROK_MODEL`).
 - Add a root README with three commands: frontend dev server, API dev server, and "where the spec lives."
 
 **Done when.** A new shell can read `.env.example` and name the folder for the UI, the API, and the offline model.
@@ -323,7 +323,7 @@ data/seed/                Small JSON and GeoJSON committed to git
 - Tools return precomputed facts only: `get_raster_summary`, `get_trail_segments`, `get_weather`, `get_historical_events`.
 - `get_raster_summary` returns the cluster from step 18. The model does not scan pixels.
 - The trail tool returns the bypass from step 19.
-- Terrain, Weather, and Trail use `LLM_FAST_MODEL`. Synthesizer and Alert Writer use `LLM_STRONG_MODEL`.
+- A router picks the model for every call (user direction, Sep 25, 2026): Gemini Flash or Grok. Terrain, Weather, and Trail start on Gemini Flash; Synthesizer and Alert Writer start on Grok. A borderline or high-stakes fast task moves up to Grok, a clear low-stakes strong task moves down to Gemini, a run past 70% of its minute moves to Gemini, and the other provider is the fallback. Each decision and its rules go into the agent's trace for the reasoning panel.
 
 **Done when.** Each schema rejects a missing field, and each tool returns data for `mount-rainier` with no LLM call.
 
@@ -369,19 +369,9 @@ data/seed/                Small JSON and GeoJSON committed to git
 
 **Done when.** One click on Rainier streams all five rows and opens a pin whose four fields match the saved hazard.
 
-## 24. Post the ranger alert to Discord
+## 24. Post the ranger alert to Discord (dropped)
 
-**Outcome.** A finished run lands in a Discord channel with a link back to the pin.
-
-**Build.**
-
-- After Alert Writer succeeds, `POST` the webhook in `DISCORD_WEBHOOK_URL`.
-- The message includes hazard type, severity, trail name, mile range, confidence, recommended action (`monitor` or `close`), the ranger paragraph, and a link to `/mountains/mount-rainier?hazard={id}`.
-- That query opens the mountain page with the pin selected and the heat map on.
-- Store the alert row. If Discord returns an error, keep the in-app alert text and show a send failure. The map still works.
-- Send a real message twice before you call this step done.
-
-**Done when.** A full analyze posts one Discord message, and the link opens the hazard pin.
+Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and the mountain page has no `?hazard=` deep link. The ranger reads the alert in the app: when a run finishes, the hazard pin opens with the four fields, and the reasoning panel holds the Alert Writer's ranger title and paragraph. The `alerts` table from step 4 stays in the schema, unused.
 
 ## 25. Show the hiker card and rehearse the demo
 
@@ -393,10 +383,10 @@ data/seed/                Small JSON and GeoJSON committed to git
 - **Hiker forecast** opens a larger-type card on the same dark background and draws the bypass on the map.
 - Add empty, loading, and error states for the globe, the mountain, and the run.
 - Write the real AUC, the real weights, and the real data sources into the Devpost draft in `TerraSense.md`.
-- Rehearse the script in that file three times: globe, fly-in, heat map, pin, analyze, Discord, hiker card.
+- Rehearse the script in that file three times: globe, fly-in, heat map, pin, analyze, reasoning panel, hiker card.
 - Keep one finished run visible as a fallback if the live call fails on stage.
 
-**Done when.** A person who has not seen the app can follow the demo script and reach the Discord message and a hiker card that names the bypass.
+**Done when.** A person who has not seen the app can follow the demo script and reach the reasoning panel and a hiker card that names the bypass.
 
 ## If you are behind
 
@@ -407,4 +397,4 @@ Drop work in this order. The demo still holds.
 3. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
 4. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
 
-Keep the globe, the heat map, the agent stream, and the Discord message.
+Keep the globe, the heat map, and the agent stream.

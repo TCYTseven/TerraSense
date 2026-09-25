@@ -6,7 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-RiskLevel = Literal["low", "moderate", "high", "extreme"]
+from app.risk import RiskLevel
+
 HazardType = Literal["landslide", "debris_flow"]
 
 # A GeoJSON geometry object, stored as-is in jsonb: {"type": ..., "coordinates": ...}
@@ -45,6 +46,32 @@ class Trail(BaseModel):
     segments: list[TrailSegment]
 
 
+class BypassPiece(BaseModel):
+    """One edge of a bypass, with its own risk, so the map colors the detour by level."""
+
+    trail: str | None  # null for an unnamed connector path
+    probability: float
+    level: RiskLevel
+    geom: Geometry  # LineString
+
+
+class Bypass(BaseModel):
+    """The detour around a hazard's miles (step 19). Every meter is a mapped trail."""
+
+    name: str
+    via: list[str]
+    leaves_at_mile: float
+    rejoins_at_mile: float
+    length_km: float
+    replaced_km: float
+    added_km: float  # negative when the detour is shorter than the miles it replaces
+    added_elevation_m: int  # climb on the detour minus climb on the miles it replaces
+    max_probability: float
+    level: RiskLevel
+    geom: Geometry  # LineString, in walking order
+    pieces: list[BypassPiece]
+
+
 class Hazard(BaseModel):
     id: UUID
     run_id: UUID | None
@@ -59,6 +86,12 @@ class Hazard(BaseModel):
     how_to_avoid: str | None
     needs_review: bool
     created_at: datetime
+    # The hero trail miles the zone covers (step 18). Null on hazards saved before them.
+    trail_id: UUID | None
+    trail_name: str | None
+    start_mile: float | None
+    end_mile: float | None
+    bypass: Bypass | None  # step 19; null when no trail runs around the miles
 
 
 class LayerTiles(BaseModel):
@@ -93,3 +126,5 @@ class MountainDetail(Mountain):
     trails: list[Trail]
     active_hazard: Hazard | None
     historical_events: list[HistoricalEvent]
+    # The run going right now, so a page that opens mid-run can follow it (step 22).
+    active_run_id: str | None

@@ -74,6 +74,19 @@
   /* Pages fade in after the globe's fly-to fades out. */
   --animate-fade-in: fade-in 320ms ease-out both;
 
+  /* The work pulse: running agent rows and skeleton bars only (design addendum, Motion). */
+  --animate-work: work-pulse 1.2s ease-in-out infinite;
+
+  @keyframes work-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
   @keyframes fade-in {
     from {
       opacity: 0;
@@ -96,6 +109,21 @@
     linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
     linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
   background-size: 48px 48px;
+}
+
+/* MapLibre popups (historical pins) on the panel surface: 8 px radius, no tip, no shadow. */
+.terra-popup .maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: none;
+  font-family: var(--font-sans);
+}
+
+.terra-popup .maplibregl-popup-tip {
+  display: none;
 }
 
 @layer base {

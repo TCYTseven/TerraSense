@@ -1,0 +1,197 @@
+"""The agents' tools (step 20). Each returns precomputed facts for one run. None calls a model,
+scans a raster, or draws trail geometry: the step 18 assessment and the step 19 bypass already
+did that work, and the Open-Meteo response is fetched once per run.
+
+An agent's code calls its tools before its model call and hands the results to the model as
+JSON. Every call is recorded as a ToolCall, which the reasoning panel shows.
+"""
+
+import math
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
+
+from app.assessment import Assessment, level_runs
+from app.bypass import junctions_near, load_network
+from app.history import historical_events
+from app.weather import HourlyRain, summarize
+
+from .schemas import ToolCall
+
+MM_PER_INCH = 25.4
+KM_PER_MILE = 1.609344
+FEET_PER_METER = 3.28084
+
+# Guzzetti et al. (2008), the global minimum rainfall intensity-duration threshold for shallow
+# landslides and debris flows: I = 2.20 * D^-0.44, with I in mm/h and D in hours. A total over
+# D hours above threshold_mm(D) passes it. Given as a reference point, not a verdict.
+GUZZETTI_A, GUZZETTI_B = 2.20, -0.44
+JUNCTION_MARGIN_MI = 0.7  # junctions this close to the flagged miles help name the place
+HISTORY_RADIUS_KM = 5.0
+
+
+def threshold_mm(hours: int) -> float:
+    return round(GUZZETTI_A * hours**GUZZETTI_B * hours, 1)
+
+
+@dataclass
+class RunContext:
+    """What one run knows before its agents start."""
+
+    run_id: str
+    slug: str
+    mountain: str
+    peak: tuple[float, float]  # lat, lon
+    assessment: Assessment
+    rain: HourlyRain | None
+    rain_error: str | None = None
+    started: float = field(default_factory=time.perf_counter)
+
+    @property
+    def elapsed_s(self) -> float:
+        return time.perf_counter() - self.started
+
+
+class ToolError(RuntimeError):
+    """A tool had no facts to return, such as rain when Open-Meteo did not answer."""
+
+
+def get_raster_summary(ctx: RunContext, mountain: str) -> dict:
+    """The 72-hour map in numbers and the worst cluster the hero trail crosses."""
+    a = ctx.assessment
+    summary = {
+        "mountain": ctx.mountain,
+        "method": a.method,
+        "method_note": (
+            "Stand-in: the map is terrain susceptibility. Rain does not move it until the rain model lands."
+            if a.probability.is_stand_in
+            else "Model B: terrain susceptibility combined with past and forecast rain."
+        ),
+        "bins": {"low": "< 0.2", "moderate": "0.2 to 0.45", "high": "0.45 to 0.7", "extreme": "> 0.7"},
+        "map": a.map_summary,
+        "hazard_zone": None,
+    }
+    if a.zone is None or a.flagged is None:
+        summary["note"] = "No hero trail segment reaches high, so there is no hazard zone."
+        return summary
+    zone, flagged = a.zone, a.flagged
+    network = load_network()
+    summary["hazard_zone"] = {
+        "id": "hz_001",
+        "level": zone.level,
+        "max_probability": zone.max_probability,
+        "mean_probability": zone.mean_probability,
+        "area_km2": zone.area_km2,
+        "centroid_lon_lat": list(zone.centroid),
+        "trail": a.trail.name,
+        "flagged_miles": {"start": flagged.start_mile, "end": flagged.end_mile,
+                          "max_probability": flagged.max_probability, "level": flagged.level},
+        "terrain": zone.terrain,
+        "type_hint": zone.type_hint,
+        "drivers_hint": list(zone.drivers_hint),
+        "nearby_junctions": junctions_near(network, flagged.start_mile, flagged.end_mile, JUNCTION_MARGIN_MI)
+        if network else [],
+    }
+    return summary
+
+
+def get_trail_segments(ctx: RunContext, mountain: str) -> dict:
+    """The hero trail's risk mile by mile, the flagged miles, and the bypass from step 19."""
+    a = ctx.assessment
+    facts = {
+        "trail": a.trail.name,
+        "length_mi": round(a.trail.segments[-1].end_mile, 2) if a.trail.segments else None,
+        "direction": "Miles run clockwise from the Paradise trailhead (mile 0).",
+        "risk_by_mile": level_runs(a.segments),
+        "flagged": None,
+        "bypass": None,
+    }
+    if a.flagged is None:
+        return facts
+    facts["flagged"] = {"start_mile": a.flagged.start_mile, "end_mile": a.flagged.end_mile,
+                        "max_probability": a.flagged.max_probability, "level": a.flagged.level}
+    bypass = a.bypass
+    if bypass is None:
+        facts["bypass"] = {"exists": False,
+                           "advice": f"No trail runs around these miles. Turn back before mile {a.flagged.start_mile:.1f}."}
+        return facts
+    facts["bypass"] = {
+        "exists": True,
+        "name": bypass.name,
+        "via": list(bypass.via),
+        "leaves_at_mile": bypass.leaves_at_mile,
+        "rejoins_at_mile": bypass.rejoins_at_mile,
+        "length_km": bypass.length_km,
+        "replaced_km": bypass.replaced_km,
+        "added_km": bypass.added_km,
+        "added_mi": round(bypass.added_km / KM_PER_MILE, 1),
+        "added_elevation_m": bypass.added_elevation_m,
+        "added_elevation_ft": int(round(bypass.added_elevation_m * FEET_PER_METER / 10) * 10),
+        "worst_ground": {"max_probability": bypass.max_probability, "level": bypass.level},
+    }
+    return facts
+
+
+def get_weather(ctx: RunContext, lat: float, lon: float) -> dict:
+    """Rain around now at the trails' elevation, with the Guzzetti thresholds as reference."""
+    if ctx.rain is None:
+        raise ToolError(f"No rain data: {ctx.rain_error or 'Open-Meteo did not answer'}")
+    rain = summarize(ctx.rain)
+    facts = {
+        "source": rain.source,
+        "as_of": rain.as_of.isoformat(),
+        "elevation_m": 1650,
+        "mm": {
+            "past_24h": rain.past_24h_mm,
+            "past_72h": rain.past_72h_mm,
+            "past_7d": rain.past_7d_mm,
+            "next_24h": rain.next_24h_mm,
+            "next_72h": rain.next_72h_mm,
+            "wettest_hour_next_72h": rain.max_hourly_next_72h_mm,
+        },
+        "inches": {
+            "past_72h": round(rain.past_72h_mm / MM_PER_INCH, 2),
+            "next_24h": round(rain.next_24h_mm / MM_PER_INCH, 2),
+        },
+        "guzzetti_threshold_mm": {"24h": threshold_mm(24), "72h": threshold_mm(72)},
+        "past_72h_vs_threshold": round(rain.past_72h_mm / threshold_mm(72), 2),
+        "next_72h_vs_threshold": round(rain.next_72h_mm / threshold_mm(72), 2),
+    }
+    if rain.source == "fixture":
+        facts["warning"] = "SYNTHETIC test storm from a saved file, not observed weather."
+    return facts
+
+
+def get_historical_events(ctx: RunContext, lat: float, lon: float, radius_km: float = HISTORY_RADIUS_KM) -> dict:
+    """Past catalog landslides within radius_km of a point."""
+    near = []
+    for event in historical_events(ctx.slug):
+        distance = _km(lat, lon, event.lat, event.lon)
+        if distance <= radius_km:
+            near.append({"date": event.date, "category": event.category, "trigger": event.trigger,
+                         "title": event.title, "km_away": round(distance, 1)})
+    return {"radius_km": radius_km, "events": sorted(near, key=lambda e: e["km_away"]),
+            "catalog_note": None if historical_events(ctx.slug) else "The landslide catalog is not downloaded yet."}
+
+
+def _km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance in kilometers."""
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp, dl = p2 - p1, math.radians(lon2 - lon1)
+    h = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 6371.0 * 2 * math.asin(math.sqrt(h))
+
+
+TOOLS: dict[str, Callable[..., dict]] = {
+    "get_raster_summary": get_raster_summary,
+    "get_trail_segments": get_trail_segments,
+    "get_weather": get_weather,
+    "get_historical_events": get_historical_events,
+}
+
+
+def call_tool(ctx: RunContext, name: str, **args) -> ToolCall:
+    """Run one tool and record the call. ToolError propagates: the agent fails with it."""
+    started = time.perf_counter()
+    result = TOOLS[name](ctx, **args)
+    return ToolCall(name=name, args=args, result=result, ms=round((time.perf_counter() - started) * 1000))
