@@ -6,7 +6,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
-RiskLevel = Literal["low", "moderate", "high", "extreme"]
+from app.risk import RiskLevel
+
 HazardType = Literal["landslide", "debris_flow"]
 
 # A GeoJSON geometry object, stored as-is in jsonb: {"type": ..., "coordinates": ...}
@@ -59,6 +60,11 @@ class Hazard(BaseModel):
     how_to_avoid: str | None
     needs_review: bool
     created_at: datetime
+    # The hero trail miles the zone covers (step 18). Null on hazards saved before them.
+    trail_id: UUID | None
+    trail_name: str | None
+    start_mile: float | None
+    end_mile: float | None
 
 
 class LayerTiles(BaseModel):

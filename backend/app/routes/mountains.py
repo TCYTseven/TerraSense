@@ -15,8 +15,14 @@ router = APIRouter(prefix="/mountains", tags=["mountains"])
 
 Conn = Annotated[psycopg.Connection[DictRow], Depends(get_conn)]
 
-# Raster layers the map can request. Step 18 adds "probability".
-LAYERS = ("susceptibility",)
+# Raster layers the map can request: the static susceptibility map (step 13) and the
+# 72-hour probability heat map (step 18).
+LAYERS = ("susceptibility", "probability")
+
+RENDER_HINT = {
+    "susceptibility": "Run ml/scripts/render_tiles.py.",
+    "probability": "Run Analyze now, or python -m app.assessment --save from backend/.",
+}
 
 MOUNTAIN_COLUMNS = """
     id, name, slug, lat, lon, elevation_m, region,
@@ -63,9 +69,11 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
 
     hazard = conn.execute(
         """
-        SELECT id, run_id, type, severity, probability, confidence, geom, drivers,
-               what, why, how_to_avoid, needs_review, created_at
-        FROM hazards WHERE mountain_id = %s ORDER BY created_at DESC LIMIT 1
+        SELECT h.id, h.run_id, h.type, h.severity, h.probability, h.confidence, h.geom, h.drivers,
+               h.what, h.why, h.how_to_avoid, h.needs_review, h.created_at,
+               h.trail_id, t.name AS trail_name, h.start_mile, h.end_mile
+        FROM hazards h LEFT JOIN trails t ON t.id = h.trail_id
+        WHERE h.mountain_id = %s ORDER BY h.created_at DESC LIMIT 1
         """,
         (mountain["id"],),
     ).fetchone()
@@ -90,7 +98,7 @@ def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles
         raise HTTPException(status_code=404, detail=f"Unknown layer {layer!r}. Layers: {', '.join(LAYERS)}")
     metadata = read_metadata(layer)
     if metadata is None:
-        raise HTTPException(status_code=404, detail=f"Layer {layer!r} is not rendered yet. Run ml/scripts/render_tiles.py")
+        raise HTTPException(status_code=404, detail=f"Layer {layer!r} is not rendered yet. {RENDER_HINT[layer]}")
 
     # The version query makes browsers drop cached tiles after a re-render.
     base = str(request.base_url).rstrip("/")

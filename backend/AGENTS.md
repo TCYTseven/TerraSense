@@ -16,7 +16,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 20–22 | Agent schemas, tools, the five-agent pipeline, `POST /analyze`, `GET /runs/{id}`, `WS /runs/{id}/stream` |
 | 24 | Discord webhook post |
 
-`app/ml/model_b.py` (step 17) sits here but belongs to the ML track.
+`app/ml/model_b.py` (step 17) sits here but belongs to the ML track. Nothing imports it directly: `app/ml/probability.py` is the seam. It calls `model_b.run(rain)` when the module exists and uses the susceptibility map as a labeled stand-in until then, so steps 18 onward run before Model B lands.
 
 ## Rules
 
@@ -39,10 +39,13 @@ pip install -r requirements.txt
 python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
 python -m app.schema --reset    # drop the six tables, then recreate them
 python -m app.seed               # load data/seed/: three mountains, Rainier's trails, the hero trail's segments. Safe to re-run
+python -m app.assessment         # step 18: score the map, the hero trail, and the hazard zone. Writes nothing
+python -m app.assessment --save  # also render the probability tiles, store segment risk, and save a preview hazard
 uvicorn app.main:app --reload --port 8000
 curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
+curl localhost:8000/mountains/mount-rainier/layers/probability
 ```
 
 `DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).

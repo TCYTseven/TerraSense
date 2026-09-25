@@ -67,6 +67,11 @@ export interface Hazard {
   how_to_avoid: string | null;
   needs_review: boolean;
   created_at: string;
+  /** The hero trail miles the zone covers (step 18). Null on hazards saved before them. */
+  trail_id: string | null;
+  trail_name: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
 }
 
 /** GET /mountains/{slug}/layers/{layer}: a raster layer served as XYZ tiles. */
@@ -78,7 +83,10 @@ export interface LayerTiles {
   bounds: [number, number, number, number];
   minzoom: number;
   maxzoom: number;
-  /** How the values were made, such as "knowledge-driven index" or "lightgbm". */
+  /**
+   * How the values were made, such as "knowledge-driven index", "lightgbm", "model b", or
+   * "susceptibility stand-in (Model B pending)" while step 17 is out.
+   */
   method: string | null;
   updated_at: string;
 }

@@ -27,7 +27,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 15. Open the Mapbox mountain view (built on MapLibre GL with AWS Terrain Tiles, so no token is needed. A Mapbox token switches the relief to satellite)
 - [x] 16. Toggle susceptibility and historical pins (the Past landslides toggle stays disabled until the step 10 landslide points exist)
 - [ ] 17. Score 72-hour probability from live rain
-- [ ] 18. Draw the heat map, hazard polygon, and trail risk
+- [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
 - [ ] 19. Add one bypass around the worst segment
 - [ ] 20. Define agent schemas, tools, and prompts
 - [ ] 21. Run the five-agent pipeline

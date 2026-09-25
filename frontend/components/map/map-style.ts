@@ -7,7 +7,7 @@ import type {
   StyleSpecification,
 } from "maplibre-gl";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
+import type { Hazard, HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
 
 /**
  * The mountain map's style: 3D terrain from open elevation tiles under a light shaded relief.
@@ -66,6 +66,8 @@ export const SOURCE = {
   satellite: "satellite",
   trails: "trails",
   susceptibility: "susceptibility",
+  probability: "probability",
+  hazard: "hazard",
   history: "historical-events",
 } as const;
 
@@ -75,6 +77,8 @@ export const LAYER = {
   tint: "elevation-tint",
   hillshade: "hillshade",
   susceptibility: "susceptibility",
+  probability: "probability",
+  hazardOutline: "hazard-outline",
   otherTrails: "trails-other",
   heroCasing: "trail-hero-casing",
   heroLine: "trail-hero",
@@ -96,6 +100,32 @@ export function rasterSource(layer: LayerTiles): RasterSourceSpecification {
     maxzoom: layer.maxzoom,
   };
 }
+
+/** The heat map fades in over this long when it first shows and when a run brings new tiles. */
+export const HEAT_FADE_MS = 600;
+
+/** The active hazard's zone, carrying its level for the outline color. */
+export function hazardFeatures(
+  hazard: Hazard | null,
+): GeoJSON.FeatureCollection<GeoJSON.Polygon, { severity: RiskLevel }> {
+  return {
+    type: "FeatureCollection",
+    features: hazard ? [{ type: "Feature", geometry: hazard.geom, properties: { severity: hazard.severity } }] : [],
+  };
+}
+
+/** The hazard zone: a 2 px outline in its level color. No fill: the heat map already fills it. */
+export const HAZARD_OUTLINE_COLOR: ExpressionSpecification = [
+  "match",
+  ["get", "severity"],
+  "low",
+  RISK_COLORS.low,
+  "moderate",
+  RISK_COLORS.moderate,
+  "high",
+  RISK_COLORS.high,
+  RISK_COLORS.extreme,
+];
 
 type HistoryProperties = {
   id: string;

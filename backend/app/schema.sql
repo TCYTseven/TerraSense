@@ -66,7 +66,11 @@ CREATE TABLE IF NOT EXISTS hazards (
   why          text,
   how_to_avoid text,
   needs_review boolean NOT NULL DEFAULT false,
-  created_at   timestamptz NOT NULL DEFAULT now()
+  created_at   timestamptz NOT NULL DEFAULT now(),
+  -- Step 18: the hero trail miles the zone covers.
+  trail_id     uuid REFERENCES trails (id) ON DELETE SET NULL,
+  start_mile   double precision,
+  end_mile     double precision
 );
 
 CREATE TABLE IF NOT EXISTS alerts (
@@ -80,6 +84,12 @@ CREATE TABLE IF NOT EXISTS alerts (
   discord_message_url text,                  -- null when the Discord post failed
   created_at          timestamptz NOT NULL DEFAULT now()
 );
+
+-- Columns added after the first release. CREATE TABLE above already has them; these bring an
+-- older database up to date, and do nothing on a new one.
+ALTER TABLE hazards ADD COLUMN IF NOT EXISTS trail_id uuid REFERENCES trails (id) ON DELETE SET NULL;
+ALTER TABLE hazards ADD COLUMN IF NOT EXISTS start_mile double precision;
+ALTER TABLE hazards ADD COLUMN IF NOT EXISTS end_mile double precision;
 
 CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);

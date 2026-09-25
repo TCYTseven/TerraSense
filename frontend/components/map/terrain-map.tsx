@@ -5,6 +5,7 @@ import {
   type GeoJSONSource,
   type MapLayerMouseEvent,
   MapLibreMap,
+  type MapSourceDataEvent,
   Marker,
   NavigationControl,
   Popup,
@@ -14,10 +15,13 @@ import {
 } from "maplibre-gl";
 import { useEffect, useRef, useState } from "react";
 import { formatDate, humanize } from "@/lib/format";
-import type { HistoricalEvent, LayerTiles, Trail } from "@/lib/types";
+import type { Hazard, HistoricalEvent, LayerTiles, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
   CAMERA,
+  HAZARD_OUTLINE_COLOR,
+  hazardFeatures,
+  HEAT_FADE_MS,
   HISTORY_LAYER,
   historyFeatures,
   LAYER,
@@ -50,8 +54,12 @@ export interface TerrainMapProps {
   trails: Trail[];
   /** Static mountains show terrain and trails only: no raster layers and no toggles. */
   isLive: boolean;
+  /** The 72-hour probability tiles: the default layer. Null before the first scoring. */
+  probability: LayerTiles | null;
   /** The susceptibility tiles, or null when the layer is not rendered. */
   susceptibility: LayerTiles | null;
+  /** The latest hazard, outlined on the map. */
+  hazard: Hazard | null;
   /** Past landslides for the pins. Empty until the catalog is downloaded. */
   historicalEvents: HistoricalEvent[];
 }
@@ -109,6 +117,79 @@ function historyPopup(properties: Record<string, unknown>): HTMLElement {
   return root;
 }
 
+function prefersReducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** How long a heat map fade waits for its tiles before fading in anyway. */
+const FADE_WAIT_MS = 3000;
+
+/**
+ * Redraw the layers draped on the 3D terrain. MapLibre caches them as textures keyed on the
+ * tiles, the zoom, and which layers are visible, not on paint, so an opacity change would not
+ * show until the camera moved. releaseAllRTT is not in MapLibre's public types: if a future
+ * version drops it, the heat map still appears, just without the fade.
+ */
+function redrape(map: MapLibreMap) {
+  const terrain = map.terrain as unknown as { tileManager?: { releaseAllRTT?: () => void } } | null;
+  terrain?.tileManager?.releaseAllRTT?.();
+  map.triggerRepaint();
+}
+
+/**
+ * Hide a raster layer, then fade it in once its source's tiles in view have loaded: the heat
+ * map's one motion. Instant under reduced motion. Returns a cancel function for effect cleanup.
+ */
+function fadeIn(map: MapLibreMap, layer: string, source: string): () => void {
+  map.setPaintProperty(layer, "raster-opacity-transition", { duration: 0, delay: 0 });
+  map.setPaintProperty(layer, "raster-opacity", 0);
+  redrape(map);
+  let done = false;
+  let frame = 0;
+  let settleTimer = 0;
+  // The map goes idle only once the fade's transition has finished, so one last redraw then
+  // leaves every tile at full opacity, even when slow frames stretch the fade.
+  const settle = () => redrape(map);
+  const show = () => {
+    if (done || !map.getLayer(layer)) {
+      return;
+    }
+    done = true;
+    map.off("sourcedata", onData);
+    window.clearTimeout(timer);
+    const duration = prefersReducedMotion() ? 0 : HEAT_FADE_MS;
+    map.setPaintProperty(layer, "raster-opacity-transition", { duration, delay: 0 });
+    map.setPaintProperty(layer, "raster-opacity", 1);
+    // Redraw the draped textures every frame of the fade, then once the map settles.
+    const end = performance.now() + duration;
+    const step = () => {
+      redrape(map);
+      if (performance.now() < end) {
+        frame = window.requestAnimationFrame(step);
+      }
+    };
+    step();
+    map.once("idle", settle);
+    settleTimer = window.setTimeout(settle, duration + FADE_WAIT_MS);
+  };
+  const onData = (event: MapSourceDataEvent) => {
+    if (event.sourceId === source && map.isSourceLoaded(source)) {
+      show();
+    }
+  };
+  map.on("sourcedata", onData);
+  // Tiles that never finish (a slow or failed tile server) still let the layer show.
+  const timer = window.setTimeout(show, FADE_WAIT_MS);
+  return () => {
+    done = true;
+    map.off("sourcedata", onData);
+    map.off("idle", settle);
+    window.clearTimeout(timer);
+    window.clearTimeout(settleTimer);
+    window.cancelAnimationFrame(frame);
+  };
+}
+
 function hasWebGL(): boolean {
   try {
     return Boolean(document.createElement("canvas").getContext("webgl2"));
@@ -129,7 +210,9 @@ export default function TerrainMap({
   elevationM,
   trails,
   isLive,
+  probability,
   susceptibility,
+  hazard,
   historicalEvents,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -211,6 +294,61 @@ export default function TerrainMap({
       map.setLayoutProperty(LAYER.susceptibility, "visibility", showSusceptibility ? "visible" : "none");
     }
   }, [map, susceptibility, showSusceptibility]);
+
+  // The 72-hour heat map: the page's default layer, under the trails. It fades in when it first
+  // shows and again when a finished run brings new tiles.
+  useEffect(() => {
+    if (!map || !probability) {
+      return;
+    }
+    const source = map.getSource<RasterTileSource>(SOURCE.probability);
+    if (source) {
+      source.setTiles([probability.tiles]);
+    } else {
+      map.addSource(SOURCE.probability, rasterSource(probability));
+      map.addLayer(
+        {
+          id: LAYER.probability,
+          type: "raster",
+          source: SOURCE.probability,
+          paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
+        },
+        LAYER.otherTrails,
+      );
+    }
+    return fadeIn(map, LAYER.probability, SOURCE.probability);
+  }, [map, probability]);
+
+  // One raster at a time: susceptibility hides the heat map while it is on.
+  useEffect(() => {
+    if (map?.getLayer(LAYER.probability)) {
+      map.setLayoutProperty(LAYER.probability, "visibility", showSusceptibility ? "none" : "visible");
+    }
+  }, [map, probability, showSusceptibility]);
+
+  // The hazard zone's outline, under the trails so the trail colors stay readable across it.
+  useEffect(() => {
+    if (!map || !isLive) {
+      return;
+    }
+    const data = hazardFeatures(hazard);
+    const source = map.getSource<GeoJSONSource>(SOURCE.hazard);
+    if (source) {
+      source.setData(data);
+      return;
+    }
+    map.addSource(SOURCE.hazard, { type: "geojson", data });
+    map.addLayer(
+      {
+        id: LAYER.hazardOutline,
+        type: "line",
+        source: SOURCE.hazard,
+        layout: { "line-join": "round" },
+        paint: { "line-color": HAZARD_OUTLINE_COLOR, "line-width": 2 },
+      },
+      LAYER.otherTrails,
+    );
+  }, [map, isLive, hazard]);
 
   // Past landslide pins sit above the trails.
   useEffect(() => {

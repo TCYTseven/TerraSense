@@ -52,7 +52,11 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
     notFound();
   }
   // Static mountains have no raster layers.
-  const susceptibility = mountain.is_live ? await loadLayer(slug, "susceptibility") : null;
+  const [probability, susceptibility] = mountain.is_live
+    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility")])
+    : [null, null];
+  // Until Model B (step 17) lands, the heat map is the susceptibility map. Say so.
+  const heatMapIsStandIn = probability?.method?.includes("stand-in") ?? false;
   // The hero trail has segments: the model scores it mile by mile. The rest are context.
   const heroTrails = mountain.trails.filter((trail) => trail.segments.length > 0);
   const otherTrails = mountain.trails.filter((trail) => trail.segments.length === 0);
@@ -71,7 +75,9 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
           elevationM={mountain.elevation_m}
           trails={mountain.trails}
           isLive={mountain.is_live}
+          probability={probability}
           susceptibility={susceptibility}
+          hazard={mountain.active_hazard}
           historicalEvents={mountain.historical_events}
         />
       </section>
@@ -104,6 +110,11 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
           <RiskBadge level={mountain.current_risk_level} className="mt-2 text-lg font-medium" />
           <p className="mt-1 font-mono text-xs text-muted-foreground">{refreshLabel(mountain)}</p>
           <p className="mt-3 text-sm text-muted-foreground">{riskSentence(mountain)}</p>
+          {heatMapIsStandIn && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              The heat map shows terrain susceptibility until the rain model lands.
+            </p>
+          )}
         </section>
 
         {mountain.trails.length > 0 && (

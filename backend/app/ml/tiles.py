@@ -20,6 +20,8 @@ from rasterio.crs import CRS
 from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject
 
+from app.risk import BIN_EDGES, RISK_HEX, RISK_LEVELS, hex_rgb
+
 # backend/tiles/<layer>/{z}/{x}/{y}.png, served by the API at /tiles.
 TILES_DIR = Path(__file__).resolve().parents[2] / "tiles"
 TILE_SIZE = 256
@@ -29,39 +31,42 @@ RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
 # z10 shows the whole mountain; past z14 the map stretches the z14 tiles.
 DEFAULT_ZOOMS = range(10, 15)
 
-# Risk ramp at the shared bin edges: low < 0.2 < moderate < 0.45 < high < 0.7 < extreme.
-RAMP_STOPS = np.array([0.0, 0.2, 0.45, 0.7, 1.0])
-RAMP_RGB = np.array([[34, 197, 94], [34, 197, 94], [245, 158, 11], [249, 115, 22], [239, 68, 68]])
-# Low values fade out so the terrain shows through. The worst ground is the most opaque.
-RAMP_ALPHA = np.array([0, 60, 150, 200, 225])
+# A stepped ramp on the shared bins (design addendum, Raster layers), so every color on the map
+# is a level word in the panel. Low is transparent so the terrain shows through, and the worst
+# ground is the most opaque. Probability and susceptibility share it.
+LEVEL_ALPHA = {"low": 0.0, "moderate": 0.40, "high": 0.55, "extreme": 0.70}
+LEVEL_RGBA = np.array(
+    [[*hex_rgb(RISK_HEX[level]), round(255 * LEVEL_ALPHA[level])] for level in RISK_LEVELS], dtype=np.uint8
+)
+NO_DATA_INDEX = len(RISK_LEVELS)
+
+
+def level_indexes(values: np.ndarray) -> np.ndarray:
+    """uint8 level index per value: 0 low to 3 extreme, and NO_DATA_INDEX for NaN."""
+    missing = np.isnan(values)
+    index = np.digitize(np.where(missing, 0.0, values), BIN_EDGES).astype(np.uint8)
+    index[missing] = NO_DATA_INDEX
+    return index
 
 
 def colorize(values: np.ndarray) -> np.ndarray:
     """RGBA uint8 for an array of 0-1 values. NaN is fully transparent."""
-    missing = np.isnan(values)
-    clean = np.where(missing, 0.0, np.clip(values, 0, 1))
-    rgba = np.empty(values.shape + (4,), dtype=np.uint8)
-    for channel in range(3):
-        rgba[..., channel] = np.interp(clean, RAMP_STOPS, RAMP_RGB[:, channel])
-    rgba[..., 3] = np.interp(clean, RAMP_STOPS, RAMP_ALPHA)
-    rgba[missing, 3] = 0
+    rgba = np.zeros(values.shape + (4,), dtype=np.uint8)
+    index = level_indexes(values)
+    present = index != NO_DATA_INDEX
+    rgba[present] = LEVEL_RGBA[index[present]]
     return rgba
 
 
-# Tiles are 8-bit palette PNGs: 64 value levels look like a smooth ramp, encode 20x faster
-# than optimized RGBA, and are a third the size. The last palette entry is transparent (no data).
-LEVELS = 64
-_LEVEL_RGBA = colorize(np.linspace(0, 1, LEVELS)[None, :])[0]
-PALETTE_RGB = [int(c) for c in _LEVEL_RGBA[:, :3].flatten()] + [0, 0, 0]
-PALETTE_ALPHA = bytes([int(a) for a in _LEVEL_RGBA[:, 3]] + [0])
+# Tiles are 8-bit palette PNGs: one entry per level and a transparent one for no data. They
+# encode far faster than RGBA and are a fraction of the size.
+PALETTE_RGB = [int(c) for c in LEVEL_RGBA[:, :3].flatten()] + [0, 0, 0]
+PALETTE_ALPHA = bytes([int(a) for a in LEVEL_RGBA[:, 3]] + [0])
 
 
 def palette_image(values: np.ndarray) -> Image.Image:
-    """8-bit PNG image of 0-1 values on the risk ramp. NaN is transparent."""
-    index = np.full(values.shape, LEVELS, dtype=np.uint8)
-    present = ~np.isnan(values)
-    index[present] = np.rint(np.clip(values[present], 0, 1) * (LEVELS - 1)).astype(np.uint8)
-    image = Image.fromarray(index, "P")
+    """8-bit PNG image of 0-1 values on the stepped risk ramp. NaN is transparent."""
+    image = Image.fromarray(level_indexes(values), "P")
     image.putpalette(PALETTE_RGB)
     image.info["transparency"] = PALETTE_ALPHA
     return image
@@ -103,7 +108,8 @@ def render_xyz(raster: Path, layer: str, zooms: Iterable[int] = DEFAULT_ZOOMS,
     for tile in mercantile.tiles(*bbox, zooms=zooms):
         path = work_dir / str(tile.z) / str(tile.x) / f"{tile.y}.png"
         path.parent.mkdir(parents=True, exist_ok=True)
-        palette_image(warp_tile(data, src_transform, src_crs, tile)).save(path, compress_level=9)
+        # zlib level 6: a tenth of level 9's time for tiles about 9% larger. A run renders these live.
+        palette_image(warp_tile(data, src_transform, src_crs, tile)).save(path, compress_level=6)
         count += 1
 
     created = datetime.now(UTC)

@@ -171,6 +171,7 @@ Step 8 builds it with `react-globe.gl`. Property names below are that library's.
 - **Terrain.** Exaggeration 1.5 (spec 6.2).
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
+  - *Recorded at step 18:* the map keeps step 15's opening frame, the summit plus the Skyline loop fitted with 150 px of top padding, pitch 55, bearing -14 (about zoom 12.2 at 1440 x 900). The flagged miles move with each run, and every one of them, with any bypass, sits on or inside the loop, so one frame serves every run.
 - **Controls.** None beyond the attribution and logo that Mapbox's terms require. No navigation, fullscreen, or geolocate control. Drag, scroll, pinch, and rotate stay on.
 
 ### Raster layers
@@ -187,7 +188,7 @@ Probability (the default layer, step 18) and susceptibility (step 16) share one 
 1. **Low is transparent.** A mountain painted green buries the hazard. Green stays on trails, where "this segment is fine" is the useful message.
 2. **Stepped, not blended,** so every color on the map equals a level word in the panel.
 3. **Susceptibility uses the same edges.** If the ML owner moves them for Model A, record the new edges here.
-4. **Color and alpha are baked into the PNG tiles.** `raster-opacity` stays at 1 except during the heat map fade. Set `raster-fade-duration` to 0 on both layers so tile loads add no fade of their own.
+4. **Color and alpha are baked into the PNG tiles.** `raster-opacity` stays at 1 except during the heat map fade. Set `raster-fade-duration` to 0 on both layers so tile loads add no fade of their own. On 3D terrain MapLibre caches draped layers as textures that ignore paint changes, so the fade redraws them each frame (`terrain-map.tsx`).
 5. **One raster at a time. [confirm]** Turning Susceptibility on hides probability. Turning it off brings probability back. The same ramp stacked twice cannot be read.
 
 ### Trails, bypass, and pins
