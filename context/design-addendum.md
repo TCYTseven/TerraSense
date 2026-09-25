@@ -5,6 +5,7 @@ The design decisions that the spec and UX.md leave open, closed for this build.
 [TerraSense.md](TerraSense.md) sets the tokens under [Design Language](TerraSense.md#design-language). [UX.md](UX.md) decides whether a control belongs on screen. [implementation-steps.md](implementation-steps.md) sets the build order. This file picks among the options the spec lists and specifies the details none of them state. It extends those files. It does not repeat them, and it adds no screen, control, or layer.
 
 ## Precedence
+test
 
 - **Color.** When this file and the spec disagree about a color, the spec wins. Hex values live only in Design Language. This file names each color by its role there.
 - **Controls.** When this file and UX.md disagree about whether a control, layer, or screen ships, UX.md wins.
