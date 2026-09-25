@@ -21,3 +21,6 @@ __pycache__/
 
 # OS and editors
 .DS_Store
+
+# Claude Code agent worktrees (isolated checkouts). Never commit them.
+.claude/worktrees/
