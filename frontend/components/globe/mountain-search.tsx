@@ -110,7 +110,7 @@ export default function MountainSearch({
         Search a mountain
       </label>
       <div className="relative">
-        {/* z-10 keeps the icon above the input's background. */}
+        {/* z-10: the input's backdrop blur would otherwise paint over the icon. */}
         <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           id={inputId}
@@ -135,11 +135,11 @@ export default function MountainSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={handleKeyDown}
-          className="h-11 w-full rounded-lg border border-border bg-popover pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground disabled:opacity-60"
+          className="h-11 w-full rounded-lg border border-border bg-popover/85 pl-10 pr-4 text-sm text-foreground shadow-lg shadow-black/30 backdrop-blur-sm placeholder:text-muted-foreground disabled:opacity-60"
         />
       </div>
       {showList && (
-        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover">
+        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-xl shadow-black/40 backdrop-blur-sm">
           {matches.length > 0 ? (
             <ul id={listId} role="listbox" aria-label="Mountains" className="py-1">
               {matches.map((mountain, index) => (

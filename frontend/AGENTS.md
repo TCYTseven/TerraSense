@@ -18,7 +18,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) for the team rules and shared fac
 
 | Step | Adds |
 |---|---|
-| 2 | Theme tokens (light since the globe redesign) and the full-bleed shell |
+| 2 | Dark dispatch theme and the full-bleed shell |
 | 7 | `lib/types.ts`, `lib/api.ts`, `lib/fixtures/run.json` |
 | 8–9 | Globe markers, hover card, search, fly-to, `/mountains/[slug]` |
 | 15–16 | MapLibre terrain map, layer toggles |

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-/** Site-wide 404, light like the rest of the app. The default 404 follows the OS theme. */
+/** Site-wide 404, dark like the rest of the app. The default 404 follows the OS theme. */
 export default function NotFound() {
   return (
     <main className="grid h-dvh place-items-center bg-background px-6">
