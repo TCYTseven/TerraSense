@@ -233,7 +233,7 @@ A card, not a second product.
 - The bypass: name, added distance, added elevation.
 - The same bypass drawn on the mountain map, dashed.
 
-The Alert Writer produces the sentence. The bypass values come from the API, never from the model's text. No account, no share image, no file download.
+The Alert Writer produces the sentence. The bypass values come from the API, never from the model's text. No account, no share image, no file download. hi
 
 ### 6.7 Reasoning Panel
 
