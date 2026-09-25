@@ -70,9 +70,13 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 
 | File | What it is |
 |---|---|
-| `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`. Compatible-release pins. |
+| `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`, `python-dotenv`. Compatible-release pins. |
 | `backend/app/__init__.py` | Package marker. |
 | `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. `GET /health` returns `{"status": "ok"}`. |
+| `backend/app/config.py` | Loads the repo root `.env`. `database_url()` returns `DATABASE_URL` or raises with the fix. `REPO_ROOT`. |
+| `backend/app/db.py` | `connect()` opens one psycopg connection to `DATABASE_URL`. |
+| `backend/app/schema.sql` | Six tables: `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, `alerts`. UUID keys, geometry as `jsonb`, CHECK constraints for risk levels, run status, hazard type, and alert action. Every statement is `IF NOT EXISTS`. |
+| `backend/app/schema.py` | `python -m app.schema [--reset]`. `apply_schema(reset)` runs `schema.sql` and returns the tables present. `--reset` drops the six tables first. |
 
 ## Planned layout
 
@@ -100,7 +104,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/app/schema.sql` | 4 | Six tables. Geometry as `jsonb` |
 | `backend/app/seed.py` | 5 | Loads `data/seed/` |
 | `backend/app/routes/mountains.py` | 6, 13, 18 | List, detail, layer tile templates |
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |

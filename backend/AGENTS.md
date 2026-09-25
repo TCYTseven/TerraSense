@@ -34,6 +34,10 @@ Run these from `backend/`:
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
+python -m app.schema --reset    # drop the six tables, then recreate them
 uvicorn app.main:app --reload --port 8000
 curl localhost:8000/health
 ```
+
+`DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).

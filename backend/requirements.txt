@@ -7,3 +7,6 @@ httpx~=0.28.1
 # Postgres driver and connection pool (schema, seed, and reads from step 4).
 psycopg[binary]~=3.3.6
 psycopg-pool~=3.3.3
+
+# Loads the repo root .env.
+python-dotenv~=1.2
