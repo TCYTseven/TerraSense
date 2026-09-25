@@ -1,11 +1,13 @@
 import type {
+  CircleLayerSpecification,
   ExpressionSpecification,
   LngLatBoundsLike,
+  RasterSourceSpecification,
   SourceSpecification,
   StyleSpecification,
 } from "maplibre-gl";
-import { RISK_COLORS } from "@/lib/theme";
-import type { RiskLevel, Trail } from "@/lib/types";
+import { RISK_COLORS, THEME } from "@/lib/theme";
+import type { HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
 
 /**
  * The mountain map's style: 3D terrain from open elevation tiles under a light shaded relief.
@@ -63,6 +65,8 @@ export const SOURCE = {
   relief: "relief-dem",
   satellite: "satellite",
   trails: "trails",
+  susceptibility: "susceptibility",
+  history: "historical-events",
 } as const;
 
 export const LAYER = {
@@ -70,10 +74,75 @@ export const LAYER = {
   satellite: "satellite",
   tint: "elevation-tint",
   hillshade: "hillshade",
+  susceptibility: "susceptibility",
   otherTrails: "trails-other",
   heroCasing: "trail-hero-casing",
   heroLine: "trail-hero",
+  history: "historical-pins",
 } as const;
+
+/**
+ * A raster layer from GET /mountains/{slug}/layers/{layer}. Color and alpha are baked into
+ * the PNG tiles, so the layer paints at full opacity. Past the source's maxzoom the map
+ * stretches the deepest tiles.
+ */
+export function rasterSource(layer: LayerTiles): RasterSourceSpecification {
+  return {
+    type: "raster",
+    tiles: [layer.tiles],
+    tileSize: 256,
+    bounds: layer.bounds,
+    minzoom: layer.minzoom,
+    maxzoom: layer.maxzoom,
+  };
+}
+
+type HistoryProperties = {
+  id: string;
+  date: string | null;
+  category: string | null;
+  source_name: string | null;
+  source_link: string | null;
+  catalog: string;
+};
+
+/** Past landslides as map points, carrying what the pin popup shows. */
+export function historyFeatures(
+  events: HistoricalEvent[],
+): GeoJSON.FeatureCollection<GeoJSON.Point, HistoryProperties> {
+  return {
+    type: "FeatureCollection",
+    features: events.map((event) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [event.lon, event.lat] },
+      properties: {
+        id: event.id,
+        date: event.date,
+        category: event.category,
+        source_name: event.source_name,
+        source_link: event.source_link,
+        catalog: event.catalog,
+      },
+    })),
+  };
+}
+
+/**
+ * Historical pins: small circles in the text color with a dark ring. Not a risk color,
+ * because a past event is not today's level.
+ */
+export const HISTORY_LAYER: CircleLayerSpecification = {
+  id: LAYER.history,
+  type: "circle",
+  source: SOURCE.history,
+  paint: {
+    "circle-radius": 4,
+    "circle-color": THEME.foreground,
+    "circle-opacity": 0.85,
+    "circle-stroke-width": 1.5,
+    "circle-stroke-color": THEME.background,
+  },
+};
 
 function demSource(): SourceSpecification {
   return {

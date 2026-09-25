@@ -98,6 +98,21 @@
   background-size: 48px 48px;
 }
 
+/* MapLibre popups (historical pins) on the panel surface: 8 px radius, no tip, no shadow. */
+.terra-popup .maplibregl-popup-content {
+  background: var(--popover);
+  color: var(--popover-foreground);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  box-shadow: none;
+  font-family: var(--font-sans);
+}
+
+.terra-popup .maplibregl-popup-tip {
+  display: none;
+}
+
 @layer base {
   html {
     color-scheme: dark;

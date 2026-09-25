@@ -4,12 +4,21 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import MountainMap from "@/components/map/mountain-map";
 import RiskBadge from "@/components/risk-badge";
-import { getMountain } from "@/lib/api";
+import { getLayer, getMountain } from "@/lib/api";
 import { formatElevation, formatLatLon, formatMiles, refreshLabel } from "@/lib/format";
-import type { MountainDetail } from "@/lib/types";
+import type { LayerTiles, MountainDetail } from "@/lib/types";
 
 // One API call per request, shared by the metadata and the page.
 const loadMountain = cache((slug: string) => getMountain(slug));
+
+/** A raster layer's tiles, or null. A layer that fails to load leaves the map without it. */
+async function loadLayer(slug: string, layer: string): Promise<LayerTiles | null> {
+  try {
+    return await getLayer(slug, layer);
+  } catch {
+    return null;
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -42,6 +51,8 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
   if (!mountain) {
     notFound();
   }
+  // Static mountains have no raster layers.
+  const susceptibility = mountain.is_live ? await loadLayer(slug, "susceptibility") : null;
   // The hero trail has segments: the model scores it mile by mile. The rest are context.
   const heroTrails = mountain.trails.filter((trail) => trail.segments.length > 0);
   const otherTrails = mountain.trails.filter((trail) => trail.segments.length === 0);
@@ -59,6 +70,9 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
           lat={mountain.lat}
           elevationM={mountain.elevation_m}
           trails={mountain.trails}
+          isLive={mountain.is_live}
+          susceptibility={susceptibility}
+          historicalEvents={mountain.historical_events}
         />
       </section>
 

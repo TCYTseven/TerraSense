@@ -42,6 +42,24 @@ export function formatMiles(km: number): string {
   return `${(km / KM_PER_MILE).toFixed(1)} mi`;
 }
 
+const DATE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** "2011-05-01" → "May 1, 2011". Dates without a time read the same everywhere. */
+export function formatDate(isoDate: string): string {
+  return DATE_FORMAT.format(new Date(`${isoDate}T00:00:00Z`));
+}
+
+/** A catalog value such as "debris_flow" → "Debris flow". */
+export function humanize(value: string): string {
+  const words = value.replace(/[_-]+/g, " ").trim().toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
 /** "46.8523° N, 121.7603° W". */
 export function formatLatLon(lat: number, lon: number): string {
   const latText = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? "N" : "S"}`;
