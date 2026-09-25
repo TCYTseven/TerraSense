@@ -23,7 +23,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
 - [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
 - [x] 13. Render susceptibility map tiles
-- [ ] 14. Import trails and historical landslide pins
+- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [ ] 15. Open the Mapbox mountain view
 - [ ] 16. Toggle susceptibility and historical pins
 - [ ] 17. Score 72-hour probability from live rain

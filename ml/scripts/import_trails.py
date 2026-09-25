@@ -1,0 +1,498 @@
+#!/usr/bin/env python3
+"""Import Mount Rainier trails from OpenStreetMap data (implementation step 14).
+
+The foot paths are OpenStreetMap ways, read from the Overture Maps transportation theme:
+OSM-derived GeoParquet on AWS S3. Overpass and Geofabrik are not reachable from the build
+container, and Overture needs no key. The script reads only the Parquet row groups whose
+bbox statistics overlap RAINIER_BBOX, about 300 MB of the 72 GB theme.
+
+Writes, relative to the repo root:
+  data/raw/rainier_trail_segments.geojson  every walkable segment in the bbox, clipped to it.
+                                           Download cache, and the network step 19 routes on
+  data/seed/trails.geojson                 one LineString per named trail, with length and gain
+  data/seed/trail_segments.geojson         the hero trail cut into mile-marked segments
+
+The hero trail is the Skyline Trail loop above Paradise. It climbs past Glacier Vista, crosses
+the steep gullies below Panorama Point, and has a ready bypass in the Golden Gate Trail.
+
+Run from the repo root:
+  python ml/scripts/import_trails.py [--force] [--segments PATH] [--out PATH] [--dem PATH]
+"""
+
+from __future__ import annotations
+
+import argparse
+import itertools
+import json
+import math
+import os
+from collections import Counter, defaultdict
+from pathlib import Path
+
+import networkx as nx
+import numpy as np
+import pyarrow.compute as pc
+import pyarrow.dataset as ds
+import pyarrow.fs as pafs
+import rasterio
+import shapely
+from pyproj import Transformer
+from scipy.ndimage import map_coordinates
+from shapely.geometry import shape
+from shapely.ops import substring
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+DEM_PATH = REPO_ROOT / "data" / "raw" / "rainier_dem_cop30.tif"
+SEGMENTS_PATH = REPO_ROOT / "data" / "raw" / "rainier_trail_segments.geojson"
+TRAILS_PATH = REPO_ROOT / "data" / "seed" / "trails.geojson"
+HERO_SEGMENTS_PATH = REPO_ROOT / "data" / "seed" / "trail_segments.geojson"
+
+# Shared facts (context/implementation-steps.md). EPSG:4326, [west, south, east, north].
+RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
+MOUNTAIN_SLUG = "mount-rainier"
+
+# Overture Maps release to read. The bucket keeps only the latest releases, so when this one
+# disappears, set the newest name under s3://overturemaps-us-west-2/release/ and rerun with --force.
+OVERTURE_RELEASE = "2026-09-23.0"
+OVERTURE_BUCKET = "overturemaps-us-west-2"
+OVERTURE_REGION = "us-west-2"
+SEGMENTS_S3 = f"{OVERTURE_BUCKET}/release/{OVERTURE_RELEASE}/theme=transportation/type=segment/"
+SEGMENTS_URL = f"https://{OVERTURE_BUCKET}.s3.amazonaws.com/release/{OVERTURE_RELEASE}/theme=transportation/type=segment/"
+
+# Overture road classes a hiker can walk. They are the OSM highway=* values of the same names.
+WALKABLE_CLASSES = ["footway", "path", "steps", "track", "bridleway", "pedestrian"]
+
+# OSM-derived data is licensed ODbL 1.0 and must credit "© OpenStreetMap contributors".
+# trails.geojson is a derived database, so it stays ODbL too.
+ATTRIBUTION = f"© OpenStreetMap contributors (ODbL 1.0), via Overture Maps Foundation release {OVERTURE_RELEASE}"
+SOURCE = "© OpenStreetMap contributors (ODbL), via Overture Maps"  # per-trail `source` property
+
+UTM_CRS = "EPSG:32610"  # UTM zone 10N, meters. The same CRS as the step 11 grid.
+SAMPLE_STEP_M = 30      # elevation profile spacing, about one DEM cell
+SIMPLIFY_M = 5          # Douglas-Peucker tolerance for the seed lines
+COORD_DECIMALS = 6      # about 0.1 m
+BRIDGE_MAX_M = 150      # join two pieces of one trail name through the walkable network if they are this close
+MIN_TRAIL_M = 200       # drop names whose line is shorter: campground labels such as "1", "G", "Group"
+# OSM maps the summit climbs (Disappointment Cleaver, Emmons Glacier, Camp Muir, Observation Rock)
+# as footways named "... Route". They cross glaciers, not hiking trails, so the seed leaves them out.
+CLIMBING_ROUTE_SUFFIX = " Route"
+
+# The hero trail. OSM splits the NPS Skyline loop into "Skyline Trail" (two legs that meet at the
+# Paradise plaza) and "Upper Skyline Trail" across the top. The seed joins them into one loop.
+HERO_TRAIL = "Skyline Trail"
+HERO_PARTS = ("Skyline Trail", "Upper Skyline Trail")
+HERO_START = (-121.73652, 46.78650)  # mile 0: the Paradise trailhead by the Jackson Visitor Center
+SEGMENT_MILES = 0.1  # one segment per tenth of a mile, so alerts can say "miles 1.2 to 2.1"
+METERS_PER_MILE = 1609.344
+
+TO_UTM = Transformer.from_crs("EPSG:4326", UTM_CRS, always_xy=True)
+TO_LONLAT = Transformer.from_crs(UTM_CRS, "EPSG:4326", always_xy=True)
+
+
+def rel(path: Path) -> str:
+    """Path relative to the repo root when it is inside the repo, for log lines."""
+    return str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
+
+
+def to_utm(geom):
+    return shapely.transform(geom, lambda xy: np.column_stack(TO_UTM.transform(xy[:, 0], xy[:, 1])))
+
+
+def to_lonlat(geom):
+    return shapely.transform(geom, lambda xy: np.column_stack(TO_LONLAT.transform(xy[:, 0], xy[:, 1])))
+
+
+def round_coords(geom, decimals: int):
+    return shapely.transform(geom, lambda xy: np.round(xy, decimals))
+
+
+# --- Stage 1: walkable segments from Overture ------------------------------------------------
+
+
+def overture_filesystem() -> pafs.S3FileSystem:
+    """Anonymous S3 access. pyarrow reads SSL_CERT_FILE for TLS; HTTPS_PROXY must be passed in."""
+    proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    return pafs.S3FileSystem(anonymous=True, region=OVERTURE_REGION, proxy_options=proxy or None)
+
+
+def fetch_segments() -> list[dict]:
+    """Walkable Overture segments that touch RAINIER_BBOX, clipped to it, sorted by id."""
+    west, south, east, north = RAINIER_BBOX
+    s3 = overture_filesystem()
+    if s3.get_file_info(SEGMENTS_S3).type != pafs.FileType.Directory:
+        releases = [i.base_name for i in s3.get_file_info(pafs.FileSelector(f"{OVERTURE_BUCKET}/release/"))]
+        raise SystemExit(f"Overture release {OVERTURE_RELEASE} is gone. Available: {sorted(releases)}. "
+                         "Set OVERTURE_RELEASE to the newest and rerun with --force.")
+    dataset = ds.dataset(SEGMENTS_S3, filesystem=s3, format="parquet")
+    # The bbox terms prune whole row groups by their min/max statistics before any rows are read.
+    overlaps_bbox = (
+        (pc.field("bbox", "xmin") <= east) & (pc.field("bbox", "xmax") >= west)
+        & (pc.field("bbox", "ymin") <= north) & (pc.field("bbox", "ymax") >= south)
+    )
+    walkable = (pc.field("subtype") == "road") & pc.field("class").isin(WALKABLE_CLASSES)
+    table = dataset.to_table(
+        filter=overlaps_bbox & walkable,
+        columns={
+            "id": pc.field("id"),
+            "class": pc.field("class"),
+            "name": pc.field("names", "primary"),
+            "sources": pc.field("sources"),
+            "geometry": pc.field("geometry"),
+        },
+    )
+    segments = []
+    for row in table.to_pylist():
+        line = shapely.from_wkb(row["geometry"])
+        clipped = shapely.clip_by_rect(line, west, south, east, north)
+        if clipped.is_empty:  # the bbox of the line overlaps, the line itself does not
+            continue
+        segments.append({
+            "id": row["id"],
+            "class": row["class"],
+            "name": row["name"],
+            # OSM way ids with version, e.g. "w407522640@2". One segment can come from several ways.
+            "osm_ids": [s["record_id"] for s in row["sources"] or []
+                        if s["dataset"] == "OpenStreetMap" and not s["property"]],
+            "clipped": not clipped.equals(line),
+            "geometry": clipped,
+        })
+    return sorted(segments, key=lambda s: s["id"])
+
+
+def write_segments(segments: list[dict], path: Path) -> None:
+    """Raw segments as GeoJSON at full OSM precision (7 decimals), so shared nodes stay equal."""
+    features = [{
+        "type": "Feature",
+        "id": s["id"],
+        "properties": {key: s[key] for key in ("id", "class", "name", "osm_ids", "clipped")},
+        "geometry": json.loads(shapely.to_geojson(round_coords(s["geometry"], 7))),
+    } for s in segments]
+    collection = {
+        "type": "FeatureCollection",
+        "source": SEGMENTS_URL,
+        "attribution": ATTRIBUTION,
+        "features": features,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(collection, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+def read_segments(path: Path) -> list[dict]:
+    features = json.loads(path.read_text(encoding="utf-8"))["features"]
+    return [{**f["properties"], "geometry": shape(f["geometry"])} for f in features]
+
+
+# --- Stage 2: one line per trail name ---------------------------------------------------------
+
+
+def walk_graph(segments: list[dict]) -> nx.Graph:
+    """Walkable network. Nodes are segment ends and shared OSM nodes (exact lon/lat), edges are meters.
+
+    Overture keeps each OSM way whole, so trails often meet mid-segment: split at shared vertices.
+    """
+    lines = [(s, np.round(shapely.get_coordinates(part), 7))
+             for s in segments for part in shapely.get_parts(s["geometry"])]
+    users = defaultdict(set)
+    for i, (_, coords) in enumerate(lines):
+        for vertex in map(tuple, coords):
+            users[vertex].add(i)
+    graph = nx.Graph()
+    for seg, coords in lines:
+        cuts = [0] + [k for k in range(1, len(coords) - 1) if len(users[tuple(coords[k])]) > 1] + [len(coords) - 1]
+        for a, b in itertools.pairwise(cuts):
+            piece = coords[a:b + 1]
+            meters = to_utm(shapely.LineString(piece)).length
+            u, v = tuple(piece[0]), tuple(piece[-1])
+            if u != v and (not graph.has_edge(u, v) or graph[u][v]["weight"] > meters):
+                label = seg["name"] or f"unnamed {seg['class']}"
+                graph.add_edge(u, v, weight=meters, coords=piece, label=label)
+    return graph
+
+
+def path_coords(graph: nx.Graph, nodes: list) -> np.ndarray:
+    """Vertices along a node path, each edge oriented in travel order."""
+    out = [np.array([nodes[0]])]
+    for u, v in itertools.pairwise(nodes):
+        coords = graph[u][v]["coords"]
+        out.append((coords if tuple(coords[0]) == u else coords[::-1])[1:])
+    return np.vstack(out)
+
+
+def bridge_pieces(pieces: list, graph: nx.Graph) -> tuple[list, float, list[str]]:
+    """Join pieces of one name through the walkable network where their ends are BRIDGE_MAX_M apart or less.
+
+    OSM often leaves a short unnamed link inside a named trail (a plaza, a bridge, a junction).
+    The link is real geometry, so the joined line never jumps. Returns the pieces, the meters added,
+    and what the links run along. Pieces that meet mid-line (a T or a Y) cannot become one line and stay apart.
+    """
+    added, via = 0.0, set()
+    while len(pieces) > 1:
+        candidates = []  # (meters, -combined length, i, j, node path)
+        for i, j in itertools.combinations(range(len(pieces)), 2):
+            for a in (pieces[i].coords[0], pieces[i].coords[-1]):
+                a = tuple(np.round(a, 7))
+                if a not in graph:
+                    continue
+                reach, paths = nx.single_source_dijkstra(graph, a, cutoff=BRIDGE_MAX_M)
+                for b in (pieces[j].coords[0], pieces[j].coords[-1]):
+                    b = tuple(np.round(b, 7))
+                    if b in reach:
+                        size = to_utm(pieces[i]).length + to_utm(pieces[j]).length
+                        candidates.append((reach[b], -size, i, j, paths[b]))
+        join = None
+        for candidate in sorted(candidates, key=lambda c: c[:4]):  # shortest link first, then the longest pair
+            meters, _, i, j, nodes = candidate
+            link = [shapely.LineString(path_coords(graph, nodes))] if len(nodes) > 1 else []
+            joined = shapely.line_merge(shapely.MultiLineString([pieces[i], pieces[j], *link]))
+            if joined.geom_type == "LineString":
+                join = (meters, i, j, nodes, joined)
+                break
+        if join is None:
+            break  # no candidate makes one line
+        meters, i, j, nodes, joined = join
+        pieces = [p for k, p in enumerate(pieces) if k not in (i, j)] + [joined]
+        added += meters
+        via |= {graph[u][v]["label"] for u, v in itertools.pairwise(nodes)}
+    return pieces, added, sorted(via)
+
+
+def trail_lines(segments: list[dict]) -> list[dict]:
+    """Merge segments by OSM name. One record per name: every piece, and the one line the seed keeps."""
+    by_name = defaultdict(list)
+    for s in segments:
+        if s["name"]:
+            by_name[s["name"]].append(s)
+    graph = walk_graph(segments)
+    trails = []
+    for name, segs in sorted(by_name.items()):
+        merged = shapely.line_merge(shapely.MultiLineString(
+            [part for s in segs for part in shapely.get_parts(s["geometry"])]))
+        pieces = list(shapely.get_parts(merged))
+        bridged, bridge_m, bridge_via = bridge_pieces(pieces, graph)
+        # Keep the longest piece; its length decides which piece is "the" trail when OSM splits a name.
+        lengths = [to_utm(p).length for p in bridged]
+        keep = bridged[int(np.argmax(lengths))]
+        trails.append({
+            "name": name,
+            "classes": sorted({s["class"] for s in segs}),
+            "segments": len(segs),
+            "pieces": pieces,             # straight line_merge result
+            "bridged": bridged,           # after joining short gaps through the network
+            "bridge_m": bridge_m,
+            "bridge_via": bridge_via,
+            "line": keep,                 # lon/lat LineString the seed writes
+            "total_m": sum(to_utm(p).length for p in pieces),
+        })
+    return trails
+
+
+# --- Stage 3: measure and write the seed ------------------------------------------------------
+
+
+class Dem:
+    """Bilinear samples of the step 10 DEM (EPSG:4326, meters above the EGM2008 geoid)."""
+
+    def __init__(self, path: Path):
+        with rasterio.open(path) as src:
+            self.z = src.read(1).astype("float64")
+            self.inverse = ~src.transform
+
+    def sample(self, lon: np.ndarray, lat: np.ndarray) -> np.ndarray:
+        col, row = self.inverse * (np.asarray(lon), np.asarray(lat))
+        # map_coordinates indexes pixel centers; the affine puts them at +0.5.
+        return map_coordinates(self.z, [row - 0.5, col - 0.5], order=1, mode="nearest")
+
+    def profile(self, line_utm) -> np.ndarray:
+        """Elevations every SAMPLE_STEP_M along a UTM line, ends included."""
+        n = max(2, math.ceil(line_utm.length / SAMPLE_STEP_M) + 1)
+        xy = shapely.get_coordinates(shapely.line_interpolate_point(line_utm, np.linspace(0, line_utm.length, n)))
+        lon, lat = TO_LONLAT.transform(xy[:, 0], xy[:, 1])
+        return self.sample(lon, lat)
+
+
+def uphill(line, dem: Dem):
+    """Orient a lon/lat line to start at its lower end. Returns the line and its UTM profile."""
+    profile = dem.profile(to_utm(line))
+    if profile[0] > profile[-1]:
+        return shapely.reverse(line), profile[::-1]
+    return line, profile
+
+
+def climb_m(profile: np.ndarray) -> float:
+    """Sum of the rises between consecutive samples."""
+    steps = np.diff(profile)
+    return float(steps[steps > 0].sum())
+
+
+def seed_feature(trail: dict, dem: Dem) -> dict:
+    line, profile = uphill(trail["line"], dem)
+    line_utm = to_utm(line)
+    simple = round_coords(to_lonlat(shapely.simplify(line_utm, SIMPLIFY_M)), COORD_DECIMALS)
+    coords = shapely.get_coordinates(simple)
+    coords = coords[np.r_[True, np.any(np.diff(coords, axis=0) != 0, axis=1)]]  # drop repeats after rounding
+    props = {
+        "mountain_slug": MOUNTAIN_SLUG,
+        "name": trail["name"],
+        "length_km": round(line_utm.length / 1000, 2),
+        "elevation_gain_m": round(climb_m(profile)),
+        "source": SOURCE,
+    }
+    notes = []
+    if trail["bridge_m"] > 0:
+        notes.append(f"Joined across {trail['bridge_m']:.0f} m of {', '.join(trail['bridge_via'])}")
+    if len(trail["bridged"]) > 1:
+        kept_km, total_km = line_utm.length / 1000, trail["total_m"] / 1000
+        notes.append(f"Longest of {len(trail['bridged'])} OpenStreetMap pieces with this name that do not "
+                     f"join into one line ({kept_km:.1f} of {total_km:.1f} km in the bbox)")
+    if notes:
+        props["note"] = ". ".join(notes) + "."
+    return {"type": "Feature", "properties": props,
+            "geometry": {"type": "LineString", "coordinates": coords.tolist()}}
+
+
+def keep_in_seed(trail: dict) -> str | None:
+    """Why a named line stays out of the seed, or None to keep it."""
+    if trail["classes"] == ["track"]:
+        return "forest or service road (track only)"
+    if trail["name"].endswith(CLIMBING_ROUTE_SUFFIX):
+        return "summit climbing route"
+    if to_utm(trail["line"]).length < MIN_TRAIL_M:
+        return f"shorter than {MIN_TRAIL_M} m"
+    return None
+
+
+# --- Stage 4: the hero loop and its mile segments --------------------------------------------
+
+
+def hero_loop(trails: list[dict]):
+    """The Skyline loop in UTM: one closed line from the Paradise trailhead, walked clockwise.
+
+    Clockwise is the direction the park describes: up the west side past Glacier Vista to
+    Panorama Point, then down past the Golden Gate saddle and Myrtle Falls.
+    """
+    by_name = {t["name"]: t for t in trails}
+    missing = [name for name in HERO_PARTS if name not in by_name]
+    if missing:
+        raise SystemExit(f"hero trail parts missing from OpenStreetMap: {missing}")
+    loop = shapely.line_merge(shapely.MultiLineString([by_name[name]["line"] for name in HERO_PARTS]))
+    if loop.geom_type != "LineString" or not loop.is_closed:
+        raise SystemExit(f"{' + '.join(HERO_PARTS)} no longer join into one closed loop ({loop.geom_type})")
+
+    ring = to_utm(loop)
+    coords = shapely.get_coordinates(ring)[:-1]  # the closing vertex repeats the first
+    start = np.array(TO_UTM.transform(*HERO_START))
+    k = int(np.argmin(np.hypot(*(coords - start).T)))
+    coords = np.vstack([coords[k:], coords[:k], coords[k:k + 1]])
+    if shapely.Polygon(coords).exterior.is_ccw:
+        coords = coords[::-1]
+    return shapely.LineString(coords)
+
+
+def mile_segments(line_utm) -> list[tuple[float, float, object]]:
+    """(start_mile, end_mile, UTM line) every SEGMENT_MILES. A short remainder joins the last segment."""
+    step = SEGMENT_MILES * METERS_PER_MILE
+    cuts = list(np.arange(0, line_utm.length, step))
+    if line_utm.length - cuts[-1] < step / 2 and len(cuts) > 1:
+        cuts.pop()
+    cuts.append(line_utm.length)
+    return [(a / METERS_PER_MILE, b / METERS_PER_MILE, substring(line_utm, a, b))
+            for a, b in itertools.pairwise(cuts)]
+
+
+def lonlat_coords(line_utm) -> list[list[float]]:
+    """A UTM line as rounded lon/lat vertices, with repeats from rounding removed."""
+    coords = shapely.get_coordinates(round_coords(to_lonlat(line_utm), COORD_DECIMALS))
+    return coords[np.r_[True, np.any(np.diff(coords, axis=0) != 0, axis=1)]].tolist()
+
+
+def hero_features(trails: list[dict], dem: Dem) -> tuple[dict, list[dict]]:
+    """The hero trail's seed feature and its segment features, cut from the same simplified line."""
+    loop = shapely.simplify(hero_loop(trails), SIMPLIFY_M)
+    profile = dem.profile(loop)
+    trail = {
+        "type": "Feature",
+        "properties": {
+            "mountain_slug": MOUNTAIN_SLUG,
+            "name": HERO_TRAIL,
+            "length_km": round(loop.length / 1000, 2),
+            "elevation_gain_m": round(climb_m(profile)),
+            "source": SOURCE,
+            "note": (f"The NPS loop: OpenStreetMap's {' and '.join(HERO_PARTS)}, joined. Starts at the Paradise "
+                     "trailhead and runs clockwise. Mile markers in trail_segments.geojson."),
+        },
+        "geometry": {"type": "LineString", "coordinates": lonlat_coords(loop)},
+    }
+    segments = [{
+        "type": "Feature",
+        "properties": {"mountain_slug": MOUNTAIN_SLUG, "trail": HERO_TRAIL, "seq": seq,
+                       "start_mile": round(start, 2), "end_mile": round(end, 2)},
+        "geometry": {"type": "LineString", "coordinates": lonlat_coords(piece)},
+    } for seq, (start, end, piece) in enumerate(mile_segments(loop))]
+    return trail, segments
+
+
+def write_seed(features: list[dict], path: Path) -> None:
+    """One feature per line, so a changed trail is a one-line diff."""
+    head = {"type": "FeatureCollection", "attribution": ATTRIBUTION, "license": "ODbL-1.0", "source": SEGMENTS_URL}
+    lines = [json.dumps(f, ensure_ascii=False, separators=(",", ":")) for f in features]
+    text = json.dumps(head, ensure_ascii=False)[:-1] + ', "features": [\n' + ",\n".join(lines) + "\n]}\n"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Import Mount Rainier trails from OpenStreetMap via Overture Maps.")
+    parser.add_argument("--force", action="store_true", help="read Overture again even if the segment cache exists")
+    parser.add_argument("--segments", type=Path, default=SEGMENTS_PATH, help="walkable segment cache (GeoJSON)")
+    parser.add_argument("--out", type=Path, default=TRAILS_PATH, help="seed file to write")
+    parser.add_argument("--dem", type=Path, default=DEM_PATH, help="step 10 DEM for elevation gain")
+    parser.add_argument("--hero-segments", type=Path, default=HERO_SEGMENTS_PATH,
+                        help="seed file for the hero trail's mile segments")
+    args = parser.parse_args()
+
+    if not args.dem.exists():
+        raise SystemExit(f"{rel(args.dem)} is missing. Run `python ml/scripts/download_sources.py --only dem` first.")
+    if args.segments.exists() and not args.force:
+        print(f"{rel(args.segments)} exists, skipping the Overture read (use --force to refresh)")
+    else:
+        print(f"reading walkable segments inside {list(RAINIER_BBOX)} from {SEGMENTS_URL}")
+        write_segments(fetch_segments(), args.segments)
+        print(f"wrote {rel(args.segments)} ({args.segments.stat().st_size / 1e3:.0f} kB)")
+    segments = read_segments(args.segments)  # always the cached copy, so a fresh read and a rerun match
+    classes = Counter(s["class"] for s in segments)
+    print(f"{len(segments)} walkable segments: " + ", ".join(f"{c} {n}" for c, n in classes.most_common())
+          + f"; {sum(1 for s in segments if s['name'])} named")
+
+    dem = Dem(args.dem)
+    trails = trail_lines(segments)
+    hero, hero_segments = hero_features(trails, dem)
+    features, skipped = [hero], []
+    for trail in trails:
+        if trail["name"] in HERO_PARTS:
+            continue
+        reason = keep_in_seed(trail)
+        if reason:
+            skipped.append(f"{trail['name']} ({reason})")
+            continue
+        features.append(seed_feature(trail, dem))
+    features.sort(key=lambda f: f["properties"]["name"])
+    write_seed(features, args.out)
+    write_seed(hero_segments, args.hero_segments)
+
+    joined = [f["properties"]["name"] for f in features if "Joined" in f["properties"].get("note", "")]
+    split = [f["properties"]["name"] for f in features if "Longest" in f["properties"].get("note", "")]
+    print(f"wrote {rel(args.out)}: {len(features)} named trails, "
+          f"{sum(f['properties']['length_km'] for f in features):.1f} km, "
+          f"{sum(len(f['geometry']['coordinates']) for f in features)} vertices, "
+          f"{args.out.stat().st_size / 1e3:.0f} kB")
+    print(f"  joined through the network: {', '.join(joined) or 'none'}")
+    print(f"  longest piece kept: {', '.join(split) or 'none'}")
+    print(f"  left out ({len(skipped)}): {', '.join(skipped)}")
+    props = hero["properties"]
+    print(f"hero: {props['name']}, {props['length_km']} km ({props['length_km'] * 1000 / METERS_PER_MILE:.2f} mi), "
+          f"gain {props['elevation_gain_m']} m, {len(hero_segments)} segments of {SEGMENT_MILES} mi "
+          f"in {rel(args.hero_segments)}")
+
+
+if __name__ == "__main__":
+    main()

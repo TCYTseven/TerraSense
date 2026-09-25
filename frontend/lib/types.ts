@@ -83,10 +83,31 @@ export interface LayerTiles {
   updated_at: string;
 }
 
+/** A past landslide from a catalog, drawn as a map pin. */
+export interface HistoricalEvent {
+  id: string;
+  /** YYYY-MM-DD. */
+  date: string | null;
+  title: string | null;
+  /** The catalog's type, such as "landslide" or "debris_flow". */
+  category: string | null;
+  trigger: string | null;
+  /** "exact", "1km", ... "50km". */
+  location_accuracy: string | null;
+  source_name: string | null;
+  source_link: string | null;
+  catalog: string;
+  lon: number;
+  lat: number;
+}
+
 /** GET /mountains/{slug}. */
 export interface MountainDetail extends Mountain {
+  /** The hero trail is the one with segments: the model scores it mile by mile. */
   trails: Trail[];
   active_hazard: Hazard | null;
+  /** Empty until the landslide catalog is downloaded (step 10). */
+  historical_events: HistoricalEvent[];
 }
 
 export const AGENT_NAMES = ["terrain", "weather", "trail", "synthesizer", "writer"] as const;

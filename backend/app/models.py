@@ -73,6 +73,23 @@ class LayerTiles(BaseModel):
     updated_at: datetime
 
 
+class HistoricalEvent(BaseModel):
+    """A past landslide from a catalog, drawn as a map pin."""
+
+    id: str
+    date: str | None  # YYYY-MM-DD
+    title: str | None
+    category: str | None  # the catalog's type, such as "landslide" or "debris_flow"
+    trigger: str | None
+    location_accuracy: str | None  # "exact", "1km", ... "50km"
+    source_name: str | None
+    source_link: str | None
+    catalog: str
+    lon: float
+    lat: float
+
+
 class MountainDetail(Mountain):
     trails: list[Trail]
     active_hazard: Hazard | None
+    historical_events: list[HistoricalEvent]

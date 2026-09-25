@@ -11,9 +11,9 @@ The product contract is [`../TerraSense.md`](../TerraSense.md). The build order 
 ```
 frontend/          Next.js app. Runs with npm run dev.
 backend/           FastAPI service: health, mountain reads, schema, seed.
-ml/scripts/        Offline scripts: download_sources.py (step 10).
+ml/scripts/        Offline scripts, one per step: downloads, features, model, tiles, trails.
 ml/artifacts/      Model outputs: metrics.json, feature_importance.json (the .tif is gitignored).
-data/seed/         Committed seed files: mountains, trails.
+data/seed/         Committed seed files: mountains, trails, the hero trail's segments.
 context/           Spec and the 25 implementation steps.
 context/docs/      Team brief, handoff, UX, this file.
 .claude/agents/    Subagent definitions: one builder per track and a reviewer.
@@ -57,7 +57,7 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. `animate-fade-in` and the `bg-grid` utility. Dark base styles. |
 | `frontend/app/icon.svg` | Favicon. |
 | `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS` (keyed by `RiskLevel`): the same palette for WebGL code. Mirrors `globals.css`. |
-| `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`, `LayerTiles`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
+| `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `HistoricalEvent`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`, `LayerTiles`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
 | `frontend/lib/api.ts` | `API_URL` from `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). `getMountains(init?)`, `getMountain(slug, init?)` (null on 404), `getLayer(slug, layer, init?)` (null on 404), `ApiError` with `status`. Requests use `cache: "no-store"`. |
 | `frontend/lib/agent-events.ts` | `isAgentEvent(value)` and `parseAgentEvents(value)`: runtime checks for JSON that claims to be `AgentEvent`s. |
 | `frontend/lib/fixtures/run.json` | One finished five-agent run, 10 events in stream order. Illustrative values: Skyline Trail miles 1.2 to 2.1, bypass Golden Gate Trail, severity high, confidence 0.81. |
@@ -92,9 +92,10 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 | `backend/app/db.py` | `connect()` opens one psycopg connection for scripts. `get_pool()` makes the API's pool on first use, under a lock (dict rows, connections checked before use so hosted Postgres idling is safe, `POOL_TIMEOUT_S` = 5 s wait). `get_conn()` is the FastAPI dependency. `close_pool()` runs at shutdown. |
 | `backend/app/schema.sql` | Six tables: `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, `alerts`. UUID keys, geometry as `jsonb`, CHECK constraints for risk levels, run status, hazard type, and alert action. Every statement is `IF NOT EXISTS`. |
 | `backend/app/schema.py` | `python -m app.schema [--reset]`. `apply_schema(reset)` runs `schema.sql` and returns the tables present. `--reset` drops the six tables first. |
-| `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, removes every trail the file no longer lists (for all mountains), and rejects a name repeated for one mountain. |
-| `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `LayerTiles`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
-| `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, and `active_hazard` (latest by `created_at`, or null). `GET /mountains/{slug}/layers/{layer}`: `LayerTiles` for a rendered layer in `LAYERS` (susceptibility); 404 for static mountains, unknown layers, or layers not rendered yet. 404 for an unknown slug. |
+| `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, removes every trail the file no longer lists (for all mountains), and rejects a name repeated for one mountain. `load_trail_segments(conn)` upserts `data/seed/trail_segments.geojson` by trail and `seq`, keeps a segment's risk only while its line and miles are unchanged, and removes segments the file no longer lists. |
+| `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `HistoricalEvent`, `LayerTiles`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
+| `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, `active_hazard` (latest by `created_at`, or null), and `historical_events`. `GET /mountains/{slug}/layers/{layer}`: `LayerTiles` for a rendered layer in `LAYERS` (susceptibility); 404 for static mountains, unknown layers, or layers not rendered yet. 404 for an unknown slug. |
+| `backend/app/history.py` | Step 14. `historical_events(slug)`: the catalog points in `data/seed/landslides.geojson` as `HistoricalEvent`s, for `mount-rainier` only. Re-read when the file changes. Empty while the file is missing. |
 | `backend/app/ml/tiles.py` | Shared tiler, free of API imports so `ml/scripts/` can use it. `warp_tile` resamples a raster onto one 256 px EPSG:3857 tile. `palette_image` writes 8-bit PNGs on the risk ramp (64 levels, transparent at low values and nodata). `render_xyz(raster, layer)` renders every tile over the bbox into `backend/tiles/<layer>/` via a temp folder swap and writes `metadata.json` with a `version`. `read_metadata(layer)`. |
 
 ### API responses
@@ -103,11 +104,13 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 
 ```
 Mountain       { id, name, slug, lat, lon, elevation_m, region, current_risk_level, last_analyzed_at | null, is_live }
-MountainDetail   Mountain + { trails: Trail[], active_hazard: Hazard | null }
+MountainDetail   Mountain + { trails: Trail[], active_hazard: Hazard | null, historical_events: HistoricalEvent[] }
 Trail          { id, name, geom (LineString), length_km | null, elevation_gain_m | null, segments: TrailSegment[] }
 TrailSegment   { id, seq, geom (LineString), start_mile, end_mile, risk_level | null, probability | null }
 Hazard         { id, run_id | null, type (landslide | debris_flow), severity, probability, confidence | null,
                  geom (Polygon), drivers: string[], what | null, why | null, how_to_avoid | null, needs_review, created_at }
+HistoricalEvent { id, date | null, title | null, category | null, trigger | null, location_accuracy | null,
+                 source_name | null, source_link | null, catalog, lon, lat }
 LayerTiles     { layer, tiles ("{API}/tiles/<layer>/{z}/{x}/{y}.png?v=<version>"), bounds [w, s, e, n], minzoom, maxzoom,
                  method | null, updated_at }
 ```
@@ -117,12 +120,13 @@ LayerTiles     { layer, tiles ("{API}/tiles/<layer>/{z}/{x}/{y}.png?v=<version>"
 | File | What it is |
 |---|---|
 | `data/seed/mountains.json` | Mount Rainier (`is_live: true`, placeholder risk `moderate`), Huascarán (`high`), Mount Fuji (`low`). Fields in `data/AGENTS.md`. |
-| `data/seed/trails.geojson` | One rough Skyline Trail loop at Paradise for Rainier, 17 points. NPS length 8.9 km, gain 518 m. Step 14 replaces the line. |
+| `data/seed/trails.geojson` | Step 14. 67 named Rainier trails from OpenStreetMap (via Overture Maps), 252 km, one feature per line, ODbL. The hero trail, `Skyline Trail`, is the NPS loop from the Paradise trailhead, clockwise: 8.87 km, 560 m of gain. Climbing routes, forest roads, and names under 200 m are left out. |
+| `data/seed/trail_segments.geojson` | Step 14. The hero trail cut every 0.1 mile: 55 segments with `seq`, `start_mile`, `end_mile`, mile 0 at the Paradise trailhead. |
 | `data/AGENTS.md` | Seed formats and data rules. |
 | `data/seed/sources.md` | URL, access date, licence, grid, and checks for each step 10 file. The landslide entry is pending, with the command that finishes it. |
 | `data/raw/rainier_dem_cop30.tif` | Gitignored. Copernicus DEM GLO-30 clipped to the bbox, EPSG:4326, 1405 x 721 px. Rebuild with the step 10 script. |
 | `data/raw/rainier_landcover_worldcover2021.tif` | Gitignored. ESA WorldCover 2021 class codes clipped to the bbox, EPSG:4326, 4680 x 2400 px. |
-| `ml/requirements.txt` | `rasterio`, `numpy` (below 2.4 for pysheds), `requests`, `scipy`, `pandas`, `pyarrow`, `pysheds` for the offline scripts. |
+| `ml/requirements.txt` | Grouped by step: `rasterio`, `numpy` (below 2.4 for pysheds), `requests`, `scipy`, `pandas`, `pyarrow`, `pysheds`, `lightgbm`, `scikit-learn`, `mercantile`, `pillow`, `shapely`, `networkx`, `pyproj`. |
 | `ml/scripts/build_features.py` | Step 11. `python ml/scripts/build_features.py [--landslides PATH]`. Builds a 30 m grid in UTM zone 10N (1004 x 757 cells) and writes `data/processed/features.tif` with seven bands: elevation, Horn slope, aspect (compass bearing, NaN on flats), Zevenbergen-Thorne curvature (negative = concave), distance to drainage (D8 channels at 0.2 km2, via pysheds), WorldCover land cover (mode resampled), and topographic wetness index. When landslide points exist it writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives 1:3 from ground over 500 m away, `label`, `region` (7.5 km blocks), `row`, `col`. |
 | `data/processed/features.tif` | Gitignored. The step 11 feature stack. |
 | `ml/scripts/train_susceptibility.py` | Step 12. `python ml/scripts/train_susceptibility.py [--table PATH] [--artifacts DIR]`. With the labeled table: LightGBM, held-out spatial regions (at least 20% of positives), AUC and precision at 0.45, gain importance, refit on all rows, full-map prediction. Without it: a knowledge-driven index (weights in `INDEX_WEIGHTS`, stretched between the 2nd and 98th percentile of the box) and `trained: false`. |
@@ -132,6 +136,8 @@ LayerTiles     { layer, tiles ("{API}/tiles/<layer>/{z}/{x}/{y}.png?v=<version>"
 | `ml/artifacts/susceptibility_lgbm.txt` | The trained model, written only when labels exist. |
 | `ml/scripts/render_tiles.py` | Steps 13 and 18. `python ml/scripts/render_tiles.py [--layer NAME] [--raster PATH] [--zooms 10-14]`. Thin CLI over `backend/app/ml/tiles.py`. Susceptibility: 383 tiles, z10-z14, about 3.5 s. |
 | `backend/tiles/` | Gitignored. Rendered layers, one folder each, with `metadata.json`. |
+| `ml/scripts/import_trails.py` | Step 14. `python ml/scripts/import_trails.py [--force] [--segments PATH] [--out PATH] [--dem PATH] [--hero-segments PATH]`. Reads walkable OpenStreetMap segments in the bbox from the Overture Maps transportation GeoParquet on S3 (release `OVERTURE_RELEASE`, only the row groups whose bbox statistics overlap, about 300 MB), caches them in `data/raw/rainier_trail_segments.geojson`, merges them by name through a walkable graph, measures length and gain on the DEM, and writes `data/seed/trails.geojson`. Joins the Skyline and Upper Skyline Trails into the hero loop and writes its 0.1-mile segments to `data/seed/trail_segments.geojson`. |
+| `data/raw/rainier_trail_segments.geojson` | Gitignored. Every walkable segment in the bbox (517), clipped, with OSM ids: the network step 19 routes on. |
 | `ml/scripts/download_sources.py` | Step 10. `python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force] [--glc-csv URL_OR_PATH]`. Reads the bbox window of the Copernicus DEM and ESA WorldCover COGs over HTTP ranges, writes `data/raw/`, and prints a check that each file covers the bbox. Filters the NASA Global Landslide Catalog CSV to the bbox into `data/seed/landslides.geojson`. A failed stage does not stop the others. |
 
 ## Planned layout

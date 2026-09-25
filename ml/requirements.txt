@@ -14,3 +14,7 @@ scikit-learn>=1.5
 # Step 13, render_tiles.py (imports the tiler in backend/app/ml/tiles.py):
 mercantile>=1.2
 pillow>=11
+# Step 14, import_trails.py (reads Overture Maps GeoParquet on S3 with pyarrow):
+shapely>=2
+networkx>=3
+pyproj>=3.6

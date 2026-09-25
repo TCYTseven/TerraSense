@@ -12,7 +12,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 11 | `scripts/build_features.py` | `data/processed/features.parquet` |
 | 12 | `scripts/train_susceptibility.py` | Model, `artifacts/metrics.json`, feature importance, susceptibility GeoTIFF |
 | 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/` |
-| 14 | Trail import | `data/seed/trails.geojson`, trail segments |
+| 14 | `scripts/import_trails.py` | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` (the hero trail's mile segments), and the walkable network cache in `data/raw/` |
 | 17 | `backend/app/ml/model_b.py` | Live 72-hour probability from susceptibility plus Open-Meteo rain |
 | 19 | Bypass | One bypass line that avoids the worst segment |
 
@@ -43,6 +43,7 @@ python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
 python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
+python ml/scripts/import_trails.py         # step 14: OpenStreetMap trails via Overture, the hero trail's segments
 ```
 
 Each download is recorded in `data/seed/sources.md`. The landslide stage needs a network that reaches data.nasa.gov, or a hand-downloaded CSV passed with `--glc-csv`.

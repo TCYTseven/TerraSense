@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from psycopg.rows import DictRow
 
 from app.db import get_conn
+from app.history import historical_events
 from app.ml.tiles import read_metadata
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
 
@@ -34,7 +35,7 @@ def list_mountains(conn: Conn) -> list[Mountain]:
 
 @router.get("/{slug}")
 def get_mountain(slug: str, conn: Conn) -> MountainDetail:
-    """One mountain with its trails, their segments, and its latest hazard if one exists."""
+    """One mountain with its trails, their segments, its latest hazard, and past landslides."""
     mountain = conn.execute(
         f"SELECT {MOUNTAIN_COLUMNS} FROM mountains WHERE slug = %s", (slug,)
     ).fetchone()
@@ -73,6 +74,7 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
         **mountain,
         trails=[Trail(**row, segments=segments_by_trail[row["id"]]) for row in trail_rows],
         active_hazard=Hazard(**hazard) if hazard else None,
+        historical_events=historical_events(slug),
     )
 
 

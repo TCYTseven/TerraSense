@@ -13,6 +13,7 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 | `data/raw/rainier_dem_cop30.tif` | Copernicus DEM GLO-30 | 2026-09-25 | Done |
 | `data/raw/rainier_landcover_worldcover2021.tif` | ESA WorldCover 2021 v200 | 2026-09-25 | Done |
 | `data/seed/landslides.geojson` | NASA Global Landslide Catalog | Pending | Blocked. See below |
+| `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` | OpenStreetMap via Overture Maps | 2026-09-25 | Done. Written by `ml/scripts/import_trails.py` |
 
 ## Elevation: `data/raw/rainier_dem_cop30.tif`
 
@@ -46,3 +47,14 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 **To finish.** On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. Or download the CSV in a browser and run `python ml/scripts/download_sources.py --only landslides --glc-csv path/to/export.csv`. If the API URL has moved, download the CSV from the dataset page and pass it the same way. Then fill in the access date and the point count above.
 
 **For step 11.** The catalog geocodes events from news reports, so `location_accuracy` runs from `exact` to `50km`, and the box may hold only a few events. Keep `exact` and `1km` points for pixel labels. A USGS inventory, such as the U.S. Landslide Inventory, can add points from a network that reaches ScienceBase.
+
+## Trails: `data/seed/trails.geojson` and `data/seed/trail_segments.geojson`
+
+- **Source:** OpenStreetMap foot paths, read from the Overture Maps Foundation transportation theme, release `2026-09-23.0` (OSM snapshot 2026-09-09). Overpass and Geofabrik were unreachable from the build container; the Overture bucket needs no key.
+- **URL:** s3://overturemaps-us-west-2/release/2026-09-23.0/theme=transportation/type=segment/ (also https://overturemaps-us-west-2.s3.amazonaws.com/release/2026-09-23.0/theme=transportation/type=segment/). The script reads only the Parquet row groups whose bbox statistics overlap the box: about 317 MB of the 72 GB theme, 15 s here.
+- **Licence:** ODbL 1.0. Attribution: "© OpenStreetMap contributors". Overture adds "Overture Maps Foundation". The seed files are a derived database, so they stay ODbL.
+- **Selection:** walkable classes (footway, path, steps, track) in the box, clipped to it: 517 segments. Merged by name, then left out: names under 200 m, forest roads (track only), and the four summit climbing routes. 67 trails remain.
+- **Hero trail:** the NPS Skyline loop, OpenStreetMap's "Skyline Trail" and "Upper Skyline Trail" joined, from the Paradise trailhead (46.78650, -121.73652), clockwise. 8.87 km (5.51 mi) and 560 m of gain after 5 m simplification. The park gives 5.5 mi and 1,700 ft (518 m). Cut every 0.1 mile into 55 segments.
+- **Heights:** gain comes from the Copernicus DEM above, sampled every 30 m. It is a surface model, so forest trails read a few percent high.
+- **Rerun:** `python ml/scripts/import_trails.py` (add `--force` to read Overture again). The bucket keeps only recent releases; if `2026-09-23.0` is gone, the script lists the ones available.
+
