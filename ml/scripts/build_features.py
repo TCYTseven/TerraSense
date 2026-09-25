@@ -119,6 +119,20 @@ def curvature(z: np.ndarray) -> np.ndarray:
     return (-200 * (((d + f) / 2 - e) + ((b + h) / 2 - e)) / CELL_M**2).astype("float32")
 
 
+def fill_nearest(z: np.ndarray) -> np.ndarray:
+    """Each NaN cell takes the value of the nearest valid cell.
+
+    The grid's corners lie outside the DEM. Filled this way, the cells along that edge see the
+    ground continue flat, as at the grid's outer edge. A constant fill would put a false cliff
+    there, and slope, curvature, and wetness would all read it as terrain.
+    """
+    missing = np.isnan(z)
+    if not missing.any():
+        return z
+    _, (rows, cols) = distance_transform_edt(missing, return_indices=True)
+    return z[rows, cols]
+
+
 def flow_accumulation(z: np.ndarray, dst_transform: Affine) -> np.ndarray:
     """D8 upstream cell count after filling pits and depressions and resolving flats."""
     dem = np.where(np.isnan(z), -9999.0, z).astype("float64")
@@ -136,7 +150,7 @@ def build_stack() -> tuple[np.ndarray, Affine]:
     landcover = resample(LANDCOVER_PATH, dst_transform, shape, Resampling.mode, "uint8").astype("float32")
     landcover[landcover == 0] = np.nan  # WorldCover nodata
 
-    filled = np.where(np.isnan(elevation), np.nanmean(elevation), elevation)
+    filled = fill_nearest(elevation)
     slope, aspect = slope_aspect(filled)
     curv = curvature(filled)
     accumulation = flow_accumulation(elevation, dst_transform)
