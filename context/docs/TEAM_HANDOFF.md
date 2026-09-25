@@ -2,14 +2,14 @@
 
 State of TerraSense at the start of the build (Thursday, Sep 24, 2026). Written for the HackGT team and for an agent picking the repo up.
 
-The two-minute version is [`TEAM_BRIEF.md`](TEAM_BRIEF.md). The product contract is [`../context/TerraSense.md`](../context/TerraSense.md). The ordered work is [`../context/implementation-steps.md`](../context/implementation-steps.md).
+The two-minute version is [`TEAM_BRIEF.md`](TEAM_BRIEF.md). The product contract is [`../TerraSense.md`](../TerraSense.md). The ordered work is [`../implementation-steps.md`](../implementation-steps.md).
 
 When this file and the code disagree, the code wins and this file gets fixed in the same change. When this file and the spec disagree about what to build, the spec wins.
 
 ## Start here
 
 1. Read the decisions below. They are closed.
-2. Open the checklist in [`../context/implementation-steps.md`](../context/implementation-steps.md). Do the first unchecked step on your track.
+2. Open the checklist in [`../implementation-steps.md`](../implementation-steps.md). Do the first unchecked step on your track.
 3. Frontend is `cd frontend && npm run dev`. There is no API process yet.
 4. Before adding a control, read [`UX.md`](UX.md).
 
@@ -59,8 +59,8 @@ Shared numbers (bbox, peak, risk bins) live in the implementation steps under "S
 ## How an agent resumes
 
 1. Read [`TEAM_BRIEF.md`](TEAM_BRIEF.md), this file's decisions, and [`UX.md`](UX.md) if the task touches UI.
-2. Read the matching section of [`../context/TerraSense.md`](../context/TerraSense.md).
-3. Take the next unchecked step in [`../context/implementation-steps.md`](../context/implementation-steps.md). Do not skip ahead on the same track.
+2. Read the matching section of [`../TerraSense.md`](../TerraSense.md).
+3. Take the next unchecked step in [`../implementation-steps.md`](../implementation-steps.md). Do not skip ahead on the same track.
 4. Read [`CODE_REFERENCE.md`](CODE_REFERENCE.md) before adding a file, and update it in the same change.
 5. Stay inside the spec's Out of Scope list.
 

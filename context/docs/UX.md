@@ -2,7 +2,7 @@
 
 Why TerraSense has two surfaces, and the rules for adding anything to either one.
 
-The visual tokens (colors, type, motion) are in [`../context/TerraSense.md`](../context/TerraSense.md) under Design Language. This file decides whether a control belongs on screen. When they disagree about a color, the spec wins. When they disagree about whether to add a control, this file wins.
+The visual tokens (colors, type, motion) are in [`../TerraSense.md`](../TerraSense.md) under Design Language. This file decides whether a control belongs on screen. When they disagree about a color, the spec wins. When they disagree about whether to add a control, this file wins.
 
 ## The problem
 

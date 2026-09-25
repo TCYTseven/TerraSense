@@ -4,18 +4,43 @@ Map of the TerraSense repo. Update the matching section in the same change that 
 
 Planned paths are labeled **planned**. They are not in the tree yet. Do not import them. When you create one, remove the planned label and document the real exports.
 
-The product contract is [`../context/TerraSense.md`](../context/TerraSense.md). The build order is [`../context/implementation-steps.md`](../context/implementation-steps.md).
+The product contract is [`../TerraSense.md`](../TerraSense.md). The build order is [`../implementation-steps.md`](../implementation-steps.md).
 
 ## What is in the tree
 
 ```
-frontend/          Next.js app. Stock starter. Runs with npm run dev.
+frontend/          Next.js app. Runs with npm run dev.
+backend/           FastAPI service. Only the agent guide until step 3.
+ml/scripts/        Offline scripts. Empty until step 10.
+ml/artifacts/      Model outputs. Empty until step 12.
+data/seed/         Committed seed files. Empty until step 5.
 context/           Spec and the 25 implementation steps.
-docs/              Team brief, handoff, UX, this file.
-README.md          One-line pitch.
+context/docs/      Team brief, handoff, UX, this file.
+.claude/agents/    Subagent definitions: one builder per track and a reviewer.
+AGENTS.md          Agent guide: folder owners, team rules, shared facts.
+README.md          Pitch, the three commands, folder owners.
+.env.example       Every environment variable, with a comment.
+.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif, virtualenvs.
 ```
 
-No `backend/`, `ml/`, or `data/` directory yet.
+`ml/scripts/`, `ml/artifacts/`, and `data/seed/` hold a `.gitkeep` until their first real file lands.
+
+## Agent harness
+
+Basic scaffolding so several coding agents can split the work. Update the matching guide when a folder's commands or rules change.
+
+| File | What it is |
+|---|---|
+| `AGENTS.md` | Repo-wide guide: read order, folder owners, team rules, shared facts. |
+| `CLAUDE.md` | `@AGENTS.md`, so Claude Code loads the same guide. Each folder below has one too. |
+| `frontend/AGENTS.md` | The `next dev` managed block, then TerraSense frontend steps, commands, and rules. |
+| `backend/AGENTS.md` | Backend steps, rules, and commands. |
+| `ml/AGENTS.md` | ML steps, one script per step, modeling rules. |
+| `data/AGENTS.md` | What is committed versus gitignored, seed files, data rules. |
+| `.claude/agents/frontend-builder.md` | Subagent that builds one frontend step. |
+| `.claude/agents/backend-builder.md` | Subagent that builds one backend step. |
+| `.claude/agents/ml-data-builder.md` | Subagent that builds one ML or data step. |
+| `.claude/agents/step-reviewer.md` | Read-only subagent that checks a finished step against its "Done when". |
 
 ## Frontend (exists)
 
@@ -36,7 +61,7 @@ No components, no `lib/`, and no routes besides `/`.
 
 ## Planned layout
 
-Create these as the steps call for them. Paths match [`../context/implementation-steps.md`](../context/implementation-steps.md).
+Create these as the steps call for them. Paths match [`../implementation-steps.md`](../implementation-steps.md).
 
 ### Frontend
 

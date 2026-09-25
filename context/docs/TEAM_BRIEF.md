@@ -1,13 +1,13 @@
 # Team brief
 
-The short version for HackGT. The full picture is in [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md). The product is in [`../context/TerraSense.md`](../context/TerraSense.md).
+The short version for HackGT. The full picture is in [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md). The product is in [`../TerraSense.md`](../TerraSense.md).
 
 Written Thursday, Sep 24, 2026. The tree at that moment is the spec, the 25-step plan, and a stock Next.js app.
 
 ## Status right now
 
 - The hackathon scope is locked. One live mountain (Mount Rainier), landslide risk only, five agents, one Discord alert, one hiker card.
-- [`context/implementation-steps.md`](../context/implementation-steps.md) is the build order. Step 1 is next. The Next.js app in `frontend/` already exists, so the scaffold half of step 1 is done.
+- [`context/implementation-steps.md`](../implementation-steps.md) is the build order. Step 1 is next. The Next.js app in `frontend/` already exists, so the scaffold half of step 1 is done.
 - `frontend/` is still the create-next-app starter. It is light-themed boilerplate. It is not the globe.
 - There is no `backend/`, no `ml/`, no database, and no seed data.
 - Nothing in the demo script runs yet.
@@ -40,6 +40,6 @@ Steps 7–9 can use the API from step 6. Steps 10–14 can start as soon as the 
 
 ## If you change the plan
 
-Change [`context/TerraSense.md`](../context/TerraSense.md) when the product changes, and [`context/implementation-steps.md`](../context/implementation-steps.md) when the order changes. Update [`CODE_REFERENCE.md`](CODE_REFERENCE.md) in the same change that adds a file.
+Change [`context/TerraSense.md`](../TerraSense.md) when the product changes, and [`context/implementation-steps.md`](../implementation-steps.md) when the order changes. Update [`CODE_REFERENCE.md`](CODE_REFERENCE.md) in the same change that adds a file.
 
 A feature in the Out of Scope section needs a team decision written into the spec before anyone starts it.
