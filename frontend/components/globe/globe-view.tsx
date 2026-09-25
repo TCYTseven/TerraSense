@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
 import type { Mountain } from "@/lib/types";
 import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
@@ -29,6 +29,9 @@ export default function GlobeView() {
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [flyTarget, setFlyTarget] = useState<Mountain | null>(null);
+  const [globeReady, setGlobeReady] = useState(false);
+  const leaving = useRef(false);
+  const handleGlobeReady = useCallback(() => setGlobeReady(true), []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -50,10 +53,17 @@ export default function GlobeView() {
   }
 
   function flyTo(mountain: Mountain) {
-    if (flyTarget) {
+    if (flyTarget || leaving.current) {
       return;
     }
-    router.prefetch(`/mountains/${mountain.slug}`);
+    const href = `/mountains/${mountain.slug}`;
+    if (!globeReady) {
+      // The textured globe is not on screen yet, so there is nothing to fly over.
+      leaving.current = true;
+      router.push(href);
+      return;
+    }
+    router.prefetch(href);
     setFlyTarget(mountain);
   }
 
@@ -68,9 +78,17 @@ export default function GlobeView() {
         flyTarget={flyTarget}
         onSelect={flyTo}
         onArrive={arrive}
+        onReady={handleGlobeReady}
       />
-      <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] sm:top-5">
-        <MountainSearch mountains={mountains} disabled={flyTarget !== null} onSelect={flyTo} />
+      <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] lg:top-5">
+        <MountainSearch
+          mountains={mountains}
+          emptyMessage={
+            state.status === "error" ? "Could not load mountains." : "Mountains are still loading."
+          }
+          disabled={flyTarget !== null}
+          onSelect={flyTo}
+        />
       </div>
       {state.status === "error" && (
         <div className="absolute inset-x-0 bottom-8 flex justify-center px-4">

@@ -95,12 +95,16 @@ export default function MountainMarker({
     if (liveRingMaterial.current) liveRingMaterial.current.opacity = LIVE_RING_OPACITY * fade;
   });
 
-  function handleOver(event: ThreeEvent<PointerEvent>) {
+  // Runs on pointer over and on every move, so a marker that turns to face the camera
+  // under a resting pointer still becomes hovered.
+  function handlePointer(event: ThreeEvent<PointerEvent>) {
     if (!facingCamera.current) {
       return;
     }
     event.stopPropagation();
-    onHoverChange(mountain.slug);
+    if (!hovered) {
+      onHoverChange(mountain.slug);
+    }
   }
 
   function handleOut() {
@@ -147,7 +151,13 @@ export default function MountainMarker({
           />
         </mesh>
       )}
-      <mesh visible={false} onPointerOver={handleOver} onPointerOut={handleOut} onClick={handleClick}>
+      <mesh
+        visible={false}
+        onPointerOver={handlePointer}
+        onPointerMove={handlePointer}
+        onPointerOut={handleOut}
+        onClick={handleClick}
+      >
         <sphereGeometry args={[HIT_RADIUS, 12, 12]} />
       </mesh>
       {hovered && (

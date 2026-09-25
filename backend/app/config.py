@@ -10,6 +10,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 load_dotenv(REPO_ROOT / ".env")
 
 
+def cors_origins() -> list[str]:
+    """Extra browser origins from CORS_ORIGINS, comma-separated, such as a deployed frontend."""
+    raw = os.environ.get("CORS_ORIGINS", "")
+    return [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+
+
 def database_url() -> str:
     """Return DATABASE_URL, or raise with the fix if it is missing."""
     url = os.environ.get("DATABASE_URL", "").strip()

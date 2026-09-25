@@ -54,10 +54,12 @@ function blockPointer(event: ThreeEvent<PointerEvent> | ThreeEvent<MouseEvent>) 
 function Earth({
   meshRef,
   spinning,
+  onReady,
   children,
 }: {
   meshRef: RefObject<Mesh | null>;
   spinning: boolean;
+  onReady: () => void;
   children?: ReactNode;
 }) {
   const [colorMap, bumpMap] = useTexture(
@@ -68,6 +70,11 @@ function Earth({
       dayMap.anisotropy = 8;
     },
   );
+
+  // Earth suspends until its textures load, so this runs once the globe is on screen.
+  useEffect(() => {
+    onReady();
+  }, [onReady]);
 
   useFrame((_, delta) => {
     if (!meshRef.current || !spinning) {
@@ -138,17 +145,20 @@ function Atmosphere() {
  * Full-viewport globe with one marker per mountain. Drag to orbit and scroll to zoom.
  * The surface keeps turning, except while a marker is hovered or the camera is flying.
  * Clicking a marker calls onSelect. Set flyTarget to fly there; onArrive fires on landing.
+ * onReady fires once the textured globe is on screen.
  */
 export default function SpinningGlobe({
   mountains,
   flyTarget,
   onSelect,
   onArrive,
+  onReady,
 }: {
   mountains: Mountain[];
   flyTarget: Mountain | null;
   onSelect: (mountain: Mountain) => void;
   onArrive: (mountain: Mountain) => void;
+  onReady: () => void;
 }) {
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const earthRef = useRef<Mesh>(null);
@@ -165,7 +175,7 @@ export default function SpinningGlobe({
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
       <Suspense fallback={null}>
-        <Earth meshRef={earthRef} spinning={hoveredSlug === null && !flying}>
+        <Earth meshRef={earthRef} spinning={hoveredSlug === null && !flying} onReady={onReady}>
           {mountains.map((mountain) => (
             <MountainMarker
               key={mountain.slug}

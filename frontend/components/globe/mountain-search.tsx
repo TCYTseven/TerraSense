@@ -51,10 +51,13 @@ function SearchIcon({ className }: { className?: string }) {
  */
 export default function MountainSearch({
   mountains,
+  emptyMessage,
   disabled,
   onSelect,
 }: {
   mountains: Mountain[];
+  /** Shown in the dropdown while there are no mountains to search. */
+  emptyMessage: string;
   disabled: boolean;
   onSelect: (mountain: Mountain) => void;
 }) {
@@ -162,7 +165,7 @@ export default function MountainSearch({
             </ul>
           ) : (
             <p className="px-4 py-3 text-sm text-muted">
-              {mountains.length ? `No mountain matches "${query.trim()}".` : "Mountains are still loading."}
+              {mountains.length ? `No mountain matches "${query.trim()}".` : emptyMessage}
             </p>
           )}
         </div>

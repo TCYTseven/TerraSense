@@ -25,6 +25,8 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Response shapes are a contract with `frontend/lib/types.ts`. Change both in the same commit.
 - Only `mount-rainier` is live. Reject analyze when `is_live` is false.
 - Read settings from the root `.env`. Never log `DATABASE_URL`, `LLM_API_KEY`, or `DISCORD_WEBHOOK_URL`.
+- CORS allows the local Next.js origins. Add a deployed frontend with `CORS_ORIGINS`, not by editing code.
+- A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
 - Tools that agents call return precomputed facts. They do not scan rasters or invent trail geometry.
 
 ## Commands

@@ -13,8 +13,13 @@ export async function generateMetadata({
   params,
 }: PageProps<"/mountains/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const mountain = await loadMountain(slug);
-  return { title: mountain ? `${mountain.name} · TerraSense` : "Mountain not found · TerraSense" };
+  try {
+    const mountain = await loadMountain(slug);
+    return { title: mountain ? `${mountain.name} · TerraSense` : "Mountain not found · TerraSense" };
+  } catch {
+    // The page hits the same error and its error boundary explains it.
+    return { title: "TerraSense" };
+  }
 }
 
 /**

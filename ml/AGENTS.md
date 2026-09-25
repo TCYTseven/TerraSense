@@ -8,7 +8,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 
 | Step | Script | Writes |
 |---|---|---|
-| 10 | `scripts/download_sources.py` | DEM and land cover in `data/raw/`, `data/seed/landslides.geojson`, `data/seed/sources.md` |
+| 10 | `scripts/download_sources.py` | DEM and land cover in `data/raw/`, `data/seed/landslides.geojson`. Record each download in `data/seed/sources.md` by hand |
 | 11 | `scripts/build_features.py` | `data/processed/features.parquet` |
 | 12 | `scripts/train_susceptibility.py` | Model, `artifacts/metrics.json`, feature importance, susceptibility GeoTIFF |
 | 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/` |

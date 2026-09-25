@@ -281,7 +281,7 @@ def glc_features(csv_path: Path) -> list[dict]:
         for row in reader:
             try:
                 lon, lat = float(row["longitude"]), float(row["latitude"])
-            except ValueError:
+            except (TypeError, ValueError):  # blank, short, or non-numeric row
                 continue
             if not (west <= lon <= east and south <= lat <= north):
                 continue
@@ -305,7 +305,8 @@ def stage_landslides(force: bool, glc_source: str) -> None:
         print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
         return
     if urlparse(glc_source).scheme in ("http", "https"):
-        if force or not GLC_CSV_PATH.exists():
+        # The cache holds the default export only, so another URL always downloads.
+        if force or not GLC_CSV_PATH.exists() or glc_source != GLC_CSV_URL:
             print(f"  downloading {glc_source}")
             download(glc_source, GLC_CSV_PATH)
         csv_path = GLC_CSV_PATH

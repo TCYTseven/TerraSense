@@ -23,6 +23,7 @@ cd frontend && npm install && npm run dev
 ```bash
 cd backend
 python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+python -m app.schema && python -m app.seed    # first run: create the tables, load data/seed/
 uvicorn app.main:app --reload --port 8000
 ```
 

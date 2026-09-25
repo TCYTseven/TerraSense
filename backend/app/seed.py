@@ -45,9 +45,14 @@ def load_mountains(conn: psycopg.Connection) -> int:
 
 
 def load_trails(conn: psycopg.Connection) -> int:
-    """Upsert every trail in trails.geojson. Returns how many the file holds."""
+    """Upsert every trail in trails.geojson. Returns how many the file holds.
+
+    The file is the whole truth for trails: a mountain keeps only the trails it lists.
+    """
     collection = json.loads((SEED_DIR / "trails.geojson").read_text(encoding="utf-8"))
-    names_by_mountain: dict[str, list[str]] = {}
+    names_by_mountain: dict[str, list[str]] = {
+        slug: [] for (slug,) in conn.execute("SELECT slug FROM mountains").fetchall()
+    }
 
     for feature in collection["features"]:
         props, geometry = feature["properties"], feature["geometry"]
@@ -59,6 +64,11 @@ def load_trails(conn: psycopg.Connection) -> int:
         ).fetchone()
         if row is None:
             raise SystemExit(f"trail {props['name']!r} names unknown mountain {props['mountain_slug']!r}")
+        if props["name"] in names_by_mountain[props["mountain_slug"]]:
+            raise SystemExit(
+                f"trail {props['name']!r} appears twice for {props['mountain_slug']!r}. "
+                "Merge the lines or give each a distinct name."
+            )
 
         conn.execute(
             """
@@ -71,13 +81,14 @@ def load_trails(conn: psycopg.Connection) -> int:
             """,
             (row[0], props["name"], Jsonb(geometry), props.get("length_km"), props.get("elevation_gain_m")),
         )
-        names_by_mountain.setdefault(props["mountain_slug"], []).append(props["name"])
+        names_by_mountain[props["mountain_slug"]].append(props["name"])
 
     for slug, names in names_by_mountain.items():
         conn.execute(
             """
             DELETE FROM trails
-            WHERE mountain_id = (SELECT id FROM mountains WHERE slug = %s) AND name <> ALL(%s)
+            WHERE mountain_id = (SELECT id FROM mountains WHERE slug = %s)
+              AND name <> ALL(%s::text[])
             """,
             (slug, names),
         )
