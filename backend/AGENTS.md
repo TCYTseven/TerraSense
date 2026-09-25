@@ -29,7 +29,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 
 ## Commands
 
-The service lands in step 3. From then on, run these from `backend/`:
+Run these from `backend/`:
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate

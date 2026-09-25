@@ -18,7 +18,7 @@ cp .env.example .env   # fill in values. .env is gitignored.
 cd frontend && npm install && npm run dev
 ```
 
-**2. API dev server.** FastAPI on http://localhost:8000. The service lands in step 3.
+**2. API dev server.** FastAPI on http://localhost:8000.
 
 ```bash
 cd backend

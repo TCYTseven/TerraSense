@@ -64,6 +64,16 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 
 Routes: `/` only.
 
+## Backend (exists)
+
+FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload --port 8000`.
+
+| File | What it is |
+|---|---|
+| `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`. Compatible-release pins. |
+| `backend/app/__init__.py` | Package marker. |
+| `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. `GET /health` returns `{"status": "ok"}`. |
+
 ## Planned layout
 
 Create these as the steps call for them. Paths match [`../implementation-steps.md`](../implementation-steps.md).
@@ -90,8 +100,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/requirements.txt` | 3 | FastAPI, Uvicorn, Pydantic, HTTPX, Postgres driver |
-| `backend/app/main.py` | 3 | App, CORS for `http://localhost:3000`, `GET /health` |
 | `backend/app/schema.sql` | 4 | Six tables. Geometry as `jsonb` |
 | `backend/app/seed.py` | 5 | Loads `data/seed/` |
 | `backend/app/routes/mountains.py` | 6, 13, 18 | List, detail, layer tile templates |
