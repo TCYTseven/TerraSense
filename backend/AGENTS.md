@@ -43,8 +43,6 @@ uvicorn app.main:app --reload --port 8000
 curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
-python -m app.ml.model_b         # step 17: rain totals and the probability summary for Rainier
-OPEN_METEO_FIXTURE=fixtures/open_meteo_storm.json python -m app.ml.model_b   # same, offline, with a synthetic storm
 ```
 
 `DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).
