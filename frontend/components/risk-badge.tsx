@@ -19,7 +19,7 @@ export default function RiskBadge({
 }) {
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <span aria-hidden className={`size-2 shrink-0 rounded-full ${DOT_CLASS[level]}`} />
+      <span aria-hidden className={`size-[0.6em] shrink-0 rounded-full ${DOT_CLASS[level]}`} />
       <span>{riskLabel(level)} risk</span>
     </span>
   );

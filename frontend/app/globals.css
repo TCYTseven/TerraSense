@@ -25,12 +25,32 @@
   --color-risk-moderate: #f59e0b;
   --color-risk-high: #f97316;
   --color-risk-extreme: #ef4444;
+
+  /* Pages fade in after the globe's fly-to fades out. */
+  --animate-fade-in: fade-in 320ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 
 /* next/font sets --font-geist-* on <html>, so these resolve inline. */
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Faint coordinate grid for map areas. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
 }
 
 @layer base {

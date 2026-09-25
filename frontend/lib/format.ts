@@ -34,3 +34,10 @@ export function refreshLabel(mountain: Pick<Mountain, "is_live" | "last_analyzed
 export function formatElevation(meters: number): string {
   return `${meters.toLocaleString("en-US")} m`;
 }
+
+/** "46.8523° N, 121.7603° W". */
+export function formatLatLon(lat: number, lon: number): string {
+  const latText = `${Math.abs(lat).toFixed(4)}° ${lat >= 0 ? "N" : "S"}`;
+  const lonText = `${Math.abs(lon).toFixed(4)}° ${lon >= 0 ? "E" : "W"}`;
+  return `${latText}, ${lonText}`;
+}

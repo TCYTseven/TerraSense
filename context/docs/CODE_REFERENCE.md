@@ -51,7 +51,12 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`next typegen && tsc --noEmit`, which works on a fresh clone). Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`. |
 | `frontend/app/layout.tsx` | Root layout, full height. Loads Geist (UI) and Geist Mono (numbers) as CSS variables. Sets metadata and a dark `viewport`. |
 | `frontend/app/page.tsx` | Home: the full-screen globe with the TerraSense name at the top left. |
-| `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. Dark base styles. |
+| `frontend/app/mountains/[slug]/page.tsx` | Mountain page, server-rendered from `GET /mountains/{slug}`: map area (about 70%, a coordinate placeholder until the Mapbox view in step 15) and the ranger panel with name, region, elevation, summit, overall risk, and last refresh. **Analyze now** renders only when `is_live` (disabled until step 23). Static mountains show a fixed-risk note. Fades in. |
+| `frontend/app/mountains/[slug]/loading.tsx` | Plain dark screen while the page loads. Lets the globe prefetch the route. |
+| `frontend/app/mountains/[slug]/error.tsx` | API failure: message, **Try again** (`retry()` refetches), link back to the globe. |
+| `frontend/app/mountains/[slug]/not-found.tsx` | Unknown slug. |
+| `frontend/app/not-found.tsx` | Site-wide dark 404. |
+| `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. `animate-fade-in` and the `bg-grid` utility. Dark base styles. |
 | `frontend/app/icon.svg` | Favicon. |
 | `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS` (keyed by `RiskLevel`): the same palette for WebGL code. Mirrors `globals.css`. |
 | `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
@@ -59,19 +64,22 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 | `frontend/lib/agent-events.ts` | `isAgentEvent(value)` and `parseAgentEvents(value)`: runtime checks for JSON that claims to be `AgentEvent`s. |
 | `frontend/lib/fixtures/run.json` | One finished five-agent run, 10 events in stream order. Illustrative values: Skyline Trail miles 1.2 to 2.1, bypass Golden Gate Trail, severity high, confidence 0.81. |
 | `frontend/lib/fixtures/index.ts` | `FIXTURE_RUN: AgentEvent[]`, parsed from `run.json`. Throws on import if the file drifts. |
-| `frontend/components/globe/globe-view.tsx` | Client wrapper that loads the globe with `ssr: false`, fetches `GET /mountains` into state, and shows an alert with Retry when the API is unreachable. |
-| `frontend/components/globe/spinning-globe.tsx` | React Three Fiber canvas: textured Earth, atmosphere rim, idle spin, drag and zoom. Takes `mountains` and renders one marker each inside the rotating Earth mesh. Owns hover state and pauses the spin while a marker is hovered. The Earth mesh stops pointer events so far-side markers cannot be hovered. |
-| `frontend/components/globe/mountain-marker.tsx` | One marker: unlit dot and halo in the risk color, an extra ring for live mountains, an invisible hit sphere, and a hover card (name, elevation, region, risk, last refresh) anchored with drei `Html`. Fades out near the horizon so no marker floats past the globe's edge. |
+| `frontend/components/globe/globe-view.tsx` | The globe screen. Loads the globe with `ssr: false`, fetches `GET /mountains`, shows an alert with Retry when the API is unreachable, and renders the search. A marker click or a search pick prefetches `/mountains/[slug]`, starts the fly-to, fades to the background over the last 300 ms, then pushes the route. |
+| `frontend/components/globe/spinning-globe.tsx` | React Three Fiber canvas: textured Earth, atmosphere rim, idle spin, drag and zoom. Takes `mountains`, `flyTarget`, `onSelect`, `onArrive`. Renders one marker each inside the rotating Earth mesh. Owns hover state and pauses the spin while a marker is hovered or the camera flies. Disables the orbit controls during a flight. The Earth mesh stops pointer events so far-side markers cannot be hovered or clicked. |
+| `frontend/components/globe/camera-flight.tsx` | `CameraFlight`: eased great-circle move from the current view to face the target in `FLY_DURATION_MS`, ending 0.45 above the surface, with a slight outward arc on long hops. Calls `onArrive`. Instant under reduced motion. |
+| `frontend/components/globe/motion.ts` | `FLY_DURATION_MS` (1500) and `FADE_OUT_MS` (300), shared by the flight and the fade overlay. |
+| `frontend/components/globe/mountain-search.tsx` | Centered combobox. `matchMountains(mountains, query)` ignores case and accents and expands "mt" to "mount". Arrow keys, Enter, Escape, and click. Lists every mountain on focus. |
+| `frontend/components/globe/mountain-marker.tsx` | One marker: unlit dot and halo in the risk color, an extra ring for live mountains, an invisible hit sphere, and a hover card (name, elevation, region, risk, last refresh) anchored with drei `Html`. Fades out near the horizon so no marker floats past the globe's edge. A click (under 5 px of drag) on a marker that faces the camera calls `onSelect`. |
 | `frontend/components/globe/geo.ts` | `latLonToVector3(lat, lon, radius)`: a point on a three.js SphereGeometry that matches the equirectangular texture. |
 | `frontend/components/risk-badge.tsx` | `RiskBadge`: risk-colored dot plus "High risk" style label. |
-| `frontend/lib/format.ts` | `riskLabel`, `formatUtc` ("Sep 25, 10:50 UTC"), `refreshLabel` (last analysis, "Not analyzed yet", or "Static marker, fixed risk"), `formatElevation`. |
+| `frontend/lib/format.ts` | `riskLabel`, `formatUtc` ("Sep 25, 10:50 UTC"), `refreshLabel` (last analysis, "Not analyzed yet", or "Static marker, fixed risk"), `formatElevation`, `formatLatLon` ("46.8523° N, 121.7603° W"). |
 | `frontend/public/globe/` | `earth-day.jpg` (4096×2048 color) and `earth-topology.png` (2048×1024 bump map). |
 | `frontend/next.config.ts` | Loads the repo root `.env` with `process.loadEnvFile` so the app and the API share one file. Variables already set win. |
 | `frontend/postcss.config.mjs` | Tailwind PostCSS plugin. |
 | `frontend/tsconfig.json` | Strict TypeScript. Path alias `@/*` → repo root of `frontend/`. |
 | `frontend/eslint.config.mjs` | `eslint-config-next`. |
 
-Routes: `/` only.
+Routes: `/` (globe) and `/mountains/[slug]`.
 
 ## Backend (exists)
 
@@ -119,9 +127,7 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `frontend/components/globe/` | 8–9 | React Three Fiber globe, markers, search, fly-to |
-| `frontend/app/mountains/[slug]/page.tsx` | 9, 15 | Mountain route |
-| `frontend/components/map/` | 15–16, 18 | Mapbox terrain, tiles, trails, pins |
+| `frontend/components/map/` | 15–16, 18 | Mapbox terrain, tiles, trails, pins. Mounts in the map area of `/mountains/[slug]` |
 | `frontend/components/panel/` | 23, 25 | Side panel, agent rows, hazard detail, hiker card |
 
 `AgentEvent` shape, fixed in step 7 (`frontend/lib/types.ts`):

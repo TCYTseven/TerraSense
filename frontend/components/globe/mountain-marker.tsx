@@ -22,6 +22,9 @@ const Z_AXIS = new Vector3(0, 0, 1);
 /** Radius of the invisible sphere that catches the pointer. Larger than the dot on purpose. */
 const HIT_RADIUS = 0.045;
 
+/** Pixels the pointer may move between press and release and still count as a click, not a drag. */
+const CLICK_TOLERANCE_PX = 5;
+
 /** Ring opacity at rest and while hovered, before the horizon fade. */
 const RING_OPACITY = 0.6;
 const RING_OPACITY_HOVERED = 0.95;
@@ -48,11 +51,13 @@ export default function MountainMarker({
   radius,
   hovered,
   onHoverChange,
+  onSelect,
 }: {
   mountain: Mountain;
   radius: number;
   hovered: boolean;
   onHoverChange: (slug: string | null) => void;
+  onSelect: (mountain: Mountain) => void;
 }) {
   const color = RISK_COLORS[mountain.current_risk_level];
   const groupRef = useRef<Group>(null);
@@ -102,6 +107,14 @@ export default function MountainMarker({
     onHoverChange(null);
   }
 
+  function handleClick(event: ThreeEvent<MouseEvent>) {
+    if (!facingCamera.current || event.delta > CLICK_TOLERANCE_PX) {
+      return;
+    }
+    event.stopPropagation();
+    onSelect(mountain);
+  }
+
   return (
     <group ref={groupRef} position={position} quaternion={quaternion} scale={hovered ? 1.35 : 1}>
       <mesh position={[0, 0, 0.006]}>
@@ -134,11 +147,13 @@ export default function MountainMarker({
           />
         </mesh>
       )}
-      <mesh visible={false} onPointerOver={handleOver} onPointerOut={handleOut}>
+      <mesh visible={false} onPointerOver={handleOver} onPointerOut={handleOut} onClick={handleClick}>
         <sphereGeometry args={[HIT_RADIUS, 12, 12]} />
       </mesh>
       {hovered && (
-        <Html zIndexRange={[20, 0]} pointerEvents="none">
+        // drei applies its pointerEvents prop only in transform mode. The wrapper class
+        // keeps the card from catching the click meant for the marker under it.
+        <Html zIndexRange={[20, 0]} wrapperClass="pointer-events-none">
           <MarkerCard mountain={mountain} />
         </Html>
       )}

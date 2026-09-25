@@ -1,9 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getMountains } from "@/lib/api";
 import type { Mountain } from "@/lib/types";
+import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
+import MountainSearch from "./mountain-search";
 
 const SpinningGlobe = dynamic(() => import("./spinning-globe"), {
   ssr: false,
@@ -16,12 +19,16 @@ type LoadState =
   | { status: "error" };
 
 /**
- * Browser-only globe with the mountains from GET /mountains. WebGL cannot render
- * during server rendering.
+ * The globe screen: markers from GET /mountains, a centered search, and the fly-in.
+ * A marker click or a search pick flies the camera to the mountain, fading to the page
+ * background over the last part of the flight, then opens /mountains/[slug].
+ * The globe is browser-only because WebGL cannot render during server rendering.
  */
 export default function GlobeView() {
+  const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<LoadState>({ status: "loading" });
+  const [flyTarget, setFlyTarget] = useState<Mountain | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -35,14 +42,36 @@ export default function GlobeView() {
     return () => controller.abort();
   }, [attempt]);
 
+  const mountains = state.status === "ready" ? state.mountains : [];
+
   function retry() {
     setState({ status: "loading" });
     setAttempt((count) => count + 1);
   }
 
+  function flyTo(mountain: Mountain) {
+    if (flyTarget) {
+      return;
+    }
+    router.prefetch(`/mountains/${mountain.slug}`);
+    setFlyTarget(mountain);
+  }
+
+  function arrive(mountain: Mountain) {
+    router.push(`/mountains/${mountain.slug}`);
+  }
+
   return (
     <>
-      <SpinningGlobe mountains={state.status === "ready" ? state.mountains : []} />
+      <SpinningGlobe
+        mountains={mountains}
+        flyTarget={flyTarget}
+        onSelect={flyTo}
+        onArrive={arrive}
+      />
+      <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] sm:top-5">
+        <MountainSearch mountains={mountains} disabled={flyTarget !== null} onSelect={flyTo} />
+      </div>
       {state.status === "error" && (
         <div className="absolute inset-x-0 bottom-8 flex justify-center px-4">
           <p
@@ -56,6 +85,16 @@ export default function GlobeView() {
           </p>
         </div>
       )}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute inset-0 z-20 bg-background transition-opacity ease-in motion-reduce:transition-none ${
+          flyTarget ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          transitionDuration: `${FADE_OUT_MS}ms`,
+          transitionDelay: flyTarget ? `${FLY_DURATION_MS - FADE_OUT_MS}ms` : "0ms",
+        }}
+      />
     </>
   );
 }

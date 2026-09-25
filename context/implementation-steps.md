@@ -18,7 +18,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 6. Ship the mountain read API
 - [x] 7. Add the typed frontend API client
 - [x] 8. Render the 3D globe and risk markers
-- [ ] 9. Search, fly to a mountain, and open its page
+- [x] 9. Search, fly to a mountain, and open its page
 - [ ] 10. Download the Rainier source layers
 - [ ] 11. Build the terrain feature table
 - [ ] 12. Train the susceptibility model
