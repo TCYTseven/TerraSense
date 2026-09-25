@@ -15,7 +15,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 3. Stand up the FastAPI service
 - [x] 4. Create the Postgres schema
 - [x] 5. Seed mountains and empty Rainier trails
-- [ ] 6. Ship the mountain read API
+- [x] 6. Ship the mountain read API
 - [ ] 7. Add the typed frontend API client
 - [ ] 8. Render the 3D globe and risk markers
 - [ ] 9. Search, fly to a mountain, and open its page

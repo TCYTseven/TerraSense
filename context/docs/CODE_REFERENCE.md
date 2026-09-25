@@ -72,12 +72,27 @@ FastAPI on Python 3.11. Run from `backend/` with `uvicorn app.main:app --reload 
 |---|---|
 | `backend/requirements.txt` | FastAPI, Uvicorn, Pydantic, HTTPX, psycopg 3 with `psycopg-pool`, `python-dotenv`. Compatible-release pins. |
 | `backend/app/__init__.py` | Package marker. |
-| `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. `GET /health` returns `{"status": "ok"}`. |
+| `backend/app/main.py` | `app`. CORS allows `http://localhost:3000` and `http://127.0.0.1:3000` for GET and POST. Mounts the mountains router. `GET /health` returns `{"status": "ok"}` without touching the database. |
 | `backend/app/config.py` | Loads the repo root `.env`. `database_url()` returns `DATABASE_URL` or raises with the fix. `REPO_ROOT`. |
-| `backend/app/db.py` | `connect()` opens one psycopg connection to `DATABASE_URL`. |
+| `backend/app/db.py` | `connect()` opens one psycopg connection for scripts. `get_pool()` makes the API's pool on first use (dict rows, connections checked before use, so hosted Postgres idling is safe). `get_conn()` is the FastAPI dependency. `close_pool()` runs at shutdown. |
 | `backend/app/schema.sql` | Six tables: `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, `alerts`. UUID keys, geometry as `jsonb`, CHECK constraints for risk levels, run status, hazard type, and alert action. Every statement is `IF NOT EXISTS`. |
 | `backend/app/schema.py` | `python -m app.schema [--reset]`. `apply_schema(reset)` runs `schema.sql` and returns the tables present. `--reset` drops the six tables first. |
 | `backend/app/seed.py` | `python -m app.seed`. `load_mountains(conn)` upserts `data/seed/mountains.json` by slug. The seed risk applies only while `last_analyzed_at` is null. `load_trails(conn)` upserts `data/seed/trails.geojson` by mountain and name, and removes that mountain's trails missing from the file. |
+| `backend/app/models.py` | Pydantic response models: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, plus `RiskLevel`, `HazardType`, `Geometry`. `frontend/lib/types.ts` mirrors them. |
+| `backend/app/routes/mountains.py` | `GET /mountains`: every mountain, live first. `GET /mountains/{slug}`: the mountain, its trails with ordered segments, and `active_hazard` (latest by `created_at`, or null). 404 for an unknown slug. Steps 13 and 18 add the layer endpoint here. |
+
+### API responses
+
+`GET /mountains` returns `Mountain[]`. `GET /mountains/{slug}` returns `MountainDetail`. IDs are UUID strings, times are ISO 8601 with a timezone, geometry is a GeoJSON geometry object.
+
+```
+Mountain       { id, name, slug, lat, lon, elevation_m, region, current_risk_level, last_analyzed_at | null, is_live }
+MountainDetail   Mountain + { trails: Trail[], active_hazard: Hazard | null }
+Trail          { id, name, geom (LineString), length_km | null, elevation_gain_m | null, segments: TrailSegment[] }
+TrailSegment   { id, seq, geom (LineString), start_mile, end_mile, risk_level | null, probability | null }
+Hazard         { id, run_id | null, type (landslide | debris_flow), severity, probability, confidence | null,
+                 geom (Polygon), drivers: string[], what | null, why | null, how_to_avoid | null, needs_review, created_at }
+```
 
 ## Data (exists)
 
@@ -113,7 +128,6 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/app/routes/mountains.py` | 6, 13, 18 | List, detail, layer tile templates |
 | `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
 | `backend/app/agents/` | 20–21 | Schemas, tools, five agents, orchestrator |
 | `backend/app/alerts/discord.py` | 24 | Webhook post |

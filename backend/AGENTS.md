@@ -39,6 +39,8 @@ python -m app.schema --reset    # drop the six tables, then recreate them
 python -m app.seed               # load data/seed/: three mountains, Rainier's trails. Safe to re-run
 uvicorn app.main:app --reload --port 8000
 curl localhost:8000/health
+curl localhost:8000/mountains
+curl localhost:8000/mountains/mount-rainier
 ```
 
 `DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).
