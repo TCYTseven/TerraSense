@@ -11,7 +11,7 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 ## Checklist
 
 - [x] 1. Lay out the repo and environment
-- [ ] 2. Apply the dark dispatch theme
+- [x] 2. Apply the dark dispatch theme
 - [ ] 3. Stand up the FastAPI service
 - [ ] 4. Create the Postgres schema
 - [ ] 5. Seed mountains and empty Rainier trails

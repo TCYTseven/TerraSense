@@ -48,16 +48,21 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 
 | File | What it is |
 |---|---|
-| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`. Dependencies are Next, React, and React DOM only. |
-| `frontend/app/layout.tsx` | Root layout. Loads Geist Sans and Geist Mono as CSS variables. Metadata title is still "Create Next App". |
-| `frontend/app/page.tsx` | Stock home page. Replace this in implementation step 2. |
-| `frontend/app/globals.css` | Tailwind import and the default light/dark zinc tokens. Step 2 replaces these with the spec palette. |
+| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`. Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`. |
+| `frontend/app/layout.tsx` | Root layout, full height. Loads Geist (UI) and Geist Mono (numbers) as CSS variables. Sets metadata and a dark `viewport`. |
+| `frontend/app/page.tsx` | Home: the full-screen globe with the TerraSense name at the top left. |
+| `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. Dark base styles. |
+| `frontend/app/icon.svg` | Favicon. |
+| `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS`: the same palette for WebGL code. Mirrors `globals.css`. |
+| `frontend/components/globe/globe-view.tsx` | Client wrapper that loads the globe with `ssr: false`. |
+| `frontend/components/globe/spinning-globe.tsx` | React Three Fiber canvas: textured Earth, atmosphere rim, idle spin, drag and zoom. |
+| `frontend/public/globe/` | `earth-day.jpg` (4096×2048 color) and `earth-topology.png` (2048×1024 bump map). |
 | `frontend/next.config.ts` | Default Next config. |
 | `frontend/postcss.config.mjs` | Tailwind PostCSS plugin. |
 | `frontend/tsconfig.json` | Strict TypeScript. Path alias `@/*` → repo root of `frontend/`. |
 | `frontend/eslint.config.mjs` | `eslint-config-next`. |
 
-No components, no `lib/`, and no routes besides `/`.
+Routes: `/` only.
 
 ## Planned layout
 

@@ -1,19 +1,56 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0e14;
-  --foreground: #e6edf3;
+/*
+ * Dark dispatch theme. Tokens come from the Design Language section of
+ * context/TerraSense.md. Each --color-* token becomes a Tailwind utility,
+ * for example bg-panel, text-muted, border-line, and bg-risk-high.
+ * lib/theme.ts mirrors these values for WebGL code. Change both together.
+ */
+@theme {
+  /* Surfaces */
+  --color-background: #0a0e14;
+  --color-surface: #0f1419;
+  --color-panel: #151b23;
+  --color-line: rgb(255 255 255 / 0.1);
+
+  /* Text */
+  --color-foreground: #e6edf3;
+  --color-muted: #8b949e;
+
+  /* The only interactive color: links, buttons, focus, selection. */
+  --color-accent: #22d3ee;
+
+  /* Risk only: markers, trails, heat, and severity. Use them nowhere else. */
+  --color-risk-low: #22c55e;
+  --color-risk-moderate: #f59e0b;
+  --color-risk-high: #f97316;
+  --color-risk-extreme: #ef4444;
 }
 
+/* next/font sets --font-geist-* on <html>, so these resolve inline. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background-color: rgb(34 211 238 / 0.3);
+    color: var(--color-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
 }

@@ -11,6 +11,7 @@ import {
   ShaderMaterial,
   SRGBColorSpace,
 } from "three";
+import { THEME } from "@/lib/theme";
 
 /** Radians per second. One full turn takes about 100 seconds. */
 const IDLE_SPIN_RADIANS_PER_SECOND = 0.06;
@@ -122,7 +123,7 @@ export default function SpinningGlobe() {
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
-      <color attach="background" args={["#0A0E14"]} />
+      <color attach="background" args={[THEME.background]} />
       <ambientLight intensity={0.22} />
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
