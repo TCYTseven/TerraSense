@@ -12,6 +12,7 @@ from psycopg_pool import PoolTimeout
 
 from app.config import cors_origins
 from app.db import close_pool
+from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
 from app.routes import forecast, mountains, runs
 
@@ -22,6 +23,15 @@ FRONTEND_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000", *cors_orig
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    import logging
+
+    setup = setup_summary()
+    if not setup["analyze_ready"]:
+        logging.getLogger("app.main").warning(
+            "Analyze is not ready (%s checks missing). Next: %s",
+            setup["missing_count"],
+            setup["next_step"],
+        )
     yield
     close_pool()
 
@@ -50,6 +60,9 @@ async def database_unavailable(_: Request, __: Exception) -> JSONResponse:
 
 
 @app.get("/health")
-def health() -> dict[str, str]:
-    """Liveness check for the frontend and for curl. Does not touch the database."""
-    return {"status": "ok"}
+def health(verbose: bool = False) -> dict:
+    """Liveness check. ?verbose=1 adds local ML artifact status (no database)."""
+    payload: dict = {"status": "ok"}
+    if verbose:
+        payload["setup"] = setup_summary()
+    return payload

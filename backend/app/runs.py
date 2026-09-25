@@ -38,6 +38,7 @@ from app.agents.schemas import (
 from app.agents.tools import RunContext
 from app.assessment import Assessment, assess, publish, save_hazard
 from app.db import get_pool
+from app.ml.readiness import format_missing_artifacts, setup_ready_for_analyze
 from app.weather import HourlyRain, summarize, try_hourly_rain
 
 logger = logging.getLogger(__name__)
@@ -166,6 +167,16 @@ class RunRegistry:
     async def _execute(self, state: RunState) -> None:
         try:
             await asyncio.to_thread(_insert_run, state)
+            if not setup_ready_for_analyze():
+                await self._fail(
+                    state,
+                    "Run failed before scoring: local ML artifacts are missing.",
+                    format_missing_artifacts(
+                        FileNotFoundError("ml/artifacts/susceptibility.tif is missing")
+                    ),
+                    None,
+                )
+                return
             await self._phase(state, "scoring", "Scoring the next 72 hours of rain against the terrain.")
             rain, rain_error = await asyncio.to_thread(try_hourly_rain)
             if rain is not None:
@@ -187,9 +198,18 @@ class RunRegistry:
             state.hazard_id = await asyncio.to_thread(_commit, state, assessment, result.final)
             state.severity, state.needs_review = result.final.severity, result.final.needs_review
             await self._finish(state, result.final)
+        except FileNotFoundError as exc:
+            logger.exception("run %s failed during scoring (missing file)", state.id)
+            await self._fail(
+                state,
+                "Run failed while scoring the map.",
+                format_missing_artifacts(exc),
+                None,
+            )
         except Exception as exc:  # a run must always end, and say why
-            logger.exception("run %s failed", state.id)
-            await self._fail(state, "Run failed before the agents finished.", f"{type(exc).__name__}: {exc}", None)
+            logger.exception("run %s failed at phase=%s", state.id, state.phase)
+            detail = format_missing_artifacts(exc) if isinstance(exc, OSError) else f"{type(exc).__name__}: {exc}"
+            await self._fail(state, "Run failed before the agents finished.", detail, None)
         finally:
             if self.active.get(state.slug) == state.id:
                 del self.active[state.slug]

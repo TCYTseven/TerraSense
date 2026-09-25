@@ -34,7 +34,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 Run these from `backend/`:
 
 ```bash
-python3.11 -m venv .venv && source .venv/bin/activate
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
 python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
 python -m app.schema --reset    # drop the six tables, then recreate them

@@ -65,7 +65,9 @@ def _from_model_b(model_b, rain: HourlyRain | None) -> ProbabilityMap:
 def _stand_in(path: Path = SUSCEPTIBILITY_PATH) -> ProbabilityMap:
     if not path.exists():
         raise FileNotFoundError(
-            f"{path} is missing. Run ml/scripts/build_features.py and ml/scripts/train_susceptibility.py."
+            f"{path.relative_to(REPO_ROOT)} is missing (susceptibility GeoTIFF). "
+            "From repo root: python ml/scripts/download_sources.py --only dem,landcover && "
+            "python ml/scripts/build_features.py && python ml/scripts/train_susceptibility.py"
         )
     with rasterio.open(path) as src:
         values = src.read(1).astype("float32")

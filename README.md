@@ -22,10 +22,20 @@ cd frontend && npm install && npm run dev
 
 ```bash
 cd backend
-python3.11 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 python -m app.schema && python -m app.seed    # first run: create the tables, load data/seed/
 uvicorn app.main:app --reload --port 8000
 ```
+
+**Map layers and Analyze** need `ml/artifacts/susceptibility.tif` and tiles under `backend/tiles/`. From the repo root (Python 3.12+, `pip install -r ml/requirements.txt`; on macOS, `brew install libomp` if LightGBM fails):
+
+```bash
+python ml/scripts/download_sources.py --only dem,landcover
+python ml/scripts/build_features.py && python ml/scripts/train_susceptibility.py
+PYTHONPATH=backend python ml/scripts/render_tiles.py
+```
+
+Check setup: `curl 'http://localhost:8000/health?verbose=1'`
 
 **3. Where the spec lives.**
 
