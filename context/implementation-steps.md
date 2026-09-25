@@ -1,14 +1,33 @@
 # Implementation steps
 
-Twenty-five steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md).
+Thirty steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8).
 
-Finish each step on a track before you start the next one on that track. After step 6, the globe work (steps 7–9) and the data work (steps 10–14) can run at the same time.
+This file has two parts:
 
-The frontend app already exists in `frontend/`. Treat step 1 as done for that folder, then keep going.
+- [Part 1: Pending](#part-1-pending) is the work that is left, with the full build notes for each step.
+- [Part 2: Done](#part-2-done) records what each finished step shipped and how it was checked.
 
-Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide risk only, five agents, one hiker card. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
+Status as of Friday, Sep 25, 2026. Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
+
+Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, five agents, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
+
+### Pending
+
+- [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
+- [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
+- [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
+- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
+- [ ] 17. Score 72-hour probability from live rain (pulled for a rebuild; the heat map is the labeled susceptibility stand-in until it lands)
+- [ ] 26. Rank the pressure points
+- [ ] 27. Trace a runout from a pressure point
+- [ ] 28. Expose simulate, the stream, and the callouts
+- [ ] 29. Open the mountain panel over the globe
+- [ ] 30. Play the simulation in the panel
+- [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
+
+### Done
 
 - [x] 1. Lay out the repo and environment
 - [x] 2. Apply the dark dispatch theme
@@ -19,14 +38,9 @@ Stay inside the hackathon scope. One live mountain (Mount Rainier), landslide ri
 - [x] 7. Add the typed frontend API client
 - [x] 8. Render the 3D globe and risk markers
 - [x] 9. Search, fly to a mountain, and open its page
-- [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
-- [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
-- [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
 - [x] 13. Render susceptibility map tiles
-- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [x] 15. Open the Mapbox mountain view (built on MapLibre GL with AWS Terrain Tiles, so no token is needed. A Mapbox token switches the relief to satellite)
 - [x] 16. Toggle susceptibility and historical pins (the Past landslides toggle stays disabled until the step 10 landslide points exist)
-- [ ] 17. Score 72-hour probability from live rain
 - [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
 - [x] 19. Add one bypass around the worst segment (routed on the OpenStreetMap network per run; where no trail runs around the flagged miles, the answer is to turn back)
 - [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
@@ -55,346 +69,319 @@ Rainier bounding box as numbers: `[-121.93, 46.76, -121.54, 46.96]`.
 ## Repo shape
 
 ```
-frontend/                 Next.js app (already created)
-backend/app/              FastAPI app
-ml/scripts/               Offline DEM, training, and tiling scripts
+frontend/                 Next.js app
+backend/app/              FastAPI app, assessment, agents, runs
+backend/tests/            pytest suite and the fake LLM server
+backend/tiles/            Rendered XYZ tiles. Gitignored
+ml/scripts/               Offline DEM, training, tiling, and trail scripts
 ml/artifacts/             Model file, metrics, susceptibility raster
-data/raw/                 Downloads. Gitignore this
-data/processed/           Derived rasters. Gitignore this
+data/raw/                 Downloads. Gitignored
+data/processed/           Derived rasters. Gitignored
 data/seed/                Small JSON and GeoJSON committed to git
 ```
-
----
-
-## 1. Lay out the repo and environment
-
-**Outcome.** Anyone can clone the repo, copy the env file, and see which process owns which folder.
-
-**Build.**
-
-- Add `backend/`, `ml/scripts/`, `ml/artifacts/`, and `data/seed/`.
-- Gitignore `data/raw/`, `data/processed/`, `.env`, `ml/artifacts/*.tif`, and Python virtualenvs.
-- Add a root `.env.example` with `DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, and the LLM keys and models (since step 20: `GEMINI_API_KEY`, `GEMINI_MODEL`, `XAI_API_KEY`, `GROK_MODEL`).
-- Add a root README with three commands: frontend dev server, API dev server, and "where the spec lives."
-
-**Done when.** A new shell can read `.env.example` and name the folder for the UI, the API, and the offline model.
-
-## 2. Apply the dark dispatch theme
-
-**Outcome.** Every later screen inherits the same colors and type.
-
-**Build.**
-
-- In `frontend/app/globals.css`, set the background to `#0A0E14`, panels to `#151B23`, text to `#E6EDF3`, muted text to `#8B949E`, and the accent to `#22D3EE`.
-- Reserve green `#22C55E`, amber `#F59E0B`, orange `#F97316`, and red `#EF4444` for risk. Use them nowhere else.
-- Load a geometric sans for UI text and a monospace face for scores, miles, and timestamps.
-- Make the root layout full viewport height with no default Next.js boilerplate on the home page.
-
-**Done when.** The home page is a full-bleed dark screen with the TerraSense name in the top left and no light-theme chrome.
-
-## 3. Stand up the FastAPI service
-
-**Outcome.** The browser can call a local API.
-
-**Build.**
-
-- Create a Python 3.11+ virtualenv and a `backend/requirements.txt` with FastAPI, Uvicorn, Pydantic, HTTPX, and the Postgres driver you will use in step 4.
-- `backend/app/main.py` serves `GET /health` and allows `http://localhost:3000` in CORS.
-- Run it on port 8000.
-
-**Done when.** `curl localhost:8000/health` returns a JSON ok payload, and the browser console shows no CORS error from the Next.js origin.
-
-## 4. Create the Postgres schema
-
-**Outcome.** The tables from the spec exist, with GeoJSON stored as JSON.
-
-**Build.**
-
-- Provision Postgres on Neon or Supabase. Save `DATABASE_URL`.
-- Create `mountains`, `trails`, `trail_segments`, `analysis_runs`, `hazards`, and `alerts` with the columns in the spec.
-- Store line and polygon geometry in `jsonb`. Skip PostGIS.
-- Put the SQL in `backend/app/schema.sql` and apply it with one command.
-
-**Done when.** All six tables exist and a fresh database can be recreated from `schema.sql`.
-
-## 5. Seed mountains and empty Rainier trails
-
-**Outcome.** The globe and the mountain page have rows to read before the model exists.
-
-**Build.**
-
-- Commit `data/seed/mountains.json` with Mount Rainier (`is_live: true`, risk `moderate` as a placeholder) and two static mountains (`is_live: false`, a fixed risk).
-- Commit a tiny `data/seed/trails.geojson` for one named Rainier trail, even if the line is rough. Replace it in step 14.
-- Write `backend/app/seed.py` to load both files.
-
-**Done when.** The `mountains` table has three rows and Rainier has at least one trail row.
-
-## 6. Ship the mountain read API
-
-**Outcome.** The frontend can list mountains and open one mountain with its trails.
-
-**Build.**
-
-- `GET /mountains` returns id, name, slug, lat, lon, elevation, region, `current_risk_level`, `last_analyzed_at`, and `is_live`.
-- `GET /mountains/{slug}` returns that mountain, its trails, and its active hazard when one exists.
-- Static mountains return their seed risk. They do not grow an analyze action.
-
-**Done when.** `GET /mountains` returns three mountains and `GET /mountains/mount-rainier` returns the seeded trail.
-
-## 7. Add the typed frontend API client
-
-**Outcome.** UI code calls one module and shares types with the stream you will add later.
-
-**Build.**
-
-- Add `frontend/lib/types.ts` for `Mountain`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel`, and `AgentEvent`.
-- `AgentEvent` is `{ run_id, agent, status, summary, payload }`. `agent` is `terrain | weather | trail | synthesizer | writer`. `status` is `waiting | running | done | error`.
-- Add `frontend/lib/api.ts` with `getMountains`, `getMountain`, and a base URL from `NEXT_PUBLIC_API_URL`.
-- Add `frontend/lib/fixtures/run.json` with one finished five-agent run so the panel can be built before the LLM is wired.
-
-**Done when.** The home page logs three mountains from the API, and the fixture file type-checks as `AgentEvent[]`.
-
-## 8. Render the 3D globe and risk markers
-
-**Outcome.** The first screen is the demo hook.
-
-**Build.**
-
-- Install `three`, `@react-three/fiber`, and `react-globe.gl` (or `three-globe`).
-- Render a dark satellite globe, full viewport, with a light atmosphere and a slow idle spin.
-- Place three markers from `GET /mountains`. Color each marker from its risk level.
-- Hover shows name, risk, and last refresh time.
-- Keep textures modest. Three markers is the whole set.
-
-**Done when.** The globe spins, drag and zoom work, and the three markers show the risk colors from the database.
-
-## 9. Search, fly to a mountain, and open its page
-
-**Outcome.** A click or a search moves the camera, then opens the mountain.
-
-**Build.**
-
-- Center a search box. It matches mountain names. "Mount Rainier" flies there.
-- On marker click or search, animate the camera to that lat/lon in about 1.5 seconds, then route to `/mountains/[slug]`.
-- The mountain route renders the name, elevation, region, and risk from the API. The map comes in step 15.
-- Static mountains open the same page and show their fixed risk. Hide **Analyze now** unless `is_live` is true.
-
-**Done when.** Search and click both land on `/mountains/mount-rainier` after a single camera move, with no jump cut.
-
-## 10. Download the Rainier source layers
-
-**Outcome.** Offline scripts have a DEM, a land-cover raster, and landslide points for the bounding box.
-
-**Build.**
-
-- Download one elevation raster clipped to the shared bounding box. Use Copernicus DEM 30 m or USGS 3DEP. Save it under `data/raw/`.
-- Download one land-cover raster for the same box. Use NLCD or ESA WorldCover.
-- Download landslide points that fall inside the box from the NASA Global Landslide Catalog or a USGS inventory. Save a small GeoJSON copy into `data/seed/landslides.geojson` for the map pins.
-- Record the source URL and access date in `data/seed/sources.md`.
-
-**Done when.** The DEM, land cover, and point file all cover the shared bounding box, and `sources.md` names each file.
-
-## 11. Build the terrain feature table
-
-**Outcome.** Model A has one row per pixel and a stable label.
-
-**Build.**
-
-- In `ml/scripts/build_features.py`, derive slope, aspect, curvature, elevation, distance to drainage, land cover, and a topographic wetness index. Use rasterio. Use richdem only if wetness is awkward in rasterio.
-- Resample every layer to the same 30 m grid.
-- Buffer landslide points by about 50 m for positives. Sample negatives from the rest of the box at about one positive to three negatives.
-- Write `data/processed/features.parquet` (or CSV) with those columns plus `label` and a region id you can split on.
-
-**Done when.** The table has the seven features, a 0/1 label, and a region column, and the row count is printed by the script.
-
-## 12. Train the susceptibility model
-
-**Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
-
-**Build.**
-
-- `ml/scripts/train_susceptibility.py` trains a LightGBM binary classifier.
-- Hold out a spatial block, using the region column. Do not shuffle pixels across the box.
-- Save the model, a susceptibility GeoTIFF aligned to the feature grid, feature-importance values, and `ml/artifacts/metrics.json` with AUC and precision at the high threshold.
-- Write the AUC you get into `metrics.json`. Leave the demo copy for step 25.
-
-**Done when.** The script prints AUC and writes a susceptibility raster that covers the Rainier box.
-
-## 13. Render susceptibility map tiles
-
-**Outcome.** Mapbox can drape the static layer on 3D terrain.
-
-**Build.**
-
-- `ml/scripts/render_tiles.py` colorizes susceptibility with the risk ramp (low toward blue-green, high toward red) and writes XYZ PNG tiles in EPSG:3857.
-- Put tiles where the API can serve them, for example `backend/tiles/susceptibility/{z}/{x}/{y}.png`.
-- Add `GET /mountains/{slug}/layers/susceptibility` and return a tile URL template. Rainier is the only slug with tiles.
-
-**Done when.** Opening one tile URL in a browser shows a transparent PNG, and the URL template uses `{z}/{x}/{y}`.
-
-## 14. Import trails and historical landslide pins
-
-**Outcome.** The map has real lines and real past events.
-
-**Build.**
-
-- Pull foot paths in the bounding box from OpenStreetMap (Overpass or a Washington extract). Save `data/seed/trails.geojson`.
-- Pick one hero trail that crosses a steep drainage, plus a second line you can use as the bypass in step 19.
-- Split the hero trail into ordered segments with `start_mile` and `end_mile`. Load segments into `trail_segments`.
-- Load `data/seed/landslides.geojson` into a `historical_events` JSON file the API can return. A table is optional. An endpoint is required: include the points on `GET /mountains/mount-rainier`.
-
-**Done when.** Rainier returns a trail with several mile-marked segments and a list of historical points inside the box.
-
-## 15. Open the Mapbox mountain view
-
-**Outcome.** `/mountains/mount-rainier` is a terrain map plus a side panel.
-
-**Build.**
-
-- Add Mapbox GL JS. Read the token from `NEXT_PUBLIC_MAPBOX_TOKEN`.
-- Fill about 70% of the width with a satellite map, 3D terrain, and exaggeration around 1.5. Center it on the mountain.
-- Draw the seeded trail as a line.
-- The right panel shows name, elevation, region, overall risk, one placeholder sentence, and the trail list.
-
-**Done when.** The Rainier page shows 3D terrain and the trail line, and the panel matches the API record.
-
-## 16. Toggle susceptibility and historical pins
-
-**Outcome.** A judge can turn the static science layers on and off.
-
-**Build.**
-
-- Add a small toggle group over the lower left of the map.
-- The susceptibility toggle adds the XYZ raster source from step 13. Fade it in over about 400 ms.
-- Historical pins use the landslide points from step 14. Clicking a pin shows date, type, and source.
-- Check that the raster sits on the terrain and not offset from the ridges. Fix the tile scheme before you go on.
-
-**Done when.** Both toggles work, pins open a small popup, and the susceptibility image lines up with the ridges.
-
-## 17. Score 72-hour probability from live rain
-
-**Outcome.** Model B turns cached susceptibility and today's rain into a probability raster.
-
-**Build.**
-
-- Call Open-Meteo for the Rainier peak. Read precipitation for the past 7 days and the next 3 days. No API key.
-- Implement `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`.
-- Keep `w1`, `w2`, and `w3` as named constants. Document them next to the function.
-- Map probability through the shared bins.
-- Cache the Open-Meteo response for a few minutes so a demo retry does not wait on the network twice.
-
-**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch.
-
-## 18. Draw the heat map, hazard polygon, and trail risk
-
-**Outcome.** The mountain shows where the model says the hazard is, and which trail miles cross it.
-
-**Build.**
-
-- Render the probability raster to XYZ tiles the same way as susceptibility. This is the default layer.
-- Extract the worst contiguous high cluster into one GeoJSON polygon. Store it as a hazard row linked to a run, or as a preview hazard before agents exist.
-- Intersect that polygon with trail segments. Set each segment's `risk_level` and `probability`.
-- Color the trail line by segment risk.
-- `GET /mountains/mount-rainier/layers/probability` returns the tile template.
-
-**Done when.** The default map shows the heat map and a trail that changes color along its length, and one polygon exists for the worst cluster.
-
-## 19. Add one bypass around the worst segment
-
-**Outcome.** The product can name a way around the flagged miles.
-
-**Build.**
-
-- Prefer a short path on the trail graph that avoids segments at `high` or `extreme`.
-- If the graph is not ready, use the second line from step 14 as a hand-authored bypass and store its added distance and added elevation as constants you can defend.
-- Save the bypass GeoJSON on the trail or the run.
-- The Trail Analyst in step 21 explains this geometry. It does not invent a new line.
-
-**Done when.** The API returns a bypass name, added kilometers, added elevation, and a line that does not overlap the worst segment.
-
-## 20. Define agent schemas, tools, and prompts
-
-**Outcome.** Each agent has a fixed input, a Pydantic output, and a prompt that asks for that JSON only.
-
-**Build.**
-
-- Add schemas for Terrain, Weather, Trail, Synthesizer, and Alert Writer.
-- Terrain output matches the spec: one `hazard_zone` with type, severity, probability, drivers, confidence, and notes.
-- Tools return precomputed facts only: `get_raster_summary`, `get_trail_segments`, `get_weather`, `get_historical_events`.
-- `get_raster_summary` returns the cluster from step 18. The model does not scan pixels.
-- The trail tool returns the bypass from step 19.
-- A router picks the model for every call (user direction, Sep 25, 2026): Gemini Flash or Grok. Terrain, Weather, and Trail start on Gemini Flash; Synthesizer and Alert Writer start on Grok. A borderline or high-stakes fast task moves up to Grok, a clear low-stakes strong task moves down to Gemini, a run past 70% of its minute moves to Gemini, and the other provider is the fallback. Each decision and its rules go into the agent's trace for the reasoning panel.
-
-**Done when.** Each schema rejects a missing field, and each tool returns data for `mount-rainier` with no LLM call.
-
-## 21. Run the five-agent pipeline
-
-**Outcome.** One function produces both texts and a consensus severity.
-
-**Build.**
-
-- Run Terrain and Weather together. Then Trail. Then Synthesizer. Then Alert Writer.
-- Synthesizer confidence is the weighted average from the spec. Weights are constants.
-- If two severity labels differ by two or more levels, set `needs_review` and make the ranger text an advisory.
-- Alert Writer returns a short ranger body and a short hiker sentence. Ranger copy names the trail and miles. Hiker copy names the bypass.
-- Cap each call. The whole pipeline should finish in about a minute.
-
-**Done when.** A local function call prints five JSON objects, a final severity, and both paragraphs, using the Rainier tools.
-
-## 22. Expose analyze, run status, and the live stream
-
-**Outcome.** The browser can start a run and watch agents finish.
-
-**Build.**
-
-- `POST /mountains/{slug}/analyze` returns `{ run_id }` and starts the pipeline in the background. Reject the call when `is_live` is false.
-- Store run state in the API process, keyed by `run_id`. Persist `analysis_runs` and the hazard row when the run finishes.
-- `GET /runs/{run_id}` returns status plus agent outputs.
-- `WS /runs/{run_id}/stream` emits an `AgentEvent` when an agent starts and when it finishes.
-- On failure, emit `status: error` and store the failed run. Do not hang the socket.
-
-**Done when.** A client that connects to the socket sees terrain and weather start together, then the later agents, then a completed `GET /runs/{run_id}`.
-
-## 23. Show the agent stream and the hazard panel
-
-**Outcome.** **Analyze now** drives the side panel, and the hazard pin tells a judge what to do.
-
-**Build.**
-
-- Show five rows: Terrain, Weather, Trail, Synthesizer, Alert Writer. Each row has waiting, running, and done. The running row pulses.
-- **Analyze now** calls `POST /analyze`, opens the socket, and fills the rows.
-- When the run completes, place the hazard pin on the polygon. The panel always shows, in order: what it is, why it was flagged, confidence, and how to avoid it.
-- Show rain text in the panel: past 72 hours and the next 24 hours. This is text, not a map layer.
-- Disable the button while a run is in progress. If the socket errors, say that the run failed and leave the last successful hazard on the map.
-
-**Done when.** One click on Rainier streams all five rows and opens a pin whose four fields match the saved hazard.
-
-## 24. Post the ranger alert to Discord (dropped)
-
-Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and the mountain page has no `?hazard=` deep link. The ranger reads the alert in the app: when a run finishes, the hazard pin opens with the four fields, and the reasoning panel holds the Alert Writer's ranger title and paragraph. The `alerts` table from step 4 stays in the schema, unused.
-
-## 25. Show the hiker card and rehearse the demo
-
-**Outcome.** The second audience is on screen, and the two-minute demo can be repeated.
-
-**Build.**
-
-- `GET /forecast?mountain_id=&trail_id=` returns the level, the hiker sentence, the bypass name, added distance, and added elevation from the latest successful run.
-- **Hiker forecast** opens a larger-type card on the same dark background and draws the bypass on the map.
-- Add empty, loading, and error states for the globe, the mountain, and the run.
-- Write the real AUC, the real weights, and the real data sources into the Devpost draft in `TerraSense.md`.
-- Rehearse the script in that file three times: globe, fly-in, heat map, pin, analyze, reasoning panel, hiker card.
-- Keep one finished run visible as a fallback if the live call fails on stage.
-
-**Done when.** A person who has not seen the app can follow the demo script and reach the reasoning panel and a hiker card that names the bypass.
 
 ## If you are behind
 
 Drop work in this order. The demo still holds.
 
-1. The two static globe markers (step 5's extra mountains, and their markers in step 8).
-2. The susceptibility toggle (step 16). Keep the 72-hour heat map.
-3. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
-4. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
+1. The callouts (step 28's model call; keep template callouts), then the simulation (steps 27, 28, 30). Keep step 29's panel, or let the click fly straight in as it does today.
+2. The two static globe markers (step 5's extra mountains, and their markers in step 8).
+3. The susceptibility toggle (step 16). Keep the 72-hour heat map.
+4. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
+5. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
 
 Keep the globe, the heat map, and the agent stream.
+
+---
+
+# Part 1: Pending
+
+The four data steps (10, 11, 12, 14) wait on one download: the landslide points. When they exist, run steps 10 to 12 again in order and then reload step 14's pins. Nothing downstream needs a code change. The pin toggle turns on by itself, and the tiles and hazard pick up the new susceptibility on the next run.
+
+## 10. Download the Rainier source layers
+
+**Outcome.** Offline scripts have a DEM, a land-cover raster, and landslide points for the bounding box.
+
+**Done so far.** `ml/scripts/download_sources.py` wrote the Copernicus DEM GLO-30 and the ESA WorldCover 2021 clips to `data/raw/`, both checked against the bbox. `data/seed/sources.md` records both.
+
+**Left.**
+
+- Download landslide points inside the box from the NASA Global Landslide Catalog or a USGS inventory. On 2026-09-25 the build container got HTTP 403 from data.nasa.gov, ScienceBase, and Washington DNR.
+- On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. Or download the CSV in a browser and pass `--glc-csv path/to/export.csv`.
+- Fill in the access date and the point count in `data/seed/sources.md`. Do not place points by hand.
+
+**Done when.** The DEM, land cover, and `data/seed/landslides.geojson` all cover the shared bounding box, and `sources.md` names each file.
+
+## 11. Build the terrain feature table
+
+**Outcome.** Model A has one row per pixel and a stable label.
+
+**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI).
+
+**Left.**
+
+- Rerun the script once step 10's points exist. It then writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives at about 1:3 from ground more than 500 m away, `label`, and `region` (7.5 km blocks).
+
+**Done when.** The table has the seven features, a 0/1 label, and a region column, and the script prints the row count.
+
+## 12. Train the susceptibility model
+
+**Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
+
+**Done so far.** `ml/scripts/train_susceptibility.py` has the full LightGBM path: held-out spatial regions, AUC and precision at 0.45, gain importance, a refit, and a full-map prediction. Without labels it writes a knowledge-driven index (slope 0.35, distance to drainage 0.20, land cover 0.20, TWI 0.15, curvature 0.10) and `trained: false` in `ml/artifacts/metrics.json`.
+
+**Left.**
+
+- Rerun the script on the step 11 table.
+- Write the AUC you get into `metrics.json`, then into the Devpost draft in `TerraSense.md`. Do not treat 0.85 as a gate.
+- Re-render the susceptibility tiles (`python ml/scripts/render_tiles.py --layer susceptibility`).
+
+**Done when.** The script prints AUC and writes a susceptibility raster that covers the Rainier box, and `metrics.json` says `trained: true`.
+
+## 14. Import trails and historical landslide pins
+
+**Outcome.** The map has real lines and real past events.
+
+**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves `historical_events` on `GET /mountains/mount-rainier`, and the list is empty while the points file is missing.
+
+**Left.**
+
+- None in code. Once step 10 writes `data/seed/landslides.geojson`, the API re-reads it and the **Past landslides** toggle turns on.
+
+**Done when.** Rainier returns a trail with mile-marked segments and a non-empty list of historical points inside the box, and a pin opens its popup on the map.
+
+## 17. Score 72-hour probability from live rain
+
+**Outcome.** Model B turns cached susceptibility and today's rain into a probability raster.
+
+**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam: it calls Model B when the module exists and serves the labeled stand-in otherwise.
+
+**Build.**
+
+- Implement `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`. This file belongs to the ML track.
+- Expose `run(rain)` returning an object with `.probability` (float32 0 to 1 on the susceptibility grid, NaN outside the data), `.transform`, and `.crs`. If the shape differs, adapt `_from_model_b()` in `probability.py` and nothing else.
+- Keep `w1`, `w2`, and `w3` as named constants. Document them next to the function.
+- Map probability through the shared bins.
+
+**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` then reads `model b`, and the stand-in note leaves the panel.
+
+## 26. Rank the pressure points
+
+**Track.** ML and data, with the route in `backend/`.
+
+**Outcome.** The panel can list the slopes most likely to fail.
+
+**Build.**
+
+- In `backend/app/ml/pressure.py` (free of API imports, like `hazard.py`), find 8-connected clusters at Moderate or above on the current probability map. Rank them by peak probability times area, and drop clusters under 0.05 km² or within 500 m of a better one. Keep up to `MAX_PRESSURE_POINTS` (5).
+- For each point, return id, rank, level, peak probability, centroid, a simplified polygon, facing, elevation, the terrain drivers from the feature stack, and the nearest trail below it within 0.5 mi with its mile range.
+- `GET /mountains/{slug}/pressure-points` returns `PressurePoint[]` (empty for static mountains). Add the Pydantic model and its mirror in `frontend/lib/types.ts` in the same commit.
+
+**Done when.** `GET /mountains/mount-rainier/pressure-points` returns up to five ranked points in under a second, and the first matches the worst cluster on the heat map.
+
+## 27. Trace a runout from a pressure point
+
+**Track.** ML and data.
+
+**Outcome.** One function turns a pressure point into frames and steps, with no model call.
+
+**Build.**
+
+- `backend/app/ml/runout.py`: from the point's cells at High or above, spread downslope on the 30 m DEM with multiple-flow-direction routing (Holmgren, exponent 4). Stop where the travel angle from the release drops below `REACH_ANGLE_DEG` (11) or the path passes `MAX_RUNOUT_M` (6000).
+- Arrival time is path distance over `FRONT_SPEED_MS` (5). Intensity is the flow share through a cell, 0 to 1. All four constants are named and documented.
+- Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
+- Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
+
+**Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically.
+
+## 28. Expose simulate, the stream, and the callouts
+
+**Track.** Backend and agents.
+
+**Outcome.** The browser can start a simulation and receive frames, steps, and callouts.
+
+**Build.**
+
+- `POST /mountains/{slug}/simulate` with `{ pressure_point_id }` returns `{ simulation_id }`. 409 for a static mountain, 404 for an unknown point. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
+- `WS /simulations/{id}/stream` sends one message with the frames and steps, then each callout, then a final message. `GET /simulations/{id}` returns the same, finished or not.
+- Callouts: one model call through the existing router, strong tier. It reads the steps and the pressure point and returns two to four `{ step_id, audience: rangers | public, text }`, at least one of each. The schema is closed, like the agents'.
+- Code checks every trail, mile, and time in the text against the steps, and enforces the word limits in the design addendum's Copy. On a failed check it runs one repair round, then the fallback provider, then templates. The trace records which.
+- Add the models and their mirrors in `frontend/lib/types.ts` in the same commit. Test against `backend/tests/fake_llm.py`.
+
+**Done when.** A socket client gets the frames and steps within 3 seconds of `POST`, then the callouts, then the final message, and a run with both providers down still ends with template callouts.
+
+## 29. Open the mountain panel over the globe
+
+**Track.** Frontend.
+
+**Outcome.** A globe click opens the centered panel instead of routing to the mountain page.
+
+**Build.**
+
+- A marker click or search pick turns the globe to face the mountain (the first leg of the fly-to), pauses the spin, lays the scrim, and opens the panel. `?m=<slug>` reopens it on reload.
+- Left: a compact MapLibre map from the same style module, with the heat map, trails, and numbered pressure point pins. Right: header, overall risk, the pressure point list, **Simulate**, and **Open ranger view**. Follow the design addendum's Mountain panel.
+- **Open ranger view** closes the panel and runs the existing fly-to into `/mountains/[slug]`.
+- Static mountains: terrain, fixed level, the display-marker line, and no pressure points or **Simulate**.
+- Loading, error, and empty states from the addendum's States table.
+
+**Done when.** Clicking Rainier opens the panel with the pins matching the list, a row click moves the selection, Escape restores the spinning globe, and **Open ranger view** lands on the mountain page with no jump cut.
+
+## 30. Play the simulation in the panel
+
+**Track.** Frontend.
+
+**Outcome.** **Simulate** plays the flow on the map and the steps and callouts on the right.
+
+**Build.**
+
+- **Simulate** calls `POST /simulate`, follows the stream, and swaps the right column to the simulation view.
+- Playback: one frame every 500 ms, replacing the flow fill at once. Dim the heat map to 35%. Mark each trail crossing when its step is reached. The camera does not move.
+- Steps use the agent row glyphs, and the current one pulses. Callouts appear when their step is reached, with their audience labels. The method line always shows.
+- **Replay** replays the loaded frames. **Back to pressure points** restores the list and the heat map.
+- Reduced motion: final flow, all steps, and all callouts at once.
+
+**Done when.** On Rainier, **Simulate** plays to the end in about 20 seconds, the flow reaches the trail step at the same moment its mark appears, at least one ranger callout and one public draft show, and a person who has not seen the app can follow it.
+
+## Before the demo
+
+Follow-up to steps 4 and 25. Not a numbered step.
+
+- Provision Postgres on Neon or Supabase, set `DATABASE_URL`, then run `python -m app.schema && python -m app.seed` from `backend/`.
+- Set `GEMINI_API_KEY` and `XAI_API_KEY`. Run `python -m app.agents.pipeline` once, then one **Analyze now** from the browser.
+- Rehearse the demo script in `TerraSense.md` three times. Keep one finished run on screen as a fallback.
+
+**Done when.** A live run with real keys has finished twice, and a person who has not seen the app can follow the demo script to the hiker card.
+
+---
+
+# Part 2: Done
+
+What each finished step shipped and how it was checked. File-level detail is in [docs/CODE_REFERENCE.md](docs/CODE_REFERENCE.md). Where a step's original plan changed, the change is noted.
+
+## 1. Lay out the repo and environment
+
+**Shipped.** `backend/`, `ml/scripts/`, `ml/artifacts/`, `data/seed/`. A `.gitignore` for `data/raw/`, `data/processed/`, `.env`, `ml/artifacts/*.tif`, `backend/tiles/`, and virtualenvs. A root `.env.example` with every variable and a comment each (`DATABASE_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_MAPBOX_TOKEN`, the Gemini and xAI keys and models, and the optional LLM knobs). A root README with the dev commands.
+
+**Done when.** A new shell can read `.env.example` and name the folder for the UI, the API, and the offline model.
+
+## 2. Apply the dark dispatch theme
+
+**Shipped.** Tokens in `frontend/app/globals.css` with shadcn role names, mirrored in `frontend/lib/theme.ts`, using the current Design Language values (basalt and glacier). The four risk colors are reserved for risk. Geist and Geist Mono are loaded. The home page is a full-bleed dark screen.
+
+**Changed.** The original plan's hex values were replaced by the Design Language values in `TerraSense.md`.
+
+**Done when.** The home page is a full-bleed dark screen with the TerraSense name in the top left and no light-theme chrome.
+
+## 3. Stand up the FastAPI service
+
+**Shipped.** `backend/app/main.py` with `GET /health`, CORS for `localhost:3000` plus `CORS_ORIGINS`, and a 503 when the database is down. Runs on port 8000.
+
+**Done when.** `curl localhost:8000/health` returns a JSON ok payload, and the browser shows no CORS error.
+
+## 4. Create the Postgres schema
+
+**Shipped.** `backend/app/schema.sql` with the six tables, geometry as `jsonb`, and CHECK constraints. `python -m app.schema [--reset]` applies it. `hazards` later gained `trail_id`, `start_mile`, `end_mile` (step 18) and `bypass` (step 19).
+
+**Done when.** All six tables exist, and a fresh database can be recreated from `schema.sql`. Verified on a local Postgres 16. No hosted database yet (see [Before the demo](#before-the-demo)).
+
+## 5. Seed mountains and empty Rainier trails
+
+**Shipped.** `data/seed/mountains.json` (Mount Rainier live with a placeholder `moderate`, Huascarán `high`, Mount Fuji `low`) and `backend/app/seed.py`, which upserts mountains, trails, and segments.
+
+**Done when.** The `mountains` table has three rows and Rainier has trail rows.
+
+## 6. Ship the mountain read API
+
+**Shipped.** `GET /mountains` and `GET /mountains/{slug}` with trails, ordered segments, `active_hazard`, `historical_events`, and `active_run_id`. Static mountains return their seed risk.
+
+**Done when.** `GET /mountains` returns three mountains and `GET /mountains/mount-rainier` returns the seeded trails.
+
+## 7. Add the typed frontend API client
+
+**Shipped.** `frontend/lib/types.ts` mirrors `backend/app/models.py`. `frontend/lib/api.ts` covers every endpoint. `frontend/lib/fixtures/run.json` holds one finished five-agent run, checked at import.
+
+**Done when.** The home page reads three mountains from the API, and the fixture type-checks as `AgentEvent[]`.
+
+## 8. Render the 3D globe and risk markers
+
+**Shipped.** A custom React Three Fiber globe (`frontend/components/globe/`) with a textured Earth, an atmosphere rim, idle spin, drag, and zoom. Three markers in their risk colors, with a ring for the live one and a hover card.
+
+**Done when.** The globe spins, drag and zoom work, and the three markers show the risk colors from the database.
+
+## 9. Search, fly to a mountain, and open its page
+
+**Shipped.** A centered combobox search ("mt" matches "mount"). A 1.5 s great-circle flight that fades to the background and routes to `/mountains/[slug]`. Loading, error, and not-found pages.
+
+**Done when.** Search and click both land on `/mountains/mount-rainier` after a single camera move, with no jump cut.
+
+## 13. Render susceptibility map tiles
+
+**Shipped.** `backend/app/ml/tiles.py` (the shared tiler) and `ml/scripts/render_tiles.py`: 383 PNG tiles, z10 to z14, on the stepped four-color ramp, in about 3.5 s. `GET /mountains/{slug}/layers/susceptibility` returns the template.
+
+**Changed.** The ramp uses the four risk colors with Low transparent (design addendum), not blue-green to red.
+
+**Done when.** A tile URL shows a transparent PNG, and the template uses `{z}/{x}/{y}`.
+
+## 15. Open the Mapbox mountain view
+
+**Shipped.** `frontend/components/map/terrain-map.tsx`: MapLibre GL with AWS Terrain Tiles, exaggeration 1.5, a light shaded relief (Mapbox satellite with a token), all trails, and the hero trail. The ranger panel sits on the right.
+
+**Changed.** MapLibre replaced Mapbox GL, so no token is required.
+
+**Done when.** The Rainier page shows 3D terrain and the trail lines, and the panel matches the API record.
+
+## 16. Toggle susceptibility and historical pins
+
+**Shipped.** `frontend/components/map/layer-toggles.tsx` over the lower left of the map. Susceptibility appears at once and hides the heat map while on. The historical pin layer and popups are built, and the toggle is disabled until step 10's points exist.
+
+**Changed.** No 400 ms fade on susceptibility (design addendum, Motion).
+
+**Done when.** Both toggles work, pins open a small popup, and the raster lines up with the ridges.
+
+## 18. Draw the heat map, hazard polygon, and trail risk
+
+**Shipped.** `backend/app/ml/probability.py` (the Model B seam), `backend/app/ml/hazard.py`, and `backend/app/assessment.py`: probability tiles as the default layer with a 600 ms fade, per-segment risk on the hero trail, the flagged mile range, and one hazard polygon within 250 m of it.
+
+**Changed.** Until step 17 lands, the probability map is the susceptibility stand-in, labeled everywhere.
+
+**Done when.** The default map shows the heat map and a trail that changes color along its length, and one polygon exists for the worst cluster.
+
+## 19. Add one bypass around the worst segment
+
+**Shipped.** `ml/scripts/build_trail_network.py` writes `data/seed/trail_network.geojson`. `backend/app/bypass.py` routes the detour with the least walking plus trail given up, with high ground penalized. It returns name, via, miles, added distance and climb, a line, and per-piece levels, or None when the answer is to turn back.
+
+**Done when.** The API returns a bypass name, added distance, added elevation, and a line that does not overlap the worst segment.
+
+## 20. Define agent schemas, tools, and prompts
+
+**Shipped.** `backend/app/agents/`: closed Pydantic schemas for the five agents, four fact-only tools, prompts following the design addendum's copy rules, the Gemini and Grok providers, and the router with every rule recorded in the trace.
+
+**Done when.** Each schema rejects a missing field, and each tool returns data for `mount-rainier` with no LLM call (`backend/tests/test_agent_schemas.py`, `test_tools.py`, `test_router.py`, `test_providers.py`).
+
+## 21. Run the five-agent pipeline
+
+**Shipped.** `backend/app/agents/pipeline.py`: Terrain and Weather together, then Trail, Synthesizer, Writer. Retries, repair rounds, fallback provider, code-set confidence (0.40, 0.35, 0.25), `needs_review`, and copy checks with plain templates as the last resort.
+
+**Done when.** `python -m app.agents.pipeline` prints five JSON objects, a final severity, and both texts. Checked against `backend/tests/fake_llm.py`. No live provider call has run yet.
+
+## 22. Expose analyze, run status, and the live stream
+
+**Shipped.** `backend/app/runs.py` and `backend/app/routes/runs.py`: `POST /mountains/{slug}/analyze` (409 for static), `GET /runs/{run_id}`, and `WS /runs/{run_id}/stream`. A finished run commits tiles, segment risk, the hazard, and the mountain's level in one transaction. A failed run writes none of that.
+
+**Done when.** A socket client sees Terrain and Weather start together, then the later agents, then a completed `GET /runs/{run_id}` (`backend/tests/test_runs_api.py`).
+
+## 23. Show the agent stream and the hazard panel
+
+**Shipped.** `frontend/components/mountain/mountain-dashboard.tsx`, `frontend/components/panel/` (ranger panel, hazard block, agent rows, level word), and `frontend/lib/run-stream.ts`, which reconnects twice before calling a run lost. Also the reasoning panel (team decision, Sep 25, 2026).
+
+**Done when.** One click on Rainier streams all five rows and opens a pin whose four fields match the saved hazard.
+
+## 24. Post the ranger alert to Discord (dropped)
+
+Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and the mountain page has no `?hazard=` deep link. The ranger reads the alert in the app. The `alerts` table stays in the schema, unused.
+
+## 25. Show the hiker card and rehearse the demo
+
+**Shipped.** `GET /forecast` (`backend/app/routes/forecast.py`) and `frontend/components/panel/hiker-card.tsx`, with the bypass drawn dashed on the map. Empty, loading, and error states for the globe, the mountain, and the run.
+
+**Done when.** A person who has not seen the app can follow the demo script to the reasoning panel and a hiker card that names the bypass. Walked in Chromium against the fake LLM APIs. The live-key rehearsal is under [Before the demo](#before-the-demo).
