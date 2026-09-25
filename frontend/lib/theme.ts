@@ -1,3 +1,5 @@
+import type { RiskLevel } from "./types";
+
 /**
  * The dark dispatch palette for code that cannot use CSS classes, such as the
  * WebGL globe. Mirrors the tokens in app/globals.css. Change both together.
@@ -17,4 +19,4 @@ export const RISK_COLORS = {
   moderate: "#F59E0B",
   high: "#F97316",
   extreme: "#EF4444",
-} as const;
+} as const satisfies Record<RiskLevel, string>;

@@ -48,16 +48,21 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 
 | File | What it is |
 |---|---|
-| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`. Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`. |
+| `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`next typegen && tsc --noEmit`, which works on a fresh clone). Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`. |
 | `frontend/app/layout.tsx` | Root layout, full height. Loads Geist (UI) and Geist Mono (numbers) as CSS variables. Sets metadata and a dark `viewport`. |
 | `frontend/app/page.tsx` | Home: the full-screen globe with the TerraSense name at the top left. |
 | `frontend/app/globals.css` | Dark dispatch tokens as Tailwind colors: `background`, `surface`, `panel`, `line`, `foreground`, `muted`, `accent`, and `risk-low`, `risk-moderate`, `risk-high`, `risk-extreme`. Font tokens `sans` and `mono`. Dark base styles. |
 | `frontend/app/icon.svg` | Favicon. |
-| `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS`: the same palette for WebGL code. Mirrors `globals.css`. |
-| `frontend/components/globe/globe-view.tsx` | Client wrapper that loads the globe with `ssr: false`. |
+| `frontend/lib/theme.ts` | `THEME` and `RISK_COLORS` (keyed by `RiskLevel`): the same palette for WebGL code. Mirrors `globals.css`. |
+| `frontend/lib/types.ts` | Mirrors `backend/app/models.py`: `Mountain`, `MountainDetail`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel` (with `RISK_LEVELS`), `HazardType`, `LineString`, `Polygon`, `Position`. Stream types: `AgentEvent`, `AgentName` (`AGENT_NAMES`), `AgentStatus` (`AGENT_STATUSES`). |
+| `frontend/lib/api.ts` | `API_URL` from `NEXT_PUBLIC_API_URL` (default `http://localhost:8000`). `getMountains(init?)`, `getMountain(slug, init?)` (null on 404), `ApiError` with `status`. Requests use `cache: "no-store"`. |
+| `frontend/lib/agent-events.ts` | `isAgentEvent(value)` and `parseAgentEvents(value)`: runtime checks for JSON that claims to be `AgentEvent`s. |
+| `frontend/lib/fixtures/run.json` | One finished five-agent run, 10 events in stream order. Illustrative values: Skyline Trail miles 1.2 to 2.1, bypass Golden Gate Trail, severity high, confidence 0.81. |
+| `frontend/lib/fixtures/index.ts` | `FIXTURE_RUN: AgentEvent[]`, parsed from `run.json`. Throws on import if the file drifts. |
+| `frontend/components/globe/globe-view.tsx` | Client wrapper that loads the globe with `ssr: false`. Logs the mountains from `GET /mountains` on mount. |
 | `frontend/components/globe/spinning-globe.tsx` | React Three Fiber canvas: textured Earth, atmosphere rim, idle spin, drag and zoom. |
 | `frontend/public/globe/` | `earth-day.jpg` (4096×2048 color) and `earth-topology.png` (2048×1024 bump map). |
-| `frontend/next.config.ts` | Default Next config. |
+| `frontend/next.config.ts` | Loads the repo root `.env` with `process.loadEnvFile` so the app and the API share one file. Variables already set win. |
 | `frontend/postcss.config.mjs` | Tailwind PostCSS plugin. |
 | `frontend/tsconfig.json` | Strict TypeScript. Path alias `@/*` → repo root of `frontend/`. |
 | `frontend/eslint.config.mjs` | `eslint-config-next`. |
@@ -110,15 +115,12 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `frontend/lib/types.ts` | 7 | `Mountain`, `Trail`, `TrailSegment`, `Hazard`, `RiskLevel`, `AgentEvent` |
-| `frontend/lib/api.ts` | 7 | `getMountains`, `getMountain`. Base URL from `NEXT_PUBLIC_API_URL` |
-| `frontend/lib/fixtures/run.json` | 7 | One finished five-agent run for the panel before the LLM is wired |
 | `frontend/components/globe/` | 8–9 | React Three Fiber globe, markers, search, fly-to |
 | `frontend/app/mountains/[slug]/page.tsx` | 9, 15 | Mountain route |
 | `frontend/components/map/` | 15–16, 18 | Mapbox terrain, tiles, trails, pins |
 | `frontend/components/panel/` | 23, 25 | Side panel, agent rows, hazard detail, hiker card |
 
-`AgentEvent` shape, fixed in step 7:
+`AgentEvent` shape, fixed in step 7 (`frontend/lib/types.ts`):
 
 ```json
 { "run_id": "", "agent": "terrain|weather|trail|synthesizer|writer", "status": "waiting|running|done|error", "summary": "", "payload": {} }

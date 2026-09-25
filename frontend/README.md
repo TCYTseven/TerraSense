@@ -6,7 +6,7 @@ Next.js App Router app for TerraSense: the 3D globe, the mountain view, and the 
 npm install
 npm run dev          # http://localhost:3000
 npm run lint
-npx tsc --noEmit
+npm run typecheck    # next typegen, then tsc --noEmit
 npm run build
 ```
 

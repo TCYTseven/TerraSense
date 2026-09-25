@@ -33,7 +33,7 @@ Run from `frontend/`:
 npm install
 npm run dev          # http://localhost:3000
 npm run lint
-npx tsc --noEmit
+npm run typecheck    # next typegen, then tsc --noEmit
 npm run build
 ```
 
@@ -43,6 +43,9 @@ npm run build
 - Risk colors mark risk only: markers, trails, heat, severity. The cyan accent marks interactive elements only.
 - UI text uses the sans face. Scores, miles, coordinates, and timestamps use the mono face.
 - All API calls go through `lib/api.ts`. Types in `lib/types.ts` mirror the backend's Pydantic models.
+- `next.config.ts` loads the repo root `.env`, so `NEXT_PUBLIC_API_URL` and `NEXT_PUBLIC_MAPBOX_TOKEN` live there. Restart `next dev` after editing it. Never read a secret such as `DATABASE_URL` in frontend code.
+- Validate JSON you did not type yourself, such as fixtures and stream messages, with `lib/agent-events.ts`.
+- The bundled lint rules reject a synchronous `setState` inside `useEffect`. Set state in the async callback, and abort fetches in the cleanup.
 - WebGL and Mapbox code is client-only. Load it with `next/dynamic` and `ssr: false` from a client component.
 - Motion stays short: idle globe spin, a 1.5 s fly-to, the heat map fade. Nothing else animates unless work is happening.
 - Walk the demo click path in a browser before you commit a UI change. A screenshot of one screen is not the check.

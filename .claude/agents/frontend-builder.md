@@ -21,6 +21,6 @@ While you build:
 
 Before you report back:
 
-- Run `npm run lint`, `npx tsc --noEmit`, and `npm run build` from `frontend/`.
+- Run `npm run lint`, `npm run typecheck`, and `npm run build` from `frontend/`.
 - Walk the step's click path in a browser, including loading and error states.
 - Report what you ran, what you saw, and which files changed. Commit only if the lead asked you to, using `Step N: <checklist title>`, with the checklist box ticked and `context/docs/CODE_REFERENCE.md` updated.
