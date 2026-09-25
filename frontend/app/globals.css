@@ -1,32 +1,34 @@
 @import "tailwindcss";
 
 /*
- * Dark dispatch theme, basalt and glacier. Hex values come from the Design
- * Language section of context/TerraSense.md. Variable names and roles follow the
- * Tokens table in context/design-addendum.md, which shadcn/ui reads as well.
- * lib/theme.ts mirrors the neutral and accent values for WebGL and Mapbox code.
- * Change both together.
+ * Light theme, stone and glacier: the globe and the map sit on a bright, quiet page, as the
+ * product owner asked on 2026-09-25 (a white background instead of the dark "outer space"
+ * look). Hex values come from the Design Language section of context/TerraSense.md.
+ * Variable names and roles follow the Tokens table in context/design-addendum.md, which
+ * shadcn/ui reads as well. lib/theme.ts mirrors the neutral and accent values for WebGL and
+ * map code. Change both together.
  */
 :root {
-  /* Background, dark end and light end. */
-  --background: #0d0c0a;
-  --muted: #13120f;
+  /* The page, the globe backdrop's edge, and the map's sky. */
+  --background: #f6f8fa;
+  /* Inset fields and skeleton bars, a step darker than the page. */
+  --muted: #eef2f6;
 
   /* Panels: side panel, toggle group, hover card, popups, search results. */
-  --card: #1a1814;
-  --popover: #1a1814;
-  --secondary: #1a1814;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --secondary: #ffffff;
 
-  /* Text. Every *-foreground not set below is the text color. */
-  --foreground: #ece6dc;
+  /* Text. Every *-foreground not set below is the text color. Both pass WCAG AA on every surface. */
+  --foreground: #0f172a;
   --card-foreground: var(--foreground);
   --popover-foreground: var(--foreground);
   --secondary-foreground: var(--foreground);
   --accent-foreground: var(--foreground);
-  --muted-foreground: #9c9387;
+  --muted-foreground: #5b6576;
 
   /* The interactive accent: primary buttons, links, focus rings, selection. */
-  --primary: #7fdde6;
+  --primary: #0e7490;
   --ring: var(--primary);
   --primary-foreground: var(--background);
 
@@ -90,17 +92,22 @@
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
-/* Faint coordinate grid for map areas. */
-@utility bg-grid {
-  background-image:
-    linear-gradient(to right, rgb(255 255 255 / 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgb(255 255 255 / 0.035) 1px, transparent 1px);
-  background-size: 48px 48px;
+/* The globe backdrop, the app's one gradient: a pool of panel white behind the globe that
+ * settles into the page color at the edges. */
+@utility bg-stage {
+  background-color: var(--background);
+  background-image: radial-gradient(
+    circle at 50% 52%,
+    var(--card) 0%,
+    var(--card) 22%,
+    var(--background) 58%,
+    var(--muted) 100%
+  );
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
@@ -110,7 +117,7 @@
   }
 
   ::selection {
-    background-color: color-mix(in srgb, var(--primary) 30%, transparent);
+    background-color: color-mix(in srgb, var(--primary) 20%, transparent);
     color: var(--foreground);
   }
 

@@ -5,7 +5,7 @@ import GlobeView from "@/components/globe/globe-view";
  */
 export default function Home() {
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-background">
+    <main className="relative h-dvh w-full overflow-hidden bg-stage">
       <GlobeView />
       <header className="pointer-events-none absolute left-6 top-6">
         <h1 className="text-lg font-semibold tracking-tight text-foreground">

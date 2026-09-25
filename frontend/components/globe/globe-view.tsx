@@ -10,7 +10,7 @@ import MountainSearch from "./mountain-search";
 
 const SpinningGlobe = dynamic(() => import("./spinning-globe"), {
   ssr: false,
-  loading: () => <div className="h-full w-full bg-background" />,
+  loading: () => <div className="h-full w-full" />,
 });
 
 type LoadState =
@@ -94,7 +94,7 @@ export default function GlobeView() {
         <div className="absolute inset-x-0 bottom-8 flex justify-center px-4">
           <p
             role="alert"
-            className="flex items-center gap-3 rounded-md border border-border bg-popover/90 px-4 py-2 text-sm text-muted-foreground"
+            className="flex items-center gap-3 rounded-lg border border-border bg-popover px-4 py-2 text-sm text-muted-foreground"
           >
             Could not load mountains from the API.
             <button type="button" onClick={retry} className="font-medium text-primary underline decoration-1 underline-offset-3">

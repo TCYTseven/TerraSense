@@ -62,7 +62,7 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
         />
       </section>
 
-      <aside className="flex flex-col gap-6 bg-card px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
+      <aside className="flex flex-1 flex-col gap-6 bg-card px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
         <Link href="/" className="self-start text-sm text-primary underline decoration-1 underline-offset-3">
           ← Globe
         </Link>
