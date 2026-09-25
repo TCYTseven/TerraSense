@@ -111,7 +111,7 @@ export default function MountainSearch({
       </label>
       <div className="relative">
         {/* z-10: the input's backdrop blur would otherwise paint over the icon. */}
-        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted" />
+        <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-muted-foreground" />
         <input
           id={inputId}
           type="text"
@@ -135,11 +135,11 @@ export default function MountainSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={handleKeyDown}
-          className="h-11 w-full rounded-lg border border-line bg-panel/85 pl-10 pr-4 text-sm text-foreground shadow-lg shadow-black/30 backdrop-blur-sm placeholder:text-muted disabled:opacity-60"
+          className="h-11 w-full rounded-lg border border-border bg-popover/85 pl-10 pr-4 text-sm text-foreground shadow-lg shadow-black/30 backdrop-blur-sm placeholder:text-muted-foreground disabled:opacity-60"
         />
       </div>
       {showList && (
-        <div className="mt-2 overflow-hidden rounded-lg border border-line bg-panel/95 shadow-xl shadow-black/40 backdrop-blur-sm">
+        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-xl shadow-black/40 backdrop-blur-sm">
           {matches.length > 0 ? (
             <ul id={listId} role="listbox" aria-label="Mountains" className="py-1">
               {matches.map((mountain, index) => (
@@ -152,19 +152,19 @@ export default function MountainSearch({
                   onMouseEnter={() => setActive(index)}
                   onClick={() => choose(mountain)}
                   className={`flex cursor-pointer items-center justify-between gap-4 px-4 py-2.5 ${
-                    index === activeIndex ? "bg-white/[0.06]" : ""
+                    index === activeIndex ? "bg-accent" : ""
                   }`}
                 >
                   <span className="min-w-0">
                     <span className="block truncate text-sm text-foreground">{mountain.name}</span>
-                    <span className="block truncate text-xs text-muted">{mountain.region}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{mountain.region}</span>
                   </span>
-                  <RiskBadge level={mountain.current_risk_level} className="shrink-0 text-xs text-muted" />
+                  <RiskBadge level={mountain.current_risk_level} className="shrink-0 text-xs text-muted-foreground" />
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="px-4 py-3 text-sm text-muted">
+            <p className="px-4 py-3 text-sm text-muted-foreground">
               {mountains.length ? `No mountain matches "${query.trim()}".` : emptyMessage}
             </p>
           )}

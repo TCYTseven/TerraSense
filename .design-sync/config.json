@@ -1,0 +1,16 @@
+{
+  "projectId": "9607f63c-dacc-478a-8997-39b63859a0b3",
+  "shape": "package",
+  "pkg": "terrasense-ui",
+  "globalName": "TerraSense",
+  "buildCmd": "node .design-sync/build-pkg.mjs",
+  "entry": ".design-sync/.cache/pkg/dist/index.js",
+  "cssEntry": "dist/styles.css",
+  "srcDir": "../../../frontend/components",
+  "overrides": {
+    "RiskBadge": {
+      "cardMode": "column"
+    }
+  },
+  "readmeHeader": ".design-sync/conventions.md"
+}

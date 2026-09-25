@@ -11,7 +11,7 @@ export default function Home() {
         <h1 className="text-lg font-semibold tracking-tight text-foreground">
           TerraSense
         </h1>
-        <p className="mt-0.5 text-sm text-muted">Landslide hazard intelligence</p>
+        <p className="mt-0.5 text-sm text-muted-foreground">Landslide hazard intelligence</p>
       </header>
     </main>
   );

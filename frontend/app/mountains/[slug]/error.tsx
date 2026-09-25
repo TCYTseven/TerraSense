@@ -13,16 +13,16 @@ export default function MountainError({
     <main className="grid h-dvh place-items-center bg-background px-6">
       <div role="alert" className="max-w-sm text-center">
         <h1 className="text-lg font-semibold">Could not load this mountain</h1>
-        <p className="mt-2 text-sm text-muted">The TerraSense API did not answer. Try again in a moment.</p>
+        <p className="mt-2 text-sm text-muted-foreground">The TerraSense API did not answer. Try again in a moment.</p>
         <div className="mt-6 flex items-center justify-center gap-4 text-sm">
           <button
             type="button"
             onClick={() => retry()}
-            className="rounded-md bg-accent px-4 py-2 font-semibold text-background"
+            className="rounded-md bg-primary px-4 py-2 font-semibold text-primary-foreground"
           >
             Try again
           </button>
-          <Link href="/" className="text-accent hover:underline">
+          <Link href="/" className="text-primary underline decoration-1 underline-offset-3">
             Back to globe
           </Link>
         </div>

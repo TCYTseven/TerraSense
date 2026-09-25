@@ -37,46 +37,46 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
     <main className="flex min-h-dvh animate-fade-in flex-col motion-reduce:animate-none lg:h-dvh lg:flex-row">
       <section
         aria-label="Terrain map"
-        className="relative h-[42dvh] shrink-0 overflow-hidden border-b border-line bg-surface bg-grid lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
+        className="relative h-[42dvh] shrink-0 overflow-hidden border-b border-border bg-muted bg-grid lg:h-auto lg:flex-[7] lg:border-b-0 lg:border-r"
       >
         <div className="absolute inset-0 grid place-items-center">
           <div className="text-center">
-            <span aria-hidden className="mx-auto mb-4 block size-3 rounded-full border border-muted" />
+            <span aria-hidden className="mx-auto mb-4 block size-3 rounded-full border border-muted-foreground" />
             <p className="font-mono text-sm text-foreground">{formatLatLon(mountain.lat, mountain.lon)}</p>
-            <p className="mt-1 text-xs text-muted">Summit</p>
+            <p className="mt-1 text-xs text-muted-foreground">Summit</p>
           </div>
         </div>
       </section>
 
-      <aside className="flex flex-col gap-6 bg-panel px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
-        <Link href="/" className="self-start text-sm text-accent hover:underline">
+      <aside className="flex flex-col gap-6 bg-card px-6 py-6 lg:flex-[3] lg:overflow-y-auto">
+        <Link href="/" className="self-start text-sm text-primary underline decoration-1 underline-offset-3">
           ← Globe
         </Link>
 
         <header>
           <h1 className="text-2xl font-semibold tracking-tight">{mountain.name}</h1>
-          <p className="mt-1 text-sm text-muted">{mountain.region}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{mountain.region}</p>
         </header>
 
-        <dl className="grid grid-cols-2 gap-4 border-y border-line py-4">
+        <dl className="grid grid-cols-2 gap-4 border-y border-border py-4">
           <div>
-            <dt className="text-xs text-muted">Elevation</dt>
+            <dt className="text-xs text-muted-foreground">Elevation</dt>
             <dd className="mt-1 font-mono text-sm">{formatElevation(mountain.elevation_m)}</dd>
           </div>
           <div>
-            <dt className="text-xs text-muted">Summit</dt>
+            <dt className="text-xs text-muted-foreground">Summit</dt>
             <dd className="mt-1 font-mono text-sm">{formatLatLon(mountain.lat, mountain.lon)}</dd>
           </div>
         </dl>
 
         <section aria-labelledby="risk-heading">
-          <h2 id="risk-heading" className="text-xs text-muted">
+          <h2 id="risk-heading" className="text-xs text-muted-foreground">
             Overall risk
           </h2>
           <RiskBadge level={mountain.current_risk_level} className="mt-2 text-lg font-medium" />
-          <p className="mt-1 font-mono text-xs text-muted">{refreshLabel(mountain)}</p>
+          <p className="mt-1 font-mono text-xs text-muted-foreground">{refreshLabel(mountain)}</p>
           {!mountain.is_live && (
-            <p className="mt-3 text-sm text-muted">
+            <p className="mt-3 text-sm text-muted-foreground">
               A fixed risk for this globe marker. TerraSense runs live analysis for Mount Rainier.
             </p>
           )}
@@ -87,11 +87,11 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
             <button
               type="button"
               disabled
-              className="w-full rounded-md bg-accent px-4 py-2.5 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-40"
+              className="w-full rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-40"
             >
               Analyze now
             </button>
-            <p className="mt-2 text-xs text-muted">
+            <p className="mt-2 text-xs text-muted-foreground">
               Starts the five-agent analysis once the pipeline is connected.
             </p>
           </div>

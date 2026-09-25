@@ -174,14 +174,14 @@ export default function MountainMarker({
 /** Hover card: name, elevation, region, risk, and last refresh. */
 function MarkerCard({ mountain }: { mountain: Mountain }) {
   return (
-    <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-line bg-panel/95 px-3.5 py-3 shadow-xl shadow-black/40 backdrop-blur-sm">
+    <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-border bg-popover/95 px-3.5 py-3 shadow-xl shadow-black/40 backdrop-blur-sm">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-foreground">{mountain.name}</p>
-        <p className="font-mono text-xs text-muted">{formatElevation(mountain.elevation_m)}</p>
+        <p className="font-mono text-xs text-muted-foreground">{formatElevation(mountain.elevation_m)}</p>
       </div>
-      <p className="mt-0.5 text-xs text-muted">{mountain.region}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{mountain.region}</p>
       <RiskBadge level={mountain.current_risk_level} className="mt-2.5 text-xs text-foreground" />
-      <p className="mt-1.5 font-mono text-[11px] text-muted">{refreshLabel(mountain)}</p>
+      <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{refreshLabel(mountain)}</p>
     </div>
   );
 }
