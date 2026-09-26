@@ -15,7 +15,7 @@ import {
 } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
-import { RISK_COLORS, THEME } from "@/lib/theme";
+import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
 import type { ReleaseCamera } from "@/lib/use-simulation";
 import type { Bypass, FlowFeatureCollection, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
@@ -417,18 +417,21 @@ export default function TerrainMap({
         type: "fill",
         source: SOURCE.flow,
         paint: {
+          // Dirt brown at the core, paling toward the sides. Bands stack edge first.
           "fill-color": [
             "match",
-            ["get", "level"],
-            "extreme",
-            RISK_COLORS.extreme,
-            "high",
-            RISK_COLORS.high,
-            "moderate",
-            RISK_COLORS.moderate,
-            RISK_COLORS.moderate,
+            ["get", "shade"],
+            0,
+            FLOW_COLORS[0],
+            1,
+            FLOW_COLORS[1],
+            2,
+            FLOW_COLORS[2],
+            3,
+            FLOW_COLORS[3],
+            FLOW_COLORS[4],
           ],
-          "fill-opacity": ["match", ["get", "level"], "extreme", 0.7, "high", 0.55, "moderate", 0.4, 0.4],
+          "fill-opacity": 0.85,
         },
       },
       LAYER.otherTrails,

@@ -27,6 +27,13 @@ export const HOME_THEME = {
   atmosphere: "#7FDDE6",
 } as const;
 
+/**
+ * The simulated debris flow, drawn as dirt on the ground. Index is the band's
+ * `shade` from the API: 0 is the dark core, the last is the pale outer edge.
+ * Not a risk color: the flow's level is in the steps and callouts.
+ */
+export const FLOW_COLORS = ["#4A2C16", "#6B4226", "#8B5E3C", "#AD8358", "#CDAE84"] as const;
+
 /** Risk colors. They mark risk and nothing else. */
 export const RISK_COLORS = {
   low: "#22C55E",

@@ -85,7 +85,7 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
             {
                 "index": index,
                 "t_s": round(dist / FRONT_SPEED_MS, 1),
-                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, point.get("level") or "high", total)},
+                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, point.get("level") or "high")},
             }
         )
     # A later frame must not shrink. Force each end index forward.
@@ -105,6 +105,9 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
 
 
 RAMP = ("moderate", "high", "extreme")
+# The footprint is drawn as SHADES nested bands, dark dirt at the core to pale at the edge.
+SHADES = 5
+CORE_WIDTH_M = 24
 # Same stepped opacities as the raster heat map: amber 0.40, orange 0.55, red 0.70.
 INTENSITY = {"moderate": 0.40, "high": 0.55, "extreme": 0.70}
 
@@ -112,7 +115,6 @@ INTENSITY = {"moderate": 0.40, "high": 0.55, "extreme": 0.70}
 def _growing(frames: list[dict], samples: list[tuple[float, float, float]], level: str) -> list[dict]:
     """Rebuild frames so each corridor contains every sample of the one before it."""
     count = len(frames)
-    total = samples[-1][2]
     out = []
     prev = 1
     for index in range(count):
@@ -124,60 +126,37 @@ def _growing(frames: list[dict], samples: list[tuple[float, float, float]], leve
             {
                 "index": index,
                 "t_s": round(chunk[-1][2] / FRONT_SPEED_MS, 1),
-                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, level, total)},
+                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, level)},
             }
         )
     return out
 
 
-def _cool(level: str, steps: int) -> str:
-    if level not in RAMP:
-        level = "high"
-    return RAMP[max(0, RAMP.index(level) - steps)]
+def _corridor(samples: list[tuple[float, float, float]], level: str) -> list[dict]:
+    """The footprint as nested bands, the full edge first and the dark core last.
 
-
-def _level_along(dist: float, total: float, release: str) -> str:
-    """Release stays hottest. The toe steps down the risk ramp as the path lengthens."""
-    frac = 0.0 if total <= 0 else dist / total
-    if frac < 0.34:
-        return release if release in RAMP else "high"
-    if frac < 0.67:
-        return _cool(release, 1)
-    return _cool(release, 2)
-
-
-def _corridor(samples: list[tuple[float, float, float]], level: str, total: float) -> list[dict]:
-    """The whole footprint, then hotter slices upslope so color changes downhill.
-
-    The first feature is the full current edge. Later features paint over the
-    upper path, so a frame stays red at the release and cools toward the toe.
+    Shade 0 is the core: a narrow strip of dark dirt that follows the path. Each
+    band out is wider and lighter, and the outer bands fan out as the flow
+    descends, so the flow starts brown at the release and pales toward its sides.
+    Every band carries the release level for the contract; color comes from shade.
     """
-    toe = _level_along(samples[-1][2], total, level)
-    features = [_band(samples, 1.0, toe, INTENSITY[toe if toe in INTENSITY else "moderate"], rim=True)]
     release = level if level in RAMP else "high"
-    for steps, frac in ((1, 0.67), (0, 0.34)):
-        hotter = _cool(release, steps)
-        if RAMP.index(hotter) <= RAMP.index(toe):
-            continue
-        cut = total * frac
-        chunk = [sample for sample in samples if sample[2] <= cut + 1e-6]
-        if len(chunk) < 2:
-            if samples[0][2] <= cut and len(samples) >= 2:
-                chunk = samples[:2]
-            else:
-                continue
-        features.append(_band(chunk, 1.0, hotter, INTENSITY[hotter], rim=False))
+    features = []
+    for shade in reversed(range(SHADES)):
+        features.append(_band(samples, shade, release, INTENSITY[release], rim=shade == SHADES - 1))
     return features
 
 
-def _band(samples: list[tuple[float, float, float]], width_scale: float, level: str, intensity: float, rim: bool = False) -> dict:
+def _band(samples: list[tuple[float, float, float]], shade: int, level: str, intensity: float, rim: bool = False) -> dict:
     left: list[list[float]] = []
     right: list[list[float]] = []
     for index, (lon, lat, dist) in enumerate(samples):
         nxt = samples[min(index + 1, len(samples) - 1)]
         prv = samples[max(index - 1, 0)]
         heading = _bearing([prv[0], prv[1]], [nxt[0], nxt[1]]) if nxt != prv else 180
-        half = (40 + min(180, dist * 0.045)) * width_scale / 2
+        full = 40 + min(180, dist * 0.045)
+        core = min(CORE_WIDTH_M, full)
+        half = (core + (full - core) * shade / (SHADES - 1)) / 2
         lo = _move(lon, lat, (heading - 90) % 360, half)
         ro = _move(lon, lat, (heading + 90) % 360, half)
         left.append([lo[0], lo[1]])
@@ -186,7 +165,7 @@ def _band(samples: list[tuple[float, float, float]], width_scale: float, level: 
     ring.append(ring[0])
     return {
         "type": "Feature",
-        "properties": {"level": level, "intensity": intensity, "rim": rim},
+        "properties": {"level": level, "intensity": intensity, "shade": shade, "rim": rim},
         "geometry": {"type": "Polygon", "coordinates": [ring]},
     }
 

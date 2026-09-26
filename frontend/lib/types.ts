@@ -586,7 +586,8 @@ export interface FlowFeatureCollection {
   type: "FeatureCollection";
   features: Array<{
     type: "Feature";
-    properties: { level: RiskLevel; intensity: number };
+    /** shade 0 is the dark core, higher is wider and paler. rim marks the outermost band. */
+    properties: { level: RiskLevel; intensity: number; shade: number; rim: boolean };
     geometry: Polygon;
   }>;
 }

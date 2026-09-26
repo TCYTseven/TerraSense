@@ -65,7 +65,17 @@ def test_runout_frames_grow_and_name_the_trail():
     assert runout["source"] == "trail"
     last = frames[-1]["geojson"]["features"]
     assert last[0]["properties"]["rim"] is True
-    assert len({feature["properties"]["level"] for feature in last}) >= 2
+    # Brown bands, pale edge first and dark core last, each narrower than the one under it.
+    assert [feature["properties"]["shade"] for feature in last] == [4, 3, 2, 1, 0]
+    assert [feature["properties"]["rim"] for feature in last] == [True, False, False, False, False]
+    widths = [_span(feature) for feature in last]
+    assert widths == sorted(widths, reverse=True)
+
+
+def _span(feature):
+    ring = feature["geometry"]["coordinates"][0]
+    lons = [coord[0] for coord in ring]
+    return max(lons) - min(lons)
 
 
 def test_template_callouts_cover_both_audiences():

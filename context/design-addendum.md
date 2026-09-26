@@ -58,7 +58,7 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Mountain panel size | 60/40 split, `min(1200px, 100vw − 64px)` by `min(760px, 100vh − 128px)` | [Panel frame](#panel-frame) | Step 29 |
 | Globe while the panel is open | Turned to face the mountain at altitude 1.2, spin paused, 60% scrim | [Panel frame](#panel-frame) | Step 29 |
 | Pressure point count | Up to five, worst first | [Pressure points](#pressure-points) | Step 26 |
-| Flow color | Stepped on the risk ramp, heat map dimmed to 35% under it | [Simulation map](#simulation-map) | Step 30 |
+| Flow color | Dirt brown, dark core to pale sides (Sep 26, 2026), heat map dimmed to 35% under it | [Simulation map](#simulation-map) | Step 30 |
 | Playback length | One frame every 500 ms, at most 40 frames (20 s) | [Motion](#motion) | Step 30 |
 | Callout count | Two to four: at least one for rangers and one public notice | [Callouts](#callouts) | Step 28 |
 
@@ -158,7 +158,7 @@ The Alert Writer prompt (step 20) uses the same formats.
 | `extreme` | Extreme | Red |
 
 1. **Color never carries the level alone.** On the panel and the hiker card, every risk color sits beside its level word. The map's colors match those words, so the map gets no legend.
-2. **Risk color appears only on** globe markers, trail lines, the two raster layers, the hazard polygon and pin, pressure point pins and chips, the simulated flow and its trail marks, level words, and the High and Extreme treatment. Never on agent status, simulation steps, callouts, success or error lines, buttons, or historical pins.
+2. **Risk color appears only on** globe markers, trail lines, the two raster layers, the hazard polygon and pin, pressure point pins and chips, the simulated flow's trail marks, level words, and the High and Extreme treatment. Never on agent status, simulation steps, callouts, success or error lines, buttons, or historical pins.
 3. **No level, no color.** A live mountain with no hazard yet (no finished run and no preview hazard from step 18) shows muted text and "Not analyzed yet." Rainier's seeded placeholder (`moderate`, step 5) never reaches the screen. Static mountains show their seeded level.
 4. **`needs_review` keeps the level color** and adds a "Needs review" tag beside the level word: meta size, muted text, 1 px border.
 
@@ -238,7 +238,7 @@ Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A ba
 
 ### Simulation map
 
-- **Flow. [confirm]** The footprint at each frame is a fill on the same stepped ramp as the rasters: intensity below 0.20 transparent, then amber 0.40, orange 0.55, red 0.70. While a simulation shows, the heat map drops to 35% `raster-opacity` at once, so the flow reads on top of it. Back to pressure points restores it.
+- **Flow.** Sep 26, 2026: the footprint is dirt on the ground, not a risk color. Each frame is five nested bands, a narrow dark core (`shade` 0) that follows the path from the release, then wider and paler bands out to the edge (`shade` 4), each at 0.85 opacity. The outer bands widen as the flow descends, so it starts dark brown at the release and pales toward its sides downhill. The five browns (`#4A2C16`, `#6B4226`, `#8B5E3C`, `#AD8358`, `#CDAE84`) live only in `FLOW_COLORS` in `frontend/lib/theme.ts`. The flow's level stays in the steps, callouts, and trail marks. While a simulation shows, the heat map drops to 35% `raster-opacity` at once, so the flow reads on top of it. Back to pressure points restores it.
 - **Edge.** A 1.5 px line in the text color at 70% traces the footprint's current edge. It is geometry, not a level, so it is not a risk color.
 - **Trail marks.** Where the flow first crosses a trail, a 20 px version of the hazard pin (level color, dark ring, warning triangle) appears when that step is reached. The crossed miles of the hero trail keep their segment colors.
 - **Camera.** It does not move during playback. If the final footprint falls outside the frame, fit its bounds with `duration: 0` before playback starts.
