@@ -17,7 +17,10 @@ data/raw/packs/<slug>/ and data/seed/packs/<slug>/.
 
 Rainier's hero trail is the Skyline Trail loop above Paradise, an explicit pack fact. A pack
 without one takes the longest named trail in its box, mile 0 at the lower trailhead. A box
-whose OpenStreetMap ways carry no names gets an empty seed, never another mountain's trails.
+whose OpenStreetMap ways carry no names gets an empty seed, never another mountain's trails —
+unless OSM route relations name them (the Everest Base Camp Trek, Kilimanjaro's ascent
+routes, all mapped as relations over nameless ways). Those come from Overpass, cached next
+to the segment cache; an unreachable Overpass just keeps way names alone.
 
 Run from the repo root:
   python ml/scripts/import_trails.py [--mountain SLUG] [--force] [--segments PATH] [--out PATH] [--dem PATH]
@@ -40,6 +43,7 @@ import pyarrow.compute as pc
 import pyarrow.dataset as ds
 import pyarrow.fs as pafs
 import rasterio
+import requests
 import shapely
 from pyproj import Transformer
 from scipy.ndimage import map_coordinates
@@ -58,6 +62,18 @@ SEGMENTS_URL = f"https://{OVERTURE_BUCKET}.s3.amazonaws.com/release/{OVERTURE_RE
 
 # Overture road classes a hiker can walk. They are the OSM highway=* values of the same names.
 WALKABLE_CLASSES = ["footway", "path", "steps", "track", "bridleway", "pedestrian"]
+
+# OSM route relations carry the walking-route names whose member ways have none of their
+# own. Overpass serves relation membership (Overture segments do not); the public
+# instances are often busy, so each URL gets a try and a miss only means way names alone.
+OVERPASS_URLS = (
+    "https://overpass-api.de/api/interpreter",
+    "https://lz4.overpass-api.de/api/interpreter",
+    "https://z.overpass-api.de/api/interpreter",
+    "https://overpass.kumi.systems/api/interpreter",
+)
+ROUTE_KINDS = ("hiking", "foot", "trekking")  # the route=* values a hiker walks
+FEW_NAMES = 3  # fewer distinct way names than this asks the route relations for more
 
 # OSM-derived data is licensed ODbL 1.0 and must credit "© OpenStreetMap contributors".
 # trails.geojson is a derived database, so it stays ODbL too.
@@ -182,8 +198,99 @@ def write_segments(segments: list[dict], path: Path) -> None:
 
 
 def read_segments(path: Path) -> list[dict]:
-    features = json.loads(path.read_text(encoding="utf-8"))["features"]
-    return [{**f["properties"], "geometry": shape(f["geometry"])} for f in features]
+    segments = [{**f["properties"], "geometry": shape(f["geometry"])}
+                for f in json.loads(path.read_text(encoding="utf-8"))["features"]]
+    apply_route_relations(segments, relations_cache_for(path))
+    return segments
+
+
+# --- Stage 1b: route-relation names for boxes whose ways are unnamed --------------------------
+
+
+def relations_cache_for(segments_path: Path) -> Path:
+    """The relation cache sits next to the segment cache, so the pair travels together."""
+    return segments_path.with_name("route_relations.json")
+
+
+def fetch_route_relations(cache_path: Path) -> None:
+    """Cache the walking-route relations that touch the pack's bbox, with their parents.
+
+    Treks are often mapped as unnamed stage relations under one named parent (the Everest
+    Base Camp Trek), so the query pulls both. An unreachable Overpass writes nothing: the
+    import keeps way names alone, exactly the pre-relation behavior, and tries again next
+    run."""
+    west, south, east, north = PACK.bbox
+    query = (f'[out:json][timeout:120];relation["route"~"{"|".join(ROUTE_KINDS)}"]'
+             f"({south},{west},{north},{east})->.r;(.r; relation(br.r););out body;")
+    for url in OVERPASS_URLS:
+        try:
+            response = requests.post(url, data={"data": query},
+                                     headers={"User-Agent": "TerraSense trail import"},
+                                     timeout=(15, 150))
+            response.raise_for_status()
+            payload = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            print(f"  {url.split('/')[2]}: {type(exc).__name__}")
+            continue
+        cache_path.write_text(json.dumps(payload), encoding="utf-8")
+        print(f"  cached {len(payload.get('elements', []))} route relations in {rel(cache_path)}")
+        return
+    print("  no Overpass instance answered; the seed keeps way names alone")
+
+
+def resolve_relation_names(elements: list[dict]) -> list[dict]:
+    """[{'name', 'ways'}] for every route relation the cache can name, longest first.
+
+    A nameless stage relation takes the name of its most specific named parent (the one
+    with the fewest members), so a shared stage goes to the Everest Base Camp Trek, not
+    the Great Himalayan Trail."""
+    by_id = {e["id"]: e for e in elements}
+    parents = defaultdict(list)
+    for e in elements:
+        for member in e.get("members", []):
+            if member.get("type") == "relation" and member["ref"] in by_id:
+                parents[member["ref"]].append(e)
+    resolved = []
+    for e in elements:
+        name = (e.get("tags") or {}).get("name")
+        if not name:
+            named = [p for p in parents.get(e["id"], []) if (p.get("tags") or {}).get("name")]
+            if not named:
+                continue
+            name = min(named, key=lambda p: (len(p.get("members", [])), p["tags"]["name"]))["tags"]["name"]
+        ways = [m["ref"] for m in e.get("members", []) if m.get("type") == "way"]
+        if ways:
+            resolved.append({"name": name, "ways": ways})
+    return sorted(resolved, key=lambda r: (-len(r["ways"]), r["name"]))
+
+
+def apply_route_relations(segments: list[dict], cache_path: Path) -> None:
+    """Give unnamed segments the name of the cached walking route their OSM way is part of.
+
+    Way-level names always win. A way on several routes takes the one with the most member
+    ways, so a short variant never claims the main line. Relation-named trails skip the
+    climbing-route and track-only filters below: route=hiking marks a walk by definition."""
+    if not cache_path.exists():
+        return
+    relations = resolve_relation_names(json.loads(cache_path.read_text(encoding="utf-8")).get("elements", []))
+    by_way = {}
+    for relation in relations:
+        for way in relation["ways"]:
+            by_way.setdefault(way, relation["name"])
+    named = 0
+    for segment in segments:
+        if segment["name"]:
+            continue
+        ways = sorted(int(osm_id[1:].split("@", 1)[0]) for osm_id in segment.get("osm_ids") or []
+                      if osm_id.startswith("w"))
+        for way in ways:
+            if way in by_way:
+                segment["name"] = by_way[way]
+                segment["relation_named"] = True
+                named += 1
+                break
+    if named:
+        print(f"{len(relations)} walking-route relation(s) named {named} segments beyond their way names")
 
 
 # --- Stage 2: one line per trail name ---------------------------------------------------------
@@ -278,6 +385,7 @@ def trail_lines(segments: list[dict]) -> list[dict]:
         keep = bridged[int(np.argmax(lengths))]
         trails.append({
             "name": name,
+            "relation_named": any(s.get("relation_named") for s in segs),
             "classes": sorted({s["class"] for s in segs}),
             "segments": len(segs),
             "pieces": pieces,             # straight line_merge result
@@ -355,10 +463,13 @@ def seed_feature(trail: dict, dem: Dem) -> dict:
 
 
 def keep_in_seed(trail: dict) -> str | None:
-    """Why a named line stays out of the seed, or None to keep it."""
-    if trail["classes"] == ["track"]:
+    """Why a named line stays out of the seed, or None to keep it.
+
+    Relation-named trails skip the track-only and climbing-route rules: those rules read
+    way-level naming habits, and a route=hiking relation marks a walk by definition."""
+    if trail["classes"] == ["track"] and not trail.get("relation_named"):
         return "forest or service road (track only)"
-    if trail["name"].endswith(CLIMBING_ROUTE_SUFFIX):
+    if trail["name"].endswith(CLIMBING_ROUTE_SUFFIX) and not trail.get("relation_named"):
         return "summit climbing route"
     if to_utm(trail["line"]).length < MIN_TRAIL_M:
         return f"shorter than {MIN_TRAIL_M} m"
@@ -401,11 +512,17 @@ def hero_line(trails: list[dict], dem: Dem) -> tuple[str, object, object, tuple[
     line is for distance tests against OpenStreetMap's own vertices. None when the box has
     no eligible named trail.
     """
-    if PACK.hero:
-        if not PACK.hero.closed:
-            raise SystemExit(f"pack {PACK.slug} declares an open explicit hero; only closed loops are supported")
+    if PACK.hero and PACK.hero.closed:
         raw = hero_loop(trails, PACK.hero)
         return PACK.hero.trail, raw, shapely.simplify(raw, SIMPLIFY_M), PACK.hero.parts
+    if PACK.hero:
+        # An open explicit hero: one named trail, walked uphill like a pack's default hero.
+        by_name = {t["name"]: t for t in trails}
+        if PACK.hero.trail not in by_name:
+            raise SystemExit(f"explicit hero {PACK.hero.trail!r} is not a named trail in the box")
+        line, _ = uphill(by_name[PACK.hero.trail]["line"], dem)
+        raw = to_utm(line)
+        return PACK.hero.trail, raw, shapely.simplify(raw, SIMPLIFY_M), (PACK.hero.trail,)
     candidates = [t for t in trails if keep_in_seed(t) is None]
     if not candidates:
         return None
@@ -442,9 +559,12 @@ def hero_features(trails: list[dict], dem: Dem) -> tuple[dict | None, list[dict]
         return None, []
     name, _, line, parts = selection
     profile = dem.profile(line)
-    if PACK.hero:
+    if PACK.hero and PACK.hero.closed:
         note = (f"The NPS loop: OpenStreetMap's {' and '.join(parts)}, joined. Starts at the Paradise "
                 "trailhead and runs clockwise. Mile markers in trail_segments.geojson.")
+    elif PACK.hero:
+        note = ("The hero trail, named by the pack. Mile 0 is the lower trailhead. "
+                "Mile markers in trail_segments.geojson.")
     else:
         note = ("The hero trail: the longest named trail in the box. Mile 0 is the lower trailhead. "
                 "Mile markers in trail_segments.geojson.")
@@ -508,6 +628,12 @@ def main() -> None:
     classes = Counter(s["class"] for s in segments)
     print(f"{len(segments)} walkable segments: " + ", ".join(f"{c} {n}" for c, n in classes.most_common())
           + f"; {sum(1 for s in segments if s['name'])} named")
+
+    relations_path = relations_cache_for(segments_path)
+    if len({s["name"] for s in segments if s["name"]}) < FEW_NAMES and not relations_path.exists():
+        print(f"fewer than {FEW_NAMES} way names in the box; asking Overpass for walking-route relations")
+        fetch_route_relations(relations_path)
+        segments = read_segments(segments_path)  # picks the relation names up like any rerun
 
     dem = Dem(dem_path)
     trails = trail_lines(segments)
