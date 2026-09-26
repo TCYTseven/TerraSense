@@ -20,6 +20,8 @@ SUPPRESS_M = 500
 # 80 m of climb per km of trail sits on the Moderate/High boundary; 200 m/km is Extreme.
 STEEP_MODERATE_M_PER_KM = 80.0
 STEEP_HIGH_M_PER_KM = 200.0
+# The worst route is scored on the 30 m grid, so sample its line about once a cell.
+ROUTE_SAMPLE_M = 30
 
 PROBABILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "probability.tif"
 SUSCEPTIBILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility.tif"
@@ -43,6 +45,88 @@ def rank_pressure_points(trails: list[dict]) -> list[dict]:
             # A missing band or an unreadable grid falls through to the trail grade.
             pass
     return _from_trails(trails)
+
+
+def worst_route(trails: list[dict]) -> dict | None:
+    """The one route the simulation runs on, as a pressure point. None without routes.
+
+    With a probability raster, that is the route with the highest modeled chance anywhere
+    along its line. Without one, it is the steepest route, the trail-grade ranking's first.
+    """
+    raster = _raster_path()
+    if raster is not None:
+        try:
+            scored = _route_peaks(raster, trails)
+        except Exception:
+            # An unreadable grid falls through to the trail grade, like the ranking does.
+            scored = []
+        if scored:
+            peak, trail = max(scored, key=lambda item: item[0])
+            return _route_point(trail, peak)
+    ranked = _from_trails(trails)
+    return ranked[0] if ranked else None
+
+
+def _route_peaks(path: Path, trails: list[dict]) -> list[tuple[float, dict]]:
+    """The highest raster value along each route, sampled every ROUTE_SAMPLE_M."""
+    import numpy as np
+    import rasterio
+    from rasterio.warp import transform
+
+    scored: list[tuple[float, dict]] = []
+    with rasterio.open(path) as src:
+        values = src.read(1).astype("float32")
+        if src.nodata is not None:
+            values[values == src.nodata] = np.nan
+        height, width = values.shape
+        for trail in trails:
+            points = _densify(_line(trail), ROUTE_SAMPLE_M)
+            if len(points) < 2:
+                continue
+            xs, ys = transform("EPSG:4326", src.crs, [p[0] for p in points], [p[1] for p in points])
+            rows, cols = rasterio.transform.rowcol(src.transform, xs, ys)
+            picked = [
+                float(values[row, col])
+                for row, col in zip(rows, cols, strict=False)
+                if 0 <= row < height and 0 <= col < width and np.isfinite(values[row, col])
+            ]
+            if picked:
+                scored.append((max(picked), trail))
+    return scored
+
+
+def _route_point(trail: dict, peak: float) -> dict:
+    coords = _line(trail)
+    release = coords[-1]
+    length_mi = (float(trail.get("length_km") or 0) or _length_m(coords) / 1000) * 0.621371
+    return {
+        "id": f"route-{trail['id']}",
+        "rank": 1,
+        "level": risk_level(peak),
+        "peak": round(peak, 2),
+        "lon": release[0],
+        "lat": release[1],
+        "polygon": _triangle(release[0], release[1], 40),
+        "facing": _compass(_bearing(release, coords[-2])),
+        "elevation_m": None,
+        "drivers": ["Modeled probability"],
+        "trail_id": str(trail["id"]),
+        "trail_name": trail.get("name"),
+        "start_mile": None,
+        "end_mile": round(length_mi, 2),
+    }
+
+
+def _densify(coords: list[list[float]], step_m: float) -> list[list[float]]:
+    if len(coords) < 2:
+        return coords
+    out = [coords[0]]
+    for start, end in zip(coords, coords[1:], strict=False):
+        pieces = max(1, int(_haversine((start[0], start[1]), (end[0], end[1])) // step_m))
+        for index in range(1, pieces + 1):
+            frac = index / pieces
+            out.append([start[0] + (end[0] - start[0]) * frac, start[1] + (end[1] - start[1]) * frac])
+    return out
 
 
 def peak_for_steepness(meters_per_km: float) -> float:
