@@ -45,6 +45,10 @@ LANDCOVER_TILE_URL = (
     "v200/2021/map/ESA_WorldCover_10m_2021_v200_{lat}{lon}_Map.tif"
 )
 
+# WorldCover v200 maps land between 60 deg S and 82.75 deg N. Antarctic packs fall
+# outside it; download_sources.py writes them a synthetic snow-and-ice raster instead.
+WORLDCOVER_LAT_MIN = -60.0
+
 EARTH_KM_PER_DEG = 111.32  # one degree of latitude, and of longitude at the equator
 
 
@@ -87,6 +91,11 @@ class Pack:
         """The 3x3 degree WorldCover COG tiles the bbox touches."""
         return [LANDCOVER_TILE_URL.format(lat=_lat_tag(lat, 2), lon=_lon_tag(lon, 3))
                 for lat, lon in _tile_corners(self.bbox, 3)]
+
+    @property
+    def worldcover_available(self) -> bool:
+        """False when the whole box lies south of WorldCover's 60 deg S edge."""
+        return self.bbox[3] > WORLDCOVER_LAT_MIN
 
 
 def _lat_tag(sw_lat: int, digits: int) -> str:
@@ -143,6 +152,11 @@ PACKS = {
         Pack(slug="mount-hood", name="Mount Hood",
              peak_lat=45.374, peak_lon=-121.696, peak_elevation_m=3429,
              bbox=bbox_around(45.374, -121.696, 15)),
+        # North America, East Coast: the Presidential Range paths (Tuckerman Ravine,
+        # Crawford Path, the Appalachian Trail) all start inside 15 km.
+        Pack(slug="mount-washington", name="Mount Washington",
+             peak_lat=44.271, peak_lon=-71.304, peak_elevation_m=1917,
+             bbox=bbox_around(44.271, -71.304, 15)),
         # South America: the Normal Route walks in through the Horcones valley, 18 km south.
         Pack(slug="aconcagua", name="Aconcagua",
              peak_lat=-32.653, peak_lon=-70.011, peak_elevation_m=6961,
@@ -167,6 +181,13 @@ PACKS = {
         Pack(slug="aoraki-mount-cook", name="Aoraki / Mount Cook",
              peak_lat=-43.595, peak_lon=170.142, peak_elevation_m=3724,
              bbox=bbox_around(-43.595, 170.142, 15)),
+        # Antarctica: the mapped Ross Island tracks (Castle Rock loop, the Hut Point and
+        # Scott Base area) sit up to 36 km southwest of the summit, hence the wide box.
+        # WorldCover stops at 60 deg S, so download_sources.py writes a synthetic
+        # snow-and-ice land cover here instead of a WorldCover window.
+        Pack(slug="mount-erebus", name="Mount Erebus",
+             peak_lat=-77.528, peak_lon=167.155, peak_elevation_m=3794,
+             bbox=bbox_around(-77.528, 167.155, 37)),
     )
 }
 
