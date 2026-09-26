@@ -83,6 +83,14 @@ def score(rain: HourlyRain | None = None) -> ProbabilityMap:
     return _stand_in()
 
 
+def explain(susceptibility: float, rain: HourlyRain | None) -> dict[str, float] | None:
+    """Model B's logit terms at one cell, or None while the stand-in (which has no terms) is live."""
+    model_b = _model_b()
+    if model_b is None or not hasattr(model_b, "contributions"):
+        return None
+    return model_b.contributions(susceptibility, rain)
+
+
 def summarize(values: np.ndarray) -> dict:
     """Cell count, range, and the share of cells in each shared risk bin."""
     valid = values[~np.isnan(values)]

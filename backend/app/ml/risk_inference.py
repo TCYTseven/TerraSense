@@ -3,6 +3,11 @@
 The legacy susceptibility/Model-B path remains available to the map and agents.  This module is
 the stricter cell-level classifier: missing calibration, stale forecast data, or out-of-domain
 features produce ``UNCERTAIN`` rather than a confident negative.
+
+Every in-domain answer also carries ``probability``: the calibrated probability when the
+classifier has one, else the Model B estimate at the point, read from the same map the heat
+layer draws. The estimate never changes ``state``: only a validated threshold can say
+``HIGH_RISK`` or ``NOT_HIGH_RISK``.
 """
 
 from __future__ import annotations
@@ -10,19 +15,24 @@ from __future__ import annotations
 import json
 import math
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import rasterio
+from rasterio.errors import RasterioError
+from rasterio.transform import rowcol
 from rasterio.windows import Window
 from rasterio.warp import transform as warp_transform
 
 from app.config import REPO_ROOT
+from app.ml import probability as probability_seam
+from app.ml.probability import ProbabilityMap
 from app.ml.risk_contract import (
     DEFAULT_ABSTENTION_BAND,
+    DEFAULT_CELL_SIZE_M,
     DEFAULT_MIN_DATA_QUALITY,
     DEFAULT_OOD_THRESHOLD,
     MODEL_FEATURES,
@@ -30,6 +40,7 @@ from app.ml.risk_contract import (
     PredictionState,
 )
 from app.ml.risk_features import hourly_dynamic_features
+from app.risk import HIGH_THRESHOLD, RiskLevel, risk_level
 from app.weather import HourlyRain, as_of, try_hourly_rain
 
 RISK_MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "landslide_risk_lgbm.txt"
@@ -39,8 +50,13 @@ FEATURE_STACK_PATH = REPO_ROOT / "data" / "processed" / "features.tif"
 STATIC_CELLS_JSON_PATH = REPO_ROOT / "data" / "processed" / "static" / "static_cells.json"
 RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
 
+ProbabilitySource = Literal["calibrated_classifier", "model_b_estimate"]
+# A logit term smaller than this moves the estimate by under about one percentage point.
+NEUTRAL_LOGIT = 0.05
+
 _model_cache: tuple[float, Any, dict[str, Any], dict[str, Any]] | None = None
 _static_cells_cache: tuple[float, dict[str, dict[str, Any]]] | None = None
+_map_cache: tuple[tuple[Any, ...], ProbabilityMap] | None = None
 
 
 def _env_float(name: str, default: float) -> float:
@@ -74,12 +90,20 @@ class RiskPrediction:
     drivers: list[dict[str, Any]]
     data_sources: dict[str, Any]
     model: dict[str, Any]
+    probability: float | None = None
+    probability_source: ProbabilitySource | None = None
+    risk_level: RiskLevel | None = None
+    estimate: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "location": {"latitude": self.latitude, "longitude": self.longitude},
             "prediction_window": {"start": self.window_start.isoformat(), "end": self.window_end.isoformat()},
             "state": self.state,
+            "probability": self.probability,
+            "probability_source": self.probability_source,
+            "risk_level": self.risk_level,
+            "estimate": self.estimate,
             "calibrated_probability": self.calibrated_probability,
             "high_risk_threshold": self.high_risk_threshold,
             "confidence": {"lower": self.confidence_lower, "upper": self.confidence_upper},
@@ -331,29 +355,152 @@ def _empty_prediction(latitude: float, longitude: float, start: datetime, reason
     )
 
 
+def _probability_map(rain: HourlyRain) -> ProbabilityMap:
+    """The heat map's probability grid for this rain response, reused across map clicks."""
+    global _map_cache
+    susceptibility = probability_seam.SUSCEPTIBILITY_PATH
+    key = (rain.source, rain.fetched_at, rain.now_index, susceptibility.stat().st_mtime_ns)
+    if _map_cache and _map_cache[0] == key:
+        return _map_cache[1]
+    grid = probability_seam.score(rain)
+    _map_cache = (key, grid)
+    return grid
+
+
+def _pixel_susceptibility(x: float, y: float) -> float | None:
+    with rasterio.open(probability_seam.SUSCEPTIBILITY_PATH) as dataset:
+        row, col = dataset.index(x, y)
+        if not (0 <= row < dataset.height and 0 <= col < dataset.width):
+            return None
+        value = dataset.read(1, window=Window(col, row, 1, 1), masked=True)[0, 0]
+    return None if np.ma.is_masked(value) or not np.isfinite(value) else float(value)
+
+
+def _estimate_drivers(terms: dict[str, float], susceptibility: float) -> list[dict[str, Any]]:
+    def effect(value: float) -> str:
+        return "raises" if value > NEUTRAL_LOGIT else "lowers" if value < -NEUTRAL_LOGIT else "neutral"
+
+    rows = [
+        ("terrain", "Terrain susceptibility",
+         f"{susceptibility:.2f} on a 0 to 1 scale (slope, drainage, land cover)"),
+        ("forecast_rain", "Forecast rain, next 72 h",
+         f"{terms['next_72h_mm']:.1f} mm against a {terms['threshold_72h_mm']:.1f} mm trigger threshold"),
+        ("antecedent_moisture", "Rain in the past 7 days",
+         f"{terms['past_7d_mm']:.1f} mm against a {terms['threshold_7d_mm']:.1f} mm wet-ground reference"),
+    ]
+    return [
+        {"factor": factor, "label": label, "detail": detail,
+         "logit_contribution": round(float(terms[factor]), 3), "effect": effect(float(terms[factor]))}
+        for factor, label, detail in rows
+    ]
+
+
+def _model_b_estimate(
+    latitude: float,
+    longitude: float,
+    rain: HourlyRain,
+    grid: ProbabilityMap | None = None,
+) -> tuple[dict[str, Any] | None, float | None, list[str]]:
+    """The heat map's value at the point, its 1 km cell, and why: (estimate, headline, reasons)."""
+    try:
+        grid = grid or _probability_map(rain)
+    except (OSError, ValueError, RasterioError):
+        return None, None, ["ESTIMATE_UNAVAILABLE"]
+    x, y = warp_transform("EPSG:4326", grid.crs, [longitude], [latitude])
+    x, y = float(x[0]), float(y[0])
+    height, width = grid.values.shape
+    row, col = rowcol(grid.transform, x, y)
+    if not (0 <= row < height and 0 <= col < width and np.isfinite(grid.values[row, col])):
+        # The heat map draws nothing here, so the card says nothing either.
+        return None, None, ["ESTIMATE_UNAVAILABLE"]
+    pixel = float(grid.values[row, col])
+
+    cell_size = int(DEFAULT_CELL_SIZE_M)
+    west, south = math.floor(x / cell_size) * cell_size, math.floor(y / cell_size) * cell_size
+    top, left = rowcol(grid.transform, west, south + cell_size)
+    bottom, right = rowcol(grid.transform, west + cell_size, south)
+    block = grid.values[max(0, top):min(height, bottom), max(0, left):min(width, right)]
+    finite = block[np.isfinite(block)]
+    cell = None
+    if finite.size:
+        cell = {
+            "size_m": cell_size,
+            "mean": round(float(finite.mean()), 4),
+            "max": round(float(finite.max()), 4),
+            "share_high": round(float(np.mean(finite >= HIGH_THRESHOLD)), 4),
+        }
+    susceptibility = None if grid.is_stand_in else _pixel_susceptibility(x, y)
+    terms = probability_seam.explain(susceptibility, rain) if susceptibility is not None else None
+    estimate = {
+        "method": grid.method,
+        "calibrated": False,
+        "unit": "30 m pixel",
+        "pixel_probability": round(pixel, 4),
+        "susceptibility": None if susceptibility is None else round(susceptibility, 4),
+        "cell": cell,
+        "rain": None if terms is None else {
+            "source": rain.source,
+            "as_of": as_of(rain).isoformat(),
+            **{name: round(float(terms[name]), 1) for name in (
+                "past_72h_mm", "next_72h_mm", "past_7d_mm", "threshold_72h_mm", "threshold_7d_mm")},
+        },
+        "drivers": [] if terms is None else _estimate_drivers(terms, susceptibility),
+    }
+    return estimate, pixel, []
+
+
 def predict_location(
     latitude: float,
     longitude: float,
     timestamp: datetime | None = None,
     *,
     rain_override: HourlyRain | None = None,
+    probability_override: ProbabilityMap | None = None,
 ) -> RiskPrediction:
-    """Return a fail-closed three-state prediction for a 1km cell around a location."""
+    """The classifier's fail-closed state, plus the probability to show and where it came from."""
+    prediction, rain = _classify(latitude, longitude, timestamp, rain_override)
+    if rain is None:
+        return prediction
+    estimate, headline, reasons = _model_b_estimate(latitude, longitude, rain, probability_override)
+    probability: float | None = None
+    source: ProbabilitySource | None = None
+    if prediction.calibrated_probability is not None:
+        probability, source = prediction.calibrated_probability, "calibrated_classifier"
+    elif headline is not None:
+        probability, source = round(min(1.0, max(0.0, headline)), 4), "model_b_estimate"
+    return replace(
+        prediction,
+        probability=probability,
+        probability_source=source,
+        risk_level=None if probability is None else risk_level(probability),
+        estimate=estimate,
+        reason_codes=list(dict.fromkeys([*prediction.reason_codes, *reasons])),
+    )
+
+
+def _classify(
+    latitude: float,
+    longitude: float,
+    timestamp: datetime | None,
+    rain_override: HourlyRain | None,
+) -> tuple[RiskPrediction, HourlyRain | None]:
+    """The fail-closed three-state prediction for a 1 km cell, and the rain it was scored on."""
     if timestamp is not None and timestamp.tzinfo is None:
         start = timestamp.replace(tzinfo=UTC)
-        return _empty_prediction(latitude, longitude, start, ["TIMESTAMP_ALIGNMENT_ERROR"])
+        return _empty_prediction(latitude, longitude, start, ["TIMESTAMP_ALIGNMENT_ERROR"]), None
     start = (timestamp or _now()).astimezone(UTC)
     if timestamp is not None and abs((datetime.now(UTC) - start).total_seconds()) > 3600:
-        return _empty_prediction(latitude, longitude, start, ["HISTORICAL_INFERENCE_UNSUPPORTED"])
+        return _empty_prediction(latitude, longitude, start, ["HISTORICAL_INFERENCE_UNSUPPORTED"]), None
     if not _in_bbox(latitude, longitude):
-        return _empty_prediction(latitude, longitude, start, ["OUT_OF_DISTRIBUTION"])
+        return _empty_prediction(latitude, longitude, start, ["OUT_OF_DISTRIBUTION"]), None
 
-    rain, rain_error = (rain_override, None) if rain_override is not None else try_hourly_rain(latitude, longitude)
+    # One trail-zone series covers the study area, as it does for the heat map, so every click
+    # is scored on the same rain the map shows and reuses its five-minute cache.
+    rain, rain_error = (rain_override, None) if rain_override is not None else try_hourly_rain()
     static, sources = _static_features(latitude, longitude)
     if rain is None:
-        features = static
         sources["forecast"] = {"available": False, "error": rain_error}
-        return _empty_prediction(latitude, longitude, start, ["FORECAST_UNAVAILABLE"], sources)
+        return _empty_prediction(latitude, longitude, start, ["FORECAST_UNAVAILABLE", "WEATHER_FEED_UNAVAILABLE"], sources), None
 
     source_name = os.environ.get("LANDSLIDE_FORECAST_PROVIDER", "open-meteo-compatibility").strip().lower()
     # The compatibility feed is useful for the legacy demo but is not a historical GFS archive.
@@ -427,7 +574,7 @@ def predict_location(
     if model is None or calibration.get("method") not in {"isotonic", "platt"}:
         if not artifact_reasons:
             reasons.append("CALIBRATION_MISSING")
-        return RiskPrediction(latitude, longitude, start, start + timedelta(hours=PREDICTION_HORIZON_HOURS), "UNCERTAIN", None, threshold, None, None, quality_score, ood_score, list(dict.fromkeys(reasons)), [], sources, {"available": False, "version": metadata.get("model_version")} )
+        return RiskPrediction(latitude, longitude, start, start + timedelta(hours=PREDICTION_HORIZON_HOURS), "UNCERTAIN", None, threshold, None, None, quality_score, ood_score, list(dict.fromkeys(reasons)), [], sources, {"available": False, "version": metadata.get("model_version")}), rain
 
     row = np.array([[np.nan if features.get(name) is None else float(features[name]) for name in MODEL_FEATURES]], dtype="float64")
     raw = float(model.predict(row)[0])
@@ -449,4 +596,4 @@ def predict_location(
         round(max(0.0, probability - uncertainty), 4), round(min(1.0, probability + uncertainty), 4),
         quality_score, ood_score, list(dict.fromkeys(reasons)), drivers, sources,
         {"available": True, "version": metadata.get("model_version"), "trained_at": metadata.get("training_date"), "calibration_method": calibration.get("method"), "validation": metadata.get("validation", {}).get("test")},
-    )
+    ), rain
