@@ -7,52 +7,21 @@ function seconds(agent: PipelineAgentState): string | null {
   return `${((agent.finishedAt - agent.startedAt) / 1000).toFixed(1)} s`;
 }
 
-/** Tool calls, model attempts, and route lines belong in the terminal. The rest is the write-up. */
-function isLogLine(step: string): boolean {
-  const text = step.replace(/^(?:Terrain|Weather|Trails|History|Routes|Synthesizer|Alert writer): /, "");
-  return text.startsWith("Tool ") || text.includes(" · ") || /\b(?:answered|failed:)/.test(text);
-}
-
-function splitTrace(trace: string[]): { log: string[]; prose: string[] } {
-  const log: string[] = [];
-  const prose: string[] = [];
-  for (const step of trace) {
-    (isLogLine(step) ? log : prose).push(step);
-  }
-  return { log, prose };
-}
-
-/**
- * The opened trace: one terminal for the calls, then the write-up as continuous lines.
- */
+/** The opened trace: every line of the run lives in one terminal. The card summary stays outside. */
 function AgentTrace({ trace, time }: { trace: string[]; time: string | null }) {
-  const { log, prose } = splitTrace(trace);
   return (
-    <div className="space-y-3">
-      {log.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-border bg-background">
-          <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
-            <span className="font-mono">agent</span>
-            {time && <span className="font-mono">worked {time}</span>}
-          </div>
-          <div className="px-3 py-2 font-mono text-[13px] leading-5 text-foreground/90">
-            {log.map((line, i) => (
-              <p key={i} className="whitespace-pre-wrap break-words">
-                {line}
-              </p>
-            ))}
-          </div>
-        </div>
-      )}
-      {prose.length > 0 && (
-        <div className="px-0.5 text-sm leading-6 text-foreground/90">
-          {prose.map((line, i) => (
-            <p key={i} className="break-words">
-              {line}
-            </p>
-          ))}
-        </div>
-      )}
+    <div className="overflow-hidden rounded-lg border border-border bg-background">
+      <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
+        <span className="font-mono">agent</span>
+        {time && <span className="font-mono">worked {time}</span>}
+      </div>
+      <div className="px-3 py-2 font-mono text-[13px] leading-5 text-foreground/90">
+        {trace.map((line, i) => (
+          <p key={i} className="whitespace-pre-wrap break-words">
+            {line}
+          </p>
+        ))}
+      </div>
     </div>
   );
 }
