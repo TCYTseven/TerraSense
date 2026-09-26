@@ -16,8 +16,8 @@ Finish each step on a track before you start the next one on that track. Stay in
 ### Pending
 
 - [x] 10. Download the Rainier source layers (DEM, land cover, and 33 Washington inventory labels are present; NASA remains the preferred refresh source)
-- [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
-- [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
+- [x] 11. Build the terrain feature table (30 m seven-band stack and 1,188-row labeled table are present)
+- [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.7317; susceptibility tiles rendered)
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
 - [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
 - [ ] 26. Rank the pressure points
@@ -126,15 +126,13 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
 
-**Done so far.** `ml/scripts/train_susceptibility.py` has the full LightGBM path: held-out spatial regions, AUC and precision at 0.45, gain importance, a refit, and a full-map prediction. Without labels it writes a knowledge-driven index (slope 0.35, distance to drainage 0.20, land cover 0.20, TWI 0.15, curvature 0.10) and `trained: false` in `ml/artifacts/metrics.json`.
+**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,188-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. The current run has AUC `0.7317`, precision at High `0.5000`, 1,010 train rows, 178 test rows, and 297 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
 
 **Left.**
 
-- Rerun the script on the step 11 table.
-- Write the AUC you get into `metrics.json`, then into the Devpost draft in `TerraSense.md`. Do not treat 0.85 as a gate.
-- Re-render the susceptibility tiles (`python ml/scripts/render_tiles.py --layer susceptibility`).
+- No remaining step-12 implementation work. The score is reported honestly on a held-out spatial block; it is not treated as a 0.85 gate.
 
-**Done when.** The script prints AUC and writes a susceptibility raster that covers the Rainier box, and `metrics.json` says `trained: true`.
+**Done when.** The script prints AUC, writes a trained susceptibility raster covering the Rainier box, `metrics.json` says `trained: true`, the model artifact exists, and susceptibility tiles render.
 
 ## 14. Import trails and historical landslide pins
 
