@@ -12,7 +12,7 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 |---|---|---|---|
 | `data/raw/rainier_dem_cop30.tif` | Copernicus DEM GLO-30 | 2026-09-25 | Done |
 | `data/raw/rainier_landcover_worldcover2021.tif` | ESA WorldCover 2021 v200 | 2026-09-25 | Done |
-| `data/seed/landslides.geojson` | Washington State Landslide Inventory Database — Landslide Compilation (fallback from NASA GLC) | 2026-09-25 | Done. 33 mapped features converted to representative points |
+| `data/seed/landslides.geojson` | NASA Global Landslide Catalog local export, supplemented by Washington State Landslide Inventory Database — Landslide Compilation | 2026-09-26 | Done. 37 mapped events total: 4 NASA events (1 at 1km accuracy, 3 at 5km) plus 33 supplemental 1km inventory points |
 | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` | OpenStreetMap via Overture Maps | 2026-09-25 | Done. Written by `ml/scripts/import_trails.py` |
 | `data/seed/trail_network.geojson` | Derived from the two above and the DEM | 2026-09-25 | Done. Written by `ml/scripts/build_trail_network.py` |
 
@@ -38,14 +38,14 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 
 ## Landslide points: `data/seed/landslides.geojson`
 
-- **Status:** created by the official Washington fallback because the NASA export host timed out in this environment. No point was placed by hand.
-- **Primary source:** NASA Global Landslide Catalog, "Global Landslide Catalog Export", data.nasa.gov dataset `dd9e-wu2v`. The script still prefers it when reachable.
-- **Fallback source:** Washington Geological Survey, Washington State Landslide Inventory Database, **Landslide Compilation** layer 131. URL: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131
+- **Status:** refreshed from the supplied NASA Global Landslide Catalog export on 2026-09-26. NASA has four events in the Rainier box, but only one is precise enough for 30 m pixel labels; the official Washington inventory supplements it with 33 conservative 1km representative points so the spatial split has enough positive regions. No point was placed by hand.
+- **Primary source:** NASA Global Landslide Catalog, "Global Landslide Catalog Export", data.nasa.gov dataset `dd9e-wu2v`. Local refresh command: `python ml/scripts/download_sources.py --only landslides --glc-csv /Users/Aarav/Documents/Global_Landslide_Catalog_Export_rows.csv --force`.
+- **Supplemental source:** Washington Geological Survey, Washington State Landslide Inventory Database, **Landslide Compilation** layer 131. URL: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131
 - **Query URL:** https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131/query
 - **Licence/attribution:** Washington Geological Survey; retain the source URL and inventory name with the derived seed. The layer warns that mapped coverage and confidence vary by source and scale; its representative points are conservatively labeled `location_accuracy: 1km` for training.
-- **Output:** a FeatureCollection of 33 Points inside the box, oldest first. Polygon features are clipped to the bbox and converted to interior representative points. Properties: `id`, `date` (ISO or null), `title`, `category`, `trigger`, `size`, `setting`, `location_accuracy`, `fatalities`, `source_name`, `source_link`, `catalog`, `inventory_confidence`, `source_layer`.
+- **Output:** a FeatureCollection of 37 Points inside the box, oldest first. NASA points preserve their catalog accuracy (`1km` or `5km`); polygon features are clipped to the bbox and converted to interior representative points with conservative `1km` accuracy. Step 11 uses only `exact` and `1km` points, yielding 34 usable training points. Properties: `id`, `date` (ISO or null), `title`, `category`, `trigger`, `size`, `setting`, `location_accuracy`, `fatalities`, `source_name`, `source_link`, `catalog`, `inventory_confidence`, `source_layer`.
 
-**To refresh.** On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. If NASA is unavailable, the script automatically queries the Washington fallback. To use a downloaded NASA CSV explicitly, run `python ml/scripts/download_sources.py --only landslides --glc-csv path/to/export.csv`.
+**To refresh.** On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. If NASA is unavailable, the script automatically queries the Washington fallback. To use a downloaded NASA CSV explicitly, run `python ml/scripts/download_sources.py --only landslides --glc-csv path/to/export.csv`; sparse high-accuracy NASA results are supplemented with the Washington inventory.
 
 **For step 11.** The catalog geocodes events from news reports, so `location_accuracy` runs from `exact` to `50km`, and the box may hold only a few events. Keep `exact` and `1km` points for pixel labels. A USGS inventory, such as the U.S. Landslide Inventory, can add points from a network that reaches ScienceBase.
 

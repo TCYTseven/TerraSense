@@ -15,10 +15,10 @@ Finish each step on a track before you start the next one on that track. Stay in
 
 ### Pending
 
-- [x] 10. Download the Rainier source layers (DEM, land cover, and 33 Washington inventory labels are present; NASA remains the preferred refresh source)
-- [x] 11. Build the terrain feature table (30 m seven-band stack and 1,188-row labeled table are present)
-- [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.7317; susceptibility tiles rendered)
-- [x] 14. Import trails and historical landslide pins (67 OpenStreetMap trails, 55 hero segments, and 33 Rainier historical pins are present)
+- [x] 10. Download the Rainier source layers (DEM, land cover, 4 NASA events, and 33 documented supplemental inventory labels are present)
+- [x] 11. Build the terrain feature table (30 m seven-band stack and 1,224-row labeled table are present)
+- [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.715; susceptibility tiles rendered)
+- [x] 14. Import trails and historical landslide pins (67 OpenStreetMap trails, 55 hero segments, and 37 Rainier historical pins are present)
 - [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
 - [ ] 26. Rank the pressure points
 - [ ] 27. Trace a runout from a pressure point
@@ -104,9 +104,9 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** Offline scripts have a DEM, a land-cover raster, and landslide points for the bounding box.
 
-**Done so far.** `ml/scripts/download_sources.py` writes and verifies the Copernicus DEM GLO-30, ESA WorldCover 2021 clip, and landslide points. NASA GLC is preferred; the official Washington Geological Survey Landslide Compilation layer is a documented fallback when NASA is unreachable.
+**Done so far.** `ml/scripts/download_sources.py` writes and verifies the Copernicus DEM GLO-30, ESA WorldCover 2021 clip, and landslide points. NASA GLC is preferred; sparse high-accuracy NASA exports are supplemented by the official Washington Geological Survey Landslide Compilation layer so spatial training does not rely on one event cluster.
 
-**Source note.** On this run, data.nasa.gov timed out. The script queried the official Washington inventory instead and converted its mapped polygons to interior representative points with conservative `1km` label accuracy. No point was placed by hand.
+**Source note.** The supplied NASA export contributed 4 Rainier events, but only one is `1km` accurate; the script added 33 official Washington inventory polygons as conservative `1km` representative points. NASA events retain their original `1km`/`5km` accuracy, and no point was placed by hand.
 
 **Done when.** The DEM, land cover, and `data/seed/landslides.geojson` cover the shared bounding box, `sources.md` names each source, and the downloader plus source adapter tests pass.
 
@@ -114,7 +114,7 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** Model A has one row per pixel and a stable label.
 
-**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI). The current run writes a 1,188-row labeled table from 33 usable inventory points: 297 positives and 891 spatially excluded negatives across 14 regions.
+**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI). The current run writes a 1,224-row labeled table from 34 usable `exact`/`1km` points: 306 positives and 918 spatially excluded negatives across 14 regions.
 
 **Left.**
 
@@ -126,7 +126,7 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
 
-**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,188-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. The current run has AUC `0.7317`, precision at High `0.5000`, 1,010 train rows, 178 test rows, and 297 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
+**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,224-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. The current run has AUC `0.7150`, precision at High `0.0000`, 1,041 train rows, 183 test rows, and 306 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
 
 **Left.**
 
@@ -138,13 +138,13 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** The map has real lines and real past events.
 
-**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves 33 in-bounds `historical_events` on `GET /mountains/mount-rainier`, and static mountains remain empty. Historical-pin contract tests cover source, accuracy, bbox, and the static-mountain boundary.
+**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves 37 in-bounds `historical_events` on `GET /mountains/mount-rainier`, and static mountains remain empty. Historical-pin contract tests cover source, accuracy, bbox, and the static-mountain boundary.
 
 **Left.**
 
 - None. The source file is committed, the API re-reads it when its mtime changes, and the **Past landslides** toggle is enabled for Rainier.
 
-**Done when.** Rainier returns a trail with mile-marked segments and 33 non-empty historical points inside the box, static mountains return no catalog points, and a pin opens its popup on the map.
+**Done when.** Rainier returns a trail with mile-marked segments and 37 non-empty historical points inside the box, static mountains return no catalog points, and a pin opens its popup on the map.
 
 ## 17. Score 72-hour probability from live rain
 

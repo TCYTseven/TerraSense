@@ -79,3 +79,23 @@ def test_fetch_waslid_sends_shared_bbox_query(monkeypatch):
     assert calls["url"] == "https://example.test/query"
     assert calls["kwargs"]["params"]["geometry"] == "-121.93,46.76,-121.54,46.96"
     assert calls["kwargs"]["params"]["outSR"] == "4326"
+
+
+def test_sparse_nasa_catalog_can_be_supplemented_without_losing_provenance():
+    nasa = [{
+        "type": "Feature", "id": 1,
+        "geometry": {"type": "Point", "coordinates": [-121.77, 46.84]},
+        "properties": {"id": 1, "catalog": "NASA Global Landslide Catalog", "location_accuracy": "1km"},
+    }]
+    waslid = [{
+        "type": "Feature", "id": 1,
+        "geometry": {"type": "Point", "coordinates": [-121.80, 46.82]},
+        "properties": {"id": 1, "catalog": download_sources.WASLID_SOURCE_NAME, "location_accuracy": "1km"},
+    }]
+
+    merged = download_sources.merge_catalog_features(nasa, waslid)
+
+    assert len(merged) == 2
+    assert {feature["properties"]["catalog"] for feature in merged} == {
+        "NASA Global Landslide Catalog", download_sources.WASLID_SOURCE_NAME,
+    }

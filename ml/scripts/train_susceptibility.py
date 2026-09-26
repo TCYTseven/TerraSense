@@ -33,6 +33,7 @@ from sklearn.metrics import precision_score, roc_auc_score
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STACK_PATH = REPO_ROOT / "data" / "processed" / "features.tif"
 TABLE_PATH = REPO_ROOT / "data" / "processed" / "features.parquet"
+LANDSLIDES_PATH = REPO_ROOT / "data" / "seed" / "landslides.geojson"
 ARTIFACTS_DIR = REPO_ROOT / "ml" / "artifacts"
 
 FEATURES = ["elevation", "slope", "aspect", "curvature", "dist_drainage", "landcover", "twi"]
@@ -223,6 +224,23 @@ def write_raster(path: Path, values: np.ndarray, profile: dict, method: str) -> 
     partial.replace(path)
 
 
+def label_provenance() -> dict:
+    """Record the seed catalogs behind the current training table in the model card."""
+    if not LANDSLIDES_PATH.is_file():
+        return {}
+    payload = json.loads(LANDSLIDES_PATH.read_text(encoding="utf-8"))
+    features = payload.get("features", [])
+    accuracies = {"exact", "1km"}
+    return {
+        "seed_events": len(features),
+        "label_catalogs": sorted({feature.get("properties", {}).get("catalog") or "unknown" for feature in features}),
+        "usable_seed_events": sum(
+            (feature.get("properties", {}).get("location_accuracy") or "").lower() in accuracies
+            for feature in features
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train the susceptibility model and write the map.")
     parser.add_argument("--table", type=Path, default=TABLE_PATH, help="labeled table from step 11")
@@ -265,6 +283,7 @@ def main() -> None:
     }
     write_raster(args.artifacts / "susceptibility.tif", susceptibility, profile, metrics["method"])
     metrics["features"] = FEATURES
+    metrics.update(label_provenance())
     metrics["grid"] = {
         "crs": str(profile["crs"]),
         "width": int(profile["width"]),

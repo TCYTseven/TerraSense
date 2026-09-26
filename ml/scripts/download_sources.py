@@ -13,7 +13,9 @@ Run from the repo root:
   python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force]
 
 The default NASA GLC export is preferred. If its host is unavailable, the script queries the
-official Washington Geological Survey Landslide Compilation ArcGIS layer instead; no labels are
+official Washington Geological Survey Landslide Compilation ArcGIS layer instead. If an available
+NASA export has fewer than two usable high-accuracy points, the Washington inventory supplements
+it so the spatially held-out model does not train on a single event cluster; no labels are
 invented locally.
 """
 
@@ -108,6 +110,7 @@ GLC_FIELDS = {
 
 STAGES = ("dem", "landcover", "landslides")
 WASLID_SOURCE_NAME = "Washington State Landslide Inventory Database — Landslide Compilation"
+TRAINING_ACCURACIES = {"exact", "1km"}
 
 
 def rel(path: Path) -> str:
@@ -311,6 +314,27 @@ def glc_features(csv_path: Path) -> list[dict]:
     return sorted(features, key=lambda feature: feature["properties"]["date"] or "")
 
 
+def usable_training_features(features: list[dict]) -> list[dict]:
+    """Return catalog points precise enough to become 30 m pixel labels."""
+    return [feature for feature in features
+            if (feature["properties"].get("location_accuracy") or "").lower() in TRAINING_ACCURACIES]
+
+
+def merge_catalog_features(primary: list[dict], supplemental: list[dict]) -> list[dict]:
+    """Combine catalogs without dropping provenance or duplicating the same catalog id."""
+    seen = {
+        (feature["properties"].get("catalog"), str(feature.get("id")))
+        for feature in primary
+    }
+    merged = list(primary)
+    for feature in supplemental:
+        key = (feature["properties"].get("catalog"), str(feature.get("id")))
+        if key not in seen:
+            merged.append(feature)
+            seen.add(key)
+    return sorted(merged, key=lambda feature: feature["properties"].get("date") or "")
+
+
 def _arcgis_date(value) -> str | None:
     """Convert an ArcGIS epoch-millisecond or ISO date into the seed's YYYY-MM-DD value."""
     if value in (None, ""):
@@ -405,7 +429,7 @@ def stage_waslid(force: bool) -> None:
 
 
 def stage_landslides(force: bool, glc_source: str) -> None:
-    """Prefer NASA GLC; fall back to official Washington inventory when its default host is blocked."""
+    """Prefer NASA GLC and supplement sparse high-accuracy labels with the official inventory."""
     if LANDSLIDES_PATH.exists() and not force:
         print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
         return
@@ -427,6 +451,18 @@ def stage_landslides(force: bool, glc_source: str) -> None:
         if csv_path == GLC_CSV_PATH:
             csv_path.unlink(missing_ok=True)  # never retain a partial/HTML response as a future cache
         return stage_waslid(force=True)
+    usable = usable_training_features(features)
+    if len({(feature["geometry"]["coordinates"][0], feature["geometry"]["coordinates"][1])
+            for feature in usable}) < 2:
+        print(
+            f"  NASA GLC supplied {len(features)} in-box events but only {len(usable)} usable "
+            f"high-accuracy point; adding {WASLID_SOURCE_NAME} as a documented supplement",
+            file=sys.stderr,
+        )
+        supplemental = waslid_features(fetch_waslid())
+        if not supplemental:
+            raise RuntimeError("NASA GLC is too sparse for spatial training and the supplemental inventory is empty")
+        features = merge_catalog_features(features, supplemental)
     SEED_DIR.mkdir(parents=True, exist_ok=True)
     collection = {"type": "FeatureCollection", "features": features}
     LANDSLIDES_PATH.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")

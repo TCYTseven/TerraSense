@@ -18,8 +18,9 @@ import validate_pipeline as audit  # noqa: E402
 def test_current_artifacts_pass_the_full_audit() -> None:
     summary = audit.validate(require_probability=True)
 
-    assert summary["labels"] == 33
-    assert summary["feature_rows"] == 1188
+    assert summary["labels"] == 37
+    assert summary["usable_labels"] == 34
+    assert summary["feature_rows"] == 1224
     assert summary["susceptibility_tiles"] == 383
     assert summary["probability_tiles"] == 383
 
