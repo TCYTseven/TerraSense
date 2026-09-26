@@ -8,7 +8,7 @@ import SimulateButton from "@/components/pipeline/simulate-button";
 import ReactiveMeasures from "@/components/pipeline/reactive-measures";
 import SimulationBar from "@/components/map/simulation-bar";
 import LandslideRiskCard from "@/components/panel/landslide-risk-card";
-import { getRiskSummary } from "@/lib/api";
+import { getHillRiskSummary, getRiskSummary } from "@/lib/api";
 import { buildMountainView } from "@/lib/mountain-view-build";
 import type { CameraFocus, TrailLetter } from "@/lib/mountain-view";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
@@ -33,11 +33,6 @@ export interface MountainCardProps {
   susceptibility: LayerTiles | null;
   /** The trail scores on the saved heat map at page load. Null before the first save. */
   riskSummary: MountainRiskSummary | null;
-  /**
-   * When false, the Agents block stays idle, Analyze now is not rendered, and nothing
-   * starts a run. A hill page sets this. Simulate still appears when the place has routes.
-   */
-  orchestration?: boolean;
 }
 
 /**
@@ -50,28 +45,31 @@ export default function MountainCard({
   probability,
   susceptibility,
   riskSummary,
-  orchestration = true,
 }: MountainCardProps) {
   const [summary, setSummary] = useState(riskSummary);
   const hill = useMemo(() => buildMountainView(mountain, summary), [mountain, summary]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [tab, setTab] = useState<PanelTab>("prevention");
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
-  const pipeline = usePipeline(hill, orchestration);
+  const pipeline = usePipeline(hill);
   const finished = pipeline.state.orchestrator === "done";
 
   // A finished run saves a new map, so the trail scores are read again.
   useEffect(() => {
-    if (!orchestration || !finished || !mountain.is_live) return;
+    if (!finished || !mountain.is_live) return;
     const controller = new AbortController();
-    getRiskSummary(mountain.slug, { signal: controller.signal }).then(
+    const loadSummary =
+      mountain.kind === "hill"
+        ? getHillRiskSummary(mountain.slug, { signal: controller.signal })
+        : getRiskSummary(mountain.slug, { signal: controller.signal });
+    loadSummary.then(
       (next) => {
         if (!controller.signal.aborted) setSummary(next);
       },
       () => {},
     );
     return () => controller.abort();
-  }, [finished, mountain.slug, mountain.is_live, orchestration]);
+  }, [finished, mountain.slug, mountain.is_live, mountain.kind]);
   const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
   const hasRoutes = mountain.trails.some((trail) => (trail.geom?.coordinates?.length ?? 0) >= 2);
@@ -104,10 +102,10 @@ export default function MountainCard({
   }
 
   return (
-    <main className="flex h-dvh max-h-dvh animate-fade-in flex-col overflow-hidden motion-reduce:animate-none md:flex-row">
+    <main className="flex h-dvh max-h-dvh min-h-0 animate-fade-in flex-col overflow-hidden motion-reduce:animate-none md:flex-row">
       <section
         aria-label="Mountain view"
-        className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-hidden bg-muted md:h-auto md:max-h-none md:min-h-0 md:w-[55%]"
+        className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-hidden bg-muted md:h-full md:max-h-none md:min-h-0 md:w-[55%]"
       >
         <MountainTerrainView
           key={mountain.slug}
@@ -131,59 +129,62 @@ export default function MountainCard({
           <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
         </div>
         <PanelTabs active={tab} onChange={setTab} />
-        <TabPanel tab="prevention" active={tab}>
-          {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
-          {hill.trails.length > 0 && (
-            <TrailList
-              trails={hill.trails}
-              selected={selected}
-              onView={view}
-              variant={hill.scoring ? "risk" : "mapped"}
-            />
-          )}
-          {hill.trails.length === 0 && mountain.trails.length === 0 && (
-            <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>
-          )}
-        </TabPanel>
-        <TabPanel tab="response" active={tab}>
-          <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
-            <h2 id="agents-heading" className="text-sm text-muted-foreground">
-              Agents
-            </h2>
-            <div className="mt-2">
-              <AgentPipeline state={pipeline.state} />
-            </div>
-          </section>
-          {pipeline.state.orchestrator === "done" && pipeline.state.measures && (
-            <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
-          )}
-          {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
-            <PreventativeMeasures items={hill.preventative} />
-          )}
-        </TabPanel>
-        {(tab === "prevention" ? orchestration || hasRoutes : orchestration) && (
-        <footer className="shrink-0 border-t border-border bg-card px-5 py-4">
-          {/* Each tab pins its own action. A hill with no routes has neither. */}
-          {tab === "prevention" ? (
-            <div className="flex">
-              <SimulateButton
-                phase={simulationSupported ? simulation.phase : "idle"}
-                onSimulate={handleSimulate}
-                onReplay={handleSimulate}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <TabPanel tab="prevention" active={tab}>
+            {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
+            {hill.trails.length > 0 && (
+              <TrailList
+                trails={hill.trails}
+                selected={selected}
+                onView={view}
+                variant={hill.scoring ? "risk" : "mapped"}
               />
-            </div>
+            )}
+            {hill.trails.length === 0 && mountain.trails.length === 0 && (
+              <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>
+            )}
+          </TabPanel>
+          <TabPanel tab="response" active={tab}>
+            <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
+              <h2 id="agents-heading" className="text-sm text-muted-foreground">
+                Agents
+              </h2>
+              <div className="mt-2">
+                <AgentPipeline state={pipeline.state} />
+              </div>
+            </section>
+            {pipeline.state.orchestrator === "done" && pipeline.state.measures && (
+              <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
+            )}
+            {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
+              <PreventativeMeasures items={hill.preventative} />
+            )}
+          </TabPanel>
+        </div>
+        <footer className="shrink-0 border-t border-border bg-card px-5 py-4">
+          {tab === "prevention" ? (
+            hasRoutes ? (
+              <>
+                <div className="flex">
+                  <SimulateButton
+                    phase={simulationSupported ? simulation.phase : "idle"}
+                    onSimulate={handleSimulate}
+                    onReplay={handleSimulate}
+                  />
+                </div>
+                {simulationSupported && simulation.error && (
+                  <p className="mt-2 text-sm text-foreground">{simulation.error}</p>
+                )}
+              </>
+            ) : null
           ) : (
             <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} />
           )}
-          {tab === "prevention" && simulationSupported && simulation.error && (
-            <p className="mt-2 text-sm text-foreground">{simulation.error}</p>
-          )}
         </footer>
-        )}
         <SimulationUnsupportedDialog
           open={simulateUnsupportedOpen}
           placeName={mountain.name}
-          analyzeAvailable={orchestration && live}
+          analyzeAvailable={live}
           onClose={() => setSimulateUnsupportedOpen(false)}
         />
       </aside>
@@ -193,13 +194,14 @@ export default function MountainCard({
 
 /** One tab's section. Every tab stays mounted, so its scroll, fetches, and open traces survive a switch. */
 function TabPanel({ tab, active, children }: { tab: PanelTab; active: PanelTab; children: ReactNode }) {
+  const visible = tab === active;
   return (
     <div
       role="tabpanel"
       id={tabPanelId(tab)}
       aria-labelledby={tabId(tab)}
-      hidden={tab !== active}
-      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [&>section:first-child]:border-t-0"
+      hidden={!visible}
+      className={visible ? "[&>section:first-child]:border-t-0" : "hidden"}
     >
       {children}
     </div>

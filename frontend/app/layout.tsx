@@ -46,7 +46,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body
-        className="flex min-h-full flex-col bg-background text-foreground"
+        className="flex min-h-full flex-col overflow-x-hidden bg-background text-foreground"
         suppressHydrationWarning
       >
         {children}
