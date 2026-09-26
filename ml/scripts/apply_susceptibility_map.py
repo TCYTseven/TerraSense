@@ -11,7 +11,9 @@ Requires:
   data/processed/rainier_regional_features.tif  (build_regional_features.py --rainier-stack-only)
 
 Run from the repo root:
-  python ml/scripts/apply_susceptibility_map.py [--artifacts DIR] [--stack PATH]
+  python ml/scripts/apply_susceptibility_map.py [--artifacts DIR] [--stack PATH] [--output PATH]
+  --output writes the map somewhere other than ARTIFACTS/susceptibility.tif, so a hill window
+  does not replace Rainier's raster. The booster and calibration still come from --artifacts.
 """
 
 from __future__ import annotations
@@ -81,7 +83,9 @@ def load_fitted(model_path: Path, calibration_path: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Apply susceptibility_lgbm.txt to the Rainier stack.")
     parser.add_argument("--artifacts", type=Path, default=ARTIFACTS_DIR, help="directory with model + calibration")
-    parser.add_argument("--stack", type=Path, default=RAINIER_STACK_PATH, help="16-band Rainier feature GeoTIFF")
+    parser.add_argument("--stack", type=Path, default=RAINIER_STACK_PATH, help="16-band feature GeoTIFF")
+    parser.add_argument("--output", type=Path, default=None,
+                        help="susceptibility GeoTIFF to write (default: ARTIFACTS/susceptibility.tif)")
     args = parser.parse_args()
     if not args.stack.is_file():
         raise SystemExit(
@@ -89,8 +93,8 @@ def main() -> None:
             "python ml/scripts/build_regional_features.py --rainier-stack-only"
         )
     fitted = load_fitted(args.artifacts / "susceptibility_lgbm.txt", args.artifacts / "susceptibility_calibration.json")
-    susceptibility, _map_info = predict_map(fitted, MODEL_FEATURES)
-    out_path = args.artifacts / "susceptibility.tif"
+    susceptibility, _map_info = predict_map(fitted, MODEL_FEATURES, args.stack)
+    out_path = args.output or (args.artifacts / "susceptibility.tif")
     write_map(out_path, susceptibility, args.stack)
     valid = susceptibility[np.isfinite(susceptibility)]
     print(

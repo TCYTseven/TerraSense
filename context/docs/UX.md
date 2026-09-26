@@ -40,7 +40,9 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 
 Full viewport. Dark earth, three markers colored by risk, slow idle rotation, hover card (name, risk, last refresh), and search.
 
-A marker click or a search pick turns the globe to face the mountain, then opens the mountain panel in the center of the screen. The spin pauses while the panel is open.
+A mountain click or a search pick turns the globe to face the mountain, then opens the mountain panel in the center of the screen. The spin pauses while the panel is open. Built today, that click flies straight into `/mountains/[slug]`.
+
+A hill uses a single-rise glyph. Turtle Mountain is the one hill. Its click uses the same fly-to and opens the hill page. Search matches hills and mountains.
 
 ### Mountain panel (team decision, Sep 25, 2026)
 
@@ -52,11 +54,11 @@ One panel, centered over the globe, for every mountain. It closes with Escape, i
 
 **Bottom of the right side:** **Open ranger view**, which flies into the mountain page. **Simulate** is not on this panel. As of Sep 26, 2026 it lives on the mountain page, beside **Analyze now**, and only for a mountain that has routes.
 
-**The runout plays on the mountain page, not in this panel.** See [Mountain page](#mountain-page-hill-detail-card-rebuilt-sep-25-2026).
+**The runout plays on the mountain page, not in this panel.** See [Mountain page](#mountain-page-rebuilt-sep-25-2026).
 
 Static mountains open the same panel with terrain only, their fixed level, and one line saying they are display markers. No pressure points. **Simulate** is not offered, because these peaks have no routes.
 
-### Mountain page (hill detail card, rebuilt Sep 25, 2026)
+### Mountain page (rebuilt Sep 25, 2026)
 
 Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor. The opening view frames the whole mountain, sized from its elevation, so any mountain opens the same way. While nobody is using it, the camera slowly orbits the mountain. It can't zoom out more than a third of a zoom level past the opening view. A click on a trail's marker or line on the map does what **View** does: the camera flies there and the trail's row is selected.
 
@@ -77,6 +79,14 @@ On Mount Rainier the trail scores come from the saved heat map and the traces an
 
 The wordmark returns to the globe. The mountain panel does not reopen by itself.
 
+### Hill page
+
+One page, `/hills/[slug]`, for Turtle Mountain. It uses the mountain page's split: 3D terrain on the left, the same panel on the right. Prevention shows the 72-hour card and, when trails exist, the trail list. With no trails it says "No trails are mapped here." and does not show **Simulate**.
+
+Response shows the five agent cards idle. **Analyze now** is absent. Nothing on this page starts a run.
+
+The hover card on the globe adds the line "Hill. Landslide model." beside the name, elevation, region, and risk badge the mountain markers already use.
+
 ## What would make the UX wrong
 
 - A third audience (search and rescue, insurance, event organizers) gets its own screen.
@@ -90,6 +100,8 @@ The wordmark returns to the globe. The mountain panel does not reopen by itself.
 - A callout reads as if a message was sent, or a public notice has a send button.
 - The simulation shows a timing or a flow path as a prediction.
 - The mountain panel shows agent cards or **Analyze now**. Those live on the mountain page.
+- The hill page runs the agents, or **Analyze now** appears there.
+- The hill glyph uses a new color. Risk color is the only difference between a safe hill and a dangerous one.
 
 ## How to check a UI change
 

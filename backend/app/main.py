@@ -17,6 +17,7 @@ from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
 from app.routes import (
     forecast,
+    hills,
     history,
     mountains,
     risk,
@@ -60,6 +61,7 @@ app.add_middleware(
 )
 
 app.include_router(mountains.router)
+app.include_router(hills.router)
 app.include_router(simulations.router)
 app.include_router(runs.router)
 app.include_router(forecast.router)
@@ -85,6 +87,7 @@ def root() -> dict[str, str]:
         "health": "/health",
         "docs": "/docs",
         "mountains": "/mountains",
+        "hills": "/hills",
     }
 
 

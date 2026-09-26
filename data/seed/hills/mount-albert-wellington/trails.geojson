@@ -1,0 +1,63 @@
+{
+  "type": "FeatureCollection",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "mount-albert-wellington",
+        "name": "Southern Walkway",
+        "length_km": 0.2,
+        "elevation_gain_m": null,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            174.78604,
+            -41.32372
+          ],
+          [
+            174.78591,
+            -41.32374
+          ],
+          [
+            174.78532,
+            -41.32372
+          ],
+          [
+            174.78469,
+            -41.32365
+          ],
+          [
+            174.78464,
+            -41.32365
+          ],
+          [
+            174.7846,
+            -41.32368
+          ],
+          [
+            174.78443,
+            -41.32385
+          ],
+          [
+            174.78418,
+            -41.3241
+          ],
+          [
+            174.7841,
+            -41.3242
+          ],
+          [
+            174.78403,
+            -41.32426
+          ]
+        ]
+      }
+    }
+  ]
+}

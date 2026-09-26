@@ -1,4 +1,4 @@
-"""The hill card's numbers come from the saved map the heat layer is rendered from."""
+"""The mountain page's numbers come from the saved map the heat layer is rendered from."""
 
 import pytest
 

@@ -21,13 +21,13 @@ TerraSense shows landslide risk for Mount Rainier. A Next.js globe opens a MapLi
 
 | Path | State |
 |---|---|
-| `frontend/` | Next.js 16, React 19, Tailwind 4, TypeScript. Light home theme, React Three Fiber globe, search, fly-in, and the hill detail card at `/mountains/[slug]`. MapLibre terrain, heat map, susceptibility toggle, five trail markers. **Analyze now** on a live mountain streams the real run. Trail scores come from the saved heat map. |
+| `frontend/` | Next.js 16, React 19, Tailwind 4, TypeScript. Light home theme, React Three Fiber globe, search, fly-in, and the mountain page at `/mountains/[slug]`. MapLibre terrain, heat map, susceptibility toggle, five trail markers. **Analyze now** on a live mountain streams the real run. Trail scores come from the saved heat map. |
 | `backend/` | FastAPI: health, mountains, layers, analyze, the run socket, advisory, forecast. Seven-agent pipeline. Six-table schema and seed. Mountain catalog loader. Verified on a local Postgres 16. No hosted database yet. |
 | `ml/` | Download, feature stack, knowledge-driven susceptibility, tiles, trails, and the bypass network are on main. LightGBM training and Model B are on `origin/step-10-local-nasa-export`. |
 | `data/` | `seed/mountains.json` (648 peaks), `seed/mountains_test.json` (138, the default seed), Rainier trails, segments, and the trail network. `seed/landslides.geojson` is on the NASA-export branch, not on main. |
 | `context/` | Spec, the 31 steps, and [`../9-26-todo.md`](../9-26-todo.md). |
 
-Proven in a browser against a local API and Postgres: the globe, search, fly-in, the hill card, and loading, error, and not-found states. **Analyze now** is wired to the API. Unproven on main: a live Gemini or xAI call, historical pins, Model B moving the heat map, the mountain panel, and a hosted database.
+Proven in a browser against a local API and Postgres: the globe, search, fly-in, the mountain page, and loading, error, and not-found states. **Analyze now** is wired to the API. Unproven on main: a live Gemini or xAI call, historical pins, Model B moving the heat map, the mountain panel, and a hosted database.
 
 ## Decisions already made
 
@@ -36,7 +36,7 @@ Do not reopen these during the hackathon unless the demo is already rehearsed an
 - **One live mountain.** Mount Rainier, slug `mount-rainier`. Other peaks are catalog markers.
 - **Landslide and debris flow only.** Other hazard types stay out.
 - **Two models.** LightGBM susceptibility is offline. The live score blends that raster with Open-Meteo rain. Weights stay named constants.
-- **Seven agents** (Sep 25, 2026). Terrain, Weather, Trail, History, and Route Scout run in parallel, then the Risk Synthesizer, then the Alert Writer. The hill card shows five rows. History and Route Scout fold into Trails.
+- **Seven agents** (Sep 25, 2026). Terrain, Weather, Trail, History, and Route Scout run in parallel, then the Risk Synthesizer, then the Alert Writer. The mountain page shows five rows. History and Route Scout fold into Trails.
 - **Two LLM providers and a router** (Sep 25, 2026). Gemini Flash and Grok. A router in code picks one per call and records why. Either key alone works. The trace shows on the agent card, not in a side panel.
 - **No alert channel** (Sep 25, 2026). Discord was dropped. The alert stays in the app. No SMS, email, Slack, accounts, or ack/dismiss.
 - **Geometry is GeoJSON in JSON.** No PostGIS. Run state lives in the API process. No Redis.

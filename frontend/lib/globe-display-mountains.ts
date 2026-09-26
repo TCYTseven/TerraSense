@@ -198,19 +198,22 @@ export function orderMountainsForBrowse(mountains: Mountain[]): Mountain[] {
 
 /**
  * Pick up to `limit` mountains for the globe with continental spread and few polar pins.
- * Live mountains are always included. Search still uses the full API list.
+ * Every hill is included, then every other live mountain. Static peaks fill whatever
+ * room is left. Search still uses the full API list.
  */
 export function selectGlobeMountains(mountains: Mountain[], limit: number): Mountain[] {
   if (limit <= 0 || mountains.length <= limit) {
     return orderMountainsForBrowse(mountains);
   }
 
-  const live = mountains.filter((m) => m.is_live);
-  const catalog = mountains.filter((m) => !m.is_live);
-  const budget = limit - live.length;
+  const hills = mountains.filter((m) => m.kind === "hill");
+  const live = mountains.filter((m) => m.is_live && m.kind !== "hill");
+  const pinned = [...hills, ...live];
+  const catalog = mountains.filter((m) => !m.is_live && m.kind !== "hill");
+  const budget = limit - pinned.length;
   if (budget <= 0) {
-    return live.slice(0, limit);
+    return pinned.slice(0, limit);
   }
 
-  return [...live, ...pickRegionalCatalog(catalog, budget)];
+  return [...pinned, ...pickRegionalCatalog(catalog, budget)];
 }

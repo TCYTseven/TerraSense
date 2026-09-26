@@ -1,11 +1,11 @@
 "use client";
 
-import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
+import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import type { ReleaseCamera } from "@/lib/use-simulation";
 import type { FlowFeatureCollection, LayerTiles, MountainDetail } from "@/lib/types";
 import MountainMap from "./mountain-map";
 
-export interface HillMountainViewProps {
+export interface MountainTerrainViewProps {
   mountain: MountainDetail;
   probability: LayerTiles | null;
   susceptibility: LayerTiles | null;
@@ -25,11 +25,11 @@ export interface HillMountainViewProps {
 function noop() {}
 
 /**
- * The hill card's left column: the 3D terrain map with its heat drape, trails, and a lettered
+ * The mountain page's left column: the 3D terrain map with its heat drape, trails, and a lettered
  * marker per top-five trail. A "View" click or a click on the trail on
  * the map (a new `focus`) flies the camera to that trail's region. Fills its `relative` parent.
  */
-export default function HillMountainView({
+export default function MountainTerrainView({
   mountain,
   probability,
   susceptibility,
@@ -40,7 +40,7 @@ export default function HillMountainView({
   release = null,
   flow = null,
   flowActive = false,
-}: HillMountainViewProps) {
+}: MountainTerrainViewProps) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-muted">
       <MountainMap

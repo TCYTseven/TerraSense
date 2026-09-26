@@ -1,24 +1,24 @@
 // The surface synced to Claude Design, all from the app's own source.
 // Tokens come from .design-sync/tokens.css (design addendum + spec), not from this entry.
 //
-// In: the risk vocabulary (RiskBadge, LevelWord, NeedsReviewTag, TrailBadge) and the hill
-// detail card's presentational pieces (context/design-addendum.md, Panel): the overall risk
+// In: the risk vocabulary (RiskBadge, LevelWord, NeedsReviewTag, TrailBadge) and the mountain
+// page's presentational pieces (context/design-addendum.md, Panel): the overall risk
 // block, the top-5 trail list, preventative measures, the agent pipeline and its cards, the
 // Reactive Measures section, and Analyze now. Plus the scripted pipeline hook, so a design can
 // play a run.
-// Out: HillHeader (next/link needs the Next router), the map (MapLibre, WebGL), the globe
+// Out: MountainHeader (next/link needs the Next router), the map (MapLibre, WebGL), the globe
 // (three.js), the hiker card and hazard block (not rendered on the page), and THEME from
 // lib/theme.ts (for WebGL; it predates the role names). See .design-sync/NOTES.md.
 
 // Risk vocabulary.
 export { default as RiskBadge } from "@/components/risk-badge";
 export { LevelWord, NeedsReviewTag } from "@/components/panel/level";
-export { default as TrailBadge } from "@/components/hill/trail-badge";
+export { default as TrailBadge } from "@/components/mountain/trail-badge";
 
-// Hill detail card, right panel, top to bottom.
-export { default as OverallRisk } from "@/components/hill/overall-risk";
-export { default as TrailList } from "@/components/hill/trail-list";
-export { default as PreventativeMeasures } from "@/components/hill/preventative-measures";
+// Mountain page, right panel, top to bottom.
+export { default as OverallRisk } from "@/components/mountain/overall-risk";
+export { default as TrailList } from "@/components/mountain/trail-list";
+export { default as PreventativeMeasures } from "@/components/mountain/preventative-measures";
 export { default as AgentPipeline } from "@/components/pipeline/agent-pipeline";
 export { default as AgentCard } from "@/components/pipeline/agent-card";
 export { default as StatusGlyph } from "@/components/pipeline/status-glyph";
@@ -39,12 +39,12 @@ export {
   MEASURE_CATEGORY_LABELS,
   MEASURE_TIMINGS,
   MEASURE_TIMING_LABELS,
-} from "@/lib/hill";
+} from "@/lib/mountain-view";
 export type {
   TrailLetter,
   TrailRisk,
-  HillStats,
-  HillView,
+  MountainStats,
+  MountainView,
   PipelineAgentId,
   PipelineStatus,
   PipelineAgentState,
@@ -52,7 +52,7 @@ export type {
   MeasureCategory,
   MeasureTiming,
   ReactiveMeasure,
-} from "@/lib/hill";
+} from "@/lib/mountain-view";
 export { usePipeline } from "@/lib/pipeline/use-pipeline";
 export type { PipelineControls } from "@/lib/pipeline/use-pipeline";
 export { initialPipelineState } from "@/lib/pipeline/orchestrator";

@@ -1,10 +1,10 @@
-import { OverallRisk, type HillView } from "terrasense-ui";
+import { OverallRisk, type MountainView } from "terrasense-ui";
 
-// OverallRisk: the hill card's overall score (large mono, two decimals) and level word.
+// OverallRisk: the mountain page's overall score (large mono, two decimals) and level word.
 // High and Extreme take the 3 px border and 8% tint. Static mountains show their fixed level only.
 // The panel is about 45% of the page; its sections sit on bg-card.
 
-const rainier = (score: number, level: HillView["risk"]["level"]): HillView => ({
+const rainier = (score: number, level: MountainView["risk"]["level"]): MountainView => ({
   slug: "mount-rainier",
   name: "Mount Rainier",
   region: "Cascade Range, Washington, USA",

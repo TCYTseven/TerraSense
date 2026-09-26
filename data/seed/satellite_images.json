@@ -2361,5 +2361,379 @@
     ],
     "image_size_px": 512,
     "error": null
+  },
+  {
+    "mountain_slug": "turtle-mountain",
+    "mountain_name": "Turtle Mountain",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-114.4814886%2C49.5320244%2C-114.3429514%2C49.6218556&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/turtle-mountain.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -114.4814886,
+      49.5320244,
+      -114.3429514,
+      49.6218556
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "mount-adams-cincinnati",
+    "mountain_name": "Mount Adams",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-84.5569937%2C39.0626344%2C-84.4412263%2C39.1524656&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/mount-adams-cincinnati.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -84.5569937,
+      39.0626344,
+      -84.4412263,
+      39.1524656
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "peach-orchard-mountain",
+    "mountain_name": "Peach Orchard Mountain",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-82.5989066%2C37.4177844%2C-82.4857334%2C37.5076156&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/peach-orchard-mountain.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -82.5989066,
+      37.4177844,
+      -82.4857334,
+      37.5076156
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "crawford-mountain",
+    "mountain_name": "Crawford Mountain",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-83.2695848%2C37.2561944%2C-83.1566552%2C37.3460256&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/crawford-mountain.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -83.2695848,
+      37.2561944,
+      -83.1566552,
+      37.3460256
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "chosica-ravine",
+    "mountain_name": "Chosica Ravine",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-76.731406%2C-11.9679256%2C-76.639594%2C-11.8780944&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/chosica-ravine.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -76.731406,
+      -11.9679256,
+      -76.639594,
+      -11.8780944
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "cerro-kutukutuni",
+    "mountain_name": "Cerro Kutukutuni",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-68.178025%2C-16.5873956%2C-68.084315%2C-16.4975644&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/cerro-kutukutuni.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -68.178025,
+      -16.5873956,
+      -68.084315,
+      -16.4975644
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "leicester-peak",
+    "mountain_name": "Leicester Peak",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-13.2692285%2C8.4047144%2C-13.1784115%2C8.4945456&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/leicester-peak.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -13.2692285,
+      8.4047144,
+      -13.1784115,
+      8.4945456
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "keda-peak",
+    "mountain_name": "სანოვარდო",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=41.8809797%2C41.5083244%2C42.0010203%2C41.5981556&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/keda-peak.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      41.8809797,
+      41.5083244,
+      42.0010203,
+      41.5981556
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "dariali-gorge",
+    "mountain_name": "Dariali Gorge",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=44.4864298%2C42.6789144%2C44.6087102%2C42.7687456&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/dariali-gorge.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      44.4864298,
+      42.6789144,
+      44.6087102,
+      42.7687456
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "varna-peak",
+    "mountain_name": "изгрев Ташлъ тепе",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=27.8958927%2C43.1867544%2C28.0191873%2C43.2765856&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/varna-peak.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      27.8958927,
+      43.1867544,
+      28.0191873,
+      43.2765856
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "bokatol-peak",
+    "mountain_name": "Bokatol Peak",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=123.812974%2C10.2876344%2C123.904286%2C10.3774656&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/bokatol-peak.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      123.812974,
+      10.2876344,
+      123.904286,
+      10.3774656
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "dominican-hill",
+    "mountain_name": "Dominican Hill",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=120.5400686%2C16.3587244%2C120.6337114%2C16.4485556&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/dominican-hill.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      120.5400686,
+      16.3587244,
+      120.6337114,
+      16.4485556
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "bukit-carcosa",
+    "mountain_name": "Bukit Carcosa",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=101.6355966%2C3.1000944%2C101.7255634%2C3.1899256&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/bukit-carcosa.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      101.6355966,
+      3.1000944,
+      101.7255634,
+      3.1899256
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "bukit-bendera",
+    "mountain_name": "Bukit Bendera",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=100.2237723%2C5.3797344%2C100.3140077%2C5.4695656&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/bukit-bendera.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      100.2237723,
+      5.3797344,
+      100.3140077,
+      5.4695656
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "mount-puting-bato",
+    "mountain_name": "Mount Puting Bato",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=121.1583118%2C14.5734644%2C121.2511482%2C14.6632956&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/mount-puting-bato.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      121.1583118,
+      14.5734644,
+      121.2511482,
+      14.6632956
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "cornell-mountain",
+    "mountain_name": "Cornell Mountain",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-122.8172221%2C45.4815644%2C-122.6889979%2C45.5713956&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/cornell-mountain.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -122.8172221,
+      45.4815644,
+      -122.6889979,
+      45.5713956
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "monument-hill",
+    "mountain_name": "Monument Hill",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-80.0716937%2C40.4047944%2C-79.9536463%2C40.4946256&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/monument-hill.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -80.0716937,
+      40.4047944,
+      -79.9536463,
+      40.4946256
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "battery-maraval",
+    "mountain_name": "Battery",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-61.58486%2C10.6525244%2C-61.49344%2C10.7423556&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/battery-maraval.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -61.58486,
+      10.6525244,
+      -61.49344,
+      10.7423556
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "cerrito-del-carmen",
+    "mountain_name": "Cerrito del Carmen",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-90.5517343%2C14.6020244%2C-90.4588857%2C14.6918556&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/cerrito-del-carmen.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -90.5517343,
+      14.6020244,
+      -90.4588857,
+      14.6918556
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "jakhoo",
+    "mountain_name": "Jakhoo",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=77.1311146%2C31.0555844%2C77.2360254%2C31.1454156&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/jakhoo.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      77.1311146,
+      31.0555844,
+      77.2360254,
+      31.1454156
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "mount-albert-wellington",
+    "mountain_name": "Mount Albert",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=174.7254688%2C-41.3716356%2C174.8450912%2C-41.2818044&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/mount-albert-wellington.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      174.7254688,
+      -41.3716356,
+      174.8450912,
+      -41.2818044
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
+    "mountain_slug": "rest-and-be-thankful",
+    "mountain_name": "Rest and Be Thankful",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=-4.9374977%2C56.1822044%2C-4.7759023%2C56.2720356&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/rest-and-be-thankful.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      -4.9374977,
+      56.1822044,
+      -4.7759023,
+      56.2720356
+    ],
+    "image_size_px": 512,
+    "error": null
   }
 ]

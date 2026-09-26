@@ -47,7 +47,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 **Works end to end**
 
 - **Globe.** A React Three Fiber Earth on the light home theme, evenly lit so no side goes black. Mountain-logo markers come from the API. The default seed (`SEED_MODE=mountainstest`) is 138 peaks, and the globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Mount Rainier is the only live mountain. High and Extreme mountains sit in a larger translucent sphere. Hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
-- **Hill detail card (the mountain page).** Two columns, rebuilt Sep 25:
+- **Mountain page.** Two columns, rebuilt Sep 25:
   - **Map, about 55%.** MapLibre GL with 3D terrain from AWS Terrain Tiles. The mountain renders gray on white surroundings. The opening frame is sized from the summit elevation, so any mountain opens the same way. The camera slowly orbits while idle, and zooming out stops one level past the opening view. The heat map is the default layer, with a susceptibility toggle. All 67 OpenStreetMap trails are drawn, and the hero trail (the Skyline loop, 5.5 mi) is colored by 0.1-mile segment. Five lettered markers (A–E) sit on the top at-risk trails, each with a hover tooltip (score, slope, primary factor), and **View** flies the camera to them.
   - **Panel, about 45%.** Stats, the overall score, the top five trails, preventative measures, an Orchestrator with five agent cards and inline reasoning traces, **Analyze now**, and a Reactive Measures section clustered by timing (now, within 1 hour, 6 hours, 24 hours).
 - **Assessment.** `backend/app/assessment.py` scores the map, colors the hero trail's 55 segments, flags the worst mile range, draws the hazard zone around it, and routes a bypass on the OpenStreetMap trail network, or says to turn back. `backend/app/trailscan.py` scores every mapped trail against the same map.
@@ -62,7 +62,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 
 **Not done yet**
 
-- **The hill card is nearly wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/risk-summary`, which scores every trail on the saved map the heat layer shows (`backend/app/risk_summary.py`). Left: check with the fake LLM server that the five trails match the advisory after a run.
+- **The mountain page is nearly wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/risk-summary`, which scores every trail on the saved map the heat layer shows (`backend/app/risk_summary.py`). Left: check with the fake LLM server that the five trails match the advisory after a run.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
 - **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
 - **Landslide points.** The supplied NASA Global Landslide Catalog export contributes 4 Rainier events; because only one is `1km` accurate, the downloader adds 33 documented Washington Geological Survey inventory points as supplemental training labels. The **Past landslides** toggle is enabled, and the History Analyst can read all 37 records.
@@ -73,6 +73,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 - **Mountain page simulation** (6.8). **Simulate** sits beside **Analyze now** on mountains that have routes. It flies to the route most likely to fail and plays an illustrative debris-flow runout, with a time bar on the mountain view kept in step with the flow. The centered globe panel from the Sep 25 decision is still not built.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
 - **Catalog size.** `data/seed/mountains.json` has 648 peaks. The written target is about 1,000. The default seed is the 138-peak test file.
+- **Hills.** Specified Sep 26. Turtle Mountain is the first hill and is not seeded yet. The hill glyph and `/hills/[slug]` are not built.
 
 Example copy in this file ("Ridge Trail mile 4.2 to 5.1", "Cedar Loop") is illustrative. The live trail is the Skyline loop, and the bypass comes from the trail network.
 
@@ -84,9 +85,10 @@ Build one convincing loop, not a platform.
 
 **In**
 
-- A 3D globe. Click Mount Rainier and fly in.
+- A 3D globe. Click Mount Rainier and fly in. One hill marker, Turtle Mountain in the Crowsnest Pass, uses a hill glyph and opens a hill page.
 - Two extra mountains as static globe markers so the globe is not a single dot. They do not run live analysis.
-- One live mountain: **Mount Rainier**. Precompute its terrain features before the event.
+- One live mountain: **Mount Rainier**. Precompute its terrain features before the event. Rainier stays the demo mountain on the existing landslide model until a separate mountain model exists. That model is planned and not started.
+- One live hill: **Turtle Mountain**, Crowsnest Pass, Alberta. The existing regional LightGBM and Model B score it. Agent orchestration is not on the hill page.
 - Landslide risk only. A static susceptibility layer and a 72-hour probability layer driven by recent rain.
 - Historical landslide pins from a public catalog.
 - Trails colored by risk, plus one alternate route that avoids the worst segment.
@@ -148,11 +150,11 @@ The first screen is a full-screen 3D Earth.
 
 - React Three Fiber, Three.js, and drei. A custom globe (`frontend/components/globe/`), not a globe library.
 - Textured Earth (`earth-day.jpg` with a topology bump map), evenly lit on the light home theme, and a light atmospheric rim.
-- Three markers, each a mountain logo in its risk color. Color encodes overall risk on all four levels (see the design addendum's Risk mapping); High and Extreme mountains also sit in a larger translucent sphere of that color. Rainier is live and gets an extra ring. The other two use a fixed risk value loaded from seed data.
+- Markers are a mountain logo or, for a hill, a single rounded rise with no snowcap. Color encodes overall risk on all four levels (see the design addendum's Risk mapping); High and Extreme places also sit in a larger translucent sphere of that color. Rainier is live and gets an extra ring. Turtle Mountain is the one live hill. The other markers use a fixed risk value loaded from seed data.
 - Drag, zoom, and a slow idle rotation that pauses on hover and during a flight.
 - Hover shows mountain name, elevation, region, risk level, and last refresh time.
-- Click turns the globe to face the mountain and opens the mountain panel (6.8). **Open ranger view** in the panel flies the camera in over 1.5 s, fades to the background, and opens the mountain view. (Built today: the click flies straight in. Steps 29 and 30 move it behind the panel.)
-- A search box accepts "Mount Rainier" (or "mt rainier") and opens the same panel.
+- A mountain click turns the globe to face the mountain and opens the mountain panel (6.8). **Open ranger view** in the panel flies the camera in over 1.5 s, fades to the background, and opens the mountain view. (Built today: the click flies straight in to `/mountains/[slug]`. Steps 29 and 30 move it behind the panel.) A hill click uses the same fly-to and opens `/hills/[slug]`.
+- A search box accepts "Mount Rainier" (or "mt rainier") and "Turtle Mountain", and opens the matching place.
 
 The globe is the demo hook. Keep it small and fast. Three markers is enough.
 
@@ -177,7 +179,7 @@ Four fields, always in this order:
 3. Confidence.
 4. How to avoid it.
 
-**Hill detail card** (rebuilt Sep 25, 2026)
+**Mountain page** (rebuilt Sep 25, 2026)
 
 The page is two columns: the 3D mountain view about 55%, one scrolling stats panel about 45%. Each of the top five trails gets a letter marker (A to E) on its region; hovering one shows its risk score, slope, and primary risk factor. The panel, top to bottom:
 
@@ -189,6 +191,8 @@ The page is two columns: the 3D mountain view about 55%, one scrolling stats pan
 - Button: **Analyze now**, pinned to the panel bottom.
 
 There is no rain section. Weather is text in the Weather agent's trace, never a map layer. On Mount Rainier the trail scores, overall score, and mean slope come from the saved 72-hour map, and the traces and measures from a live run. Static mountains still use the scripted client-side orchestrator.
+
+**Hill page.** `/hills/turtle-mountain` reuses this layout. Prevention shows the heat map's scores. Response shows the five agent cards idle, and **Analyze now** is absent. The hill has no trails until some are imported, so **Simulate** stays off.
 
 ### 6.3 Landslide Model
 
@@ -216,6 +220,7 @@ Two stages. Both stay explainable.
 - **Current state.** `backend/app/ml/probability.py` is the one seam and calls `model_b.run(rain)`. Dry, missing-rain, and storm paths are covered by contract tests; the result is a float32 0–1 raster with the susceptibility grid's transform and CRS.
 - **Weights (Sep 26, fitted).** Terrain enters as the log-odds of the calibrated susceptibility relative to its 1:3 sampling rate (`logit(0.25)`), so the index carries one base rate, `w0`'s. `w0 = -1.32`, `w2 = 0.92`, `w3 = 0.76` are the logistic fit on the 767 dated events, with 95% CIs -1.51 to -1.18, 0.74 to 1.10, and 0.59 to 0.93. The earlier hand-set `w2 = 2.0` and `w3 = 1.6` were outside those intervals. The fit ranks days 0.005 worse by ROC-AUC (95% CI −0.007 to −0.002, so `weights_published` stays `false` in the artifact) but cuts calibration error from 0.189 to 0.032. The index is binned into the shared levels, so calibration won. Terrain and rain were each validated; their product assumes they act independently and was never validated as a whole, because no dated event cell falls in the Rainier box. The absolute level depends on the sampling ratios, so the output is a relative 72-hour risk index, not a probability. A dry week leaves 99% of the box Low. Rain at both thresholds leaves 67% Low and 3.5% High. The storm fixture puts 47% at High or above and flags Skyline miles 4.1 to 5.4, a run the trail network cannot route around, so that storm has no bypass. On Rainier's own slides, slope alone (ROC-AUC 0.64) ranks better than the terrain model (0.60); the card shows both.
 - **Point probability.** `POST /api/v1/landslide-risk` answers every in-domain click with `probability`: the Model B value at that pixel, labeled `model_b_estimate` and explained by its three logit terms, until a calibrated classifier replaces it. See [docs/production-risk.md](docs/production-risk.md).
+- **Hills (Sep 26, 2026).** This LightGBM plus Model B is the hill model. Turtle Mountain gets its own DEM and land-cover window; the Washington training raster does not cover Alberta, and a placeholder terrain sample is not an answer. The published scores stay the Washington figures: spatial-block ROC-AUC 0.82, and 0.60 on Rainier's own slides. Those numbers are not Turtle Mountain's accuracy. The Frank Slide of 29 April 1903 was a rockslide, so Model B's rain trigger is not an explanation of that event. Rainier remains the demo mountain on this same code until a separate mountain model exists. That model is not started.
 
 Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
@@ -235,7 +240,7 @@ Seven LLM calls with separate prompts. Every agent reads the ML model's predicti
 
 The five analysts run in parallel, then the Risk Synthesizer, then the Alert Writer. Each result streams to the UI. Code sets the final confidence (weights: terrain 0.30, weather 0.25, trail 0.20, routes 0.15, history 0.10) and checks the Synthesizer's routes and posture (`advisory.py`).
 
-The hill card shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). On a live mountain those cards follow the API. History and Route Scout fold into the Trails row. Static mountains still use the scripted source.
+The mountain page shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). On a live mountain those cards follow the API. History and Route Scout fold into the Trails row. Static mountains still use the scripted source.
 
 Consensus rule: if severity ratings differ by two or more levels, set `needs_review` and phrase the alert as an advisory.
 
@@ -259,7 +264,7 @@ Not rendered on the rebuilt mountain page for now (UX.md, Mountain page); `GET /
 
 ### 6.7 Reasoning Panel
 
-Added Sep 25, 2026 (team decision); folded into the hill detail card the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
+Added Sep 25, 2026 (team decision); folded into the mountain page the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
 
 ### 6.8 Mountain page runout
 
@@ -508,7 +513,8 @@ Dark and operational, like a small dispatch screen. The hiker card is the only s
 ```sql
 mountains (
   id, name, slug, lat, lon, elevation_m, region,
-  current_risk_level, last_analyzed_at, is_live bool
+  current_risk_level, last_analyzed_at, is_live bool,
+  kind text  -- "mountain" or "hill"
 )
 
 trails (
@@ -549,7 +555,7 @@ alerts (
 )                      -- unused since Discord was dropped
 ```
 
-Seed Rainier plus two marker mountains (Huascarán, Mount Fuji). Seed trails for Rainier only. Historical events are read from `data/seed/landslides.geojson`, not a table.
+Seed Rainier plus two marker mountains (Huascarán, Mount Fuji). Every catalog row is `kind = "mountain"`. Seed one hill, Turtle Mountain, from `data/seed/hills.json`, `kind = "hill"`. Seed trails for Rainier only. Historical events are read from `data/seed/landslides.geojson`, not a table. The Frank Slide is not hand-placed.
 
 ---
 
@@ -560,6 +566,9 @@ GET  /health
 GET  /mountains
 GET  /mountains/{slug}                  → mountain, trails, active_hazard, historical_events, active_run_id
 GET  /mountains/{slug}/layers/{layer}   → tile URL template (susceptibility, probability)
+GET  /hills/{slug}                      → same detail shape, only when kind is hill
+GET  /hills/{slug}/layers/{layer}       → the hill's tiles
+GET  /hills/{slug}/risk-summary         → the hill page's scores
 POST /mountains/{slug}/analyze          → { run_id }
 GET  /runs/{run_id}
 WS   /runs/{run_id}/stream              → RunUpdate and AgentEvent messages
@@ -613,7 +622,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 - Tighten motion and copy.
 - 60–90 second backup video.
 - Devpost draft with the real AUC and the real data sources.
-- Finish wiring the hill card: traces, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Check the five trails against the advisory after a fake-LLM run.
+- Finish wiring the mountain page: traces, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Check the five trails against the advisory after a fake-LLM run.
 - Rehearse the live demo three times with real keys. Keep a finished run on screen in case the live call fails.
 
 If you are behind, drop in this order:
@@ -719,7 +728,8 @@ Do not build these during HackGT. They are real follow-ons, and they will sink t
 - Auth.
 - GPX download, public share pages, Open Graph images, browser geolocation.
 - InSAR and Sentinel-1, SMAP as a required input, earthquake triggers, a CNN on DEM patches, SHAP plots.
-- Live analysis for more than Mount Rainier.
+- Live agent analysis for more than Mount Rainier. The hill page does not run the seven agents.
+- A mountain model. One is planned for high peaks. It is not started. Hills use the existing landslide model.
 - A scheduled ingest job. **Analyze now** is the product for the demo.
 - Redis, PostGIS, S3 or R2, and a multi-service deploy you do not already know how to run.
 - Writing trail closures back to a park system.
@@ -738,13 +748,14 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Discord dropped. The ranger alert stays in the app (step 24) |
 | Sep 25, 2026 | Two LLM providers, Gemini Flash and Grok, with a router in code and a reasoning panel |
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
-| Sep 26, 2026 | Terrain retrained regionally (spatial CV AUC 0.82, Rainier-only 0.60) and Model B's rain weights fitted on 767 dated landslides (AUC 0.75). The point value and the heat map are a relative 72-hour index with its held-out skill shown in the card. The hill card's trail scores come from the saved map |
+| Sep 26, 2026 | Terrain retrained regionally (spatial CV AUC 0.82, Rainier-only 0.60) and Model B's rain weights fitted on 767 dated landslides (AUC 0.75). The point value and the heat map are a relative 72-hour index with its held-out skill shown in the card. The mountain page's trail scores come from the saved map |
 | Sep 26, 2026 | Model B's terrain weight retuned (`w1` 2.4 to 7.0, center 0.5 to 0.75) so terrain gates the rain trigger. The landslide-risk endpoint returns a 0–1 `probability` on every in-domain click: the calibrated one when it exists, else the labeled Model B estimate (6.3) |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
 | Sep 25, 2026 | The backend fans out five analysts (Terrain, Weather, Trail, History, Route Scout), then the Risk Synthesizer decides routes and the ranger response, then the Alert Writer. Runs end in an advisory (6.4) |
 | Sep 25, 2026 | The globe goes light and evenly lit, with mountain-logo markers. The mountain map renders the mountain gray on white surroundings, framed from its elevation |
-| Sep 25, 2026 | The mountain page is rebuilt as the hill detail card (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
+| Sep 25, 2026 | The ranger page, first called the hill detail card, is the mountain page (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
+| Sep 26, 2026 | The existing regional LightGBM and Model B score hills. The first hill is Turtle Mountain, Crowsnest Pass, Alberta. Rainier stays the demo mountain on the same code until a mountain model exists. That model is not started. Avalanche and snowpack stay out of scope. The Frank Slide was a rockslide, so the rain trigger is not an explanation of 1903 |
 | Sep 26, 2026 | Nepal / Tibet current-event set. Mount Everest and Mount Kailash are both built as packs and go live from their own rasters: real tiles, the Everest Base Camp Trek and the Kailash Kora in miles. Kailash is in Tibet, China, reached through Nepal; the copy says so rather than calling it a Nepali peak. Its heat is a knowledge-driven index, never called trained and never called a Nepal forecast. Annapurna I, Manaslu, and Kangchenjunga stay catalog markers. Rivers are one spoken line about debris in valleys, not a layer or a forecast. See `context/docs/nepal-mountains-build.md` |
 
 ---
@@ -764,3 +775,5 @@ Changes to this spec after the build started. Each one is also reflected in the 
 - **Skip-route.** The bypass that avoids the flagged trail segment.
 - **Router.** The code that picks Gemini Flash or Grok for each agent call and records why.
 - **Run.** One pass of the probability map plus the seven agents for Mount Rainier.
+- **Mountain page.** The ranger page at `/mountains/[slug]`. It was first called the hill detail card.
+- **Hill.** A place kind scored by the existing landslide model. The first one is Turtle Mountain, Crowsnest Pass, Alberta. The name on the map can still say Mountain.

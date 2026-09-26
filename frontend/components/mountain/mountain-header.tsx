@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { formatFeet } from "@/lib/format";
-import type { HillView } from "@/lib/hill";
+import type { MountainView } from "@/lib/mountain-view";
 
-/** The back link, the hill's name, and one line of basic stats. */
-export default function HillHeader({ hill }: { hill: HillView }) {
+/** The back link, the mountain's name, and one line of basic stats. */
+export default function MountainHeader({ hill }: { hill: MountainView }) {
   const { stats } = hill;
   return (
     <header className="px-5 pb-4 pt-5">

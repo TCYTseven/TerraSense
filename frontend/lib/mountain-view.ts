@@ -1,6 +1,6 @@
 /**
- * The hill detail card's view model: what the mountain page renders, independent of where the
- * numbers come from. `lib/hill-view.ts` fills it from the mountain and the risk summary, which
+ * The mountain page's view model: what the mountain page renders, independent of where the
+ * numbers come from. `lib/mountain-view-build.ts` fills it from the mountain and the risk summary, which
  * scores every trail on the saved 72-hour map.
  */
 
@@ -31,7 +31,7 @@ export interface TrailRisk {
 }
 
 /** The header's one line of basic stats. */
-export interface HillStats {
+export interface MountainStats {
   elevationM: number;
   /** Mean hillside slope across the mountain's box, in degrees. Null until scored. */
   meanSlopeDeg: number | null;
@@ -39,12 +39,12 @@ export interface HillStats {
   areaKm2: number | null;
 }
 
-export interface HillView {
+export interface MountainView {
   slug: string;
   name: string;
   region: string;
   isLive: boolean;
-  stats: HillStats;
+  stats: MountainStats;
   /** The worst point on any mapped trail, 0 to 1, and its level. Null score until scored. */
   risk: { score: number | null; level: RiskLevel };
   /** Exactly the top five, riskiest first, lettered A to E. Empty for static mountains. */

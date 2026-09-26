@@ -1,5 +1,5 @@
 import { ChevronRightIcon } from "@/components/icons";
-import { PIPELINE_LABELS, type PipelineAgentState } from "@/lib/hill";
+import { PIPELINE_LABELS, type PipelineAgentState } from "@/lib/mountain-view";
 import StatusGlyph, { STATUS_WORDS } from "./status-glyph";
 
 function seconds(agent: PipelineAgentState): string | null {

@@ -24,8 +24,8 @@ type LoadState =
 /**
  * The globe screen: spaced markers from GET /mountains (see NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT),
  * search over the full list, and the fly-in.
- * A marker click or a search pick flies the camera to the mountain, fading to the page
- * background over the last part of the flight, then opens /mountains/[slug].
+ * A marker click or a search pick flies the camera to the place, fading to the page
+ * background over the last part of the flight, then opens /hills/[slug] or /mountains/[slug].
  * The globe is browser-only because WebGL cannot render during server rendering.
  */
 export default function GlobeView() {
@@ -67,11 +67,15 @@ export default function GlobeView() {
     setAttempt((count) => count + 1);
   }
 
+  function placeHref(mountain: Mountain): string {
+    return mountain.kind === "hill" ? `/hills/${mountain.slug}` : `/mountains/${mountain.slug}`;
+  }
+
   function flyTo(mountain: Mountain) {
     if (flyTarget || leaving.current) {
       return;
     }
-    const href = `/mountains/${mountain.slug}`;
+    const href = placeHref(mountain);
     if (!globeReady) {
       // The textured globe is not on screen yet, so there is nothing to fly over.
       leaving.current = true;
@@ -83,7 +87,7 @@ export default function GlobeView() {
   }
 
   function arrive(mountain: Mountain) {
-    router.push(`/mountains/${mountain.slug}`);
+    router.push(placeHref(mountain));
   }
 
   return (

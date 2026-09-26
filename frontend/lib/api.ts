@@ -127,6 +127,45 @@ export async function getForecast(mountainId: string, trailId?: string | null, i
   }
 }
 
+/** One hill with its trails. Resolves to null unless the slug is a hill. */
+export async function getHill(slug: string, init?: RequestInit): Promise<MountainDetail | null> {
+  try {
+    return await getJson<MountainDetail>(`/hills/${encodeURIComponent(slug)}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** A hill's tile template. Resolves to null when the layer is not available. */
+export async function getHillLayer(slug: string, layer: string, init?: RequestInit): Promise<LayerTiles | null> {
+  try {
+    return await getJson<LayerTiles>(
+      `/hills/${encodeURIComponent(slug)}/layers/${encodeURIComponent(layer)}`,
+      init,
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** A hill's scores on its saved heat map. Resolves to null before the first save. */
+export async function getHillRiskSummary(slug: string, init?: RequestInit): Promise<MountainRiskSummary | null> {
+  try {
+    return await getJson<MountainRiskSummary>(`/hills/${encodeURIComponent(slug)}/risk-summary`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /** The overall score and top trails on the saved heat map. Resolves to null before the first save. */
 export async function getRiskSummary(slug: string, init?: RequestInit): Promise<MountainRiskSummary | null> {
   try {

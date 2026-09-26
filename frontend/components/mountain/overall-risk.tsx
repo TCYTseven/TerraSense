@@ -1,9 +1,16 @@
 import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import { formatScore, formatUtc } from "@/lib/format";
-import type { HillView } from "@/lib/hill";
+import type { MountainView } from "@/lib/mountain-view";
 
 /** The worst point on any mapped trail and its level. Static mountains show their fixed level only. */
-export default function OverallRisk({ hill }: { hill: HillView }) {
+export default function OverallRisk({
+  hill,
+  mappedTrails = 0,
+}: {
+  hill: MountainView;
+  /** Catalog trails that are not scored yet. The empty-trail line is only for a place with none. */
+  mappedTrails?: number;
+}) {
   const { level, score } = hill.risk;
   return (
     <section aria-labelledby="risk-heading" className={`border-t border-border px-5 py-4 ${LEVEL_TREATMENT[level]}`}>
@@ -16,12 +23,19 @@ export default function OverallRisk({ hill }: { hill: HillView }) {
         )}
         <LevelWord level={level} className="text-base font-semibold" />
       </p>
-      {!hill.isLive && (
+      {!hill.isLive && mappedTrails === 0 && (
         <p className="mt-2 text-base">No trails are mapped here. Analyze uses this summit&apos;s location, the risk model, and live weather.</p>
       )}
-      {hill.isLive && hill.scoring && (
+      {hill.isLive && hill.scoring && hill.scoring.trailsScored > 0 && (
         <p className="mt-2 text-sm text-muted-foreground">
           Worst point on any of {hill.scoring.trailsScored} mapped trails ·{" "}
+          <span className="font-mono">{Math.round(hill.scoring.shareAreaHigh * 100)}%</span> of the area at high or above ·
+          scored <span className="font-mono">{formatUtc(hill.scoring.scoredAt)}</span>
+        </p>
+      )}
+      {hill.isLive && hill.scoring && hill.scoring.trailsScored === 0 && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Worst cell on the heat map ·{" "}
           <span className="font-mono">{Math.round(hill.scoring.shareAreaHigh * 100)}%</span> of the area at high or above ·
           scored <span className="font-mono">{formatUtc(hill.scoring.scoredAt)}</span>
         </p>

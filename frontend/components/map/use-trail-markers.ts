@@ -3,7 +3,7 @@
 import { type GeoJSONSource, type MapLibreMap, type MapMouseEvent, Marker, Popup } from "maplibre-gl";
 import { useEffect, useRef } from "react";
 import { formatScore, riskLabel } from "@/lib/format";
-import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
+import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import { RISK_COLORS, THEME } from "@/lib/theme";
 import { uphillBearing } from "./fall-line";
 import { HAZARD_OUTLINE_COLOR, LAYER, SOURCE, trailRiskFeatures, trailRiskPaint } from "./map-style";

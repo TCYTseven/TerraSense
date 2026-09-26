@@ -9,6 +9,8 @@ from pydantic import BaseModel, Field
 from app.domains import HazardDomain  # noqa: F401  (re-exported for the API models)
 from app.risk import RiskLevel
 
+PlaceKind = Literal["mountain", "hill"]
+
 # Both domains' hazard types. app/domains.py is the single list; the hazards.type CHECK in
 # schema.sql is generated from the same place, so the three never drift (step 34).
 HazardType = Literal[
@@ -31,6 +33,7 @@ class Mountain(BaseModel):
     current_risk_level: RiskLevel
     last_analyzed_at: datetime | None
     is_live: bool
+    kind: PlaceKind = "mountain"
     # The regional LightGBM model's live answer at the summit, so the UI shows the model's
     # prediction rather than the seeded catalog color. model_input says what ground it scored:
     # "regional_feature_stack" (the summit's own pixel) or "placeholder_terrain_sample" (a
@@ -171,7 +174,7 @@ class OverallRisk(BaseModel):
 
 
 class MountainRiskSummary(BaseModel):
-    """GET /mountains/{slug}/risk-summary: the hill card's numbers, from the map the tiles show."""
+    """GET /mountains/{slug}/risk-summary: the mountain page's numbers, from the map the tiles show."""
 
     method: str
     scored_at: datetime

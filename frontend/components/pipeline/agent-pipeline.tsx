@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { PIPELINE_LABELS, type PipelineAgentId, type PipelineState } from "@/lib/hill";
+import { PIPELINE_LABELS, type PipelineAgentId, type PipelineState } from "@/lib/mountain-view";
 import { PARALLEL_AGENTS, SEQUENTIAL_AGENTS } from "@/lib/pipeline/orchestrator";
 import AgentCard from "./agent-card";
 import StatusGlyph, { STATUS_WORDS } from "./status-glyph";

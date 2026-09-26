@@ -72,6 +72,12 @@ curl -s http://localhost:8000/mountains | python3 -c "import sys,json; print(len
 
 ---
 
+## Hill catalog
+
+`data/seed/hills.json` loads in the same seed as the mountains (`python -m app.seed` from `backend/`). Turtle Mountain is the one live hill. The other rows are static markers: `kind` is `hill`, `is_live` is false, and the risk color is a display placeholder from recorded NASA Global Landslide Catalog fatalities within 10 km (none `low`, 1–19 `moderate`, 20–99 `high`, 100 or more `extreme`). They are not model scores, and they are not step 32 packs, so Analyze stays closed.
+
+A named OpenStreetMap path within 1.2 km is written to `data/seed/hills/<slug>/trails.geojson`. A hill with no named path has no trail file, the same way most catalog mountains have none. The globe keeps every hill on the map, then fills the remaining marker budget with mountains.
+
 ## Trail routes (Rainier only today)
 
 ### What the user sees

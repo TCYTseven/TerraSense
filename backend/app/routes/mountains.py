@@ -32,7 +32,7 @@ RENDER_HINT = {
 
 MOUNTAIN_COLUMNS = """
     m.id, m.name, m.slug, m.lat, m.lon, m.elevation_m, m.region,
-    m.current_risk_level, m.last_analyzed_at, m.is_live,
+    m.current_risk_level, m.last_analyzed_at, m.is_live, m.kind,
     s.image_url AS satellite_image_url
 """
 

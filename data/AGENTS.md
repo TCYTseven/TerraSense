@@ -24,6 +24,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `seed/trail_network.geojson` | 19 | `backend/app/bypass.py`. Written by `ml/scripts/build_trail_network.py` |
 | `seed/landslides.geojson` | 10, used in 14 | Historical map pins and a source catalog. The event-time builder applies dated rainfall-trigger filters before using records as 72-hour labels. See `seed/sources.md` |
 | `seed/sources.md` | 10 | People. One entry per downloaded file |
+| `seed/hills.json` | 38 | `backend/app/seed.py` `load_hills`. Turtle Mountain stays live. The other rows are static hill and cliff markers (`is_live` false), the same pattern as the mountain catalog. A mountain reseed does not drop them. |
 | `seed/packs/index.json` | 32 | `backend/app/packs.py`. Written by `python ml/scripts/mountain_packs.py --write-index`: one row per pack (name, peak, bbox, UTM zone, hero trail or null) |
 | `seed/packs/<slug>/…` | 32 | One folder per demo peak with the same four files in the same formats: `trails.geojson`, `trail_segments.geojson`, `trail_network.geojson`, `landslides.geojson` (may be an empty collection). Written by `python ml/scripts/build_pack.py <slug>` |
 
@@ -39,9 +40,14 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `elevation_m` | integer | Summit elevation |
 | `region` | string | Shown under the name |
 | `current_risk_level` | string | Placeholder until the first real analysis. Static mountains keep it for good |
-| `is_live` | boolean | `true` only for Rainier |
+| `is_live` | boolean | `true` for Rainier and for Turtle Mountain. Other catalog peaks and hills stay false |
+| `kind` | string | Omitted from the catalog JSON. The database default is `mountain`. `hills.json` rows are `hill` |
 
 The two static peaks, Huascarán (`high`) and Mount Fuji (`low`), are globe markers. Their risk values are display placeholders picked to show the color range. They are not assessments.
+
+Static hills use the same placeholder field. The color comes from recorded NASA Global Landslide Catalog fatalities within 10 km of the site: none is `low`, 1–19 is `moderate`, 20–99 is `high`, and 100 or more is `extreme`. That is a catalog color, not a model score. Only Turtle Mountain has a scored window.
+
+Named paths for a hill, when OpenStreetMap has them, live in `seed/hills/<slug>/trails.geojson` and load with the pack trail files. Hills with no named path have no trail file.
 
 `seed/satellite_images.json` is a list, one entry per mountain in the active catalog:
 

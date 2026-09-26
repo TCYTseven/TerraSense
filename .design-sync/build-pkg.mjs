@@ -2,7 +2,7 @@
 // Builds the package the design-sync converter reads (cfg.buildCmd).
 // frontend/ is a Next.js app with no dist/, so this compiles the synced surface
 // from the app's own source into .design-sync/.cache/pkg/ (gitignored):
-//   dist/index.js       .design-sync/entry.ts (risk vocabulary + hill card panel), esbuild ESM, react external
+//   dist/index.js       .design-sync/entry.ts (risk vocabulary + mountain page panel), esbuild ESM, react external
 //   dist/types/*.d.ts   tsc declarations, "@/..." aliases rewritten to relative
 //   dist/styles.css     .design-sync/tokens.css (the design addendum's tokens with the
 //                       spec's hex values) compiled by Tailwind v4, plus a safelist so
@@ -98,7 +98,7 @@ const SAFELIST = [
   '{grid-cols,col-span}-{1,2,3,4,6,12}',
   '{w,h,size,min-w,min-h,max-w}-{full,screen,fit,min,max,auto,px,0,1,2,3,4,5,6,7,8,10,12,16,20,24,32,40,48,64,80,96}',
   'max-w-{xs,sm,md,lg,xl,2xl,3xl,4xl,5xl,6xl,7xl,prose}',
-  // Addendum sizes: search 360x40, hill card 55/45 columns, map 55dvh when stacked, marker 10/26 px, pin 28 px.
+  // Addendum sizes: search 360x40, mountain page 55/45 columns, map 55dvh when stacked, marker 10/26 px, pin 28 px.
   '{w-[360px],md:w-[55%],md:w-[45%],h-[55dvh],h-dvh,md:h-dvh,size-[10px],size-[26px],size-[28px],size-[0.6em]}',
   // Addendum type roles (Type table). Standard steps plus the exact line heights and tracking.
   'text-{xs,sm,base,lg,xl,2xl,4xl}',
@@ -119,7 +119,7 @@ const input = [
   tokens,
   // The exported components' own source. These use the addendum's role names, so they compile
   // to the right colors. The map and globe components stay out (not synced).
-  ...['components/risk-badge.tsx', 'components/icons.tsx', 'components/panel/level.tsx', 'components/hill', 'components/pipeline']
+  ...['components/risk-badge.tsx', 'components/icons.tsx', 'components/panel/level.tsx', 'components/mountain', 'components/pipeline']
     .map((p) => `@source "${join(FRONTEND, p)}";`),
   `@source "${join(ROOT, '.design-sync/previews')}";`,
   // Every class the conventions header names must compile.
