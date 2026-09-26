@@ -1,0 +1,10 @@
+{
+  "method": "knowledge-driven index",
+  "importance": {
+    "slope": 0.35,
+    "dist_drainage": 0.2,
+    "landcover": 0.2,
+    "twi": 0.15,
+    "curvature": 0.1
+  }
+}
