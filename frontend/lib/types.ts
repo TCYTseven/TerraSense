@@ -42,6 +42,8 @@ export interface Mountain {
   model_risk_level: RiskLevel | null;
   model_method: string | null;
   model_input: string | null;
+  /** Globe hover preview from mountain_satellite_images when seeded in Postgres. */
+  satellite_image_url: string | null;
 }
 
 export interface TrailSegment {

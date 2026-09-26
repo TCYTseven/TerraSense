@@ -33,6 +33,8 @@ class Mountain(BaseModel):
     model_risk_level: RiskLevel | None = None
     model_method: str | None = None
     model_input: str | None = None
+    # Esri World Imagery preview from mountain_satellite_images (Tiger seed), when present.
+    satellite_image_url: str | None = None
 
 
 class TrailSegment(BaseModel):

@@ -13,7 +13,15 @@ from app.db import connect
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 # Children before parents, so a reset drops in a valid order.
-TABLES = ["alerts", "hazards", "analysis_runs", "trail_segments", "trails", "mountains"]
+TABLES = [
+    "alerts",
+    "hazards",
+    "analysis_runs",
+    "trail_segments",
+    "trails",
+    "mountain_satellite_images",
+    "mountains",
+]
 
 
 def apply_schema(reset: bool = False) -> list[str]:

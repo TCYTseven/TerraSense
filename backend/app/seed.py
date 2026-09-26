@@ -3,7 +3,8 @@
 Mountains upsert by slug, and static mountains no longer in the file are
 removed. Trails upsert by (mountain, name), and a mountain's trails that are
 no longer in the file are removed. Trail segments (the hero trail's mile
-markers) upsert by (trail, seq) the same way. Re-running is safe.
+markers) upsert by (trail, seq) the same way. Satellite image rows upsert by
+mountain slug. Re-running is safe.
 
 Step 32: the pack folders under data/seed/packs/<slug>/ load with the same
 rules, and a pack whose susceptibility raster is on this machine is marked
@@ -181,6 +182,58 @@ def load_trail_segments(conn: psycopg.Connection) -> int:
     return len(features)
 
 
+def load_satellite_images(conn: psycopg.Connection) -> int:
+    """Upsert every row of satellite_images.json. Returns how many the file holds.
+
+    One Esri World Imagery preview per catalog mountain, keyed by slug. A row whose
+    mountain is not in the active catalog is skipped rather than failing the seed, and
+    rows the file no longer lists are removed.
+    """
+    path = SEED_DIR / "satellite_images.json"
+    if not path.exists():
+        return 0
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    known = {slug for (slug,) in conn.execute("SELECT slug FROM mountains").fetchall()}
+    kept: list[str] = []
+    for row in rows:
+        slug = row["mountain_slug"]
+        if slug not in known:
+            print(f"skipping satellite image for {slug!r}: not in the active catalog", file=sys.stderr)
+            continue
+        west, south, east, north = row["bbox"]
+        conn.execute(
+            """
+            INSERT INTO mountain_satellite_images (
+              mountain_slug, mountain_name, image_url, file_path, file_ext, source,
+              download_status, bbox_west, bbox_south, bbox_east, bbox_north,
+              image_size_px, error
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (mountain_slug) DO UPDATE SET
+              mountain_name = EXCLUDED.mountain_name,
+              image_url = EXCLUDED.image_url,
+              file_path = EXCLUDED.file_path,
+              file_ext = EXCLUDED.file_ext,
+              source = EXCLUDED.source,
+              download_status = EXCLUDED.download_status,
+              bbox_west = EXCLUDED.bbox_west,
+              bbox_south = EXCLUDED.bbox_south,
+              bbox_east = EXCLUDED.bbox_east,
+              bbox_north = EXCLUDED.bbox_north,
+              image_size_px = EXCLUDED.image_size_px,
+              error = EXCLUDED.error,
+              updated_at = now()
+            """,
+            (slug, row["mountain_name"], row["image_url"], row.get("file_path"),
+             row.get("file_ext"), row.get("source"), row.get("download_status", "downloaded"),
+             west, south, east, north, row.get("image_size_px"), row.get("error")),
+        )
+        kept.append(slug)
+    conn.execute(
+        "DELETE FROM mountain_satellite_images WHERE mountain_slug <> ALL(%s::text[])", (kept,)
+    )
+    return len(rows)
+
+
 def mark_packs_live(conn: psycopg.Connection) -> list[str]:
     """Mark every servable pack live: its map layers and Analyze now open up.
 
@@ -199,6 +252,7 @@ def main() -> None:
         live = mark_packs_live(conn)
         load_trails(conn)
         load_trail_segments(conn)
+        images = load_satellite_images(conn)
         if live:
             print(f"live packs: {', '.join(live)}")
         rows = conn.execute(
@@ -212,7 +266,7 @@ def main() -> None:
             """
         ).fetchall()
 
-    print(f"{len(rows)} mountains")
+    print(f"{len(rows)} mountains, {images} satellite images")
     for slug, is_live, risk, trails, segments in rows:
         print(f"  {slug:<15} {'live' if is_live else 'static':<6} risk={risk:<9} trails={trails:<3} segments={segments}")
 

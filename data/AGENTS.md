@@ -18,6 +18,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 |---|---|---|
 | `seed/mountains_test.json` | 5 | Catalog when `SEED_MODE=mountainstest` (the default). ~140 named peaks spaced across the Americas, Europe, Africa, and Asia, plus Mount Rainier. |
 | `seed/mountains.json` | 5 | Full Overpass catalog. Regenerated offline: `python -m app.mountain_catalog --write-seed --source overpass` from `backend/`. Loaded when `SEED_MODE=reseed`. Reseeding removes static mountains the active file no longer lists. |
+| `seed/satellite_images.json` | 5 | `backend/app/seed.py`, into `mountain_satellite_images`. One Esri World Imagery preview per catalog mountain, keyed by `mountain_slug`. |
 | `seed/trails.geojson` | 5, replaced in 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_segments.geojson` | 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_network.geojson` | 19 | `backend/app/bypass.py`. Written by `ml/scripts/build_trail_network.py` |
@@ -41,6 +42,21 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `is_live` | boolean | `true` only for Rainier |
 
 The two static peaks, Huascarán (`high`) and Mount Fuji (`low`), are globe markers. Their risk values are display placeholders picked to show the color range. They are not assessments.
+
+`seed/satellite_images.json` is a list, one entry per mountain in the active catalog:
+
+| Field | Type | Notes |
+|---|---|---|
+| `mountain_slug` | string | Upsert key. Must be a slug in the catalog file |
+| `mountain_name` | string | Display name, same as the catalog |
+| `image_url` | string | Fetchable image endpoint. Today an Esri World Imagery `export` URL for the peak's box |
+| `file_path` | string or null | Where a downloaded copy belongs, relative to the repo root |
+| `file_ext` | string or null | `jpg` |
+| `source` | string or null | Attribution, e.g. `Esri World Imagery` |
+| `download_status` | string | `downloaded`, `pending`, or `error` |
+| `bbox` | `[west, south, east, north]` | WGS84, the box the image covers |
+| `image_size_px` | integer or null | Square side in pixels |
+| `error` | string or null | Why a `pending` or `error` row has no image |
 
 `seed/trails.geojson` is a FeatureCollection of LineStrings, one feature per line of the file. Each feature's properties: `mountain_slug`, `name`, `length_km`, `elevation_gain_m`, `source` (attribution), and an optional `note`. A line starts at its lower end, so `elevation_gain_m` is the climb walking it uphill. The hero trail is the exception: a loop from its trailhead. The seed removes a mountain's trails that are no longer in the file. The lines come from OpenStreetMap, so the file is ODbL: keep "© OpenStreetMap contributors" wherever it is shown.
 

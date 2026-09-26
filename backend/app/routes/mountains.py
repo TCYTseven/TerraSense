@@ -31,8 +31,14 @@ RENDER_HINT = {
 }
 
 MOUNTAIN_COLUMNS = """
-    id, name, slug, lat, lon, elevation_m, region,
-    current_risk_level, last_analyzed_at, is_live
+    m.id, m.name, m.slug, m.lat, m.lon, m.elevation_m, m.region,
+    m.current_risk_level, m.last_analyzed_at, m.is_live,
+    s.image_url AS satellite_image_url
+"""
+
+MOUNTAIN_FROM = """
+    FROM mountains m
+    LEFT JOIN mountain_satellite_images s ON s.mountain_slug = m.slug
 """
 
 
@@ -73,7 +79,7 @@ def list_mountains(conn: Conn) -> list[Mountain]:
     ensure_catalog(conn)
     conn.commit()
     rows = conn.execute(
-        f"SELECT {MOUNTAIN_COLUMNS} FROM mountains ORDER BY is_live DESC, name"
+        f"SELECT {MOUNTAIN_COLUMNS} {MOUNTAIN_FROM} ORDER BY m.is_live DESC, m.name"
     ).fetchall()
     return [Mountain(**row, **_model_fields(row)) for row in rows]
 
@@ -82,7 +88,7 @@ def list_mountains(conn: Conn) -> list[Mountain]:
 def get_mountain(slug: str, conn: Conn) -> MountainDetail:
     """One mountain with its trails, their segments, its latest hazard, and past landslides."""
     mountain = conn.execute(
-        f"SELECT {MOUNTAIN_COLUMNS} FROM mountains WHERE slug = %s", (slug,)
+        f"SELECT {MOUNTAIN_COLUMNS} {MOUNTAIN_FROM} WHERE m.slug = %s", (slug,)
     ).fetchone()
     if mountain is None:
         raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")

@@ -19,6 +19,26 @@ CREATE TABLE IF NOT EXISTS mountains (
   is_live            boolean NOT NULL DEFAULT false
 );
 
+CREATE TABLE IF NOT EXISTS mountain_satellite_images (
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  mountain_slug    text NOT NULL UNIQUE REFERENCES mountains (slug) ON DELETE CASCADE,
+  mountain_name    text NOT NULL,
+  image_url        text NOT NULL,
+  file_path        text,
+  file_ext         text,
+  source           text,
+  download_status  text NOT NULL DEFAULT 'downloaded'
+                   CHECK (download_status IN ('downloaded', 'pending', 'error')),
+  bbox_west        double precision,
+  bbox_south       double precision,
+  bbox_east        double precision,
+  bbox_north       double precision,
+  image_size_px    integer,
+  error            text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS trails (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   mountain_id      uuid NOT NULL REFERENCES mountains (id) ON DELETE CASCADE,
@@ -98,3 +118,4 @@ CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS hazards_mountain_idx ON hazards (mountain_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS alerts_hazard_idx ON alerts (hazard_id);
+CREATE INDEX IF NOT EXISTS mountain_satellite_images_status_idx ON mountain_satellite_images (download_status);
