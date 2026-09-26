@@ -168,10 +168,49 @@ export interface MountainDetail extends Mountain {
 
 export type LandslideRiskState = "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN";
 
+export type RiskProbabilitySource = "calibrated_classifier" | "model_b_estimate";
+
+export interface RiskEstimateDriver {
+  factor: "terrain" | "forecast_rain" | "antecedent_moisture";
+  label: string;
+  detail: string;
+  logit_contribution: number;
+  effect: "raises" | "lowers" | "neutral";
+}
+
+/** How the uncalibrated Model B estimate at the point was made. */
+export interface RiskEstimate {
+  method: string;
+  calibrated: false;
+  unit: string;
+  pixel_probability: number | null;
+  susceptibility: number | null;
+  /** The 1 km classifier cell around the point, on the same 30 m map. */
+  cell: { size_m: number; mean: number; max: number; share_high: number } | null;
+  rain: {
+    source: string;
+    as_of: string;
+    past_72h_mm: number;
+    next_72h_mm: number;
+    past_7d_mm: number;
+    threshold_72h_mm: number;
+    threshold_7d_mm: number;
+  } | null;
+  drivers: RiskEstimateDriver[];
+}
+
+/**
+ * `state` belongs to the calibrated classifier alone. `probability` is the chance to show: the
+ * calibrated one when it exists, else the Model B estimate the heat map is drawn from.
+ */
 export interface LandslideRiskPrediction {
   location: { latitude: number; longitude: number };
   prediction_window: { start: string; end: string };
   state: LandslideRiskState;
+  probability: number | null;
+  probability_source: RiskProbabilitySource | null;
+  risk_level: RiskLevel | null;
+  estimate: RiskEstimate | null;
   calibrated_probability: number | null;
   high_risk_threshold: number | null;
   confidence: { lower: number | null; upper: number | null };

@@ -46,6 +46,15 @@ The API is `POST /api/v1/landslide-risk`. It returns:
 - `NOT_HIGH_RISK` only when the model is in-domain and the inputs are sufficiently complete;
 - `UNCERTAIN` for missing calibration, stale/unavailable forecasts, missing critical static data, OOD features, disagreement, or the threshold abstention band.
 
+Alongside the state, every in-domain answer carries the chance to show:
+
+- `probability`: 0 to 1. The calibrated probability when a calibrated model exists (`probability_source: "calibrated_classifier"`). Until then, the Model B estimate at the clicked 30 m pixel (`"model_b_estimate"`): the same Model B that draws the heat layer, on today's rain. The rendered tiles refresh on **Analyze now**, so they can lag the card when the rain has changed since the last run. A pixel the map leaves blank gets `null` and `ESTIMATE_UNAVAILABLE`.
+- Rain: every click in the study box is scored on the one trail-zone Open-Meteo series the heat map uses (Paradise, 1,650 m), not a per-click fetch. A calibrated model trained on per-cell rain would need that call changed back.
+- `risk_level`: the shared bin for that probability (low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7).
+- `estimate`: the Model B method, the pixel value, the 1 km cell's mean, max, and share at high or above, the rain totals against their Guzzetti thresholds, and each input's logit term (terrain, forecast rain, antecedent moisture) with whether it raises or lowers the estimate.
+
+The estimate is uncalibrated and never changes `state`. It is `null`, never a dry-day guess, when rain data is unavailable (`WEATHER_FEED_UNAVAILABLE`), when the terrain raster is missing or the pixel is blank (`ESTIMATE_UNAVAILABLE`), or outside the study box. The agents' `production_72h_classification` fact leaves the point estimate out: at the summit it is one pixel, and the map summary and hazard zone already carry the map.
+
 The endpoint is intentionally returning `UNCERTAIN` in the checked-in repository until a real timestamped multi-year feature table and calibrated artifact are built. The current Rainier NASA export has historical points, but its four events are not all rainfall-trigger labels; the existing seed remains available for historical display and the new builder filters labels conservatively.
 
 ## Reproduction

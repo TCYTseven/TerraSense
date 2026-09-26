@@ -51,5 +51,8 @@ def test_calibrated_artifact_can_drive_high_risk_prediction(tmp_path, monkeypatc
 
     assert prediction.state == "HIGH_RISK"
     assert prediction.calibrated_probability is not None
+    assert prediction.probability == prediction.calibrated_probability
+    assert prediction.probability_source == "calibrated_classifier"
+    assert prediction.estimate is not None and prediction.estimate["calibrated"] is False
     assert prediction.high_risk_threshold == 0.5
     assert prediction.window_end - prediction.window_start == timedelta(hours=72)

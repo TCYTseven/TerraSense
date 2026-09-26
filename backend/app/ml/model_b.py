@@ -21,14 +21,17 @@ from app.weather import HourlyRain
 SUSCEPTIBILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility.tif"
 
 # Model B weights. Keep each coefficient named so a later labeled fit can replace it explicitly.
-W1 = 2.4  # Terrain susceptibility is the largest stable contribution.
+W1 = 7.0  # Terrain susceptibility gates the trigger: rain alone cannot make a meadow high risk.
 W2 = 2.0  # Forecast rainfall above the 72-hour reference threshold is the live trigger.
 W3 = 1.6  # Antecedent seven-day wetness carries moisture into the next 72 hours.
 
-# A susceptibility of 0.5 and rain at its reference threshold are neutral inputs. Centering the
-# three signals keeps a dry, low-susceptibility cell below the high-risk bin without an extra bias
-# term, while preserving the specified sigmoid(w1*susceptibility + w2*rain + w3*moisture) form.
-SUSCEPTIBILITY_CENTER = 0.5
+# A susceptibility of 0.75 with rain at its reference thresholds scores 0.5. The susceptibility
+# raster is bimodal (median 0.0, 95th percentile 0.48), so with W1 = 2.4 and a 0.5 center the rain
+# terms outweighed terrain and a storm put every cell in the box at extreme. With these values
+# the storm fixture leaves 89% of the box low and puts 7% at high or above, on susceptible slopes,
+# and a dry week leaves the whole box low. Keeps the specified
+# sigmoid(w1*susceptibility + w2*rain + w3*moisture) form.
+SUSCEPTIBILITY_CENTER = 0.75
 
 # Guzzetti et al. (2008) reference: I = 2.20 * D^-0.44 mm/h, converted to a D-hour total.
 GUZZETTI_A = 2.20
@@ -85,6 +88,21 @@ def rain_signals(rain: HourlyRain | None) -> RainSignals:
         rainfall_exceedance=_bounded_signed_ratio(next_72h, RAINFALL_THRESHOLD_72H_MM),
         moisture_index=_bounded_signed_ratio(past_7d, MOISTURE_THRESHOLD_7D_MM),
     )
+
+
+def contributions(susceptibility: float, rain: HourlyRain | None) -> dict[str, float]:
+    """Each input's term in the logit at one cell, and the rain totals behind the two rain terms."""
+    signals = rain_signals(rain)
+    return {
+        "terrain": W1 * (float(np.clip(susceptibility, 0.0, 1.0)) - SUSCEPTIBILITY_CENTER),
+        "forecast_rain": W2 * signals.rainfall_exceedance,
+        "antecedent_moisture": W3 * signals.moisture_index,
+        "past_72h_mm": signals.past_72h_mm,
+        "next_72h_mm": signals.next_72h_mm,
+        "past_7d_mm": signals.past_7d_mm,
+        "threshold_72h_mm": RAINFALL_THRESHOLD_72H_MM,
+        "threshold_7d_mm": MOISTURE_THRESHOLD_7D_MM,
+    }
 
 
 def sigmoid(values: np.ndarray) -> np.ndarray:

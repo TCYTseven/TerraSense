@@ -58,7 +58,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 
   A router sends each call to Gemini Flash or Grok and records why. The run's conclusion is served as an advisory (`GET /runs/{id}/advisory`, `GET /mountains/{slug}/advisory`).
 - **Weather.** Open-Meteo precipitation drives the model. Temperature, freeze-thaw, snowfall, wind, soil moisture, and the freezing level are context for the agents, and missing readings stay null.
-- **Tests.** 204 pytest tests pass against a fake of both LLM APIs (`backend/tests/fake_llm.py`), including contract tests for the Model B seam, the provider schemas, and every payload that leaves the process.
+- **Tests.** 235 pytest tests pass against a fake of both LLM APIs (`backend/tests/fake_llm.py`), including contract tests for the Model B seam, the provider schemas, and every payload that leaves the process.
 
 **Not done yet**
 
@@ -213,6 +213,8 @@ Two stages. Both stay explainable.
 - Tune weights on the dated events you actually have. If that set is tiny, say so and keep the weights explicit.
 - Categories: Low < 0.2, Moderate 0.2–0.45, High 0.45–0.7, Extreme > 0.7. Adjust so Rainier shows a visible High zone for the demo, and document the adjustment.
 - **Current state.** `backend/app/ml/probability.py` is the one seam and calls `model_b.run(rain)`. Dry, missing-rain, and storm paths are covered by contract tests; the result is a float32 0–1 raster with the susceptibility grid's transform and CRS.
+- **Weights (Sep 26).** `w1 = 7.0` on susceptibility centered at 0.75, `w2 = 2.0`, `w3 = 1.6`. The trained susceptibility raster is bimodal (median 0.0, 95th percentile 0.48). With the first weights (`w1 = 2.4`, centered at 0.5), rain outweighed terrain and the storm fixture put 100% of the box at Extreme. Now terrain gates the trigger. The storm fixture leaves 89% of the box Low and puts 7% at High or above, on the susceptible valley slopes, and flags 21 of 67 trails, among them Westside Road, the Puyallup trails, and parts of the Wonderland. A dry week leaves the whole box Low. The Skyline loop crosses ground the model scores near 0, so a real storm does not flag the hero trail. The hazard-path tests add a labeled debris corridor on miles 4.6 to 4.9 instead (`backend/tests/conftest.py`).
+- **Point probability.** `POST /api/v1/landslide-risk` answers every in-domain click with `probability`: the Model B value at that pixel, labeled `model_b_estimate` and explained by its three logit terms, until a calibrated classifier replaces it. See [docs/production-risk.md](docs/production-risk.md).
 
 Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
@@ -680,7 +682,7 @@ More mountains, a real ranger feedback loop, and slower signals such as InSAR. N
 | Risk | What to do |
 |---|---|
 | Raster work blows the schedule | Precompute Model A. Only Model B runs live |
-| The demo mountain looks uniformly safe or uniformly red | The stand-in index puts 54% of the box at High or above. Tune thresholds once Model B lands and document it. The hazard is picked on the hero trail, not the whole box |
+| The demo mountain looks uniformly safe or uniformly red | Done Sep 26: Model B's terrain weight was retuned so a storm reddens the susceptible valleys, not the whole box (see 6.3). The hazard is picked on the hero trail, not the whole box, so a storm that misses the Skyline loop shows no hazard zone |
 | The landslide catalog stays unreachable | Download the CSV on another network and pass `--glc-csv`. Until then, say "knowledge-driven index" and show no AUC |
 | Agents exceed a minute | Parallelize Terrain and Weather. Short JSON schemas. The router moves late calls to Gemini |
 | No live LLM run before the demo | Rehearse with real keys. Keep a finished run on screen |
@@ -720,6 +722,7 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Discord dropped. The ranger alert stays in the app (step 24) |
 | Sep 25, 2026 | Two LLM providers, Gemini Flash and Grok, with a router in code and a reasoning panel |
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
+| Sep 26, 2026 | Model B's terrain weight retuned (`w1` 2.4 to 7.0, center 0.5 to 0.75) so terrain gates the rain trigger. The landslide-risk endpoint returns a 0–1 `probability` on every in-domain click: the calibrated one when it exists, else the labeled Model B estimate (6.3) |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
 | Sep 25, 2026 | The backend fans out five analysts (Terrain, Weather, Trail, History, Route Scout), then the Risk Synthesizer decides routes and the ranger response, then the Alert Writer. Runs end in an advisory (6.4) |
