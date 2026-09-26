@@ -1,82 +1,82 @@
 import TrailBadge from "@/components/hill/trail-badge";
 import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import {
-  MEASURE_CATEGORIES,
   MEASURE_CATEGORY_LABELS,
-  type MeasureCategory,
+  MEASURE_TIMING_LABELS,
+  MEASURE_TIMINGS,
+  type MeasureTiming,
   type ReactiveMeasure,
   type TrailRisk,
 } from "@/lib/hill";
 import type { RiskLevel } from "@/lib/types";
 
-/** "Now" is the loudest chip; later deadlines stay outlined. Neither uses a risk or accent color. */
-function When({ when, category }: { when: string; category: MeasureCategory }) {
-  if (category === "public") {
-    return (
-      <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
-        Draft, not sent
-      </span>
-    );
-  }
+function Measure({ measure, level }: { measure: ReactiveMeasure; level: RiskLevel | undefined }) {
+  const draft = measure.category === "public";
   return (
-    <span
-      className={`shrink-0 rounded-sm px-1.5 py-0.5 text-xs font-semibold ${
-        when === "Now" ? "bg-foreground text-background" : "border border-border text-foreground"
-      }`}
-    >
-      {when}
-    </span>
+    <li className="rounded-lg border border-border bg-background/50 px-4 py-3">
+      <div className="flex items-start gap-3">
+        {measure.letter && level ? (
+          <span className="mt-0.5">
+            <TrailBadge letter={measure.letter} level={level} />
+            <span className="sr-only">Trail {measure.letter}</span>
+          </span>
+        ) : null}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <p className="text-xs text-muted-foreground">{MEASURE_CATEGORY_LABELS[measure.category]}</p>
+            {draft && (
+              <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
+                Draft, not sent
+              </span>
+            )}
+          </div>
+          <p className="mt-0.5 text-base font-semibold leading-snug">{measure.title}</p>
+          <p className="mt-1 text-sm leading-relaxed text-foreground/80">{measure.detail}</p>
+        </div>
+      </div>
+    </li>
   );
 }
 
-function Group({
-  category,
+function Cluster({
+  timing,
   measures,
   levels,
 }: {
-  category: MeasureCategory;
+  timing: MeasureTiming;
   measures: ReactiveMeasure[];
   levels: Map<string, RiskLevel>;
 }) {
   if (measures.length === 0) return null;
-  const headingId = `measures-${category}`;
+  const headingId = `measures-${timing}`;
+  // "Now" leads with weight, not color: color is reserved for risk.
+  const now = timing === "now";
   return (
     <section aria-labelledby={headingId}>
-      <h4 id={headingId} className="flex items-baseline justify-between gap-3 text-sm font-medium text-muted-foreground">
-        <span>{MEASURE_CATEGORY_LABELS[category]}</span>
-        {category === "public" && <span className="text-xs font-normal">Nothing is sent from here</span>}
-      </h4>
+      <h3
+        id={headingId}
+        className={`flex items-baseline gap-2 text-sm ${now ? "font-semibold text-foreground" : "font-medium text-muted-foreground"}`}
+      >
+        <span>{MEASURE_TIMING_LABELS[timing]}</span>
+        <span className="font-mono text-[0.92em] font-normal text-muted-foreground">{measures.length}</span>
+      </h3>
       <ul className="mt-2 space-y-2">
-        {measures.map((measure, i) => {
-          const level = measure.letter ? levels.get(measure.letter) : undefined;
-          return (
-            <li key={`${measure.title}-${i}`} className="rounded-lg border border-border bg-background/50 px-4 py-3">
-              <div className="flex items-start gap-3">
-                {measure.letter && level ? (
-                  <span className="mt-0.5">
-                    <TrailBadge letter={measure.letter} level={level} />
-                    <span className="sr-only">Trail {measure.letter}</span>
-                  </span>
-                ) : null}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-base font-semibold leading-snug">{measure.title}</p>
-                    <When when={measure.when} category={measure.category} />
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-foreground/80">{measure.detail}</p>
-                </div>
-              </div>
-            </li>
-          );
-        })}
+        {measures.map((measure, i) => (
+          <Measure
+            key={`${measure.title}-${i}`}
+            measure={measure}
+            level={measure.letter ? levels.get(measure.letter) : undefined}
+          />
+        ))}
       </ul>
     </section>
   );
 }
 
 /**
- * What to do now, grouped the way an incident is run. The section takes the overall level's
- * treatment, since these measures are the answer to that level. Public notices are drafts.
+ * What to do after a run, clustered by when it has to happen (now, within 1 hour, 6 hours,
+ * 24 hours), soonest first. Each measure is labeled with its kind of work. The section takes
+ * the overall level's treatment, since these measures answer that level. Public notices are drafts.
  */
 export default function ReactiveMeasures({
   measures,
@@ -90,7 +90,7 @@ export default function ReactiveMeasures({
   const levels = new Map(trails.map((trail) => [trail.letter, trail.level]));
   const drafts = measures.filter((m) => m.category === "public").length;
   const actions = measures.length - drafts;
-  const now = measures.filter((m) => m.when === "Now").length;
+  const now = measures.filter((m) => m.timing === "now").length;
   return (
     <section
       id="reactive-measures"
@@ -105,21 +105,16 @@ export default function ReactiveMeasures({
         <LevelWord level={level} className="font-semibold" />
         <span>risk ·</span>
         <span>
-          <span className="font-mono text-foreground">{actions}</span> actions,{" "}
-          <span className="font-mono text-foreground">{now}</span> now ·
+          <span className="font-mono text-foreground">{now}</span> now,{" "}
+          <span className="font-mono text-foreground">{actions}</span> actions ·
         </span>
         <span>
           <span className="font-mono text-foreground">{drafts}</span> public drafts
         </span>
       </p>
       <div className="mt-4 space-y-5">
-        {MEASURE_CATEGORIES.map((category) => (
-          <Group
-            key={category}
-            category={category}
-            measures={measures.filter((m) => m.category === category)}
-            levels={levels}
-          />
+        {MEASURE_TIMINGS.map((timing) => (
+          <Cluster key={timing} timing={timing} measures={measures.filter((m) => m.timing === timing)} levels={levels} />
         ))}
       </div>
     </section>

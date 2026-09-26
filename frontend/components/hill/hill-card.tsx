@@ -53,6 +53,7 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           susceptibility={susceptibility}
           trails={hill.trails}
           focus={focus}
+          onTrailSelect={view}
         />
       </section>
 
