@@ -3,27 +3,22 @@
 import asyncio
 import contextlib
 import uuid
-from typing import Annotated
 
 import psycopg
 from fastapi import (
     APIRouter,
-    Depends,
     HTTPException,
     Response,
     WebSocket,
     WebSocketDisconnect,
 )
-from psycopg.rows import DictRow
 from pydantic import BaseModel
 
 from app.agents.schemas import Advisory, Run, RunUpdate
-from app.db import get_conn
+from app.db import get_pool
 from app.runs import latest_advisory, load_run, registry
 
 router = APIRouter(tags=["runs"])
-
-Conn = Annotated[psycopg.Connection[DictRow], Depends(get_conn)]
 
 # A WebSocket close code for "no such run", in the range left for applications.
 CLOSE_NOT_FOUND = 4404
@@ -45,18 +40,35 @@ def _uuid(value: str) -> bool:
     200: {"description": "A run was already going for this mountain. Its id comes back."},
     404: {"description": "No mountain with this slug."},
     409: {"description": "A static marker: it does not run analysis."},
+    503: {"description": "No model provider key is set, or the database is down."},
 })
-async def analyze(slug: str, conn: Conn, response: Response) -> AnalyzeStarted:
+async def analyze(slug: str, response: Response) -> AnalyzeStarted:
     """Start the pipeline for a live mountain in the background. Only one run per mountain at a time."""
-    mountain = conn.execute("SELECT id, name, lat, lon, is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    # The lookup runs on a worker thread: a slow database must not stall every open run stream.
+    mountain = await asyncio.to_thread(_mountain, slug)
     if mountain is None:
         raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
     if not mountain["is_live"]:
-        raise HTTPException(status_code=409,
-                            detail=f"{mountain['name']} is a display marker. Live analysis runs on Mount Rainier only.")
+        live = await asyncio.to_thread(_live_names)
+        where = f"Live analysis runs on {', '.join(live)} only." if live else "No mountain runs live analysis."
+        raise HTTPException(status_code=409, detail=f"{mountain['name']} is a display marker. {where}")
+    running = registry.active_run(slug)
+    if (running is None or running.status != "running") and not registry.llm_ready():
+        raise HTTPException(status_code=503, detail="No model provider key is set. Add GEMINI_API_KEY or "
+                                                    "XAI_API_KEY to the repo root .env and restart the API.")
     state, started = registry.start(slug, mountain)
     response.status_code = 202 if started else 200
     return AnalyzeStarted(run_id=state.id)
+
+
+def _mountain(slug: str) -> dict | None:
+    with get_pool().connection() as conn:
+        return conn.execute("SELECT id, name, lat, lon, is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+
+
+def _live_names() -> list[str]:
+    with get_pool().connection() as conn:
+        return [row["name"] for row in conn.execute("SELECT name FROM mountains WHERE is_live ORDER BY name")]
 
 
 @router.get("/runs/{run_id}")
@@ -123,19 +135,28 @@ async def stream(ws: WebSocket, run_id: str) -> None:
     # Subscribe before the snapshot, so nothing between them is lost. A repeat is harmless: the
     # client keeps the latest event per agent.
     queue = registry.subscribe(state)
+    # The client never sends anything, so a receive only returns when it goes away. Watching for
+    # that frees the queue as soon as a tab closes, not when the run ends minutes later.
+    gone = asyncio.create_task(ws.receive())
     try:
         snapshot = state.view()
         await ws.send_json(RunUpdate(run=snapshot).model_dump(mode="json"))
         # End on the run's final update, which every run broadcasts after it stores its result.
         # Never poll state.status here: it turns final a moment before that broadcast.
         while snapshot.status == "running":
-            message = await queue.get()
+            next_message = asyncio.create_task(queue.get())
+            done, _ = await asyncio.wait({next_message, gone}, return_when=asyncio.FIRST_COMPLETED)
+            if next_message not in done:
+                next_message.cancel()
+                return  # the browser went away
+            message = next_message.result()
             await ws.send_json(message)
             if message.get("kind") == "run" and message["run"]["status"] != "running":
                 break
     except (WebSocketDisconnect, RuntimeError):
         return  # the browser went away
     finally:
+        gone.cancel()
         registry.unsubscribe(state, queue)
     with contextlib.suppress(RuntimeError):
         await ws.close()

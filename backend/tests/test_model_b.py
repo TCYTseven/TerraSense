@@ -49,11 +49,11 @@ def test_run_preserves_grid_and_nodata_and_wet_rain_increases_risk(tmp_path, mon
     assert np.isfinite(wet.probability[:1, :]).all()
 
 
-def test_rain_signals_are_bounded_and_missing_rain_is_explicit():
+def test_rain_signals_are_bounded_and_missing_rain_is_neutral():
     dry = model_b.rain_signals(None)
     storm = model_b.rain_signals(_rain(past_7d_mm=500.0, next_72h_mm=500.0))
 
-    assert (dry.rainfall_exceedance, dry.moisture_index) == (-1.0, -1.0)
+    assert (dry.rainfall_exceedance, dry.moisture_index) == (0.0, 0.0)
     assert -1.0 <= storm.rainfall_exceedance <= 1.0
     assert -1.0 <= storm.moisture_index <= 1.0
     assert storm.next_72h_mm == 500.0

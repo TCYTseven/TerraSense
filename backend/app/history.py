@@ -11,10 +11,11 @@ from pathlib import Path
 
 from app.config import REPO_ROOT
 from app.models import HistoricalEvent
+from app.risk import LIVE_SLUG
 
 LANDSLIDES_PATH = REPO_ROOT / "data" / "seed" / "landslides.geojson"
 # The catalog file covers one box: the live mountain's.
-CATALOG_MOUNTAIN = "mount-rainier"
+CATALOG_MOUNTAIN = LIVE_SLUG
 
 
 @lru_cache(maxsize=2)

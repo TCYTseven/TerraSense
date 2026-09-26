@@ -115,7 +115,8 @@ def test_analyze_streams_and_saves(api):
     mountain = client.get("/mountains/mount-rainier").json()
     assert mountain["active_run_id"] is None
     assert mountain["active_hazard"]["run_id"] == run_id and mountain["active_hazard"]["id"] == run["hazard_id"]
-    assert mountain["active_hazard"]["what"] and mountain["active_hazard"]["bypass"]["name"] == "Golden Gate Trail"
+    bypass = mountain["active_hazard"]["bypass"]
+    assert mountain["active_hazard"]["what"] and (bypass is None or bypass["name"])
     assert mountain["current_risk_level"] == run["severity"] and mountain["last_analyzed_at"]
     hero = next(t for t in mountain["trails"] if t["segments"])
     assert all(s["risk_level"] for s in hero["segments"])
@@ -123,7 +124,7 @@ def test_analyze_streams_and_saves(api):
     forecast = client.get("/forecast", params={"mountain_id": "mount-rainier", "trail_id": hero["id"]}).json()
     assert forecast["run_id"] == run_id and forecast["level"] == run["severity"]
     assert forecast["sentence"] == run["agents"]["writer"]["payload"]["hiker"]
-    assert forecast["bypass"]["name"] == "Golden Gate Trail" and forecast["trail_name"] == hero["name"]
+    assert forecast["bypass"] == bypass and forecast["trail_name"] == hero["name"]
 
     # The advisory rides on the run and answers on its own endpoints, in memory and from the row.
     advisory = run["advisory"]

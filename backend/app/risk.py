@@ -8,6 +8,13 @@ the tiler (app/ml/tiles.py) and the offline scripts in ml/scripts/ import it too
 from collections.abc import Iterable
 from typing import Literal
 
+# Shared facts: the one live mountain. Every module that needs them imports these.
+LIVE_SLUG = "mount-rainier"
+LIVE_PEAK_LAT, LIVE_PEAK_LON = 46.8523, -121.7603
+LIVE_ELEVATION_M = 4392
+# [west, south, east, north]
+LIVE_BBOX: tuple[float, float, float, float] = (-121.93, 46.76, -121.54, 46.96)
+
 RiskLevel = Literal["low", "moderate", "high", "extreme"]
 RISK_LEVELS: tuple[RiskLevel, ...] = ("low", "moderate", "high", "extreme")
 

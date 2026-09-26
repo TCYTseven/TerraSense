@@ -976,8 +976,9 @@ class Pipeline:
 
 
 async def _main(fixture_rain: bool) -> int:
-    from app.assessment import LIVE_SLUG, assess
+    from app.assessment import assess
     from app.db import connect
+    from app.risk import LIVE_SLUG
     from app.weather import try_hourly_rain
 
     from .providers import make_providers
@@ -985,10 +986,17 @@ async def _main(fixture_rain: bool) -> int:
     if fixture_rain:
         os.environ["OPEN_METEO_FIXTURE"] = "backend/fixtures/open_meteo_storm.json"
     with connect() as conn:
-        assessment = assess(conn, LIVE_SLUG)
-    rain, rain_error = try_hourly_rain()  # without rain, the Weather Analyst fails and says why
-    ctx = RunContext(run_id=f"cli-{uuid.uuid4().hex[:8]}", slug=LIVE_SLUG, mountain="Mount Rainier",
-                     peak=(46.8523, -121.7603), assessment=assessment, rain=rain, rain_error=rain_error)
+        row = conn.execute("SELECT name, lat, lon FROM mountains WHERE slug = %s", (LIVE_SLUG,)).fetchone()
+        if row is None:
+            print(f"No {LIVE_SLUG!r} row. Run python -m app.seed first.")
+            return 1
+        name, peak = row[0], (row[1], row[2])
+        # Fetch the rain first and score the map on it, as a run does. Without rain the map is
+        # terrain alone and the Weather Analyst fails and says why.
+        rain, rain_error = try_hourly_rain(*peak)
+        assessment = assess(conn, LIVE_SLUG, rain)
+    ctx = RunContext(run_id=f"cli-{uuid.uuid4().hex[:8]}", slug=LIVE_SLUG, mountain=name,
+                     peak=peak, assessment=assessment, rain=rain, rain_error=rain_error)
     providers = make_providers()
     router = Router(providers)
 

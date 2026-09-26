@@ -23,11 +23,12 @@ from app.assessment import Assessment, level_runs
 from app.bypass import junctions_near, load_network
 from app.config import REPO_ROOT
 from app.history import historical_events
+from app.ml.model_b import GUZZETTI_A, GUZZETTI_B
 from app.ml.risk_inference import predict_location
 from app.risk import HIGH_THRESHOLD
 from app.trailscan import most_exposed, safest
 from app.trailscan import summarize as summarize_network
-from app.weather import HourlyRain, summarize
+from app.weather import TRAIL_ZONE_ELEVATION_M, HourlyRain, summarize
 
 from .schemas import ToolCall
 
@@ -37,8 +38,8 @@ FEET_PER_METER = 3.28084
 
 # Guzzetti et al. (2008), the global minimum rainfall intensity-duration threshold for shallow
 # landslides and debris flows: I = 2.20 * D^-0.44, with I in mm/h and D in hours. A total over
-# D hours above threshold_mm(D) passes it. Given as a reference point, not a verdict.
-GUZZETTI_A, GUZZETTI_B = 2.20, -0.44
+# D hours above threshold_mm(D) passes it. Given as a reference point, not a verdict. The
+# constants live with Model B, which uses the same threshold.
 JUNCTION_MARGIN_MI = 0.7  # junctions this close to the flagged miles help name the place
 HISTORY_RADIUS_KM = 5.0
 MOUNTAIN_HISTORY_RADIUS_KM = 30.0  # the History Analyst looks at the whole massif, not just the zone
@@ -171,7 +172,7 @@ def get_weather(ctx: RunContext, lat: float, lon: float) -> dict:
     facts = {
         "source": rain.source,
         "as_of": rain.as_of.isoformat(),
-        "elevation_m": 1650,
+        "elevation_m": TRAIL_ZONE_ELEVATION_M,
         "mm": {
             "past_24h": rain.past_24h_mm,
             "past_72h": rain.past_72h_mm,

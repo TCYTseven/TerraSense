@@ -173,6 +173,18 @@ class _HttpProvider:
             raise ProviderError(self.name, "the response was not JSON", retryable=True) from exc
 
 
+def _timeout(env: Mapping[str, str]) -> float:
+    """LLM_TIMEOUT_S, or the default when it is blank, not a number, or not positive.
+
+    A typo in .env must not fail every agent call of every run.
+    """
+    try:
+        value = float(env.get("LLM_TIMEOUT_S", "").strip() or DEFAULT_TIMEOUT_S)
+    except ValueError:
+        return DEFAULT_TIMEOUT_S
+    return value if value > 0 else DEFAULT_TIMEOUT_S
+
+
 class GeminiProvider(_HttpProvider):
     """Gemini Flash through generateContent, with thought summaries."""
 
@@ -183,7 +195,7 @@ class GeminiProvider(_HttpProvider):
             api_key=env.get("GEMINI_API_KEY", "").strip(),
             model=env.get("GEMINI_MODEL", "").strip() or DEFAULT_GEMINI_MODEL,
             base_url=(env.get("GEMINI_BASE_URL", "").strip() or "https://generativelanguage.googleapis.com").rstrip("/"),
-            timeout=float(env.get("LLM_TIMEOUT_S", "").strip() or DEFAULT_TIMEOUT_S),
+            timeout=_timeout(env),
             transport=transport,
         )
         self.thinking_level = env.get("GEMINI_THINKING_LEVEL", "").strip() or "low"
@@ -255,7 +267,7 @@ class GrokProvider(_HttpProvider):
             api_key=env.get("XAI_API_KEY", "").strip(),
             model=env.get("GROK_MODEL", "").strip() or DEFAULT_GROK_MODEL,
             base_url=(env.get("XAI_BASE_URL", "").strip() or "https://api.x.ai").rstrip("/"),
-            timeout=float(env.get("LLM_TIMEOUT_S", "").strip() or DEFAULT_TIMEOUT_S),
+            timeout=_timeout(env),
             transport=transport,
         )
         self.effort = env.get("GROK_REASONING_EFFORT", "").strip() or "none"

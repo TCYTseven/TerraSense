@@ -1,5 +1,6 @@
 """TerraSense API. Run from backend/ with: uvicorn app.main:app --reload --port 8000"""
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg_pool import PoolTimeout
 
+from app.agents.providers import make_providers
 from app.config import cors_origins
 from app.db import close_pool
 from app.ml.readiness import setup_summary
@@ -83,4 +85,11 @@ def health(verbose: bool = False) -> dict:
     payload: dict = {"status": "ok"}
     if verbose:
         payload["setup"] = setup_summary()
+        # Whether each key is present, never its value. Analyze answers 503 when neither is.
+        providers = make_providers()
+        payload["llm"] = {name: provider.configured for name, provider in providers.items()}
+        payload["weather"] = {
+            "fixture": bool(os.environ.get("OPEN_METEO_FIXTURE", "").strip()),
+            "fallback_fixture": bool(os.environ.get("OPEN_METEO_FALLBACK_FIXTURE", "").strip()),
+        }
     return payload

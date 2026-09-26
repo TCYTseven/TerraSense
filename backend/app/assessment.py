@@ -33,12 +33,11 @@ from app.ml.hazard import (
     segment_risks,
 )
 from app.ml.tiles import render_xyz
-from app.risk import RISK_LEVELS
+from app.risk import LIVE_SLUG, RISK_LEVELS
 from app.trailscan import TrailScore, scan_trails
 from app.weather import HourlyRain, summarize as summarize_rain, try_hourly_rain
 
 PROBABILITY_LAYER = "probability"
-LIVE_SLUG = "mount-rainier"
 
 HAZARD_WORDS = {"debris_flow": "Debris flow", "landslide": "Landslide"}
 DRIVER_WORDS = {

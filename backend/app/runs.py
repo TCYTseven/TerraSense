@@ -18,6 +18,7 @@ the stream gets a final RunUpdate and closes: a listener never hangs.
 
 import asyncio
 import logging
+import os
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -45,6 +46,20 @@ from app.ml.readiness import format_missing_artifacts, setup_ready_for_analyze
 from app.weather import HourlyRain, summarize, try_hourly_rain
 
 logger = logging.getLogger(__name__)
+
+# A whole run's agent stage may take this long before it fails with a clear message. Each agent
+# already has per-call timeouts and retries; this bounds the worst case the panel waits through.
+DEFAULT_RUN_TIMEOUT_S = 180.0
+
+
+def run_timeout_s() -> float:
+    """RUN_TIMEOUT_S from .env, or the default when blank or not a positive number."""
+    try:
+        value = float(os.environ.get("RUN_TIMEOUT_S", "").strip() or DEFAULT_RUN_TIMEOUT_S)
+    except ValueError:
+        return DEFAULT_RUN_TIMEOUT_S
+    return value if value > 0 else DEFAULT_RUN_TIMEOUT_S
+
 
 # How the status line names the step a run failed at (design addendum, States).
 STEP_NAMES: dict[AgentName, str] = {
@@ -123,6 +138,11 @@ class RunRegistry:
             self._router = Router(self._providers)
         return self._router, self._providers
 
+    def llm_ready(self) -> bool:
+        """True when at least one model provider has a key. Without one every agent would fail."""
+        _, providers = self._llm()
+        return any(provider.configured for provider in providers.values())
+
     def get(self, run_id: str) -> RunState | None:
         return self.runs.get(run_id)
 
@@ -185,7 +205,7 @@ class RunRegistry:
                 )
                 return
             await self._phase(state, "scoring", "Scoring the next 72 hours of rain against the terrain.")
-            rain, rain_error = await asyncio.to_thread(try_hourly_rain)
+            rain, rain_error = await asyncio.to_thread(try_hourly_rain, *state.peak)
             if rain is not None:
                 state.rain = _rain_totals(rain)
             assessment = await asyncio.to_thread(_assess, state.slug, rain)
@@ -196,7 +216,13 @@ class RunRegistry:
             router, providers = self._llm()
             ctx = RunContext(run_id=state.id, slug=state.slug, mountain=state.mountain_name, peak=state.peak,
                              assessment=assessment, rain=rain, rain_error=rain_error, started=state.started)
-            result = await Pipeline(ctx, router, providers, lambda event: self._on_event(state, event)).run()
+            pipeline = Pipeline(ctx, router, providers, lambda event: self._on_event(state, event))
+            try:
+                result = await asyncio.wait_for(pipeline.run(), timeout=run_timeout_s())
+            except TimeoutError:
+                await self._fail(state, f"Run timed out after {run_timeout_s():.0f} s waiting on the agents.",
+                                 "The model providers were too slow. Try again, or raise RUN_TIMEOUT_S.", None)
+                return
             if result.status != "done":
                 step = STEP_NAMES.get(result.failed_agent, "agent")
                 await self._fail(state, f"Run failed at the {step} step.", result.error, result.failed_agent)

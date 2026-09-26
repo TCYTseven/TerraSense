@@ -69,11 +69,13 @@ def _bounded_signed_ratio(total_mm: float, threshold_mm: float) -> float:
 def rain_signals(rain: HourlyRain | None) -> RainSignals:
     """Convert one hourly response into normalized forecast-rain and moisture signals.
 
-    Missing rain is an explicit dry/neutral fallback: the run still scores terrain, but it does
-    not silently fetch the network a second time or pretend that rain was observed.
+    Missing rain is neutral: both signals sit at their reference threshold (0), so the map is
+    terrain alone. The run does not fetch the network a second time or pretend rain was
+    observed. -1 would be wrong here: it is the driest possible week, and it would push every
+    cell into the low bin on a day the weather is simply unknown.
     """
     if rain is None:
-        return RainSignals(0.0, 0.0, 0.0, -1.0, -1.0)
+        return RainSignals(0.0, 0.0, 0.0, 0.0, 0.0)
 
     past_72h = rain.total(-RAINFALL_WINDOW_HOURS, 0)
     next_72h = rain.total(0, RAINFALL_WINDOW_HOURS)

@@ -40,7 +40,10 @@ def fake_env(monkeypatch):
 
 @pytest.fixture(scope="module")
 def assessment(db_conn):
-    return assess(db_conn)
+    # Score the map on the same storm the Weather analyst reads, as a run does.
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setenv("OPEN_METEO_FIXTURE", FIXTURE)
+        return assess(db_conn, rain=get_hourly_rain())
 
 
 def run_pipeline(assessment, env=KEYS, rain=True):
@@ -73,9 +76,15 @@ def test_full_run(fake_env, assessment):
     levels = [order.index(finals[a].payload["severity"]) for a in ("weather", "trail", "history", "routes")] + \
         [order.index(finals["terrain"].payload["hazard_zone"]["severity"])]
     assert min(levels) <= order.index(final.severity) <= max(levels)
-    assert final.ranger_title.startswith("Debris flow risk") or final.ranger_title.startswith("Advisory.")
-    assert "Skyline Trail mile 4.6 to 4.9" in final.ranger_title
-    assert "Golden Gate Trail" in final.hiker and len(final.hiker.split()) <= 25
+    # The zone, the miles, and the bypass come from the map, so read them off the assessment
+    # rather than pinning one raster's answer.
+    hazard_word = "Debris flow" if final.hazard_type == "debris_flow" else "Landslide"
+    assert final.ranger_title.startswith(f"{hazard_word} risk") or final.ranger_title.startswith("Advisory.")
+    flagged = assessment.flagged
+    assert f"Skyline Trail mile {flagged.start_mile:.1f} to {flagged.end_mile:.1f}" in final.ranger_title
+    if assessment.bypass is not None:
+        assert assessment.bypass.name in final.hiker
+    assert len(final.hiker.split()) <= 25
     assert 0 <= final.confidence <= 1
     assert any("Confidence" in c for c in finals["synthesizer"].trace.checks)
 

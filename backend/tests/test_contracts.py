@@ -90,9 +90,10 @@ def finished_run(db_conn):
 
     os.environ["FAKE_LLM_DELAY_S"] = "0"
     os.environ["OPEN_METEO_FIXTURE"] = FIXTURE
-    assessment = assess(db_conn)
+    rain = get_hourly_rain()
+    assessment = assess(db_conn, rain=rain)
     ctx = RunContext(run_id="contracts", slug="mount-rainier", mountain="Mount Rainier",
-                     peak=(46.8523, -121.7603), assessment=assessment, rain=get_hourly_rain(),
+                     peak=(46.8523, -121.7603), assessment=assessment, rain=rain,
                      rain_error=None)
     providers = make_providers(KEYS, httpx.ASGITransport(app=fake_llm))
     events: list = []

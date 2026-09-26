@@ -20,14 +20,14 @@ from rasterio.crs import CRS
 from rasterio.transform import from_bounds
 from rasterio.warp import Resampling, reproject
 
-from app.risk import BIN_EDGES, RISK_HEX, RISK_LEVELS, hex_rgb
+from app.risk import BIN_EDGES, LIVE_BBOX, RISK_HEX, RISK_LEVELS, hex_rgb
 
 # backend/tiles/<layer>/{z}/{x}/{y}.png, served by the API at /tiles.
 TILES_DIR = Path(__file__).resolve().parents[2] / "tiles"
 TILE_SIZE = 256
 
 # Shared facts. EPSG:4326, [west, south, east, north].
-RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
+RAINIER_BBOX = LIVE_BBOX  # shared fact, from app/risk.py
 # z10 shows the whole mountain; past z14 the map stretches the z14 tiles.
 DEFAULT_ZOOMS = range(10, 15)
 

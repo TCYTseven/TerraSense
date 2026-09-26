@@ -30,6 +30,7 @@ from app.ml.risk_contract import (
     PredictionState,
 )
 from app.ml.risk_features import hourly_dynamic_features
+from app.risk import LIVE_BBOX
 from app.weather import HourlyRain, as_of, try_hourly_rain
 
 RISK_MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "landslide_risk_lgbm.txt"
@@ -37,7 +38,7 @@ RISK_METADATA_PATH = REPO_ROOT / "ml" / "artifacts" / "risk_model.json"
 RISK_CALIBRATION_PATH = REPO_ROOT / "ml" / "artifacts" / "risk_calibration.json"
 FEATURE_STACK_PATH = REPO_ROOT / "data" / "processed" / "features.tif"
 STATIC_CELLS_JSON_PATH = REPO_ROOT / "data" / "processed" / "static" / "static_cells.json"
-RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
+RAINIER_BBOX = LIVE_BBOX  # shared fact, from app/risk.py
 
 _model_cache: tuple[float, Any, dict[str, Any], dict[str, Any]] | None = None
 _static_cells_cache: tuple[float, dict[str, dict[str, Any]]] | None = None
