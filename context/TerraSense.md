@@ -42,23 +42,34 @@ TerraSense reads terrain and weather for a mountain, predicts where a landslide 
 
 ## Where the Build Stands
 
-As of Friday, Sep 25, 2026. [implementation-steps.md](implementation-steps.md) splits the steps into done and pending, and it is the source of truth for status.
+As of late Friday, Sep 25, 2026. [implementation-steps.md](implementation-steps.md) splits the steps into done and pending, and it is the source of truth for status.
 
 **Works end to end**
 
-- **Globe.** A React Three Fiber Earth with three risk markers from the API (Mount Rainier live, Huascarán and Mount Fuji static), hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
-- **Mountain map.** MapLibre GL with 3D terrain from AWS Terrain Tiles. It shows a light shaded relief, or Mapbox satellite when a token is set. The heat map is the default layer, and the susceptibility layer is a toggle. All 67 OpenStreetMap trails are drawn, and the hero trail, the Skyline loop (5.5 mi), is colored by 0.1-mile segment. It also draws the hazard zone outline and pin, and the bypass.
-- **Assessment.** `backend/app/assessment.py` scores the map, colors the hero trail's 55 segments, flags the worst mile range, draws the hazard zone around it, and routes a bypass on the OpenStreetMap trail network. When no trail goes around the flagged miles, the advice is to turn back.
-- **Agents.** **Analyze now** starts a run: five agents stream over a WebSocket. A router picks Gemini Flash or Grok for each call, and the reasoning panel shows why.
-- **Hiker card.** `GET /forecast` serves the level, the Alert Writer's hiker sentence, and the bypass with its added distance and climb.
-- **Tests.** A pytest suite runs against a fake of both LLM APIs (`backend/tests/fake_llm.py`). The demo was walked in Chromium against the same fake.
+- **Globe.** A React Three Fiber Earth on the light home theme, evenly lit so no side goes black. Three mountain-logo markers from the API (Mount Rainier live, Huascarán and Mount Fuji static) in their risk colors; High and Extreme mountains sit in a larger translucent sphere. Hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
+- **Hill detail card (the mountain page).** Two columns, rebuilt Sep 25:
+  - **Map, about 55%.** MapLibre GL with 3D terrain from AWS Terrain Tiles. The mountain renders gray on white surroundings. The opening frame is sized from the summit elevation, so any mountain opens the same way. The camera slowly orbits while idle, and zooming out stops one level past the opening view. The heat map is the default layer, with a susceptibility toggle. All 67 OpenStreetMap trails are drawn, and the hero trail (the Skyline loop, 5.5 mi) is colored by 0.1-mile segment. Five lettered markers (A–E) sit on the top at-risk trails, each with a hover tooltip (score, slope, primary factor), and **View** flies the camera to them.
+  - **Panel, about 45%.** Stats, the overall score, the top five trails, preventative measures, an Orchestrator with five agent cards and inline reasoning traces, **Analyze now**, and a Reactive Measures section in six incident-response groups.
+- **Assessment.** `backend/app/assessment.py` scores the map, colors the hero trail's 55 segments, flags the worst mile range, draws the hazard zone around it, and routes a bypass on the OpenStreetMap trail network, or says to turn back. `backend/app/trailscan.py` scores every mapped trail against the same map.
+- **Agents (backend).** **Analyze now** (`POST /mountains/{slug}/analyze`) runs seven agents and streams them over a WebSocket:
+  - five analysts in parallel: Terrain, Weather, Trail, History, and Route Scout;
+  - then the Risk Synthesizer, which decides the severity, the action, three routes to avoid, three safe routes, and the ranger response, with guard rails in `advisory.py`;
+  - then the Alert Writer.
+
+  A router sends each call to Gemini Flash or Grok and records why. The run's conclusion is served as an advisory (`GET /runs/{id}/advisory`, `GET /mountains/{slug}/advisory`).
+- **Weather.** Open-Meteo precipitation drives the model. Temperature, freeze-thaw, snowfall, wind, soil moisture, and the freezing level are context for the agents, and missing readings stay null.
+- **Tests.** 204 pytest tests pass against a fake of both LLM APIs (`backend/tests/fake_llm.py`), including contract tests for the Model B seam, the provider schemas, and every payload that leaves the process.
 
 **Not done yet**
 
-- **Landslide points.** The NASA Global Landslide Catalog was unreachable from the build container, so there are no labels and no historical pins. The **Past landslides** toggle is disabled.
+- **The hill card is not wired to the backend.** Its trail scores, agent traces, and Reactive Measures are illustrative. They come from `frontend/lib/fixtures/hill-demo.ts` and a client-side scripted orchestrator. The card shows five agents while the backend runs seven. Next step: an adapter from the run stream and the advisory to the card's `HillView` and `ReactiveMeasure`s (`lib/pipeline/orchestrator.ts` takes an `AgentSource` for this).
+- **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
+- **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
+- **Landslide points.** The NASA Global Landslide Catalog was unreachable from the build container, so there are no labels and no historical pins. The **Past landslides** toggle is disabled, and the History Analyst reports the empty record.
 - **LightGBM.** It is untrained, so there is no AUC yet. Susceptibility is a knowledge-driven index with named weights: slope 0.35, distance to drainage 0.20, land cover 0.20, wetness 0.15, curvature 0.10, stretched between the 2nd and 98th percentile of the box. See `ml/artifacts/metrics.json`.
 - **Model B (step 17)** was pulled and is being rebuilt. Until it lands, the heat map is the susceptibility stand-in, and every layer, hazard, and prompt says so. Rain does not move the map yet. `backend/app/ml/probability.py` switches to Model B as soon as `backend/app/ml/model_b.py` exists.
-- **Mountain panel and simulation** (6.8, added Sep 25, 2026). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
+- **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
+- **Mountain panel and simulation** (6.8). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
 
 Example copy in this file ("Ridge Trail mile 4.2 to 5.1", "Cedar Loop") is illustrative. The live trail is the Skyline loop, and the bypass comes from the trail network.
@@ -77,8 +88,8 @@ Build one convincing loop, not a platform.
 - Landslide risk only. A static susceptibility layer and a 72-hour probability layer driven by recent rain.
 - Historical landslide pins from a public catalog.
 - Trails colored by risk, plus one alternate route that avoids the worst segment.
-- Five agents that stream their work into the UI.
-- The ranger alert in the app, with a side panel that shows how each agent reasoned.
+- Agents that stream their work into the UI: five analysts, a Risk Synthesizer, and an Alert Writer.
+- The ranger alert in the app, with each agent's reasoning trace inline and Reactive Measures grouped for an incident response.
 - A hiker forecast card in plain language.
 - A mountain panel over the globe: the mountain's pressure points and a runout simulation with AI callouts for rangers and the public (team decision, Sep 25, 2026). See [6.8](#68-mountain-panel-and-simulation).
 
@@ -88,7 +99,7 @@ See [Out of Scope](#out-of-scope). The short version: no rain what-if inputs, no
 
 **Demo proof**
 
-A judge can spin the globe with smooth, clean animations, click Rainier to open its panel, read the pressure points, watch a simulated debris flow run down the slope with ranger and public callouts, fly into the mountain with a seamless transition, see the heat map appear, watch the agents run, open their reasoning, and read a hiker card that names a bypass.
+A judge can spin the globe with smooth, clean animations, click Rainier to open its panel, read the pressure points, watch a simulated debris flow run down the slope with ranger and public callouts, fly into the mountain with a seamless transition, see the gray mountain and its five at-risk trails, watch the agents run, open their reasoning, and read the Reactive Measures.
 
 ---
 
@@ -110,7 +121,7 @@ The data already exists: elevation models, land cover, precipitation, and landsl
 
 1. **Ingest.** Use a preprocessed terrain stack for Mount Rainier, plus a live precipitation forecast.
 2. **Predict.** Score each terrain cell for long-term landslide susceptibility, then for short-term probability given recent and forecast rain.
-3. **Decide.** Five agents read the scores, the weather, and the trail geometry, then agree on a severity and a sentence a person can act on.
+3. **Decide.** Five analyst agents read the scores, the weather, the trails, and the landslide record; a Risk Synthesizer decides the severity, the routes, and the ranger response; an Alert Writer turns it into sentences a person can act on.
 4. **Deliver.** Show it on a 3D globe and a terrain map. Give the ranger the alert in the side panel. Show the hiker a forecast card and a bypass.
 
 The output is a label, not a chart. Example: "Trail closed between mile 4.2 and 5.1. Debris flow risk high. Use the Cedar Loop bypass."
@@ -134,7 +145,7 @@ Search and rescue, event organizers, and insurers are not users for this build.
 The first screen is a full-screen 3D Earth.
 
 - React Three Fiber, Three.js, and drei. A custom globe (`frontend/components/globe/`), not a globe library.
-- Textured Earth (`earth-day.jpg` with a topology bump map) and a light atmospheric rim.
+- Textured Earth (`earth-day.jpg` with a topology bump map), evenly lit on the light home theme, and a light atmospheric rim.
 - Three markers, each a mountain logo in its risk color. Color encodes overall risk on all four levels (see the design addendum's Risk mapping); High and Extreme mountains also sit in a larger translucent sphere of that color. Rainier is live and gets an extra ring. The other two use a fixed risk value loaded from seed data.
 - Drag, zoom, and a slow idle rotation that pauses on hover and during a flight.
 - Hover shows mountain name, elevation, region, risk level, and last refresh time.
@@ -206,17 +217,21 @@ Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
 ### 6.4 Agents
 
-Five LLM calls with separate prompts.
+Seven LLM calls with separate prompts. Every agent reads the ML model's prediction first and explains it; none argues with it.
 
 | Agent | Job | Output |
 |---|---|---|
-| Terrain Analyst | Finds the worst cluster on the probability raster and describes where it is | One hazard zone: type, severity, drivers, confidence |
+| Terrain Analyst | Describes the worst cluster on the probability raster | One hazard zone: type, severity, drivers, confidence |
 | Weather Analyst | Says whether the next 24–72 hours make that zone worse, stable, or better | A modifier and a short weather note |
-| Trail Analyst | Intersects the zone with trails and explains the bypass the code found | Affected mile range, bypass name, added distance, added elevation |
-| Risk Synthesizer | Combines the three reports into one severity and one confidence | Final level, confidence, `needs_review` if the reports disagree |
-| Alert Writer | Writes the ranger alert and the hiker card | Two short texts |
+| Trail Analyst | Explains which hero-trail miles cross the zone and the bypass the code found | Affected mile range, bypass, severity |
+| History Analyst | Says whether the landslide record supports today's rating (an empty record is not evidence of safety) | Precedent, severity, note |
+| Route Scout | Reads every mapped trail and names the most exposed and the clearest | Exposed and clear trails, network severity |
+| Risk Synthesizer | Decides what the park does today | Final level, action, three routes to avoid, three safe routes, ranger response |
+| Alert Writer | Writes the ranger alert and the hiker text | Two short texts |
 
-Run Terrain and Weather in parallel, then Trail, then Synthesizer, then Alert Writer. Stream each result to the UI. The hill card's client-side orchestrator shows Terrain, Weather, and Trails running together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). The backend still runs Trail after Terrain because Trail reads the Terrain report; aligning the two is follow-up work for when the card is wired to the stream.
+The five analysts run in parallel, then the Risk Synthesizer, then the Alert Writer. Each result streams to the UI. Code sets the final confidence (weights: terrain 0.30, weather 0.25, trail 0.20, routes 0.15, history 0.10) and checks the Synthesizer's routes and posture (`advisory.py`).
+
+The hill card's client-side orchestrator shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). History and Route Scout need cards, or need folding into these, when the card is wired to the stream.
 
 Consensus rule: if severity ratings differ by two or more levels, set `needs_review` and phrase the alert as an advisory.
 
@@ -234,7 +249,9 @@ A card, not a second product.
 - The bypass: name, added distance, added elevation.
 - The same bypass drawn on the mountain map, dashed.
 
-The Alert Writer produces the sentence. The bypass values come from the API, never from the model's text. No account, no share image, no file download. hi
+The Alert Writer produces the sentence. The bypass values come from the API, never from the model's text. No account, no share image, no file download.
+
+Not rendered on the rebuilt mountain page for now (UX.md, Mountain page); `GET /forecast` and the component are kept.
 
 ### 6.7 Reasoning Panel
 
@@ -586,7 +603,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 
 - Model B with Open-Meteo. Probability tiles. One hazard polygon.
 - Trail segments colored by risk. One bypass, even if the geometry is hand-authored.
-- `/analyze`, five agents, WebSocket stream, agent panel.
+- `/analyze`, seven agents (five analysts in parallel, then the Synthesizer and the Writer), WebSocket stream, agent panel.
 - Hazard panel with the four fields.
 
 ### Hours 18–28: The two audiences (done)
@@ -599,6 +616,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 - Tighten motion and copy.
 - 60–90 second backup video.
 - Devpost draft with the real AUC and the real data sources.
+- Wire the hill card to the run stream and the advisory, so its trail scores, traces, and Reactive Measures come from a real run.
 - Rehearse the live demo three times with real keys. Keep a finished run on screen in case the live call fails.
 
 If you are behind, drop in this order:
@@ -620,11 +638,11 @@ About two and a half minutes.
 1. **(0:00)** Globe, rotating. "Hikers check the weather. Almost nobody checks the ground."
 2. **(0:10)** Click Mount Rainier. The panel opens. "These are the five slopes most likely to fail in the next 72 hours."
 3. **(0:25)** **Simulate.** The flow runs down to the trail, and the callouts appear. "If the worst one goes, here's where it reaches the trail, what rangers do, and what nearby hikers would be told."
-4. **(0:50)** **Open ranger view.** Fly in. The heat map fades in.
-5. **(1:00)** Open the hazard pin. Read what, why, confidence, and what to do.
-6. **(1:15)** **Analyze now.** Agents stream. "Five agents check the slope, the forecast, and the trail, then agree."
-7. **(1:40)** Open **Reasoning** on the Trail row. "A router sends each agent to Gemini Flash or Grok, and the ranger can see why."
-8. **(2:00)** Hiker card and the bypass on the map. "A hiker gets one sentence and a way around it."
+4. **(0:50)** **Open ranger view.** Fly in. The mountain stands out gray on white, with its five at-risk trails lettered A to E.
+5. **(1:00)** **View** on trail A. The camera flies to it, and the tooltip shows its score, slope, and primary factor.
+6. **(1:15)** **Analyze now.** The Orchestrator dispatches the agents. "Agents check the slope, the rain, the trails, and the record, then one of them decides."
+7. **(1:40)** Open a card's trace. "A router sends each agent to Gemini Flash or Grok, and the ranger can see how it reasoned."
+8. **(2:00)** Reactive Measures. "Closures, sweeps, rescue staging, spotters, who to call, and the public notice, drafted and not sent."
 9. **(2:20)** Back to the globe. "TerraSense. Know the ground before you go."
 
 ---
@@ -645,7 +663,7 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A cli
 
 **Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover, combined into a knowledge-driven susceptibility index with named weights. No AUC yet: the landslide labels (NASA Global Landslide Catalog) were unreachable from the build container, so LightGBM is untrained. The 72-hour map uses that index as a labeled stand-in until Model B lands. [Replace with the AUC once step 12 runs.]
 
-**Agents.** Five agents with Pydantic outputs: Terrain and Weather in parallel, then Trail, Synthesizer, and Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
+**Agents.** Seven agents with Pydantic outputs: five analysts (Terrain, Weather, Trail, History, Route Scout) in parallel, then the Risk Synthesizer and the Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
 
 **Frontend.** Next.js, React Three Fiber for the globe, MapLibre GL for 3D terrain.
 
@@ -710,6 +728,8 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
+| Sep 25, 2026 | The backend fans out five analysts (Terrain, Weather, Trail, History, Route Scout), then the Risk Synthesizer decides routes and the ranger response, then the Alert Writer. Runs end in an advisory (6.4) |
+| Sep 25, 2026 | The globe goes light and evenly lit, with mountain-logo markers. The mountain map renders the mountain gray on white surroundings, framed from its elevation |
 | Sep 25, 2026 | The mountain page is rebuilt as the hill detail card (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
 
 ---
@@ -728,4 +748,4 @@ Changes to this spec after the build started. Each one is also reflected in the 
 - **Runout.** How far and where a failed slope's material travels before it stops. The simulation traces it on the DEM.
 - **Skip-route.** The bypass that avoids the flagged trail segment.
 - **Router.** The code that picks Gemini Flash or Grok for each agent call and records why.
-- **Run.** One pass of the probability map plus the five agents for Mount Rainier.
+- **Run.** One pass of the probability map plus the seven agents for Mount Rainier.
