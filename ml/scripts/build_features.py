@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
-"""Build the terrain feature table for the susceptibility model (implementation step 11).
+"""Build the terrain feature table for the susceptibility model (implementation steps 11 and 32).
 
 Reads the step 10 rasters in data/raw/ and writes, relative to the repo root:
   data/processed/features.tif      7-band feature stack on one 30 m grid (UTM zone 10N)
   data/processed/features.parquet  labeled sample: pixels near landslide points (1) and
                                    random stable pixels (0), about 1:3, with a region id
 
+For any other pack in ml/scripts/mountain_packs.py, --mountain SLUG builds the same stack
+on a 30 m grid in that peak's own UTM zone, under data/processed/packs/<slug>/. Only
+Rainier gets the labeled table: its landslide inventory is the only one dense enough to
+train on, and the packs' knowledge-driven index must never look trained.
+
 The stack covers every pixel, so step 12 can predict the full susceptibility map from it.
 The labeled table needs data/seed/landslides.geojson; without it the script writes the
 stack, says the table is pending, and exits 0.
 
 Run from the repo root:
-  python ml/scripts/build_features.py [--landslides PATH]
+  python ml/scripts/build_features.py [--mountain SLUG] [--landslides PATH]
 """
 
 from __future__ import annotations
@@ -20,6 +25,7 @@ import argparse
 import json
 from pathlib import Path
 
+import mountain_packs as mp
 import numpy as np
 import pandas as pd
 import rasterio
@@ -31,17 +37,9 @@ from rasterio.warp import Resampling, reproject, transform, transform_bounds
 from scipy.ndimage import distance_transform_edt
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEM_PATH = REPO_ROOT / "data" / "raw" / "rainier_dem_cop30.tif"
-LANDCOVER_PATH = REPO_ROOT / "data" / "raw" / "rainier_landcover_worldcover2021.tif"
-LANDSLIDES_PATH = REPO_ROOT / "data" / "seed" / "landslides.geojson"
-PROCESSED_DIR = REPO_ROOT / "data" / "processed"
-STACK_PATH = PROCESSED_DIR / "features.tif"
-TABLE_PATH = PROCESSED_DIR / "features.parquet"
 
-# Shared facts (context/implementation-steps.md). EPSG:4326, [west, south, east, north].
-RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
-
-GRID_CRS = "EPSG:32610"  # UTM zone 10N: metric, so slope and distances come out in meters.
+# The grid CRS is each pack's own UTM zone (Rainier: EPSG:32610): metric, so slope and
+# distances come out in meters.
 CELL_M = 30
 
 # The seven model features, in band order.
@@ -68,17 +66,17 @@ def rel(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT))
 
 
-def utm_grid() -> tuple[Affine, int, int]:
-    """The 30 m UTM grid that covers the Rainier bbox, snapped outward to whole cells."""
-    left, bottom, right, top = transform_bounds("EPSG:4326", GRID_CRS, *RAINIER_BBOX, densify_pts=21)
+def utm_grid(bbox, grid_crs: str) -> tuple[Affine, int, int]:
+    """The 30 m UTM grid that covers the bbox, snapped outward to whole cells."""
+    left, bottom, right, top = transform_bounds("EPSG:4326", grid_crs, *bbox, densify_pts=21)
     left, bottom = np.floor(left / CELL_M) * CELL_M, np.floor(bottom / CELL_M) * CELL_M
     right, top = np.ceil(right / CELL_M) * CELL_M, np.ceil(top / CELL_M) * CELL_M
     width, height = int((right - left) / CELL_M), int((top - bottom) / CELL_M)
     return Affine(CELL_M, 0, left, 0, -CELL_M, top), width, height
 
 
-def resample(path: Path, dst_transform: Affine, shape: tuple[int, int], resampling: Resampling,
-             dtype: str) -> np.ndarray:
+def resample(path: Path, dst_transform: Affine, shape: tuple[int, int], grid_crs: str,
+             resampling: Resampling, dtype: str) -> np.ndarray:
     """Reproject band 1 of a raster onto the grid. Cells outside the source become nodata."""
     fill = np.nan if dtype == "float32" else 0
     out = np.full(shape, fill, dtype=dtype)
@@ -87,7 +85,7 @@ def resample(path: Path, dst_transform: Affine, shape: tuple[int, int], resampli
             source=rasterio.band(src, 1),
             destination=out,
             dst_transform=dst_transform,
-            dst_crs=GRID_CRS,
+            dst_crs=grid_crs,
             dst_nodata=fill,
             resampling=resampling,
         )
@@ -133,27 +131,28 @@ def fill_nearest(z: np.ndarray) -> np.ndarray:
     return z[rows, cols]
 
 
-def flow_accumulation(z: np.ndarray, dst_transform: Affine) -> np.ndarray:
+def flow_accumulation(z: np.ndarray, dst_transform: Affine, grid_crs: str) -> np.ndarray:
     """D8 upstream cell count after filling pits and depressions and resolving flats."""
     dem = np.where(np.isnan(z), -9999.0, z).astype("float64")
-    view = ViewFinder(affine=dst_transform, shape=z.shape, nodata=-9999.0, crs=CRS.from_user_input(GRID_CRS))
+    view = ViewFinder(affine=dst_transform, shape=z.shape, nodata=-9999.0, crs=CRS.from_user_input(grid_crs))
     grid = Grid.from_raster(Raster(dem, viewfinder=view))
     conditioned = grid.resolve_flats(grid.fill_depressions(grid.fill_pits(Raster(dem, viewfinder=view))))
     return np.asarray(grid.accumulation(grid.flowdir(conditioned)), dtype="float64")
 
 
-def build_stack() -> tuple[np.ndarray, Affine]:
+def build_stack(pack: mp.Pack, paths: mp.PackPaths) -> tuple[np.ndarray, Affine]:
     """All seven features on the 30 m grid, shape (7, rows, cols)."""
-    dst_transform, width, height = utm_grid()
+    dst_transform, width, height = utm_grid(pack.bbox, pack.utm_crs)
     shape = (height, width)
-    elevation = resample(DEM_PATH, dst_transform, shape, Resampling.bilinear, "float32")
-    landcover = resample(LANDCOVER_PATH, dst_transform, shape, Resampling.mode, "uint8").astype("float32")
+    elevation = resample(paths.dem, dst_transform, shape, pack.utm_crs, Resampling.bilinear, "float32")
+    landcover = resample(paths.landcover, dst_transform, shape, pack.utm_crs,
+                         Resampling.mode, "uint8").astype("float32")
     landcover[landcover == 0] = np.nan  # WorldCover nodata
 
     filled = fill_nearest(elevation)
     slope, aspect = slope_aspect(filled)
     curv = curvature(filled)
-    accumulation = flow_accumulation(elevation, dst_transform)
+    accumulation = flow_accumulation(elevation, dst_transform, pack.utm_crs)
 
     channels = accumulation * CELL_M**2 >= CHANNEL_AREA_M2
     dist_drainage = (distance_transform_edt(~channels) * CELL_M).astype("float32")
@@ -166,14 +165,14 @@ def build_stack() -> tuple[np.ndarray, Affine]:
     return stack, dst_transform
 
 
-def write_stack(stack: np.ndarray, dst_transform: Affine) -> None:
-    PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+def write_stack(stack: np.ndarray, dst_transform: Affine, grid_crs: str, stack_path: Path) -> None:
+    stack_path.parent.mkdir(parents=True, exist_ok=True)
     profile = {
         "driver": "GTiff", "width": stack.shape[2], "height": stack.shape[1], "count": len(FEATURES),
-        "dtype": "float32", "crs": GRID_CRS, "transform": dst_transform, "nodata": np.nan,
+        "dtype": "float32", "crs": grid_crs, "transform": dst_transform, "nodata": np.nan,
         "tiled": True, "blockxsize": 256, "blockysize": 256, "compress": "deflate", "predictor": 3,
     }
-    with rasterio.open(STACK_PATH, "w", **profile) as dst:
+    with rasterio.open(stack_path, "w", **profile) as dst:
         dst.write(stack)
         for band, name in enumerate(FEATURES, start=1):
             dst.set_band_description(band, name)
@@ -185,14 +184,15 @@ def region_ids(rows: np.ndarray, cols: np.ndarray, width: int) -> np.ndarray:
     return (rows // REGION_BLOCK_CELLS) * blocks_per_row + cols // REGION_BLOCK_CELLS
 
 
-def landslide_cells(path: Path, dst_transform: Affine, shape: tuple[int, int]) -> tuple[np.ndarray, int]:
+def landslide_cells(path: Path, dst_transform: Affine, shape: tuple[int, int],
+                    grid_crs: str) -> tuple[np.ndarray, int]:
     """Distance in meters from every cell to the nearest usable landslide point, and the point count."""
     features = json.loads(path.read_text(encoding="utf-8"))["features"]
     points = [f["geometry"]["coordinates"] for f in features
               if (f["properties"].get("location_accuracy") or "").lower() in ACCEPTED_ACCURACY]
     seeds = np.zeros(shape, dtype=bool)
     if points:
-        xs, ys = transform("EPSG:4326", GRID_CRS, [p[0] for p in points], [p[1] for p in points])
+        xs, ys = transform("EPSG:4326", grid_crs, [p[0] for p in points], [p[1] for p in points])
         rows, cols = rowcol(dst_transform, xs, ys)
         for r, c in zip(rows, cols, strict=True):
             if 0 <= r < shape[0] and 0 <= c < shape[1]:
@@ -201,10 +201,11 @@ def landslide_cells(path: Path, dst_transform: Affine, shape: tuple[int, int]) -
     return distance, int(seeds.sum())
 
 
-def build_table(stack: np.ndarray, dst_transform: Affine, landslides: Path) -> pd.DataFrame:
+def build_table(stack: np.ndarray, dst_transform: Affine, landslides: Path,
+                grid_crs: str) -> pd.DataFrame:
     """Positives within POSITIVE_BUFFER_M of a point, negatives sampled from stable ground."""
     shape = stack.shape[1:]
-    distance, point_count = landslide_cells(landslides, dst_transform, shape)
+    distance, point_count = landslide_cells(landslides, dst_transform, shape, grid_crs)
     # Every band must be present, except aspect, which is NaN on flat ground by design.
     required = [i for i, name in enumerate(FEATURES) if name != "aspect"]
     valid = ~np.isnan(stack[required]).any(axis=0)
@@ -229,26 +230,34 @@ def build_table(stack: np.ndarray, dst_transform: Affine, landslides: Path) -> p
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the terrain feature stack and labeled table.")
-    parser.add_argument("--landslides", type=Path, default=LANDSLIDES_PATH,
-                        help="landslide points GeoJSON (default: data/seed/landslides.geojson)")
+    parser.add_argument("--mountain", default=mp.RAINIER_SLUG,
+                        help=f"pack slug from mountain_packs.py (default: {mp.RAINIER_SLUG})")
+    parser.add_argument("--landslides", type=Path, default=None,
+                        help="landslide points GeoJSON (default: the pack's seed file)")
     args = parser.parse_args()
+    pack, paths = mp.get(args.mountain), mp.paths(args.mountain)
+    landslides = args.landslides or paths.landslides
 
-    stack, dst_transform = build_stack()
-    write_stack(stack, dst_transform)
+    stack, dst_transform = build_stack(pack, paths)
+    write_stack(stack, dst_transform, pack.utm_crs, paths.stack)
     rows, cols = stack.shape[1:]
-    print(f"wrote {rel(STACK_PATH)}: {len(FEATURES)} bands, {cols} x {rows} cells at {CELL_M} m, {GRID_CRS}")
+    print(f"wrote {rel(paths.stack)}: {len(FEATURES)} bands, {cols} x {rows} cells at {CELL_M} m, {pack.utm_crs}")
     for i, name in enumerate(FEATURES):
         band = stack[i]
         print(f"  {name:<13} min {np.nanmin(band):10.2f}  median {np.nanmedian(band):10.2f}  max {np.nanmax(band):10.2f}")
 
-    if not args.landslides.exists():
-        print(f"labeled table pending: {args.landslides} is missing. Run "
+    if pack.slug != mp.RAINIER_SLUG:
+        # Sparse catalog points elsewhere must never become a "trained" model (step 32 rule).
+        print("labeled table skipped: only Rainier's landslide inventory is dense enough to train on")
+        return
+    if not landslides.exists():
+        print(f"labeled table pending: {landslides} is missing. Run "
               "`python ml/scripts/download_sources.py --only landslides`, then rerun this script.")
         return
-    table = build_table(stack, dst_transform, args.landslides)
-    table.to_parquet(TABLE_PATH, index=False)
+    table = build_table(stack, dst_transform, landslides, pack.utm_crs)
+    table.to_parquet(paths.table, index=False)
     counts = table["label"].value_counts().to_dict()
-    print(f"wrote {rel(TABLE_PATH)}: {len(table)} rows ({counts.get(1, 0)} positive, {counts.get(0, 0)} negative), "
+    print(f"wrote {rel(paths.table)}: {len(table)} rows ({counts.get(1, 0)} positive, {counts.get(0, 0)} negative), "
           f"columns {list(table.columns)}, {table['region'].nunique()} regions")
 
 
