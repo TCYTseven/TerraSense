@@ -100,8 +100,12 @@ def _stack_features(lat: float, lon: float, features: list[str]) -> dict[str, fl
         try:
             x, y = warp_transform("EPSG:4326", src.crs, [lon], [lat])
             row, col = src.index(x[0], y[0])
-        except rasterio.errors.RasterioError:
-            # UTM and other projected stacks cannot warp polar catalog peaks (|lat| > ~84).
+        except Exception:
+            # UTM and other projected stacks cannot warp far-away catalog peaks (PROJ raises
+            # CPLE_AppDefinedError, which is not a RasterioError subclass, so catch broadly:
+            # any point the stack cannot place is simply outside it).
+            return None
+        if not (math.isfinite(x[0]) and math.isfinite(y[0])):
             return None
         if not (0 <= row < src.height and 0 <= col < src.width):
             return None

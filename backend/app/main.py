@@ -12,6 +12,7 @@ from psycopg_pool import PoolTimeout
 
 from app.config import cors_origins
 from app.db import close_pool
+from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
 from app.routes import forecast, mountains, risk, runs, simulations, synthetic_tiles
@@ -23,6 +24,7 @@ FRONTEND_ORIGINS = ["http://localhost:3000", "http://127.0.0.1:3000", *cors_orig
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    import asyncio
     import logging
 
     setup = setup_summary()
@@ -32,6 +34,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             setup["missing_count"],
             setup["next_step"],
         )
+    # Warm the regional model seam (booster + feature stack) once at boot, so the first
+    # GET /mountains and the first location run do not pay the raster read. Fail-soft: with
+    # the artifacts unbuilt this returns available: false and costs nothing.
+    await asyncio.to_thread(predict_summit, "startup-warmup", 0.0, 0.0)
     yield
     close_pool()
 
