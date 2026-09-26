@@ -184,7 +184,8 @@ AgentEvent     { run_id, agent, status, summary, payload, trace: AgentTrace | nu
 
 | File | What it is |
 |---|---|
-| `data/seed/mountains.json` | ~1000 OpenStreetMap peaks (named, elevation ≥ 1800 m) picked stratified across latitude bands and 30° longitude slices so every continent shows on the globe, plus `mount-rainier` (`is_live: true`). Regenerate from `backend/`: `python -m app.mountain_catalog --write-seed --source overpass`. Fields in `data/AGENTS.md`. |
+| `data/seed/mountains_test.json` | Globe catalog when `SEED_MODE=mountainstest` (default): ~140 named peaks spaced across the Americas, Europe, Africa, and Asia, plus `mount-rainier`. |
+| `data/seed/mountains.json` | Full Overpass dump. Regenerated from `backend/`: `python -m app.mountain_catalog --write-seed --source overpass`. Loaded when `SEED_MODE=reseed`. |
 | `data/seed/trails.geojson` | Step 14. 67 named Rainier trails from OpenStreetMap (via Overture Maps), 252 km, one feature per line, ODbL. The hero trail, `Skyline Trail`, is the NPS loop from the Paradise trailhead, clockwise: 8.87 km, 560 m of gain. Climbing routes, forest roads, and names under 200 m are left out. |
 | `data/seed/trail_segments.geojson` | Step 14. The hero trail cut every 0.1 mile: 55 segments with `seq`, `start_mile`, `end_mile`, mile 0 at the Paradise trailhead. |
 | `data/seed/trail_network.geojson` | Step 19. The walkable network the bypass routes on, `[lon, lat, elevation m]` vertices, ODbL. Format in `data/AGENTS.md`. |

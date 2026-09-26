@@ -27,7 +27,11 @@ def load_mountains(conn: psycopg.Connection) -> int:
     """
     mountains = read_seed_file()
     if not mountains:
-        raise SystemExit(f"Missing or empty {SEED_DIR / 'mountains.json'}. Run: python -m app.mountain_catalog --write-seed")
+        raise SystemExit(
+            "Missing or empty mountain catalog for SEED_MODE "
+            "(mountainstest → mountains_test.json, reseed → mountains.json). "
+            "Run: python -m app.mountain_catalog --write-seed"
+        )
     count = upsert_mountains(conn, mountains)
     conn.execute(
         "DELETE FROM mountains WHERE is_live = false AND slug <> ALL(%s::text[])",
