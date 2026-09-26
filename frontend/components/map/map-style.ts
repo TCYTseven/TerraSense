@@ -103,6 +103,7 @@ export const SOURCE = {
   bypass: "bypass",
   history: "historical-events",
   trailRisk: "trail-risk",
+  flow: "runout-flow",
 } as const;
 
 export const LAYER = {
@@ -120,6 +121,8 @@ export const LAYER = {
   bypass: "bypass-line",
   history: "historical-pins",
   trailRisk: "trail-risk-line",
+  flow: "runout-flow",
+  flowEdge: "runout-flow-edge",
 } as const;
 
 /**

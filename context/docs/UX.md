@@ -24,15 +24,15 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 
 1. **Risk colors mean risk.** Green, amber, orange, and red appear only on markers, trails, heat, the simulated flow, and severity. The accent cyan is the only interactive color.
 2. **The globe stays almost empty until a click.** Name, search, globe. Stats, legends, and settings do not go on this screen. A click on a marker opens the mountain panel over it, and closing the panel returns the empty globe.
-3. **The mountain page is a map plus one panel.** The map is about 55% of the width and the panel about 45%. Layer toggles sit on the map. The one action, **Analyze now**, is pinned to the bottom of the panel. No other sidebar, drawer, or panel opens on this page.
+3. **The mountain page is a map plus one panel.** The map is about 55% of the width and the panel about 45%. Layer toggles sit on the map. **Analyze now** is pinned to the bottom of the panel. **Simulate** sits beside it when the mountain has routes. No other sidebar, drawer, or panel opens on this page.
 4. **A hazard explains itself in four lines, in this order.** What it is. Why it was flagged. Confidence. How to avoid it.
 5. **Ranger copy is short.** Name the hazard, the place, and the confidence. Skip a lecture.
 6. **Hiker copy is one sentence plus the bypass.** Name the bypass, the added distance, and the added climb. Skip probability jargon.
 7. **Weather is text in the Weather agent's trace.** The mountain page has no rain section. Weather is never a map layer.
-8. **Static mountains do not pretend to analyze.** Hide **Analyze now**, the pressure points, and **Simulate** when `is_live` is false.
+8. **Static mountains do not pretend to analyze.** Hide **Analyze now** when `is_live` is false. Hide **Simulate** when the mountain has no routes. The seed's static peaks have no routes, so they show neither.
 9. **A running analysis is visible.** An Orchestrator node and five agent cards, each idle, running, done, or error. The running card moves. A failure says the run failed and leaves the last good hazard on the map.
 10. **Motion is short.** Idle globe spin. A slow idle orbit of the mountain on the mountain page, which stops for the user. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
-11. **A simulation says what it is.** It is an illustrative runout from today's worst slope, not a forecast of timing. Every public message it shows is a draft that was not sent.
+11. **A simulation says what it is.** It is an illustrative landslide and debris-flow runout from the route most likely to fail, not a forecast of timing and not a snow avalanche. Every public message it shows is a draft that was not sent.
 
 ## The screens
 
@@ -50,18 +50,11 @@ One panel, centered over the globe, for every mountain. It closes with Escape, i
 
 **Right: the pressure points.** The mountain's name and overall level, then up to five pressure points: the slopes most likely to fail, worst first. Each row gives its number, where it is, its level, and the terrain that drives it. A click on a row selects it and its pin, and that point is the one the simulation starts from. The first point is selected when the panel opens.
 
-**Bottom of the right side:** **Simulate**, the primary action, and **Open ranger view**, which flies into the mountain page.
+**Bottom of the right side:** **Open ranger view**, which flies into the mountain page. **Simulate** is not on this panel. As of Sep 26, 2026 it lives on the mountain page, beside **Analyze now**, and only for a mountain that has routes.
 
-**After Simulate, the right side becomes the simulation.** The left map plays the flow down the slope from the selected pressure point. The heat of the flow advances step by step, and each place it reaches a trail gets marked. The right side shows:
+**The runout plays on the mountain page, not in this panel.** See [Mountain page](#mountain-page-hill-detail-card-rebuilt-sep-25-2026).
 
-- **Steps.** The simulation's steps in order, each with its simulated time: release, entering the channel, each trail it reaches (trail and mile range), and where it stops. The current step is marked the way a running agent row is.
-- **Callouts.** Two to four short notes from the AI, each tied to a step and each naming who it is for:
-  - **Rangers:** what to do now, such as closing a mile range or sending a patrol to a trailhead.
-  - **Public notice:** the message that would go out to people nearby, shown as a draft that was not sent.
-
-The simulation has no speed control, scrubber, or rain slider. **Replay** runs it again. **Back to pressure points** restores the right side. The left map keeps the final flow until one of those is pressed.
-
-Static mountains open the same panel with terrain only, their fixed level, and one line saying they are display markers. No pressure points, no **Simulate**.
+Static mountains open the same panel with terrain only, their fixed level, and one line saying they are display markers. No pressure points. **Simulate** is not offered, because these peaks have no routes.
 
 ### Mountain page (hill detail card, rebuilt Sep 25, 2026)
 
@@ -74,7 +67,9 @@ Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain o
 3. **Top 5 at-risk trails.** Riskiest first. Each row: letter, name, score, and **View**, which flies the camera to that trail's region.
 4. **Preventative measures.** Three to five short bullets.
 5. **Agents.** An Orchestrator node connected to five cards: Terrain, Weather, Trails, Synthesizer, Mass Alert Writer. A click on a card opens its full reasoning trace directly beneath it, one at a time. After a run, **Reactive Measures** get their own prominent section below the cards. They are clustered by when they have to happen, soonest first: now, within 1 hour, within 6 hours, and within 24 hours. Each measure is labeled with its kind of work (closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, or public notice), and public notices are drafts that were not sent.
-6. **Analyze now**, pinned to the bottom. The orchestrator runs Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer. The button is disabled while the run lasts.
+6. **Footer.** **Simulate**, when the mountain has at least one route, and **Analyze now**, when the mountain is live. They sit side by side. Mount Rainier has routes and is live, so both show. A peak with no routes does not show **Simulate**.
+
+**Simulate** (Sep 26, 2026) starts an illustrative landslide and debris-flow runout from the route most likely to fail. The camera flies to that route. On the mountain view, a time bar at the top shows the simulated span, and a flow footprint on the map grows downhill in step with that clock. The flow uses the risk ramp: hotter in the core, cooler at the edges. The bar is a display of the span. It is not a scrubber, a speed control, or a rain slider. **Replay** runs the loaded frames again. The method line stays visible and says the runout is illustrative, not a forecast of timing. There is no snowpack in the model, so this is not an avalanche. Callouts name rangers or a public notice, and every public notice says it is a draft that was not sent.
 
 The page has no rain section and no reasoning side panel: the Weather card's trace carries the rain, and each card's trace is the reasoning. The hiker card is not on this page for now.
 
@@ -91,11 +86,11 @@ The wordmark returns to the globe. The mountain panel does not reopen by itself.
 - The globe gains a dashboard of live counters before the three markers and the fly-to feel finished.
 - A reasoning trace opens on its own, more than one is open at once, or a trace grows controls that change a run.
 - The mountain page grows a second sidebar, a drawer, or a rain section.
-- The simulation grows a rain slider, a speed control, a hazard picker, or any other what-if input.
+- The simulation grows a rain slider, a speed control, a hazard picker, a scrubber, or any other what-if input. The time bar on the mountain view only shows the span.
 - A callout reads as if a message was sent, or a public notice has a send button.
 - The simulation shows a timing or a flow path as a prediction.
 - The mountain panel shows agent cards or **Analyze now**. Those live on the mountain page.
 
 ## How to check a UI change
 
-Run the frontend and walk the demo order: land on the globe, click Rainier, read the pressure points, press **Simulate** and watch it to the end, open the ranger view, press **View** on each of the five trails and hover each marker, toggle a layer, press **Analyze now**, open each agent's trace, and read the reactive measures. A still screenshot of one screen is not the check. Confirm the click path and the empty, loading, and error states for the view you touched.
+Run the frontend and walk the demo order: land on the globe, open Mount Rainier, press **Simulate** and watch the flow and the time bar stay in step through the end, press **View** on each of the five trails and hover each marker, toggle a layer, press **Analyze now**, open each agent's trace, and read the reactive measures. Open a peak with no routes and confirm **Simulate** is absent. A still screenshot of one screen is not the check. Confirm the click path and the empty, loading, and error states for the view you touched.

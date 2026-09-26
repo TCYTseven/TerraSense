@@ -13,11 +13,11 @@ Open work only. Build notes stay in [implementation-steps.md](implementation-ste
 
 ## Build
 
-- [ ] **26.** Rank the pressure points. `backend/app/ml/pressure.py` and `GET /mountains/{slug}/pressure-points`.
-- [ ] **27.** Trace a runout from a pressure point. `backend/app/ml/runout.py`.
-- [ ] **28.** Expose simulate, the stream, and the callouts.
+- [x] **26.** Rank the pressure points. `backend/app/ml/pressure.py` and `GET /mountains/{slug}/pressure-points`.
+- [x] **27.** Trace a runout from a pressure point. `backend/app/ml/runout.py`.
+- [x] **28.** Expose simulate, the stream, and the callouts.
 - [ ] **29.** Open the mountain panel over the globe.
-- [ ] **30.** Play the simulation in the panel.
+- [x] **30.** Play the simulation on the mountain page, beside **Analyze now**, for mountains with routes.
 - [ ] **31.** Finish the hill card. **Analyze now** on a live mountain already streams the seven agents into the five cards, and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Still illustrative, from `frontend/lib/fixtures/hill-demo.ts`: trail scores and markers, the overall score, mean slope, and preventative measures. Drop the "Illustrative scores" line only for numbers that came from a run.
 
 ## Before the demo

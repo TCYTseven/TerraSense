@@ -69,7 +69,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 - **LightGBM.** The trained spatial holdout AUC is `0.7150` with precision `0.0000` at the High threshold. Susceptibility uses a LightGBM refit on all 1,224 labeled pixels; the score is reported as relative susceptibility because negatives were sampled 1:3. See `ml/artifacts/metrics.json`.
 - **Model B (step 17)** is live. `backend/app/ml/probability.py` calls `backend/app/ml/model_b.py`, which combines the trained susceptibility raster with bounded forecast-rain and antecedent-moisture signals.
 - **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
-- **Mountain panel and simulation** (6.8). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
+- **Mountain page simulation** (6.8). **Simulate** sits beside **Analyze now** on mountains that have routes. It flies to the route most likely to fail and plays an illustrative debris-flow runout, with a time bar on the mountain view kept in step with the flow. The centered globe panel from the Sep 25 decision is still not built.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
 - **Catalog size.** `data/seed/mountains.json` has 648 peaks. The written target is about 1,000. The default seed is the 138-peak test file.
 
@@ -92,15 +92,15 @@ Build one convincing loop, not a platform.
 - Agents that stream their work into the UI: five analysts, a Risk Synthesizer, and an Alert Writer.
 - The ranger alert in the app, with each agent's reasoning trace inline and Reactive Measures grouped for an incident response.
 - A hiker forecast card in plain language.
-- A mountain panel over the globe: the mountain's pressure points and a runout simulation with AI callouts for rangers and the public (team decision, Sep 25, 2026). See [6.8](#68-mountain-panel-and-simulation).
+- A mountain-page runout for any peak that has routes: **Simulate** beside **Analyze now**, a debris-flow footprint down the worst route, and a time bar locked to that footprint (team decision, Sep 26, 2026). See [6.8](#68-mountain-page-runout). The Sep 25 globe panel remains specified and is not built.
 
 **Out**
 
-See [Out of Scope](#out-of-scope). The short version: no rain what-if inputs, no extra hazard types (the simulation is landslide and debris flow runout only), no SMS or email (public notices are drafts), no accounts, no GPX export, no InSAR.
+See [Out of Scope](#out-of-scope). The short version: no rain what-if inputs, no extra hazard types (the simulation is landslide and debris flow runout only; a snow avalanche needs a snowpack this model does not have), no SMS or email (public notices are drafts), no accounts, no GPX export, no InSAR.
 
 **Demo proof**
 
-A judge can spin the globe with smooth, clean animations, click Rainier to open its panel, read the pressure points, watch a simulated debris flow run down the slope with ranger and public callouts, fly into the mountain with a seamless transition, see the gray mountain and its five at-risk trails, watch the agents run, open their reasoning, and read the Reactive Measures.
+A judge can spin the globe, open Mount Rainier, press **Simulate** beside **Analyze now**, and watch a debris flow run downhill while the time bar on the mountain view stays in step with it. Then they see the five at-risk trails, watch the agents run, open their reasoning, and read the Reactive Measures.
 
 ---
 
@@ -258,26 +258,21 @@ Not rendered on the rebuilt mountain page for now (UX.md, Mountain page); `GET /
 
 Added Sep 25, 2026 (team decision); folded into the hill detail card the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
 
-### 6.8 Mountain Panel and Simulation
+### 6.8 Mountain page runout
 
-Added Sep 25, 2026 (team decision). Not built yet: steps 26 to 30.
+Added Sep 25, 2026 as a panel over the globe. Moved onto the mountain page on Sep 26, 2026: **Simulate** belongs beside **Analyze now**, and only a mountain with routes gets it. Mount Rainier is the only seeded peak with routes. Peaks without routes do not show the button.
 
-A click on any globe marker opens one panel in the center of the screen, over the paused globe.
+**Simulate.** The camera flies to the route most likely to fail. The ranking uses the probability map when that raster exists, and otherwise the trail catalog: climb per kilometer, release at the uphill end of the line. The map then plays an illustrative landslide and debris-flow runout:
 
-**Left: the mountain.** A 3D terrain map with the 72-hour heat map and numbered pins on the pressure points.
+- **Runout.** Without a 30 m elevation grid, the footprint walks downhill along that trail and widens as it descends. Arrival time is path distance divided by `FRONT_SPEED_MS` (5 m/s). With a grid, the same clock applies to Holmgren routing (`HOLMGREN_EXPONENT` 4), stopping at `REACH_ANGLE_DEG` (11°) or `MAX_RUNOUT_M`. Intensity is the share of the flow, 0 to 1, on the shared bins. It is not a snow avalanche: there is no snowpack to drive one.
+- **Heat on the map.** The footprint advances frame by frame on the risk ramp, hotter in the core and cooler at the edges. The existing heat map drops to 35% opacity while the flow shows. One frame every 500 ms, at most 40 frames.
+- **Time bar.** A bar across the top of the mountain view shows the simulated span and the current clock (`T+04:30`). The playhead and the footprint move together. The bar does not scrub, and there is no rain slider, speed control, or hazard picker.
+- **Steps and callouts.** Code names the release, the channel, each trail the flow reaches (name and mile range), and the stop. Callouts are drafts for rangers and for the public. Nothing is sent. When the model does not answer, templates stand in and the finished line says so.
+- **Replay.** Runs the frames already loaded. The method line stays on screen: the runout is illustrative, not a forecast of timing.
 
-**Right: the pressure points.** Up to five slopes most likely to fail, worst first. Each gives where it is, its level and peak value, and the terrain that drives it. The first is selected.
+**Open ranger view** on the still-unbuilt globe panel would fly into this same page. Static mountains, and any mountain with no routes, have no **Simulate**.
 
-**Actions.** **Simulate** runs the selected point. **Open ranger view** flies into the mountain page (6.2).
-
-**Simulate.** The right side becomes the simulation, and the left map plays it:
-
-- **Runout.** Code routes the failure down the 30 m DEM from the pressure point's high cells. It uses multiple-flow-direction spreading and stops at a travel angle (`REACH_ANGLE_DEG`, 11°, a common debris flow minimum) or `MAX_RUNOUT_M`. The time of arrival is path distance divided by `FRONT_SPEED_MS` (5 m/s). Intensity is the share of the flow through a cell, 0 to 1, on the shared bins. All constants are named. It takes a few seconds, no model call.
-- **Heat map in motion.** The flow footprint advances frame by frame on the risk ramp, and each trail it crosses is marked where it crosses.
-- **Steps.** Code derives them from the runout: the slope releases, the flow enters the channel, it reaches a trail (name and mile range), and it stops (distance and drop). Each step has its simulated time.
-- **Callouts.** One model call, routed like the agents (strong tier, so Grok first and Gemini as the fallback), reads the steps and writes two to four callouts. Rangers get what to do now, such as closing miles or sending a patrol. The public notice is the message people nearby would get. It is a draft, and nothing is sent. Code checks every trail, mile, and time against the steps and falls back to templates.
-
-It is labeled as an illustrative runout, not a forecast of timing. There are no inputs: no rain slider, no speed control, no hazard picker. Avalanches stay out: there is no snowpack data, and the model is landslide only. Static mountains open the panel with terrain and their fixed level, with no pressure points and no **Simulate**.
+It is labeled as an illustrative runout, not a forecast of timing. Avalanches stay out.
 
 ---
 
@@ -300,14 +295,12 @@ It is labeled as an illustrative runout, not a forecast of timing. There are no 
 ### Judge demo
 
 1. Land on the rotating globe.
-2. Search or click Mount Rainier. The mountain panel opens. Read the pressure points.
-3. Press **Simulate**. Watch the flow reach the trail and the callouts appear.
-4. **Open ranger view.** Fly in.
-5. Show the probability heat map, then toggle susceptibility and historical pins.
-6. Open the hazard pin and read the four fields.
-7. Click **Analyze now**. The agent rows fill in.
-8. Open **Reasoning** on the Trail row: the model the router picked, and why.
-9. Open the hiker card and the bypass.
+2. Open Mount Rainier.
+3. Press **Simulate**, beside **Analyze now**. Watch the flow reach the valley in step with the time bar, and read the callouts. **Replay** if needed.
+4. Show the probability heat map, then toggle susceptibility and historical pins.
+5. Click **Analyze now**. The agent rows fill in.
+6. Open a card's trace.
+7. Read the Reactive Measures.
 
 ---
 

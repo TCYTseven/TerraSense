@@ -18,7 +18,8 @@ import { useEffect, useRef, useState } from "react";
 import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
-import type { Bypass, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
+import type { ReleaseCamera } from "@/lib/use-simulation";
+import type { Bypass, FlowFeatureCollection, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
   bypassFeatures,
@@ -85,9 +86,16 @@ export interface TerrainMapProps {
   focus?: CameraFocus | null;
   /** A click on a lettered trail's marker, line, or region. Set it to fly there like View. */
   onTrailSelect?: (letter: TrailLetter) => void;
+  /** The release to fly to when Simulate starts. A new nonce flies again. */
+  release?: ReleaseCamera | null;
+  /** The current runout footprint. Null before a simulation and after it is cleared. */
+  flow?: FlowFeatureCollection | null;
+  /** Dims the probability heat map while the flow is on screen. */
+  flowActive?: boolean;
 }
 
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
+const EMPTY_FLOW: FlowFeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** A small label pinned to the summit. MapLibre lifts it onto the 3D terrain. */
 function summitLabel(name: string): HTMLElement {
@@ -165,7 +173,7 @@ function redrape(map: MapLibreMap) {
  * Hide a raster layer, then fade it in once its source's tiles in view have loaded: the heat
  * map's one motion. Instant under reduced motion. Returns a cancel function for effect cleanup.
  */
-function fadeIn(map: MapLibreMap, layer: string, source: string): () => void {
+function fadeIn(map: MapLibreMap, layer: string, source: string, opacity = 1): () => void {
   map.setPaintProperty(layer, "raster-opacity-transition", { duration: 0, delay: 0 });
   map.setPaintProperty(layer, "raster-opacity", 0);
   redrape(map);
@@ -184,7 +192,7 @@ function fadeIn(map: MapLibreMap, layer: string, source: string): () => void {
     window.clearTimeout(timer);
     const duration = prefersReducedMotion() ? 0 : HEAT_FADE_MS;
     map.setPaintProperty(layer, "raster-opacity-transition", { duration, delay: 0 });
-    map.setPaintProperty(layer, "raster-opacity", 1);
+    map.setPaintProperty(layer, "raster-opacity", opacity);
     // Redraw the draped textures every frame of the fade, then once the map settles.
     const end = performance.now() + duration;
     const step = () => {
@@ -323,6 +331,9 @@ export default function TerrainMap({
   trailMarkers = NO_TRAIL_MARKERS,
   focus = null,
   onTrailSelect,
+  release = null,
+  flow = null,
+  flowActive = false,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -384,6 +395,82 @@ export default function TerrainMap({
     map?.getSource<GeoJSONSource>(SOURCE.trails)?.setData(trailFeatures(trails));
   }, [map, trails]);
 
+  // Simulate flies once to the release. Later frames do not move the camera.
+  useEffect(() => {
+    if (!map || !release) {
+      return;
+    }
+    const camera = {
+      center: [release.lon, release.lat] as [number, number],
+      zoom: release.zoom,
+      pitch: map.getPitch(),
+      bearing: map.getBearing(),
+    };
+    if (prefersReducedMotion()) {
+      map.jumpTo(camera);
+    } else {
+      map.flyTo({ ...camera, duration: 1500 });
+    }
+  }, [map, release]);
+
+  // The debris-flow footprint, under the trails so trail color stays readable.
+  // Core and margin use the risk ramp; the edge is the text color, not a level.
+  useEffect(() => {
+    if (!map) {
+      return;
+    }
+    const data = flow ?? EMPTY_FLOW;
+    const source = map.getSource<GeoJSONSource>(SOURCE.flow);
+    if (source) {
+      source.setData(data);
+      if (map.getLayer(LAYER.flowEdge)) {
+        map.setFilter(LAYER.flowEdge, ["==", ["get", "rim"], true]);
+      }
+      return;
+    }
+    map.addSource(SOURCE.flow, { type: "geojson", data });
+    map.addLayer(
+      {
+        id: LAYER.flow,
+        type: "fill",
+        source: SOURCE.flow,
+        paint: {
+          "fill-color": [
+            "match",
+            ["get", "level"],
+            "extreme",
+            RISK_COLORS.extreme,
+            "high",
+            RISK_COLORS.high,
+            "moderate",
+            RISK_COLORS.moderate,
+            RISK_COLORS.moderate,
+          ],
+          "fill-opacity": ["match", ["get", "level"], "extreme", 0.7, "high", 0.55, "moderate", 0.4, 0.4],
+        },
+      },
+      LAYER.otherTrails,
+    );
+    map.addLayer(
+      {
+        id: LAYER.flowEdge,
+        type: "line",
+        source: SOURCE.flow,
+        filter: ["==", ["get", "rim"], true],
+        paint: { "line-color": "rgba(236, 230, 220, 0.7)", "line-width": 1.5 },
+      },
+      LAYER.otherTrails,
+    );
+  }, [map, flow]);
+
+  useEffect(() => {
+    if (!map?.getLayer(LAYER.probability) || showSusceptibility) {
+      return;
+    }
+    map.setPaintProperty(LAYER.probability, "raster-opacity-transition", { duration: 0, delay: 0 });
+    map.setPaintProperty(LAYER.probability, "raster-opacity", flowActive ? 0.35 : 1);
+  }, [map, flowActive, showSusceptibility]);
+
   // Susceptibility sits under the trails. It appears at once: no fade on toggle or tile load.
   useEffect(() => {
     if (!map || !susceptibility) {
@@ -434,8 +521,8 @@ export default function TerrainMap({
         LAYER.otherTrails,
       );
     }
-    return fadeIn(map, LAYER.probability, SOURCE.probability);
-  }, [map, probability]);
+    return fadeIn(map, LAYER.probability, SOURCE.probability, flowActive ? 0.35 : 1);
+  }, [map, probability, flowActive]);
 
   // One raster at a time: susceptibility hides the heat map while it is on.
   useEffect(() => {
