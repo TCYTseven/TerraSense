@@ -2,7 +2,6 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
-  type CanvasSource,
   type GeoJSONSource,
   type ImageSource,
   type RasterTileSource,
@@ -18,7 +17,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
 import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
-import { type Playhead, playheadTime, RunoutPainter } from "@/lib/runout-field";
+import { type Playhead, playheadTime, RunoutMesh } from "@/lib/runout-field";
 import type { ReleaseCamera } from "@/lib/use-simulation";
 import type {
   Bypass,
@@ -109,8 +108,8 @@ export interface TerrainMapProps {
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
 /** Steep enough to look up the slope at the runout's front on the 3D terrain. */
 const FRONT_PITCH = 60;
-/** The runout redraws this often while it plays: smooth to the eye, light on the terrain drape. */
-const FLOW_REDRAW_MS = 50;
+/** The runout mesh is rebuilt this often while it plays: smooth to the eye, light on the map worker. */
+const FLOW_REDRAW_MS = 60;
 const EMPTY_FLOW: FlowFeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** A small label pinned to the summit. MapLibre lifts it onto the 3D terrain. */
@@ -498,41 +497,26 @@ export default function TerrainMap({
     );
   }, [map, flow]);
 
-  // The runout field: a canvas draped on the terrain, redrawn every animation frame from
-  // the playhead so the front sweeps down continuously. Nearest resampling keeps the cells as facets.
+  // The runout field as a triangle mesh: flat-toned triangles, clipped along the outline and
+  // the moving front, rebuilt from the playhead every FLOW_REDRAW_MS so the front sweeps down.
   useEffect(() => {
     if (!map || !flowField || !playhead) {
       return;
     }
-    let painter: RunoutPainter;
-    try {
-      painter = new RunoutPainter(flowField, playhead.durationS);
-    } catch {
-      return;
-    }
-    painter.draw(playheadTime(playhead, performance.now()));
-    map.addSource(SOURCE.flowField, {
-      type: "canvas",
-      canvas: painter.canvas,
-      coordinates: flowField.corners,
-      // Uploaded only after a redraw (see push), not every map frame: re-draping a canvas
-      // on the 3D terrain each frame is what makes playback lag.
-      animate: false,
-    });
+    const mesh = new RunoutMesh(flowField, playhead.durationS);
+    map.addSource(SOURCE.flowField, { type: "geojson", data: mesh.at(playheadTime(playhead, performance.now())) });
     map.addLayer(
       {
         id: LAYER.flowField,
-        type: "raster",
+        type: "fill",
         source: SOURCE.flowField,
-        paint: { "raster-resampling": "nearest", "raster-fade-duration": 0, "raster-opacity": 1 },
+        // No antialiasing: neighbouring triangles would each blend their shared edge and
+        // leave a faint seam along every facet.
+        paint: { "fill-color": ["get", "color"], "fill-opacity": 0.85, "fill-antialias": false },
       },
       LAYER.otherTrails,
     );
-    const source = map.getSource<CanvasSource>(SOURCE.flowField);
-    const push = () => {
-      source?.play();
-      map.once("render", () => source?.pause());
-    };
+    const source = map.getSource<GeoJSONSource>(SOURCE.flowField);
     let frame = 0;
     let drawnAt = Number.NEGATIVE_INFINITY;
     const step = (now: number) => {
@@ -540,14 +524,12 @@ export default function TerrainMap({
       const done = t >= playhead.durationS;
       if (done || now - drawnAt >= FLOW_REDRAW_MS) {
         drawnAt = now;
-        painter.draw(t);
-        push();
+        source?.setData(mesh.at(t));
       }
       if (!done) {
         frame = window.requestAnimationFrame(step);
       }
     };
-    push();
     frame = window.requestAnimationFrame(step);
     return () => {
       window.cancelAnimationFrame(frame);

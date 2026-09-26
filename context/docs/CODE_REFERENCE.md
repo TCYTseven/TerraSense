@@ -340,7 +340,7 @@ GET  /forecast?mountain_id&trail_id                     (step 25)
 | `frontend/components/map/simulation-bar.tsx` | 30 | Time bar, method line, and callouts over the mountain view |
 | `frontend/components/pipeline/simulate-button.tsx` | 30 | **Simulate** / **Replay** beside **Analyze now** |
 | `frontend/lib/use-simulation.ts` | 30 | Playback on a continuous clock: exposes a `Playhead` the map reads every animation frame, and updates the time bar and step label every 100 ms. Playback length stays 500 ms per traced frame. |
-| `frontend/lib/runout-field.ts` | 30 | `RunoutPainter`: decodes a simulation `field`, upsamples it bilinearly once, and paints the flow into a canvas at any simulated time: a soft-edged front, dark core to pale edge, a darker snout, and a pale rim. `Playhead`, `playheadTime`. |
+| `frontend/lib/runout-field.ts` | 30 | `RunoutMesh`: turns a simulation `field` into a low-poly triangle mesh (two triangles per cell, at most 64 vertices a side). `at(t)` returns the flow at a simulated time as flat-toned triangles, clipped along the outline and the moving front, with a darker snout. `Playhead`, `playheadTime`. |
 
 ### Data and ML
 
