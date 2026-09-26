@@ -18,7 +18,7 @@ def _raster(path, values):
         count=1,
         dtype="float32",
         crs="EPSG:32610",
-        transform=Affine.translation(500000, 5200000) * Affine.scale(30, -30),
+        transform=Affine.translation(500000, 5200000) @ Affine.scale(30, -30),
         nodata=np.nan,
     ) as dst:
         dst.write(values.astype("float32"), 1)
@@ -42,7 +42,7 @@ def test_run_preserves_grid_and_nodata_and_wet_rain_increases_risk(tmp_path, mon
 
     assert dry.probability.dtype == np.float32
     assert dry.probability.shape == values.shape
-    assert dry.transform == Affine.translation(500000, 5200000) * Affine.scale(30, -30)
+    assert dry.transform == Affine.translation(500000, 5200000) @ Affine.scale(30, -30)
     assert dry.crs == "EPSG:32610"
     assert np.isnan(dry.probability[1, 1])
     assert np.all(wet.probability[:1, :] > dry.probability[:1, :])
