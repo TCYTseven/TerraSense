@@ -191,7 +191,8 @@ PACKS = {
         # August 2026 cut the approach routes pilgrims use to reach it.
         Pack(slug="mount-kailash", name="Mount Kailash",
              peak_lat=31.0672, peak_lon=81.3119, peak_elevation_m=6638,
-             bbox=bbox_around(31.0672, 81.3119, 20)),
+             bbox=bbox_around(31.0672, 81.3119, 20),
+             hero=Hero(trail="冈仁波齐转山", parts=("冈仁波齐转山",))),
         # Oceania: the Hooker Valley Track runs to 14 km south of the summit.
         Pack(slug="aoraki-mount-cook", name="Aoraki / Mount Cook",
              peak_lat=-43.595, peak_lon=170.142, peak_elevation_m=3724,

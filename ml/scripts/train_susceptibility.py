@@ -74,6 +74,10 @@ INDEX_WEIGHTS = {
 # box, so every spatial difference in the live heat map comes from this layer: stretch it so
 # these percentiles of the box map to 0 and 1. Values are then relative to the Rainier box.
 INDEX_STRETCH_PERCENTILES = (2, 98)
+# Pack indexes have no fitted calibration. After percentile stretching, reserve the upper
+# shared risk bins for the strongest terrain signal instead of painting most of a box High
+# or Extreme. This monotone curve preserves every cell's rank and leaves low terrain clear.
+PACK_INDEX_GAMMA = 2.4
 # Land cover scores by ESA WorldCover class. Water cannot slide.
 LANDCOVER_SCORE = {
     10: 0.3,   # tree cover: roots hold soil
@@ -272,6 +276,8 @@ def main() -> None:
               f"AUC {metrics['auc']}, precision at >= {HIGH_THRESHOLD} {metrics['precision_at_high']}")
     else:
         susceptibility = knowledge_driven_index(stack)
+        if not rainier:
+            susceptibility = np.power(susceptibility, PACK_INDEX_GAMMA).astype("float32")
         importance = dict(INDEX_WEIGHTS)
         metrics = {
             "method": "knowledge-driven index",
@@ -281,6 +287,7 @@ def main() -> None:
             "high_threshold": HIGH_THRESHOLD,
             "weights": INDEX_WEIGHTS,
             "stretch_percentiles": INDEX_STRETCH_PERCENTILES,
+            "index_gamma": PACK_INDEX_GAMMA if not rainier else 1.0,
             "note": (
                 f"No labeled table at {rel(table_path)}: the landslide points are not downloaded yet, "
                 "so no model was trained and no AUC was measured. Rerun steps 10 to 12 once they exist."
