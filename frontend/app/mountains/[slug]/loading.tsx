@@ -4,7 +4,7 @@
  */
 export default function Loading() {
   return (
-    <main aria-busy="true" className="h-dvh bg-background">
+    <main aria-busy="true" className="fixed inset-0 h-svh overflow-hidden bg-background">
       <p className="sr-only">Loading mountain</p>
     </main>
   );

@@ -71,6 +71,22 @@ export default function MountainCard({
     return () => controller.abort();
   }, [finished, mountain.slug, mountain.is_live, mountain.kind]);
   const simulation = useSimulation(mountain.slug);
+  // MapLibre DOM markers can inflate document scrollHeight; lock the page while this view is open.
+  useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const prevRoot = root.style.overflow;
+    const prevBody = body.style.overflow;
+    const prevOverscroll = root.style.overscrollBehavior;
+    root.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    root.style.overscrollBehavior = "none";
+    return () => {
+      root.style.overflow = prevRoot;
+      body.style.overflow = prevBody;
+      root.style.overscrollBehavior = prevOverscroll;
+    };
+  }, []);
   const live = hill.isLive;
   const hasRoutes = mountain.trails.some((trail) => (trail.geom?.coordinates?.length ?? 0) >= 2);
   /** Runout uses seeded trail geometry and Terrarium terrain when available (any peak or hill). */
@@ -102,10 +118,10 @@ export default function MountainCard({
   }
 
   return (
-    <main className="flex h-dvh max-h-dvh min-h-0 animate-fade-in flex-col overflow-hidden motion-reduce:animate-none md:flex-row">
+    <main className="fixed inset-0 flex h-svh max-h-svh min-h-0 w-full animate-fade-in flex-col overflow-hidden motion-reduce:animate-none md:flex-row">
       <section
         aria-label="Mountain view"
-        className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-hidden bg-muted md:h-full md:max-h-none md:min-h-0 md:w-[55%]"
+        className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-clip bg-muted md:h-full md:max-h-none md:min-h-0 md:w-[55%] md:min-w-0"
       >
         <MountainTerrainView
           key={mountain.slug}
@@ -123,7 +139,7 @@ export default function MountainCard({
         <SimulationBar phase={simulation.phase} simulation={simulation.simulation} timeS={simulation.timeS} />
       </section>
 
-      <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:w-[45%] md:flex-none md:border-l md:border-t-0">
+      <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:h-full md:w-[45%] md:min-w-0 md:flex-none md:border-l md:border-t-0">
         <div className="shrink-0">
           <MountainHeader hill={hill} />
           <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
@@ -194,15 +210,11 @@ export default function MountainCard({
 
 /** One tab's section. Every tab stays mounted, so its scroll, fetches, and open traces survive a switch. */
 function TabPanel({ tab, active, children }: { tab: PanelTab; active: PanelTab; children: ReactNode }) {
-  const visible = tab === active;
+  if (tab !== active) {
+    return null;
+  }
   return (
-    <div
-      role="tabpanel"
-      id={tabPanelId(tab)}
-      aria-labelledby={tabId(tab)}
-      hidden={!visible}
-      className={visible ? "[&>section:first-child]:border-t-0" : "hidden"}
-    >
+    <div role="tabpanel" id={tabPanelId(tab)} aria-labelledby={tabId(tab)} className="[&>section:first-child]:border-t-0">
       {children}
     </div>
   );
