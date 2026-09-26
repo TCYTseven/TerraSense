@@ -18,7 +18,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 10. Download the Rainier source layers (DEM, land cover, and 33 Washington inventory labels are present; NASA remains the preferred refresh source)
 - [x] 11. Build the terrain feature table (30 m seven-band stack and 1,188-row labeled table are present)
 - [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.7317; susceptibility tiles rendered)
-- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
+- [x] 14. Import trails and historical landslide pins (67 OpenStreetMap trails, 55 hero segments, and 33 Rainier historical pins are present)
 - [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
 - [ ] 26. Rank the pressure points
 - [ ] 27. Trace a runout from a pressure point
@@ -140,13 +140,13 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Outcome.** The map has real lines and real past events.
 
-**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves `historical_events` on `GET /mountains/mount-rainier`, and the list is empty while the points file is missing.
+**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves 33 in-bounds `historical_events` on `GET /mountains/mount-rainier`, and static mountains remain empty. Historical-pin contract tests cover source, accuracy, bbox, and the static-mountain boundary.
 
 **Left.**
 
-- None in code. Once step 10 writes `data/seed/landslides.geojson`, the API re-reads it and the **Past landslides** toggle turns on.
+- None. The source file is committed, the API re-reads it when its mtime changes, and the **Past landslides** toggle is enabled for Rainier.
 
-**Done when.** Rainier returns a trail with mile-marked segments and a non-empty list of historical points inside the box, and a pin opens its popup on the map.
+**Done when.** Rainier returns a trail with mile-marked segments and 33 non-empty historical points inside the box, static mountains return no catalog points, and a pin opens its popup on the map.
 
 ## 17. Score 72-hour probability from live rain
 
