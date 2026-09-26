@@ -64,8 +64,10 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 
 - **The hill card is half wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures still come from `frontend/lib/fixtures/hill-demo.ts`, and the card still says those scores are illustrative.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
-- **Catalog peaks** open the card with their level only. They do not run analysis.
-- **Steps 10, 11, 12, 14, and 17 are not on main.** There is no `data/seed/landslides.geojson`, so the **Past landslides** toggle stays disabled and the History Analyst reports an empty record. Susceptibility is a knowledge-driven index (`trained: false` in `ml/artifacts/metrics.json`): slope 0.35, distance to drainage 0.20, land cover 0.20, wetness 0.15, curvature 0.10. The heat map is that stand-in until `backend/app/ml/model_b.py` exists. All five steps are implemented on `origin/step-10-local-nasa-export` (37 pins, LightGBM AUC 0.715, Model B). Merge that branch. Do not rebuild it.
+- **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
+- **Landslide points.** The NASA Global Landslide Catalog timed out during this build, so the downloader used the documented official Washington Geological Survey inventory fallback and staged 33 clipped representative-point labels. The **Past landslides** toggle is enabled, and the History Analyst can read the record.
+- **LightGBM.** The trained spatial holdout AUC is `0.7317` with precision `0.5000` at the High threshold. Susceptibility uses a LightGBM refit on all 1,188 labeled pixels; the score is reported as relative susceptibility because negatives were sampled 1:3. See `ml/artifacts/metrics.json`.
+- **Model B (step 17)** is live. `backend/app/ml/probability.py` calls `backend/app/ml/model_b.py`, which combines the trained susceptibility raster with bounded forecast-rain and antecedent-moisture signals.
 - **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
 - **Mountain panel and simulation** (6.8). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
@@ -199,7 +201,7 @@ Two stages. Both stay explainable.
 - Split by space (7.5 km region blocks), not by random row, so neighboring pixels do not leak into the test set.
 - Output: susceptibility from 0 to 1, saved as a raster before the demo.
 - Record AUC and precision at the High threshold. Publish the number you get. Do not treat 0.85 as a gate.
-- **Current state.** No labels yet, so the script writes a knowledge-driven index with the weights above and `trained: false`. It reruns as LightGBM once `data/seed/landslides.geojson` exists.
+- **Current state.** The trained artifact and model card are present in `ml/artifacts/`; the knowledge-driven index remains a deterministic fallback when the labeled table is unavailable.
 
 **Model B, triggering (live)**
 
@@ -210,7 +212,7 @@ Two stages. Both stay explainable.
 
 - Tune weights on the dated events you actually have. If that set is tiny, say so and keep the weights explicit.
 - Categories: Low < 0.2, Moderate 0.2–0.45, High 0.45–0.7, Extreme > 0.7. Adjust so Rainier shows a visible High zone for the demo, and document the adjustment.
-- **Current state.** On main, step 17 is not merged, so `backend/app/ml/probability.py` returns the labeled stand-in. It calls `model_b.run(rain)` when `backend/app/ml/model_b.py` exists. That file is on `origin/step-10-local-nasa-export`.
+- **Current state.** `backend/app/ml/probability.py` is the one seam and calls `model_b.run(rain)`. Dry, missing-rain, and storm paths are covered by contract tests; the result is a float32 0–1 raster with the susceptibility grid's transform and CRS.
 
 Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
@@ -660,7 +662,7 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A cli
 
 ### How we built it
 
-**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover, combined into a knowledge-driven susceptibility index with named weights. No AUC yet: the landslide labels (NASA Global Landslide Catalog) were unreachable from the build container, so LightGBM is untrained. The 72-hour map uses that index as a labeled stand-in until Model B lands. [Replace with the AUC once step 12 runs.]
+**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover are joined to 33 official Washington Geological Survey inventory-derived labels. A LightGBM susceptibility model trains on 1,188 labeled pixels with a spatial holdout AUC of `0.7317`; the 72-hour map then combines its raster with live rain and antecedent moisture through Model B.
 
 **Agents.** Seven agents with Pydantic outputs: five analysts (Terrain, Weather, Trail, History, Route Scout) in parallel, then the Risk Synthesizer and the Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
 
