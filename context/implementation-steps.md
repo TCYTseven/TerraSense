@@ -26,6 +26,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 29. Open the mountain panel over the globe
 - [ ] 30. Play the simulation in the panel
 - [ ] 31. Wire the hill card to the run stream and the advisory (agents and Reactive Measures stream from the API. Trail scores, the overall score, and preventative measures are still illustrative)
+- [ ] 32. Build mountain data packs for the demo peaks (Rainier-style DEM, land cover, index, tiles, and trails for 7 more peaks, 1-2 per continent)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -252,6 +253,14 @@ Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as
 - **Honesty.** Drop the "Illustrative scores" line only for numbers that came from a run.
 
 **Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
+
+## 32. Build mountain data packs for the demo peaks
+
+Track: ML and data, with small backend and frontend seams. Added Sep 26, 2026 so clicking a prepared peak on the globe gets the Rainier treatment instead of fixtures.
+
+A pack reruns steps 10-14 and 19 for one more mountain, driven by the registry in `ml/scripts/mountain_packs.py`: DEM and WorldCover windows mosaicked from the same public COGs, the 30 m feature stack in the peak's own UTM zone, the knowledge-driven susceptibility index (never the Rainier LightGBM: its landslide labels are Rainier's), XYZ tiles, and OpenStreetMap trails via Overture with the longest named trail as the hero. Peaks: Mount Hood, Aconcagua, Matterhorn, Kilimanjaro, Mount Fuji, Mount Everest, Aoraki / Mount Cook. Rainier keeps its legacy paths and trained model; packs live under `packs/<slug>/` folders.
+
+**Done when.** `python ml/scripts/build_pack.py <slug>` builds a pack end to end, the API serves that pack's tiles and trails by slug, and opening a packed peak in the browser shows its own heat map and trails with the index labeled as an index. A peak with no named trails shows an empty trail list, never Rainier's.
 
 ## Before the demo
 
