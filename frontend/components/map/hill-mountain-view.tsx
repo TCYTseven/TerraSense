@@ -1,7 +1,8 @@
 "use client";
 
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
-import type { LayerTiles, MountainDetail } from "@/lib/types";
+import type { ReleaseCamera } from "@/lib/use-simulation";
+import type { FlowFeatureCollection, LayerTiles, MountainDetail } from "@/lib/types";
 import MountainMap from "./mountain-map";
 
 export interface HillMountainViewProps {
@@ -16,6 +17,9 @@ export interface HillMountainViewProps {
   onTrailSelect: (letter: TrailLetter) => void;
   /** A click on an empty map cell selects it for the production classifier. */
   onMapClick: (coordinate: { latitude: number; longitude: number }) => void;
+  release?: ReleaseCamera | null;
+  flow?: FlowFeatureCollection | null;
+  flowActive?: boolean;
 }
 
 function noop() {}
@@ -33,6 +37,9 @@ export default function HillMountainView({
   focus,
   onTrailSelect,
   onMapClick,
+  release = null,
+  flow = null,
+  flowActive = false,
 }: HillMountainViewProps) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-muted">
@@ -55,6 +62,9 @@ export default function HillMountainView({
         trailMarkers={trails}
         focus={focus}
         onTrailSelect={onTrailSelect}
+        release={release}
+        flow={flow}
+        flowActive={flowActive}
       />
     </div>
   );

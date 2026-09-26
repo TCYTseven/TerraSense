@@ -473,3 +473,77 @@ export interface RunUpdate {
   kind: "run";
   run: Run;
 }
+
+/** One slope the runout can start from. Rank 1 is the route most likely to fail. */
+export interface PressurePoint {
+  id: string;
+  rank: number;
+  level: RiskLevel;
+  peak: number;
+  lon: number;
+  lat: number;
+  polygon: Polygon;
+  facing: string;
+  elevation_m: number | null;
+  drivers: string[];
+  trail_id: string | null;
+  trail_name: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
+}
+
+export interface FlowFeatureCollection {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: { level: RiskLevel; intensity: number };
+    geometry: Polygon;
+  }>;
+}
+
+export interface RunoutFrame {
+  index: number;
+  t_s: number;
+  geojson: FlowFeatureCollection;
+}
+
+export interface RunoutStep {
+  id: string;
+  kind: "release" | "channel" | "trail" | "stop";
+  title: string;
+  t_s: number;
+  lon: number;
+  lat: number;
+  distance_m: number | null;
+  drop_m: number | null;
+  trail_name: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
+  level: RiskLevel | null;
+}
+
+export interface SimulationCallout {
+  id: string;
+  step_id: string;
+  audience: "rangers" | "public";
+  text: string;
+  t_s: number;
+}
+
+/** An illustrative debris-flow runout. Times are simulated seconds, not a forecast. */
+export interface Simulation {
+  id: string;
+  mountain_slug: string;
+  status: "running" | "done" | "error";
+  method: string;
+  source: "dem" | "trail";
+  pressure_point: PressurePoint | null;
+  duration_s: number;
+  distance_m: number;
+  drop_m: number;
+  frames: RunoutFrame[];
+  steps: RunoutStep[];
+  callouts: SimulationCallout[];
+  callouts_from_templates: boolean;
+  error: string | null;
+}

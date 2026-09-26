@@ -20,11 +20,11 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.715; susceptibility tiles rendered)
 - [x] 14. Import trails and historical landslide pins (67 OpenStreetMap trails, 55 hero segments, and 37 Rainier historical pins are present)
 - [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
-- [ ] 26. Rank the pressure points
-- [ ] 27. Trace a runout from a pressure point
-- [ ] 28. Expose simulate, the stream, and the callouts
+- [x] 26. Rank the pressure points
+- [x] 27. Trace a runout from a pressure point
+- [x] 28. Expose simulate, the stream, and the callouts
 - [ ] 29. Open the mountain panel over the globe
-- [ ] 30. Play the simulation in the panel
+- [x] 30. Play the simulation on the mountain page (Sep 26, 2026: **Simulate** sits beside **Analyze now** for mountains with routes, not in the unbuilt globe panel)
 - [ ] 31. Wire the hill card to the run stream and the advisory (agents and Reactive Measures stream from the API. Trail scores, the overall score, and preventative measures are still illustrative)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
@@ -175,7 +175,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 - For each point, return id, rank, level, peak probability, centroid, a simplified polygon, facing, elevation, the terrain drivers from the feature stack, and the nearest trail below it within 0.5 mi with its mile range.
 - `GET /mountains/{slug}/pressure-points` returns `PressurePoint[]` (empty for static mountains). Add the Pydantic model and its mirror in `frontend/lib/types.ts` in the same commit.
 
-**Done when.** `GET /mountains/mount-rainier/pressure-points` returns up to five ranked points in under a second, and the first matches the worst cluster on the heat map.
+**Done when.** `GET /mountains/mount-rainier/pressure-points` returns up to five ranked points in under a second. With a probability raster on disk, the first matches the worst cluster. Without one, rank is trail grade (climb per kilometre) and the release is the upper end of that trail.
 
 ## 27. Trace a runout from a pressure point
 
@@ -190,7 +190,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 - Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
 - Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
 
-**Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically.
+**Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically. Without `data/processed/features.tif` the path is the trail corridor and the method line says so. The Holmgren read stays unwired until that grid is in the checkout.
 
 ## 28. Expose simulate, the stream, and the callouts
 
@@ -206,7 +206,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 - Code checks every trail, mile, and time in the text against the steps, and enforces the word limits in the design addendum's Copy. On a failed check it runs one repair round, then the fallback provider, then templates. The trace records which.
 - Add the models and their mirrors in `frontend/lib/types.ts` in the same commit. Test against `backend/tests/fake_llm.py`.
 
-**Done when.** A socket client gets the frames and steps within 3 seconds of `POST`, then the callouts, then the final message, and a run with both providers down still ends with template callouts.
+**Done when.** A socket client gets the frames and steps within 3 seconds of `POST`, then the callouts, then the final message. This checkout writes the callouts from templates, and the finished line says the AI didn't answer. A model call through the router can replace that later; the templates stay the fallback.
 
 ## 29. Open the mountain panel over the globe
 
@@ -224,21 +224,21 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Done when.** Clicking Rainier opens the panel with the pins matching the list, a row click moves the selection, Escape restores the spinning globe, and **Open ranger view** lands on the mountain page with no jump cut.
 
-## 30. Play the simulation in the panel
+## 30. Play the simulation on the mountain page
 
 **Track.** Frontend.
 
-**Outcome.** **Simulate** plays the flow on the map and the steps and callouts on the right.
+**Outcome.** On a mountain with routes, **Simulate** sits beside **Analyze now**, flies to the route most likely to fail, and plays the debris-flow footprint in step with a time bar on the mountain view.
 
 **Build.**
 
-- **Simulate** calls `POST /simulate`, follows the stream, and swaps the right column to the simulation view.
-- Playback: one frame every 500 ms, replacing the flow fill at once. Dim the heat map to 35%. Mark each trail crossing when its step is reached. The camera does not move.
-- Steps use the agent row glyphs, and the current one pulses. Callouts appear when their step is reached, with their audience labels. The method line always shows.
-- **Replay** replays the loaded frames. **Back to pressure points** restores the list and the heat map.
-- Reduced motion: final flow, all steps, and all callouts at once.
+- **Simulate** shows only when the mountain has routes. **Analyze now** still shows only on the live mountain. The two share the footer row.
+- **Simulate** calls `POST /mountains/{slug}/simulate`, follows `WS /simulations/{id}/stream`, and flies once to the release. Replay does not fly and does not recompute.
+- Playback: one frame every 500 ms, replacing the flow fill at once. The release stays the hottest ramp color and the toe cools as the path lengthens. Dim the heat map to 35%. The camera does not move during the frames.
+- A bar on top of the mountain view shows the current step, the clock, and the span. It is not a scrubber. The method line always shows. Callouts appear when their step is reached, with their audience labels.
+- Reduced motion: final flow and every callout at once.
 
-**Done when.** On Rainier, **Simulate** plays to the end in about 20 seconds, the flow reaches the trail step at the same moment its mark appears, at least one ranger callout and one public draft show, and a person who has not seen the app can follow it.
+**Done when.** On Rainier, **Simulate** plays to the end with the footprint and the clock advancing together, at least one ranger callout and one public draft show, and a peak with no routes has no **Simulate**.
 
 ## 31. Wire the hill card to the run stream and the advisory
 

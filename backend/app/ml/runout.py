@@ -1,0 +1,364 @@
+"""An illustrative debris-flow runout from one pressure point (step 27).
+
+No model call. When a 30 m elevation grid is on disk, routing uses Holmgren
+multiple-flow-direction (exponent 4) and stops at REACH_ANGLE_DEG or MAX_RUNOUT_M.
+Without that grid, the flow walks downhill along the source trail — seed lines
+start at the lower end — and widens as it descends. Either way the frames grow
+from the release toward the valley, and arrival time is path distance over
+FRONT_SPEED_MS.
+"""
+
+from __future__ import annotations
+
+import math
+
+from app.ml.pressure import _bearing, _haversine, _line, _move
+
+REACH_ANGLE_DEG = 11  # a common debris-flow minimum travel angle
+MAX_RUNOUT_M = 6000
+FRONT_SPEED_MS = 5  # arrival time = path distance / this
+MAX_FRAMES = 40
+HOLMGREN_EXPONENT = 4
+CHANNEL_M = 100
+SAMPLE_M = 80
+
+METHOD_DEM = "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing."
+METHOD_TRAIL = "Illustrative runout along the trail's downhill line. Not a forecast of timing."
+
+M_PER_MI = 1609.344
+
+
+def trace_runout(point: dict, trails: list[dict]) -> dict:
+    """Frames and steps for one pressure point. JSON-ready. Never calls a model."""
+    dem = _try_dem(point, trails)
+    if dem is not None:
+        return dem
+    return _along_trail(point, trails)
+
+
+def _along_trail(point: dict, trails: list[dict]) -> dict:
+    trail = _source_trail(point, trails)
+    coords = _line(trail) if trail else []
+    if len(coords) < 2:
+        coords = [
+            [point["lon"], point["lat"]],
+            _move(point["lon"], point["lat"], 180, 400),
+        ]
+        coords = [list(pair) for pair in coords]
+    # Lower end first in the seed, so reversing walks the failure downhill.
+    downhill = list(reversed(coords))
+    samples = _sample(downhill, SAMPLE_M)
+    if len(samples) < 2:
+        samples = [(downhill[0][0], downhill[0][1], 0.0), (downhill[-1][0], downhill[-1][1], _haversine(tuple(downhill[0]), tuple(downhill[-1])))]
+
+    total = samples[-1][2]
+    gain = float((trail or {}).get("elevation_gain_m") or 0)
+    trail_len = _haversine_line(coords) or total
+    on_trail = min(total, trail_len)
+    drop_m = gain * (on_trail / trail_len) if trail_len else 0.0
+    duration = total / FRONT_SPEED_MS
+    frame_count = min(MAX_FRAMES, max(8, int(duration / 15) or 8))
+    frame_count = min(frame_count, max(2, len(samples) - 1))
+
+    frames = []
+    for index in range(frame_count):
+        last = max(2, int(round((index + 1) / frame_count * (len(samples) - 1))) + 1)
+        last = min(len(samples), last)
+        chunk = samples[:last]
+        dist = chunk[-1][2]
+        frames.append(
+            {
+                "index": index,
+                "t_s": round(dist / FRONT_SPEED_MS, 1),
+                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, point.get("level") or "high", total)},
+            }
+        )
+    # A later frame must not shrink. Force each end index forward.
+    frames = _growing(frames, samples, point.get("level") or "high")
+
+    steps = _steps(point, trail, trails, samples, drop_m)
+    return {
+        "method": METHOD_TRAIL,
+        "source": "trail",
+        "duration_s": round(samples[-1][2] / FRONT_SPEED_MS, 1),
+        "distance_m": round(samples[-1][2], 1),
+        "drop_m": round(drop_m, 1),
+        "frames": frames,
+        "steps": steps,
+    }
+
+
+RAMP = ("moderate", "high", "extreme")
+# Same stepped opacities as the raster heat map: amber 0.40, orange 0.55, red 0.70.
+INTENSITY = {"moderate": 0.40, "high": 0.55, "extreme": 0.70}
+
+
+def _growing(frames: list[dict], samples: list[tuple[float, float, float]], level: str) -> list[dict]:
+    """Rebuild frames so each corridor contains every sample of the one before it."""
+    count = len(frames)
+    total = samples[-1][2]
+    out = []
+    prev = 1
+    for index in range(count):
+        last = max(prev + 1, int(round((index + 1) / count * (len(samples) - 1))) + 1)
+        last = min(len(samples), last)
+        prev = last - 1
+        chunk = samples[:last]
+        out.append(
+            {
+                "index": index,
+                "t_s": round(chunk[-1][2] / FRONT_SPEED_MS, 1),
+                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, level, total)},
+            }
+        )
+    return out
+
+
+def _cool(level: str, steps: int) -> str:
+    if level not in RAMP:
+        level = "high"
+    return RAMP[max(0, RAMP.index(level) - steps)]
+
+
+def _level_along(dist: float, total: float, release: str) -> str:
+    """Release stays hottest. The toe steps down the risk ramp as the path lengthens."""
+    frac = 0.0 if total <= 0 else dist / total
+    if frac < 0.34:
+        return release if release in RAMP else "high"
+    if frac < 0.67:
+        return _cool(release, 1)
+    return _cool(release, 2)
+
+
+def _corridor(samples: list[tuple[float, float, float]], level: str, total: float) -> list[dict]:
+    """The whole footprint, then hotter slices upslope so color changes downhill.
+
+    The first feature is the full current edge. Later features paint over the
+    upper path, so a frame stays red at the release and cools toward the toe.
+    """
+    toe = _level_along(samples[-1][2], total, level)
+    features = [_band(samples, 1.0, toe, INTENSITY[toe if toe in INTENSITY else "moderate"], rim=True)]
+    release = level if level in RAMP else "high"
+    for steps, frac in ((1, 0.67), (0, 0.34)):
+        hotter = _cool(release, steps)
+        if RAMP.index(hotter) <= RAMP.index(toe):
+            continue
+        cut = total * frac
+        chunk = [sample for sample in samples if sample[2] <= cut + 1e-6]
+        if len(chunk) < 2:
+            if samples[0][2] <= cut and len(samples) >= 2:
+                chunk = samples[:2]
+            else:
+                continue
+        features.append(_band(chunk, 1.0, hotter, INTENSITY[hotter], rim=False))
+    return features
+
+
+def _band(samples: list[tuple[float, float, float]], width_scale: float, level: str, intensity: float, rim: bool = False) -> dict:
+    left: list[list[float]] = []
+    right: list[list[float]] = []
+    for index, (lon, lat, dist) in enumerate(samples):
+        nxt = samples[min(index + 1, len(samples) - 1)]
+        prv = samples[max(index - 1, 0)]
+        heading = _bearing([prv[0], prv[1]], [nxt[0], nxt[1]]) if nxt != prv else 180
+        half = (40 + min(180, dist * 0.045)) * width_scale / 2
+        lo = _move(lon, lat, (heading - 90) % 360, half)
+        ro = _move(lon, lat, (heading + 90) % 360, half)
+        left.append([lo[0], lo[1]])
+        right.append([ro[0], ro[1]])
+    ring = left + list(reversed(right))
+    ring.append(ring[0])
+    return {
+        "type": "Feature",
+        "properties": {"level": level, "intensity": intensity, "rim": rim},
+        "geometry": {"type": "Polygon", "coordinates": [ring]},
+    }
+
+
+def _steps(point: dict, trail: dict | None, trails: list[dict], samples: list[tuple[float, float, float]], drop_m: float) -> list[dict]:
+    release = samples[0]
+    stop = samples[-1]
+    name = (trail or {}).get("name") or point.get("trail_name") or "the trail"
+    length_mi = _trail_miles(trail, samples)
+    upper = length_mi
+    lower = max(0.0, length_mi - (min(stop[2], _haversine_line(_line(trail)) if trail else stop[2]) / M_PER_MI))
+    steps = [
+        _step("release", "release", "Slope releases", 0, release, 0, 0, None, None, None, point.get("level")),
+        _step(
+            "channel",
+            "channel",
+            "Flow enters the channel",
+            _time_at(samples, CHANNEL_M),
+            _sample_at(samples, CHANNEL_M),
+            min(CHANNEL_M, stop[2]),
+            drop_m * min(1, CHANNEL_M / max(stop[2], 1)),
+            None,
+            None,
+            None,
+            point.get("level"),
+        ),
+        _step(
+            "trail-source",
+            "trail",
+            f"Reaches {name}, mi {lower:.1f}–{upper:.1f}",
+            _time_at(samples, max(CHANNEL_M, stop[2] * 0.15)),
+            _sample_at(samples, max(CHANNEL_M, stop[2] * 0.15)),
+            stop[2] * 0.15,
+            drop_m * 0.15,
+            name,
+            round(lower, 2),
+            round(upper, 2),
+            point.get("level") or "high",
+        ),
+    ]
+    for extra in _crossed(trail, trails, samples)[:3]:
+        steps.append(extra)
+    steps.append(
+        _step(
+            "stop",
+            "stop",
+            "Flow stops",
+            round(stop[2] / FRONT_SPEED_MS, 1),
+            stop,
+            stop[2],
+            drop_m,
+            None,
+            None,
+            None,
+            None,
+        )
+    )
+    steps.sort(key=lambda step: (step["t_s"], step["kind"] != "release"))
+    return steps
+
+
+def _crossed(source: dict | None, trails: list[dict], samples: list[tuple[float, float, float]]) -> list[dict]:
+    found: list[dict] = []
+    source_id = None if source is None else str(source.get("id"))
+    for trail in trails:
+        if str(trail.get("id")) == source_id:
+            continue
+        coords = _line(trail)
+        if len(coords) < 2:
+            continue
+        hit: tuple[float, list[float]] | None = None
+        for coord in coords[:: max(1, len(coords) // 24)]:
+            for lon, lat, dist in samples:
+                if _haversine((lon, lat), (coord[0], coord[1])) <= 90:
+                    if hit is None or dist < hit[0]:
+                        hit = (dist, coord)
+                    break
+        if hit is None:
+            continue
+        dist, coord = hit
+        miles = _trail_miles(trail, [(coord[0], coord[1], 0.0)])
+        found.append(
+            _step(
+                f"trail-{trail['id']}",
+                "trail",
+                f"Reaches {trail.get('name')}, mi {max(0, miles - 0.2):.1f}–{miles:.1f}",
+                round(dist / FRONT_SPEED_MS, 1),
+                (coord[0], coord[1], dist),
+                dist,
+                None,
+                trail.get("name"),
+                round(max(0, miles - 0.2), 2),
+                round(miles, 2),
+                "moderate",
+            )
+        )
+    found.sort(key=lambda step: step["t_s"])
+    return found
+
+
+def _step(step_id, kind, title, t_s, where, distance_m, drop_m, trail_name, start_mile, end_mile, level) -> dict:
+    return {
+        "id": step_id,
+        "kind": kind,
+        "title": title,
+        "t_s": round(float(t_s), 1),
+        "lon": where[0],
+        "lat": where[1],
+        "distance_m": None if distance_m is None else round(float(distance_m), 1),
+        "drop_m": None if drop_m is None else round(float(drop_m), 1),
+        "trail_name": trail_name,
+        "start_mile": start_mile,
+        "end_mile": end_mile,
+        "level": level,
+    }
+
+
+def _sample_at(samples: list[tuple[float, float, float]], dist: float) -> tuple[float, float, float]:
+    for sample in samples:
+        if sample[2] >= dist:
+            return sample
+    return samples[-1]
+
+
+def _time_at(samples: list[tuple[float, float, float]], dist: float) -> float:
+    return round(min(dist, samples[-1][2]) / FRONT_SPEED_MS, 1)
+
+
+def _trail_miles(trail: dict | None, samples: list[tuple[float, float, float]]) -> float:
+    if not trail:
+        return 0.0
+    length_km = float(trail.get("length_km") or 0)
+    if length_km <= 0:
+        length_km = _haversine_line(_line(trail)) / 1000
+    return length_km * 0.621371
+
+
+def _source_trail(point: dict, trails: list[dict]) -> dict | None:
+    wanted = point.get("trail_id")
+    for trail in trails:
+        if str(trail.get("id")) == str(wanted):
+            return trail
+    name = point.get("trail_name")
+    for trail in trails:
+        if trail.get("name") == name:
+            return trail
+    return trails[0] if trails else None
+
+
+def _sample(coords: list[list[float]], step_m: float) -> list[tuple[float, float, float]]:
+    samples: list[tuple[float, float, float]] = [(coords[0][0], coords[0][1], 0.0)]
+    dist_along = 0.0
+    carry = 0.0
+    for start, end in zip(coords, coords[1:], strict=False):
+        seg = _haversine((start[0], start[1]), (end[0], end[1]))
+        if seg < 0.5:
+            continue
+        pos = 0.0
+        while pos < seg - 1e-6:
+            remain = step_m - carry
+            if pos + remain <= seg + 1e-6:
+                pos = min(seg, pos + remain)
+                dist_along += remain
+                carry = 0.0
+                frac = pos / seg
+                samples.append((start[0] + (end[0] - start[0]) * frac, start[1] + (end[1] - start[1]) * frac, dist_along))
+            else:
+                dist_along += seg - pos
+                carry += seg - pos
+                pos = seg
+        if dist_along > MAX_RUNOUT_M:
+            break
+    last = coords[-1]
+    if _haversine((samples[-1][0], samples[-1][1]), (last[0], last[1])) > 8 and samples[-1][2] < MAX_RUNOUT_M:
+        samples.append((last[0], last[1], samples[-1][2] + _haversine((samples[-1][0], samples[-1][1]), (last[0], last[1]))))
+    return samples
+
+
+def _haversine_line(coords: list[list[float]]) -> float:
+    return sum(_haversine((a[0], a[1]), (b[0], b[1])) for a, b in zip(coords, coords[1:], strict=False))
+
+
+def _try_dem(point: dict, trails: list[dict]) -> dict | None:
+    """Reserved for Holmgren routing on data/processed/features.tif.
+
+    The grid is not in this checkout, and a half-wired read would pretend the
+    frames came from 30 m terrain. Until that path is proven, the trail corridor
+    is the runout, and its method line says so.
+    """
+    del point, trails
+    return None

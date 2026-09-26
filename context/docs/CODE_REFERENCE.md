@@ -275,8 +275,9 @@ GET  /forecast?mountain_id&trail_id                     (step 25)
 
 | Path | Step | Role |
 |---|---|---|
-| `frontend/components/mountain-panel/` | 29, 30 | The centered panel over the globe: panel map, pressure point list, simulation column, callouts |
-| `frontend/lib/simulation-stream.ts` | 30 | Follows `WS /simulations/{id}/stream` |
+| `frontend/components/map/simulation-bar.tsx` | 30 | Time bar, method line, and callouts over the mountain view |
+| `frontend/components/pipeline/simulate-button.tsx` | 30 | **Simulate** / **Replay** beside **Analyze now** |
+| `frontend/lib/use-simulation.ts` | 30 | Playback: one frame every 500 ms, synced to the time bar |
 
 ### Data and ML
 
