@@ -111,6 +111,20 @@
     "utm_crs": "EPSG:32610",
     "hero_trail": null
   },
+  "mount-kailash": {
+    "name": "Mount Kailash",
+    "peak_lat": 31.0672,
+    "peak_lon": 81.3119,
+    "peak_elevation_m": 6638,
+    "bbox": [
+      81.102,
+      30.887,
+      81.522,
+      31.247
+    ],
+    "utm_crs": "EPSG:32644",
+    "hero_trail": "冈仁波齐转山"
+  },
   "mount-rainier": {
     "name": "Mount Rainier",
     "peak_lat": 46.8523,

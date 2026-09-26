@@ -5,6 +5,7 @@ import pytest
 from app.ml import pressure, runout
 from app.ml.pressure import rank_pressure_points
 from app.ml.runout import METHOD_TRAIL, METHOD_TRAIL_TERRAIN, trace_runout
+from app.simulation_communities import fallback_community_callout
 from app.simulations import template_callouts
 
 STEEP = {
@@ -89,6 +90,20 @@ def test_template_callouts_cover_both_audiences():
     for note in notes:
         assert len(note["text"].split()) <= 40
         assert "Kautz Creek Trail" in note["text"] or note["id"] == "rangers-stop"
+
+
+def test_fallback_community_callout_names_places():
+    point = rank_pressure_points([STEEP])[0]
+    runout = trace_runout(point, [STEEP])
+    note = fallback_community_callout(
+        {"slug": "mount-rainier", "name": "Mount Rainier"},
+        point,
+        runout["steps"],
+        distance_m=runout["distance_m"],
+    )
+    assert note["audience"] == "communities"
+    assert note["places"]
+    assert len(note["text"].split()) <= 80
 
 
 def test_worst_route_is_the_steepest_without_a_raster(monkeypatch):

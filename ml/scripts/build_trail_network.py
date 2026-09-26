@@ -101,7 +101,7 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
         if v in snapped:
             coords[-1] = snapped[v]
         line_utm = it.to_utm(shapely.LineString(coords))
-        name = data["label"] if not data["label"].startswith("unnamed ") else None
+        name = it.display_name(data["label"]) if not data["label"].startswith("unnamed ") else None
         path_class = data["label"].removeprefix("unnamed ") if name is None else None
         features.append({
             "type": "Feature",
@@ -123,7 +123,7 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
         features.append({
             "type": "Feature",
             "properties": {
-                "trail": hero_name,
+                "trail": it.display_name(hero_name),
                 "hero": True,
                 "from_mile": round(a / it.METERS_PER_MILE, 3),
                 "to_mile": round(b / it.METERS_PER_MILE, 3),
@@ -138,13 +138,14 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
         "license": "ODbL-1.0",
         "source": it.SEGMENTS_URL,
         "mountain_slug": it.PACK.slug,
-        "hero_trail": hero_name,
+        "hero_trail": it.display_name(hero_name),
         "hero_length_mi": round(length_m / it.METERS_PER_MILE, 3),
         "elevation": "meters above the EGM2008 geoid, sampled from the Copernicus DEM (step 10)",
     }
     junction_list = sorted(
         ({"mile": round(d / it.METERS_PER_MILE, 2),
-          "trails": sorted({near[n][w]["label"] for w in near[n]})} for n, d in junctions.items() if n in near),
+          "trails": sorted({it.display_name(near[n][w]["label"]) for w in near[n]})}
+         for n, d in junctions.items() if n in near),
         key=lambda j: j["mile"],
     )
     return header, features, junction_list

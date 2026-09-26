@@ -39,7 +39,14 @@ export const CAMERA = {
   orbitResumeMs: 8000,
   // Extra room at the top: the exaggerated summit rises above where its base sits on screen.
   padding: { top: 150, bottom: 48, left: 48, right: 48 },
+  /** After fitBounds, never open wider than this — keeps massifs readable on screen. */
+  openingZoomFloor: 11.45,
 } as const;
+
+/** Keep Kailash close enough for its summit relief to dominate instead of its 52 km kora. */
+export function openingZoomFloor(slug?: string): number {
+  return slug === "mount-kailash" ? 12.25 : CAMERA.openingZoomFloor;
+}
 
 /** Oblique opening bearing: Rainier keeps the designed bearing; others get a stable view from coords. */
 export function openingBearing(lon: number, lat: number, slug?: string): number {
@@ -367,8 +374,10 @@ export function openingBounds(
   const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
   const dLat = radiusKm / KM_PER_DEG;
   const dLon = radiusKm / kmPerDegLon;
+  // Only nearby trail markers may widen the frame. Long loops (e.g. the Kailash kora) sit
+  // mostly outside the summit footprint; pulling them in would zoom out until trails vanish.
   const near = points.filter(
-    ([x, y]) => Math.hypot((x - lon) * kmPerDegLon, (y - lat) * KM_PER_DEG) <= 2 * radiusKm,
+    ([x, y]) => Math.hypot((x - lon) * kmPerDegLon, (y - lat) * KM_PER_DEG) <= radiusKm * 1.15,
   );
   const lons = [lon - dLon, lon + dLon, ...near.map(([x]) => x)];
   const lats = [lat - dLat, lat + dLat, ...near.map(([, y]) => y)];

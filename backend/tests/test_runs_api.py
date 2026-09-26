@@ -148,6 +148,19 @@ def test_analyze_streams_and_saves(api):
     assert advisory["response"]["posture"] in ("all_clear", "watch", "advisory", "warning", "evacuate")
     assert advisory["severity"] == run["severity"] and advisory["alert"]["hiker"] == forecast["sentence"]
 
+    # Step 33: the same run is logged to previous_runs, tagged and split into the two sides of
+    # the run, so the /history page has it after the process that ran it is gone.
+    logged = client.get("/history", params={"slug": "mount-rainier"}).json()
+    row = next(r for r in logged["runs"] if r["run_id"] == run_id)
+    assert row["hazard_class"] in ("landslide", "debris_flow")
+    assert row["hazard_type"] == hazard["type"] and row["severity"] == run["severity"]
+    assert {c["agent"] for c in row["llm_calls"]} == set(AGENT_ORDER)
+    detail = client.get(f"/history/{run_id}").json()
+    assert set(detail["agent_outputs"]) == set(AGENT_ORDER)
+    assert detail["agent_outputs"]["writer"]["payload"]["hiker"] == forecast["sentence"]
+    assert detail["advisory"] == advisory
+    assert detail["model_method"] == run["method"]
+
     # A new process has no runs in memory: the finished run, and its advisory, come back from
     # the row instead.
     fresh = RunRegistry(providers={})

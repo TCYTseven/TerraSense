@@ -651,6 +651,19 @@ About two and a half minutes.
 8. **(2:00)** Reactive Measures. "Closures, sweeps, rescue staging, spotters, who to call, and the public notice, drafted and not sent."
 9. **(2:20)** Back to the globe. "TerraSense. Know the ground before you go."
 
+### Nepal and Tibet beat (optional, about 60 seconds)
+
+Use this only after the Rainier loop has landed. Search **Everest**. Do not hunt for the pin among the 50 on the globe.
+
+1. Hover the marker. The card shows the satellite preview, the region, and the risk badge.
+2. Open the page. Everest is a built pack: real 30 m terrain, its own heat tiles, and the Everest Base Camp Trek cut into miles. "This heat is a **knowledge-driven index** for this box: slope, drainage, land cover, wetness, and curvature, weighted by what drives slope failure. It is not the Cascades model, it is not trained on Himalayan landslides, and it has no AUC. There is no Nepal forecast behind it."
+3. One river line, then stop. "Monsoon rain loads these slopes. When they fail, debris reaches the valleys and the rivers below. We score the slope, not the river stage."
+4. Annapurna I, Manaslu, and Kangchenjunga are catalog markers for the same news cycle: satellite hover and a synthetic drape, no pack and no scored trail.
+5. Search **Kailash** and open it. This is the second built pack and the sharper current-event beat: the August 2026 floods and landslides on the **Nepal-Tibet border** cut the approach routes pilgrims use to reach it. Say where it actually is: "Kailash sits in Tibet, in China. Pilgrims reach it *through* Nepal, and that approach is what the weather closed."
+6. The scored line is the **Kailash Kora**, the pilgrim circuit around the peak, which OpenStreetMap names 冈仁波齐转山. It is 46 km of the 52 km circuit, cut into 288 tenth-mile segments. Same honesty as Everest: the heat is the knowledge-driven index for this box, not a trained model and not a Tibet forecast.
+
+**Analyze now** works here, because the pack is live. If you run it, say what the summit number is: the Cascades model reading a stand-in terrain sample, labeled `placeholder_terrain_sample` in the response, not measured ground at Everest. The safer demo is to leave the run on Rainier, which already showed the agents end to end.
+
 ---
 
 ## Devpost Write-Up Draft
@@ -684,6 +697,8 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A cli
 ### What's next
 
 More mountains, a real ranger feedback loop, and slower signals such as InSAR. Not this weekend.
+
+The same rain-on-steep-ground mechanism shows up in monsoon seasons in Nepal, so we built Mount Everest as a pack: real 30 m terrain, its own heat tiles, and the Everest Base Camp Trek cut into miles. That heat is a knowledge-driven terrain index for the Everest box, not a Himalaya-trained model and not a river-stage forecast; only Rainier has a landslide inventory dense enough to train and score on. Annapurna I, Manaslu, and Kangchenjunga stay catalog markers for the same news cycle. Failures upstream still matter because debris reaches valley corridors. A second trained region, and any river layer, stay after the hackathon.
 
 ---
 
@@ -741,6 +756,7 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | The globe goes light and evenly lit, with mountain-logo markers. The mountain map renders the mountain gray on white surroundings, framed from its elevation |
 | Sep 25, 2026 | The ranger page, first called the hill detail card, is the mountain page (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
 | Sep 26, 2026 | The existing regional LightGBM and Model B score hills. The first hill is Turtle Mountain, Crowsnest Pass, Alberta. Rainier stays the demo mountain on the same code until a mountain model exists. That model is not started. Avalanche and snowpack stay out of scope. The Frank Slide was a rockslide, so the rain trigger is not an explanation of 1903 |
+| Sep 26, 2026 | Nepal / Tibet current-event set. Mount Everest and Mount Kailash are both built as packs and go live from their own rasters: real tiles, the Everest Base Camp Trek and the Kailash Kora in miles. Kailash is in Tibet, China, reached through Nepal; the copy says so rather than calling it a Nepali peak. Its heat is a knowledge-driven index, never called trained and never called a Nepal forecast. Annapurna I, Manaslu, and Kangchenjunga stay catalog markers. Rivers are one spoken line about debris in valleys, not a layer or a forecast. See `context/docs/nepal-mountains-build.md` |
 
 ---
 

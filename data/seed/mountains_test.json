@@ -210,6 +210,16 @@
     "is_live": false
   },
   {
+    "name": "Mount Kailash",
+    "slug": "mount-kailash",
+    "lat": 31.0672,
+    "lon": 81.3119,
+    "elevation_m": 6638,
+    "region": "Gangdise Mountains, Tibet, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
     "name": "Illimani",
     "slug": "illimani",
     "lat": -16.654,

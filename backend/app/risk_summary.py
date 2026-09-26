@@ -1,9 +1,10 @@
 """The mountain page's numbers, read from the saved 72-hour map (step 31).
 
 The heat map tiles are rendered from each mountain's saved map (`app.packs.probability_path`),
-which `Analyze now` and `python -m app.assessment --save` write. This module scores every trail against that same file,
-so the trail list, the overall score, and the colors on the map always agree. Nothing here
-calls a model or a weather feed.
+which `Analyze now` and `python -m app.assessment --save` write. Before a pack has a weather
+run, its rendered knowledge-driven susceptibility index is the displayed map and the fallback
+scoring source. This module scores every trail against that same file, so the trail list, the
+overall score, and the colors on the map always agree. Nothing here calls a model or weather feed.
 """
 
 from datetime import UTC, datetime
@@ -19,7 +20,7 @@ from app.ml.probability import ProbabilityMap
 from app.ml.probability import summarize as summarize_map
 from app.hills import hill_bbox, hill_probability_path, hill_stack_path, is_hill
 from app.risk import HIGH_THRESHOLD, risk_level
-from app.packs import RAINIER_SLUG, probability_path
+from app.packs import features_path, probability_path, susceptibility_path
 from app.packs import get as get_pack
 from app.trailscan import most_exposed, scan_trails
 
@@ -56,7 +57,10 @@ def risk_summary(conn: psycopg.Connection, slug: str, path: Path | None = None) 
     """Overall score, mean slope, and the top trails on the saved map. None before the first save."""
     if path is None and is_hill(slug):
         path = hill_probability_path(slug)
-    loaded = saved_map(path or probability_path(slug))
+    if path is not None:
+        loaded = saved_map(path)
+    else:
+        loaded = saved_map(probability_path(slug)) or saved_map(susceptibility_path(slug))
     if loaded is None:
         return None
     grid, scored_at = loaded
@@ -66,8 +70,11 @@ def risk_summary(conn: psycopg.Connection, slug: str, path: Path | None = None) 
     trails = []
     box_mean_slope = None
     for score in top:
-        # The terrain stack is Rainier's grid only.
-        terrain = point_terrain(grid, *score.worst_point) if score.worst_point and slug == RAINIER_SLUG else None
+        terrain = (
+            point_terrain(grid, *score.worst_point, features_path(slug))
+            if score.worst_point
+            else None
+        )
         if terrain is not None:
             box_mean_slope = terrain.box_mean_slope_deg
         trails.append({

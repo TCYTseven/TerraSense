@@ -6,11 +6,17 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
+from app.domains import HazardDomain  # noqa: F401  (re-exported for the API models)
 from app.risk import RiskLevel
 
 PlaceKind = Literal["mountain", "hill"]
 
-HazardType = Literal["landslide", "debris_flow"]
+# Both domains' hazard types. app/domains.py is the single list; the hazards.type CHECK in
+# schema.sql is generated from the same place, so the three never drift (step 34).
+HazardType = Literal[
+    "landslide", "debris_flow",
+    "slab_avalanche", "loose_snow_avalanche", "wet_snow_avalanche",
+]
 
 # A GeoJSON geometry object, stored as-is in jsonb: {"type": ..., "coordinates": ...}
 Geometry = dict[str, Any]

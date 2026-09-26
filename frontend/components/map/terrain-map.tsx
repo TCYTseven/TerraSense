@@ -32,6 +32,7 @@ import {
   openingBearing,
   heatDrapeBounds,
   openingBounds,
+  openingZoomFloor,
   rasterSource,
   SOURCE,
   trailFeatures,
@@ -295,7 +296,7 @@ export default function TerrainMap({
   elevationM,
   trails,
   isLive,
-  probability: _probability,
+  probability,
   susceptibility,
   hazard,
   hazardSelected,
@@ -314,17 +315,25 @@ export default function TerrainMap({
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [webgl] = useState(hasWebGL);
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
-  const renderedHeat = susceptibility && !isProceduralHeat(susceptibility) ? susceptibility : null;
+  const renderedHeat = useMemo(() => {
+    if (probability) {
+      return probability;
+    }
+    if (susceptibility && !isProceduralHeat(susceptibility)) {
+      return susceptibility;
+    }
+    return null;
+  }, [probability, susceptibility]);
   const instantHeat = useMemo(() => {
     const drapeBounds = heatDrapeBounds(lon, lat, elevationM);
+    if (renderedHeat) {
+      return null;
+    }
     if (susceptibility && isProceduralHeat(susceptibility)) {
       return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
     }
-    if (!susceptibility) {
-      return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
-    }
-    return null;
-  }, [susceptibility, slug, name, lon, lat, elevationM]);
+    return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
+  }, [renderedHeat, susceptibility, slug, name, lon, lat, elevationM]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -362,6 +371,15 @@ export default function TerrainMap({
     instance.addControl(new ScaleControl({ unit: "imperial" }), "bottom-right");
     new Marker({ element: summitLabel(name), anchor: "bottom", offset: [0, -4] }).setLngLat([lon, lat]).addTo(instance);
     instance.once("load", () => {
+      const zoomFloor = openingZoomFloor(slug);
+      if (instance.getZoom() < zoomFloor) {
+        instance.jumpTo({
+          center: [lon, lat],
+          zoom: zoomFloor,
+          pitch: CAMERA.pitch,
+          bearing,
+        });
+      }
       setMap(instance);
       setStatus("ready");
     });
@@ -373,7 +391,7 @@ export default function TerrainMap({
       setStatus((current) => (current === "ready" ? current : "error"));
     });
     return () => instance.remove();
-  }, [name, lon, lat, elevationM, webgl]);
+  }, [name, slug, lon, lat, elevationM, webgl]);
 
   useEffect(() => {
     map?.getSource<GeoJSONSource>(SOURCE.trails)?.setData(trailFeatures(trails));
@@ -474,30 +492,35 @@ export default function TerrainMap({
     map.setPaintProperty(layer, "raster-opacity", flowActive ? 0.35 : 1);
   }, [map, flowActive, renderedHeat, instantHeat]);
 
-  // Live peaks only: pre-rendered susceptibility XYZ tiles (draped on terrain like the reference).
+  // Live peaks: saved probability tiles, or the pack's rendered susceptibility tiles.
   useEffect(() => {
     if (!map || !renderedHeat) {
       return;
     }
     removeHeatLayer(map, LAYER.probability, SOURCE.syntheticProbability);
-    removeHeatLayer(map, LAYER.probability, SOURCE.probability);
+    removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
 
-    const source = map.getSource<RasterTileSource>(SOURCE.susceptibility);
+    const isProbability = renderedHeat.layer === "probability";
+    const layerId = isProbability ? LAYER.probability : LAYER.susceptibility;
+    const sourceId = isProbability ? SOURCE.probability : SOURCE.susceptibility;
+    removeHeatLayer(map, layerId, sourceId);
+
+    const source = map.getSource<RasterTileSource>(sourceId);
     if (source) {
       source.setTiles([renderedHeat.tiles]);
     } else {
-      map.addSource(SOURCE.susceptibility, rasterSource(renderedHeat));
+      map.addSource(sourceId, rasterSource(renderedHeat));
       map.addLayer(
         {
-          id: LAYER.susceptibility,
+          id: layerId,
           type: "raster",
-          source: SOURCE.susceptibility,
+          source: sourceId,
           paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
         },
         LAYER.otherTrails,
       );
     }
-    return fadeIn(map, LAYER.susceptibility, SOURCE.susceptibility, flowActive ? 0.35 : 1);
+    return fadeIn(map, layerId, sourceId, flowActive ? 0.35 : 1);
   }, [map, renderedHeat, flowActive]);
 
   // Catalog peaks: one canvas image (same seed as synthetic tiles, loads in one shot — no chunking).

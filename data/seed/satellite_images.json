@@ -1309,6 +1309,23 @@
     "error": null
   },
   {
+    "mountain_slug": "mount-kailash",
+    "mountain_name": "Mount Kailash",
+    "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=81.259463%2C31.0222844%2C81.364337%2C31.1121156&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",
+    "file_path": "data/raw/satellite/mount-kailash.jpg",
+    "file_ext": "jpg",
+    "source": "Esri World Imagery",
+    "download_status": "downloaded",
+    "bbox": [
+      81.259463,
+      31.0222844,
+      81.364337,
+      31.1121156
+    ],
+    "image_size_px": 512,
+    "error": null
+  },
+  {
     "mountain_slug": "mount-kazbek",
     "mountain_name": "Mount Kazbek",
     "image_url": "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=44.4568833%2C42.6550844%2C44.5791167%2C42.7449156&bboxSR=4326&imageSR=4326&size=512%2C512&format=jpg&f=image&transparent=false&compressionQuality=90",

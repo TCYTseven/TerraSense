@@ -98,12 +98,6 @@ Check API setup: `curl 'http://localhost:8000/health?verbose=1'`
 
 No API keys, or no network to Gemini and xAI? `backend/AGENTS.md` has the offline fake-provider commands.
 
-**3. Where the spec lives.**
-
-- Product: [`context/TerraSense.md`](context/TerraSense.md)
-- Build: [`context/implementation-steps.md`](context/implementation-steps.md)
-- Team: [`context/docs/TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md)
-
 ## Folder guide
 
 | Folder      | What                              |

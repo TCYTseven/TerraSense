@@ -14,6 +14,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 6 | `GET /mountains`, `GET /mountains/{slug}` |
 | 13, 18 | `GET /mountains/{slug}/layers/{layer}` returns a tile URL template. Tiles live in `tiles/` |
 | 20–22 | Agent schemas, tools, the agent pipeline, `POST /analyze`, `GET /runs/{id}`, `WS /runs/{id}/stream`, `GET /runs/{id}/advisory` |
+| 33 | `previous_runs`, the run history log. `app/previous_runs.py`, `GET /history`, `GET /history/{run_id}` |
 
 ## The pipeline
 
@@ -68,8 +69,8 @@ Run these from `backend/`:
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt -r requirements-dev.txt
-python -m app.schema            # create the six tables in DATABASE_URL. Safe to re-run
-python -m app.schema --reset    # drop the six tables, then recreate them
+python -m app.schema            # create the tables in DATABASE_URL. Safe to re-run
+python -m app.schema --reset    # drop the core tables, then recreate them. previous_runs is kept
 python -m app.seed               # load data/seed/: three mountains, Rainier's trails, the hero trail's segments. Safe to re-run
 python -m app.assessment         # step 18: score the map, the hero trail, and the hazard zone. Writes nothing
 python -m app.assessment --save  # also render the probability tiles, store segment risk, and save a preview hazard
@@ -82,6 +83,8 @@ curl -X POST localhost:8000/mountains/mount-rainier/analyze   # step 22: { run_i
 curl localhost:8000/runs/<run_id>
 curl localhost:8000/runs/<run_id>/advisory        # the run's whole conclusion: 3 routes to avoid, 3 safe, the ranger response
 curl localhost:8000/mountains/mount-rainier/advisory   # the newest one, after any finished run
+curl localhost:8000/history                       # step 33: every run logged, newest first
+curl localhost:8000/history/<run_id>              # one logged run, with every agent trace
 python -m pytest                # schemas, router, providers, tools, the guard rails, the contracts, and the pipeline (fake LLMs; needs DATABASE_URL)
 python -m app.agents.pipeline   # the agents once, with the advisory printed. Needs GEMINI_API_KEY or XAI_API_KEY
 ```

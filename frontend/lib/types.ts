@@ -639,9 +639,11 @@ export interface RunoutStep {
 export interface SimulationCallout {
   id: string;
   step_id: string;
-  audience: "rangers" | "public";
+  audience: "rangers" | "public" | "communities";
   text: string;
   t_s: number;
+  /** Named settlements when the backend attached a community alert. */
+  places?: string[];
 }
 
 /** An illustrative debris-flow runout. Times are simulated seconds, not a forecast. */
@@ -660,4 +662,94 @@ export interface Simulation {
   callouts: SimulationCallout[];
   callouts_from_templates: boolean;
   error: string | null;
+}
+
+// --- The run history log (step 33), mirrored in backend/app/routes/history.py ----------------
+
+/** The coarse hazard tag the history page groups by. No agent emits "avalanche" yet. */
+export type HazardClass = "landslide" | "avalanche" | "debris_flow" | "unknown";
+
+/** One model call inside a run: who answered, how hard it tried, and what it cost. */
+export interface LlmCall {
+  agent: string;
+  status: string | null;
+  provider: string | null;
+  model: string | null;
+  label: string | null;
+  tier: string | null;
+  reason: string | null;
+  fallback: string[];
+  attempts: Array<Record<string, unknown>>;
+  latency_ms: number | null;
+  usage: { input_tokens?: number; output_tokens?: number; reasoning_tokens?: number };
+}
+
+/** One logged run, as the /history table shows it. */
+export interface RunRecord {
+  run_id: string;
+  mountain_slug: string;
+  mountain_name: string | null;
+  lat: number | null;
+  lon: number | null;
+  elevation_m: number | null;
+
+  hazard_class: HazardClass;
+  hazard_type: string | null;
+  hazard_id: string | null;
+  /** The run's forecast was snow-dominated: the signal behind a future avalanche tag. */
+  snow_driven: boolean;
+
+  status: string;
+  phase: string | null;
+  message: string | null;
+  error: string | null;
+  failed_agent: string | null;
+  started_at: string;
+  finished_at: string | null;
+  elapsed_s: number | null;
+
+  severity: RiskLevel | null;
+  confidence: number | null;
+  needs_review: boolean | null;
+  recommended_action: string | null;
+  posture: string | null;
+  priority: string | null;
+  headline: string | null;
+  summary: string | null;
+
+  model_method: string | null;
+  model_is_stand_in: boolean | null;
+  model_max_probability: number | null;
+  model_share_at_high: number | null;
+
+  agent_verdicts: Record<string, AgentVerdict>;
+  llm_calls: LlmCall[];
+  llm_usage: { input_tokens?: number; output_tokens?: number; reasoning_tokens?: number; calls?: number };
+}
+
+/** One logged run with every payload the log kept, for the expanded row. */
+export interface RunRecordDetail extends RunRecord {
+  model_note: string | null;
+  model_mean_probability: number | null;
+  model_output: Record<string, unknown>;
+  /** Every agent's final event with its full trace: route, tools, attempts, raw model JSON. */
+  agent_outputs: Record<string, AgentEvent>;
+  advisory: Advisory | null;
+  conditions: Record<string, unknown> | null;
+  rain: RainTotals | null;
+  run: Run;
+}
+
+export interface HistoryPage {
+  total: number;
+  limit: number;
+  offset: number;
+  stats: {
+    runs: number;
+    done: number;
+    failed: number;
+    mountains: number;
+    by_hazard_class: Record<string, number>;
+  };
+  runs: RunRecord[];
 }

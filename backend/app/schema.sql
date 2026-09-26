@@ -72,14 +72,23 @@ CREATE TABLE IF NOT EXISTS analysis_runs (
                 CHECK (status IN ('running', 'done', 'error')),
   started_at    timestamptz NOT NULL DEFAULT now(),
   finished_at   timestamptz,
-  agent_outputs jsonb NOT NULL DEFAULT '{}'::jsonb   -- one key per agent
+  agent_outputs jsonb NOT NULL DEFAULT '{}'::jsonb,  -- one key per agent
+  -- Step 34: which hazard domain this run analyzed. Landslide is the default, so every run
+  -- recorded before step 34 keeps its meaning without a backfill.
+  domain        text NOT NULL DEFAULT 'landslide'
+                CHECK (domain IN ('landslide', 'avalanche'))
 );
 
 CREATE TABLE IF NOT EXISTS hazards (
   id           uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   mountain_id  uuid NOT NULL REFERENCES mountains (id) ON DELETE CASCADE,
   run_id       uuid REFERENCES analysis_runs (id) ON DELETE SET NULL,  -- null for a preview hazard
-  type         text NOT NULL CHECK (type IN ('landslide', 'debris_flow')),
+  -- Both domains' hazard types. app/domains.py holds the same list; tests pin them together.
+  type         text NOT NULL CHECK (type IN ('landslide', 'debris_flow',
+                                             'slab_avalanche', 'loose_snow_avalanche',
+                                             'wet_snow_avalanche')),
+  domain       text NOT NULL DEFAULT 'landslide'
+               CHECK (domain IN ('landslide', 'avalanche')),
   severity     text NOT NULL CHECK (severity IN ('low', 'moderate', 'high', 'extreme')),
   probability  double precision NOT NULL CHECK (probability BETWEEN 0 AND 1),
   confidence   double precision CHECK (confidence BETWEEN 0 AND 1),
@@ -119,8 +128,111 @@ ALTER TABLE hazards ADD COLUMN IF NOT EXISTS bypass jsonb;
 ALTER TABLE mountains ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'mountain'
   CHECK (kind IN ('mountain', 'hill'));
 
+-- Step 34: the avalanche domain. These bring an older database up to date and do nothing on a
+-- new one. The type CHECK has to be replaced rather than added to, so it is dropped by the name
+-- Postgres gives an inline column constraint.
+ALTER TABLE hazards ADD COLUMN IF NOT EXISTS domain text NOT NULL DEFAULT 'landslide';
+ALTER TABLE hazards DROP CONSTRAINT IF EXISTS hazards_type_check;
+ALTER TABLE hazards ADD CONSTRAINT hazards_type_check
+  CHECK (type IN ('landslide', 'debris_flow',
+                  'slab_avalanche', 'loose_snow_avalanche', 'wet_snow_avalanche'));
+ALTER TABLE hazards DROP CONSTRAINT IF EXISTS hazards_domain_check;
+ALTER TABLE hazards ADD CONSTRAINT hazards_domain_check
+  CHECK (domain IN ('landslide', 'avalanche'));
+
+ALTER TABLE analysis_runs ADD COLUMN IF NOT EXISTS domain text NOT NULL DEFAULT 'landslide';
+ALTER TABLE analysis_runs DROP CONSTRAINT IF EXISTS analysis_runs_domain_check;
+ALTER TABLE analysis_runs ADD CONSTRAINT analysis_runs_domain_check
+  CHECK (domain IN ('landslide', 'avalanche'));
+
 CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS hazards_mountain_idx ON hazards (mountain_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS alerts_hazard_idx ON alerts (hazard_id);
 CREATE INDEX IF NOT EXISTS mountain_satellite_images_status_idx ON mountain_satellite_images (download_status);
+
+-- Step 33: the run history log. One row per finished or failed analysis run, written by
+-- app/previous_runs.py after the run stores its result. Deliberately wide and denormalized:
+-- the columns are what the /history page sorts and filters on, and the jsonb columns keep the
+-- whole run verbatim so nothing an agent or a model said is ever lost. Not a foreign key on
+-- analysis_runs, so `python -m app.schema --reset` never takes the history with it.
+CREATE TABLE IF NOT EXISTS previous_runs (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id        uuid NOT NULL UNIQUE,
+  mountain_id   uuid,
+  mountain_slug text NOT NULL,
+  mountain_name text,
+  lat           double precision,
+  lon           double precision,
+  elevation_m   integer,
+
+  -- What kind of hazard the run was about. hazard_type is the pipeline's own label
+  -- ('landslide' or 'debris_flow'); hazard_class is the coarse tag the history page groups by.
+  -- 'avalanche' is accepted so a snow hazard has somewhere to land, but no agent emits it yet.
+  hazard_class  text NOT NULL DEFAULT 'unknown'
+                CHECK (hazard_class IN ('landslide', 'avalanche', 'debris_flow', 'unknown')),
+  hazard_type   text,
+  hazard_id     uuid,
+  -- Step 34: which orchestration produced this run.
+  domain        text NOT NULL DEFAULT 'landslide'
+                CHECK (domain IN ('landslide', 'avalanche')),
+  -- True when the run's weather was snow-dominated, which is the signal an avalanche tag
+  -- would be built on once a snow hazard type exists.
+  snow_driven   boolean NOT NULL DEFAULT false,
+
+  status        text NOT NULL,
+  phase         text,
+  message       text,
+  error         text,
+  failed_agent  text,
+  started_at    timestamptz NOT NULL,
+  finished_at   timestamptz,
+  elapsed_s     double precision,
+
+  -- The call the run made.
+  severity           text,
+  confidence         double precision,
+  needs_review       boolean,
+  recommended_action text,
+  posture            text,
+  priority           text,
+  headline           text,
+  summary            text,
+
+  -- The ML model's side of the run.
+  model_method            text,
+  model_is_stand_in       boolean,
+  model_note              text,
+  model_max_probability   double precision,
+  model_mean_probability  double precision,
+  model_share_at_high     double precision,
+  model_output            jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  -- The LLM agents' side: every agent's event and full trace, their verdicts, which
+  -- provider/model answered, and the token usage summed over the run.
+  agent_outputs   jsonb NOT NULL DEFAULT '{}'::jsonb,
+  agent_verdicts  jsonb NOT NULL DEFAULT '{}'::jsonb,
+  llm_calls       jsonb NOT NULL DEFAULT '[]'::jsonb,
+  llm_usage       jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  -- Everything else, verbatim, so a later page can show a field this table has no column for.
+  advisory     jsonb,
+  conditions   jsonb,
+  rain         jsonb,
+  run          jsonb NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE previous_runs ADD COLUMN IF NOT EXISTS domain text NOT NULL DEFAULT 'landslide';
+ALTER TABLE previous_runs DROP CONSTRAINT IF EXISTS previous_runs_domain_check;
+ALTER TABLE previous_runs ADD CONSTRAINT previous_runs_domain_check
+  CHECK (domain IN ('landslide', 'avalanche'));
+
+CREATE INDEX IF NOT EXISTS previous_runs_started_idx ON previous_runs (started_at DESC);
+CREATE INDEX IF NOT EXISTS previous_runs_mountain_idx ON previous_runs (mountain_slug, started_at DESC);
+CREATE INDEX IF NOT EXISTS previous_runs_class_idx ON previous_runs (hazard_class, started_at DESC);
+CREATE INDEX IF NOT EXISTS previous_runs_domain_idx ON previous_runs (domain, started_at DESC);
+-- The past-run context tool reads this exact shape: one mountain's history in one domain.
+CREATE INDEX IF NOT EXISTS previous_runs_mountain_domain_idx
+  ON previous_runs (mountain_slug, domain, started_at DESC);
+CREATE INDEX IF NOT EXISTS hazards_domain_idx ON hazards (mountain_id, domain, created_at DESC);
