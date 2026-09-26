@@ -58,15 +58,16 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 
   A router sends each call to Gemini Flash or Grok and records why. The run's conclusion is served as an advisory (`GET /runs/{id}/advisory`, `GET /mountains/{slug}/advisory`).
 - **Weather.** Open-Meteo precipitation drives the model. Temperature, freeze-thaw, snowfall, wind, soil moisture, and the freezing level are context for the agents, and missing readings stay null.
-- **Tests.** 235 pytest tests pass against a fake of both LLM APIs (`backend/tests/fake_llm.py`), including contract tests for the Model B seam, the provider schemas, and every payload that leaves the process.
+- **Tests.** 240 pytest tests pass against a fake of both LLM APIs (`backend/tests/fake_llm.py`), including contract tests for the Model B seam, the provider schemas, and every payload that leaves the process.
 
 **Not done yet**
 
-- **The hill card is half wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures still come from `frontend/lib/fixtures/hill-demo.ts`, and the card still says those scores are illustrative.
+- **The hill card is nearly wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/risk-summary`, which scores every trail on the saved map the heat layer shows (`backend/app/risk_summary.py`). Left: check with the fake LLM server that the five trails match the advisory after a run.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
 - **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
 - **Landslide points.** The supplied NASA Global Landslide Catalog export contributes 4 Rainier events; because only one is `1km` accurate, the downloader adds 33 documented Washington Geological Survey inventory points as supplemental training labels. The **Past landslides** toggle is enabled, and the History Analyst can read all 37 records.
-- **LightGBM.** The trained spatial holdout AUC is `0.7150` with precision `0.0000` at the High threshold. Susceptibility uses a LightGBM refit on all 1,224 labeled pixels; the score is reported as relative susceptibility because negatives were sampled 1:3. See `ml/artifacts/metrics.json`.
+- **LightGBM (regional, Sep 26).** Trained on 7,351 Washington Geological Survey landslide pixels across the western Cascades, with the Rainier box and a 2 km buffer never in training. ROC-AUC `0.82` (95% CI 0.78–0.85) over 5 spatial folds of 10 km blocks, isotonic-calibrated (ECE 0.026). On the Rainier box's own 93 mapped slides it is `0.60` (0.52–0.67): weak, and published as such. Scores are relative susceptibility, because negatives were sampled 1:3. See `ml/artifacts/metrics.json`. The Rainier-only model (AUC 0.715) is kept in `ml/artifacts/legacy_rainier_only/`.
+- **Model B validation (Sep 26).** Case-crossover on 767 dated Pacific Northwest landslides (416 storms, 1980–2023) against same-place quiet days, with ERA5 rain (`ml/scripts/event_validate.py`). ROC-AUC `0.75` (0.73–0.78) with whole water years held out, ECE 0.032. See `ml/artifacts/model_b_validation.json`.
 - **Model B (step 17)** is live. `backend/app/ml/probability.py` calls `backend/app/ml/model_b.py`, which combines the trained susceptibility raster with bounded forecast-rain and antecedent-moisture signals.
 - **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
 - **Mountain page simulation** (6.8). **Simulate** sits beside **Analyze now** on mountains that have routes. It flies to the route most likely to fail and plays an illustrative debris-flow runout, with a time bar on the mountain view kept in step with the flow. The centered globe panel from the Sep 25 decision is still not built.
@@ -187,7 +188,7 @@ The page is two columns: the 3D mountain view about 55%, one scrolling stats pan
 - The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below as a prominent section, clustered by when each has to happen (now, within 1 hour, 6 hours, 24 hours). Each measure is labeled with its kind of work: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, or a public notice draft.
 - Button: **Analyze now**, pinned to the panel bottom.
 
-There is no rain section. Weather is text in the Weather agent's trace, never a map layer. Until the per-trail model and the agent stream are wired into the card, the trail scores, traces, and measures are illustrative and labeled as such; the orchestrator runs client-side.
+There is no rain section. Weather is text in the Weather agent's trace, never a map layer. On Mount Rainier the trail scores, overall score, and mean slope come from the saved 72-hour map, and the traces and measures from a live run. Static mountains still use the scripted client-side orchestrator.
 
 ### 6.3 Landslide Model
 
@@ -208,12 +209,12 @@ Two stages. Both stay explainable.
 - Inputs: Model A score, 3-day and 7-day precipitation from Open-Meteo, and forecast rain over the next 72 hours.
 - Method: a rainfall intensity-duration threshold (Guzzetti-style) plus an antecedent moisture index from recent rain, blended with susceptibility:
 
-`P = sigmoid(w1 · susceptibility + w2 · rainfall_exceedance + w3 · moisture_index)`
+`index = sigmoid(logit(susceptibility) + w0 + w2 · rainfall_exceedance + w3 · moisture_index)`
 
 - Tune weights on the dated events you actually have. If that set is tiny, say so and keep the weights explicit.
 - Categories: Low < 0.2, Moderate 0.2–0.45, High 0.45–0.7, Extreme > 0.7. Adjust so Rainier shows a visible High zone for the demo, and document the adjustment.
 - **Current state.** `backend/app/ml/probability.py` is the one seam and calls `model_b.run(rain)`. Dry, missing-rain, and storm paths are covered by contract tests; the result is a float32 0–1 raster with the susceptibility grid's transform and CRS.
-- **Weights (Sep 26).** `w1 = 7.0` on susceptibility centered at 0.75, `w2 = 2.0`, `w3 = 1.6`. The trained susceptibility raster is bimodal (median 0.0, 95th percentile 0.48). With the first weights (`w1 = 2.4`, centered at 0.5), rain outweighed terrain and the storm fixture put 100% of the box at Extreme. Now terrain gates the trigger. The storm fixture leaves 89% of the box Low and puts 7% at High or above, on the susceptible valley slopes, and flags 21 of 67 trails, among them Westside Road, the Puyallup trails, and parts of the Wonderland. A dry week leaves the whole box Low. The Skyline loop crosses ground the model scores near 0, so a real storm does not flag the hero trail. The hazard-path tests add a labeled debris corridor on miles 4.6 to 4.9 instead (`backend/tests/conftest.py`).
+- **Weights (Sep 26, fitted).** Terrain enters as the log-odds of the calibrated susceptibility. `w0 = -1.32`, `w2 = 0.92`, `w3 = 0.76` are the logistic fit on the 767 dated events, with 95% CIs -1.51 to -1.18, 0.74 to 1.10, and 0.59 to 0.93. The earlier hand-set `w2 = 2.0` and `w3 = 1.6` were outside those intervals. The fit ranks days 0.005 worse by ROC-AUC (95% CI −0.007 to −0.002, so `weights_published` stays `false` in the artifact) but cuts calibration error from 0.189 to 0.032. The index is binned into the shared levels, so calibration won. The product of terrain odds and rain odds assumes the two act independently. The absolute level depends on the 1:3 and 1:4 sampling ratios, so the output is a relative 72-hour risk index, not a probability. A dry week leaves the whole box Low. Rain at both thresholds leaves 95% Low. The storm fixture puts 10% at High or above, including Skyline miles 4.3 to 5.0 by the Paradise Glacier junction, so the hazard-path tests run on the real map with no synthetic corridor.
 - **Point probability.** `POST /api/v1/landslide-risk` answers every in-domain click with `probability`: the Model B value at that pixel, labeled `model_b_estimate` and explained by its three logit terms, until a calibrated classifier replaces it. See [docs/production-risk.md](docs/production-risk.md).
 
 Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
@@ -612,7 +613,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 - Tighten motion and copy.
 - 60–90 second backup video.
 - Devpost draft with the real AUC and the real data sources.
-- Finish wiring the hill card: traces and Reactive Measures already come from a live run. Trail scores, the overall score, and preventative measures still come from the illustrative fixture.
+- Finish wiring the hill card: traces, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Check the five trails against the advisory after a fake-LLM run.
 - Rehearse the live demo three times with real keys. Keep a finished run on screen in case the live call fails.
 
 If you are behind, drop in this order:
@@ -657,7 +658,7 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A cli
 
 ### How we built it
 
-**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover are joined to 34 usable labels: one precise NASA event plus 33 official Washington Geological Survey inventory-derived points. A LightGBM susceptibility model trains on 1,224 labeled pixels with a spatial holdout AUC of `0.7150`; the 72-hour map then combines its raster with live rain and antecedent moisture through Model B.
+**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover are joined to 34 usable labels: one precise NASA event plus 33 official Washington Geological Survey inventory-derived points. A LightGBM susceptibility model trains on 7,351 mapped landslide pixels across the western Cascades (spatial-block ROC-AUC 0.82, 95% CI 0.78–0.85; 0.60 on Rainier's own 93 mapped slides). Model B multiplies its calibrated odds by rain odds fitted on 767 dated Pacific Northwest landslides (ROC-AUC 0.75, whole years held out) to make a relative 72-hour risk index.
 
 **Agents.** Seven agents with Pydantic outputs: five analysts (Terrain, Weather, Trail, History, Route Scout) in parallel, then the Risk Synthesizer and the Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
 
@@ -722,6 +723,7 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Discord dropped. The ranger alert stays in the app (step 24) |
 | Sep 25, 2026 | Two LLM providers, Gemini Flash and Grok, with a router in code and a reasoning panel |
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
+| Sep 26, 2026 | Terrain retrained regionally (spatial CV AUC 0.82, Rainier-only 0.60) and Model B's rain weights fitted on 767 dated landslides (AUC 0.75). The point value and the heat map are a relative 72-hour index with its held-out skill shown in the card. The hill card's trail scores come from the saved map |
 | Sep 26, 2026 | Model B's terrain weight retuned (`w1` 2.4 to 7.0, center 0.5 to 0.75) so terrain gates the rain trigger. The landslide-risk endpoint returns a 0–1 `probability` on every in-domain click: the calibrated one when it exists, else the labeled Model B estimate (6.3) |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |

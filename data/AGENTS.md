@@ -9,8 +9,8 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | Path | In git | What |
 |---|---|---|
 | `seed/` | Yes | Small JSON and GeoJSON the API loads, plus `sources.md` |
-| `raw/` | No | Downloads such as the DEM and land cover. Recreate them with `ml/scripts/download_sources.py` |
-| `processed/` | No | Derived rasters and feature tables: the legacy `features.tif`/`features.parquet` plus event-time `risk_samples.parquet` and `landslide_risk.parquet`. Rebuild with the scripts in `ml/scripts/`. |
+| `raw/` | No | Downloads such as the DEM and land cover. Recreate them with `ml/scripts/download_sources.py`; the regional `region_dem_cop30.tif` and `region_landcover_worldcover2021.tif` with `ml/scripts/download_region.py`. The USGS v3 inventory CSVs sit in `raw/usgs_v3/` |
+| `processed/` | No | Derived rasters and feature tables: the legacy `features.tif`/`features.parquet`, the regional `regional_labels.parquet` (+ `regional_labels_summary.json`) and `rainier_regional_features.tif` (17 bands on the Rainier grid), plus event-time `risk_samples.parquet` and `landslide_risk.parquet`. Rebuild with the scripts in `ml/scripts/`. |
 
 ## Seed files
 

@@ -279,6 +279,7 @@ def _stack(path: Path, mtime_ns: int) -> tuple[np.ndarray, dict]:
     band = dict(zip(FEATURE_BANDS, data, strict=True))
     box = {
         "slope_deg_median": round(float(np.nanmedian(band["slope"])), 1),
+        "slope_deg_mean": round(float(np.nanmean(band["slope"])), 1),
         "dist_drainage_m_median": round(float(np.nanmedian(band["dist_drainage"])), 0),
         "twi_median": round(float(np.nanmedian(band["twi"])), 2),
         "twi_p75": round(float(np.nanpercentile(band["twi"], 75)), 2),
@@ -320,6 +321,45 @@ def _terrain(path: Path, probability: ProbabilityMap, window: Window, cells: np.
         "twi_mean": round(float(np.nanmean(band["twi"])), 2),
         "box": box,
     }
+
+
+@dataclass(frozen=True)
+class PointTerrain:
+    """The feature stack at one cell, and the box it sits in."""
+
+    slope_deg: float
+    factor: str  # the first of the hazard hints this cell meets, in plain words
+    box_mean_slope_deg: float
+
+
+def point_terrain(probability: ProbabilityMap, lon: float, lat: float,
+                  features_path: Path = FEATURES_PATH) -> PointTerrain | None:
+    """Slope and the leading terrain factor at one point. None when the stack is missing or off-grid."""
+    if not features_path.exists():
+        return None
+    data, box = _stack(features_path, features_path.stat().st_mtime_ns)
+    if data.shape[1:] != probability.values.shape:
+        return None
+    (x,), (y,) = warp_transform("EPSG:4326", probability.crs, [lon], [lat])
+    col, row = (int(math.floor(v)) for v in ~probability.transform @ (x, y))
+    if not (0 <= row < data.shape[1] and 0 <= col < data.shape[2]):
+        return None
+    cell = dict(zip(FEATURE_BANDS, (float(v) for v in data[:, row, col]), strict=True))
+    if not math.isfinite(cell["slope"]):
+        return None
+    if cell["dist_drainage"] <= NEAR_CHANNEL_M:
+        factor = "Drainage channel"
+    elif cell["curvature"] <= -0.2:
+        factor = "Concave hollow"
+    elif cell["slope"] >= 30:
+        factor = "Steep slope"
+    elif math.isfinite(cell["landcover"]) and int(cell["landcover"]) in SPARSE_COVER:
+        factor = "Sparse vegetation"
+    elif cell["twi"] >= box["twi_p75"]:
+        factor = "Wet ground"
+    else:
+        factor = "Terrain shape"
+    return PointTerrain(round(cell["slope"], 1), factor, box["slope_deg_mean"])
 
 
 def _hints(terrain: dict | None) -> tuple[str, tuple[str, ...]]:

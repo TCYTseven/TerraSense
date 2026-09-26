@@ -40,7 +40,8 @@ forecast, static inputs, or in-domain evidence must not become a negative predic
 Every in-domain answer with rain also carries `probability` (0 to 1), `probability_source`, the
 shared `risk_level`, and an `estimate` block. Without a calibrated model, `probability` is the Model B
 value at the clicked 30 m pixel, scored by the same Model B as the heat layer on today's rain, with
-its 1 km cell and the three logit terms behind it. The estimate never changes `state`. No rain, no
+its 1 km cell, the logit terms behind it, and the held-out skill from the ML artifacts. It is a
+relative risk index, not an absolute chance. The estimate never changes `state`. No rain, no
 terrain, a blank pixel, or a point outside the box gives `probability: null`, never a dry-day number.
 The agents' classification fact leaves the point estimate out.
 

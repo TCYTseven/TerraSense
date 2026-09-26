@@ -1,5 +1,7 @@
 """API contract and fail-closed behavior for the production risk classifier."""
 
+import json
+
 import numpy as np
 import pytest
 from fastapi.testclient import TestClient
@@ -15,9 +17,9 @@ from app.risk import risk_level
 from .conftest import storm_rain
 
 PEAK = {"latitude": 46.8523, "longitude": -121.7603}
-# A steep Wonderland Trail slope in the northwest of the box, and the Paradise meadows by the
-# Skyline trailhead.
-VALLEY = (46.90446, -121.90055)
+# The Skyline Trail at mile 4.4, by the Paradise Glacier Trail junction, and the Paradise meadows
+# by the Skyline trailhead.
+SLOPE = (46.79228, -121.72136)
 MEADOW = (46.7865, -121.7365)
 
 
@@ -65,7 +67,7 @@ def test_risk_endpoint_does_not_guess_timezone_for_naive_timestamp() -> None:
 
 
 def test_without_a_calibrated_model_the_answer_is_the_model_b_estimate(storm) -> None:
-    payload = post({"latitude": VALLEY[0], "longitude": VALLEY[1]})
+    payload = post({"latitude": SLOPE[0], "longitude": SLOPE[1]})
 
     assert payload["state"] == "UNCERTAIN", "the estimate never becomes a classifier decision"
     assert payload["calibrated_probability"] is None
@@ -82,28 +84,39 @@ def test_without_a_calibrated_model_the_answer_is_the_model_b_estimate(storm) ->
     assert [d["factor"] for d in estimate["drivers"]] == ["terrain", "forecast_rain", "antecedent_moisture"]
     assert {d["effect"] for d in estimate["drivers"]} <= {"raises", "lowers", "neutral"}
 
+    metrics = json.loads(probability_seam.METRICS_PATH.read_text())["validation"]
+    events = json.loads(probability_seam.MODEL_B_VALIDATION_PATH.read_text())
+    validation = estimate["validation"]
+    assert validation["terrain_roc_auc"] == metrics["spatial_cv"]["folds"]["roc_auc"]["mean"]
+    assert validation["rainier_roc_auc"] == metrics["external_rainier"]["metrics"]["roc_auc"]
+    assert validation["trigger_roc_auc"] == events["primary_year_blocked"]["metrics"]["lr_model_b"]["roc_auc"]
+    assert validation["trigger_events"] == events["counts"]["n_cases"]
+    for name in ("terrain", "rainier", "trigger"):
+        low, high = validation[f"{name}_roc_auc_ci95"]
+        assert low <= validation[f"{name}_roc_auc"] <= high
+
 
 def test_the_estimate_is_the_heat_map_value_under_the_click(storm) -> None:
     grid = probability_seam.score(storm)
-    for lat, lon in (VALLEY, MEADOW):
+    for lat, lon in (SLOPE, MEADOW):
         (x,), (y,) = warp_transform("EPSG:4326", grid.crs, [lon], [lat])
         row, col = rowcol(grid.transform, x, y)
         payload = post({"latitude": lat, "longitude": lon})
         assert payload["probability"] == pytest.approx(float(grid.values[row, col]), abs=1e-4)
 
 
-def test_a_storm_separates_steep_valleys_from_meadows(storm) -> None:
-    valley = post({"latitude": VALLEY[0], "longitude": VALLEY[1]})
+def test_a_storm_separates_steep_slopes_from_meadows(storm) -> None:
+    slope = post({"latitude": SLOPE[0], "longitude": SLOPE[1]})
     meadow = post({"latitude": MEADOW[0], "longitude": MEADOW[1]})
 
     assert meadow["risk_level"] == "low"
-    assert valley["risk_level"] == "extreme"
+    assert slope["risk_level"] == "high"
 
     def effect(payload: dict, factor: str) -> str:
         return next(d["effect"] for d in payload["estimate"]["drivers"] if d["factor"] == factor)
 
-    assert effect(meadow, "terrain") == "lowers" and effect(valley, "terrain") == "raises"
-    assert effect(meadow, "forecast_rain") == effect(valley, "forecast_rain") == "raises"
+    assert effect(meadow, "terrain") == "lowers" and effect(slope, "terrain") == "raises"
+    assert effect(meadow, "forecast_rain") == effect(slope, "forecast_rain") == "raises"
 
 
 def test_missing_terrain_is_reported_not_guessed(storm, monkeypatch, tmp_path) -> None:
@@ -119,14 +132,14 @@ def test_a_spot_the_heat_map_leaves_blank_gets_no_number(storm) -> None:
     grid = probability_seam.score(storm)
     blank = ProbabilityMap(np.full_like(grid.values, np.nan), grid.transform, grid.crs, grid.method)
 
-    prediction = risk_inference.predict_location(*VALLEY, rain_override=storm, probability_override=blank)
+    prediction = risk_inference.predict_location(*SLOPE, rain_override=storm, probability_override=blank)
 
     assert prediction.probability is None and prediction.estimate is None
     assert "ESTIMATE_UNAVAILABLE" in prediction.reason_codes
 
 
 def test_the_estimate_is_json_native(storm) -> None:
-    prediction = risk_inference.predict_location(*VALLEY)
+    prediction = risk_inference.predict_location(*SLOPE)
     for value in prediction.estimate["drivers"][0].values():
         assert not isinstance(value, np.generic)
     assert not isinstance(prediction.probability, np.generic)

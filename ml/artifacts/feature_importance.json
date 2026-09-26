@@ -1,12 +1,39 @@
 {
   "method": "lightgbm",
   "importance": {
-    "elevation": 0.4227,
-    "slope": 0.129,
-    "aspect": 0.1613,
-    "curvature": 0.0648,
-    "dist_drainage": 0.1265,
-    "landcover": 0.034,
-    "twi": 0.0618
+    "relief_150": 0.2424,
+    "roughness_90": 0.2034,
+    "relief_1000": 0.1368,
+    "tpi_1000": 0.1003,
+    "slope_std_150": 0.0582,
+    "plan_curvature": 0.0477,
+    "tpi_500": 0.0445,
+    "relief_500": 0.0418,
+    "curvature": 0.0272,
+    "dist_drainage": 0.0259,
+    "aspect_cos": 0.0178,
+    "slope": 0.0171,
+    "profile_curvature": 0.0133,
+    "aspect_sin": 0.009,
+    "landcover": 0.0087,
+    "twi": 0.006
+  },
+  "split": {
+    "relief_1000": 339,
+    "tpi_1000": 276,
+    "relief_500": 215,
+    "relief_150": 209,
+    "slope_std_150": 170,
+    "dist_drainage": 162,
+    "aspect_cos": 157,
+    "roughness_90": 139,
+    "tpi_500": 135,
+    "profile_curvature": 134,
+    "plan_curvature": 125,
+    "slope": 96,
+    "aspect_sin": 82,
+    "twi": 69,
+    "curvature": 56,
+    "landcover": 36
   }
 }

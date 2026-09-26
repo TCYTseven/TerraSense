@@ -53,7 +53,7 @@ def scratch_url():
 
 
 @pytest.fixture
-def api(scratch_url, skyline_storm, monkeypatch, tmp_path):
+def api(scratch_url, monkeypatch, tmp_path):
     monkeypatch.setenv("DATABASE_URL", scratch_url)
     monkeypatch.setenv("OPEN_METEO_FIXTURE", "backend/fixtures/open_meteo_storm.json")
     monkeypatch.setenv("FAKE_LLM_DELAY_S", "0.2")

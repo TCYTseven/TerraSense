@@ -40,9 +40,13 @@ export default function TrailList({ trails, selected, onView }: TrailListProps) 
               <TrailBadge letter={trail.letter} level={trail.level} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{trail.name}</span>
-                <span className="block text-sm text-muted-foreground">
-                  {trail.primaryFactor} · <span className="font-mono">{trail.slopeDeg}°</span>
-                </span>
+                {(trail.primaryFactor !== null || trail.slopeDeg !== null) && (
+                  <span className="block text-sm text-muted-foreground">
+                    {trail.primaryFactor}
+                    {trail.primaryFactor !== null && trail.slopeDeg !== null && " · "}
+                    {trail.slopeDeg !== null && <span className="font-mono">{trail.slopeDeg}°</span>}
+                  </span>
+                )}
               </span>
               <span className={`flex shrink-0 items-center gap-1.5 ${LEVEL_TEXT[trail.level]}`}>
                 <span aria-hidden className={`size-[0.55em] rounded-full ${DOT[trail.level]}`} />

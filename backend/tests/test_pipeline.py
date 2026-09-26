@@ -40,7 +40,7 @@ def fake_env(monkeypatch):
 
 
 @pytest.fixture(scope="module")
-def assessment(db_conn, skyline_storm):
+def assessment(db_conn):
     return assess(db_conn, rain=storm_rain())
 
 

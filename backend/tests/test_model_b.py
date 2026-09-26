@@ -50,8 +50,9 @@ def test_run_preserves_grid_and_nodata_and_wet_rain_increases_risk(tmp_path, mon
 
 
 def test_terrain_gates_the_rain_trigger(tmp_path, monkeypatch):
-    """A saturating storm cannot make flat, stable ground high risk, and a dry week keeps steep ground below high."""
-    values = np.array([[0.0, 0.5, 1.0]], dtype="float32")
+    """A saturating storm cannot make stable ground high risk, and a dry week keeps the map's steepest ground below high."""
+    # 0.79 is about the highest calibrated susceptibility in the Rainier box.
+    values = np.array([[0.0, 0.25, 0.79]], dtype="float32")
     path = tmp_path / "susceptibility.tif"
     _raster(path, values)
     monkeypatch.setattr(model_b, "SUSCEPTIBILITY_PATH", path)
@@ -65,6 +66,17 @@ def test_terrain_gates_the_rain_trigger(tmp_path, monkeypatch):
     assert dry.max() < 0.45, "no ground reaches high without rain"
 
 
+def test_rain_at_the_reference_thresholds_scales_terrain_odds_by_the_fitted_baseline(tmp_path, monkeypatch):
+    values = np.array([[0.05, 0.25, 0.6]], dtype="float32")
+    path = tmp_path / "susceptibility.tif"
+    _raster(path, values)
+    monkeypatch.setattr(model_b, "SUSCEPTIBILITY_PATH", path)
+    rain = _rain(past_7d_mm=model_b.MOISTURE_THRESHOLD_7D_MM, next_72h_mm=model_b.RAINFALL_THRESHOLD_72H_MM)
+
+    odds = values / (1 - values) * np.exp(model_b.W0)
+    assert np.allclose(model_b.run(rain).probability, odds / (1 + odds), atol=1e-5)
+
+
 def test_contributions_add_up_to_the_probability(tmp_path, monkeypatch):
     values = np.array([[0.62]], dtype="float32")
     path = tmp_path / "susceptibility.tif"
@@ -73,7 +85,7 @@ def test_contributions_add_up_to_the_probability(tmp_path, monkeypatch):
     rain = _rain(past_7d_mm=30.0, next_72h_mm=40.0)
 
     terms = model_b.contributions(0.62, rain)
-    logit = terms["terrain"] + terms["forecast_rain"] + terms["antecedent_moisture"]
+    logit = terms["terrain"] + terms["rain_baseline"] + terms["forecast_rain"] + terms["antecedent_moisture"]
 
     assert np.isclose(model_b.run(rain).probability[0, 0], 1 / (1 + np.exp(-logit)), atol=1e-6)
     assert terms["next_72h_mm"] == 40.0 and terms["threshold_72h_mm"] == model_b.RAINFALL_THRESHOLD_72H_MM

@@ -166,6 +166,40 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
+/** One trail on the saved 72-hour map: its worst point, and the terrain there. */
+export interface TrailRiskScore {
+  trail_id: string;
+  name: string;
+  max_probability: number;
+  mean_probability: number;
+  share_high: number;
+  level: RiskLevel;
+  /** [lon, lat] */
+  worst_point: Position | null;
+  slope_deg: number | null;
+  factor: string | null;
+}
+
+/** GET /mountains/{slug}/risk-summary: the hill card's numbers, from the map the heat layer shows. */
+export interface MountainRiskSummary {
+  method: string;
+  scored_at: string;
+  /** The worst point on any mapped trail, and how much of the box is at high or above. */
+  overall: {
+    score: number;
+    level: RiskLevel;
+    trails_scored: number;
+    share_area_high: number;
+    area_mean: number | null;
+  };
+  mean_slope_deg: number | null;
+  /** [west, south, east, north] */
+  bbox: [number, number, number, number] | null;
+  threshold_72h_mm: number;
+  /** The five most exposed trails, worst first. */
+  trails: TrailRiskScore[];
+}
+
 export type LandslideRiskState = "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN";
 
 export type RiskProbabilitySource = "calibrated_classifier" | "model_b_estimate";
@@ -178,7 +212,22 @@ export interface RiskEstimateDriver {
   effect: "raises" | "lowers" | "neutral";
 }
 
-/** How the uncalibrated Model B estimate at the point was made. */
+/** Held-out ROC-AUC behind the index, each with a 95% interval, from the ML artifacts. */
+export interface RiskEstimateValidation {
+  terrain_roc_auc: number;
+  terrain_roc_auc_ci95: [number, number];
+  terrain_positives: number;
+  rainier_roc_auc: number;
+  rainier_roc_auc_ci95: [number, number];
+  rainier_positives: number;
+  trigger_roc_auc: number;
+  trigger_roc_auc_ci95: [number, number];
+  trigger_events: number;
+  trigger_storms: number;
+  trigger_years: [number, number];
+}
+
+/** How the uncalibrated Model B risk index at the point was made. */
 export interface RiskEstimate {
   method: string;
   calibrated: false;
@@ -197,10 +246,11 @@ export interface RiskEstimate {
     threshold_7d_mm: number;
   } | null;
   drivers: RiskEstimateDriver[];
+  validation: RiskEstimateValidation | null;
 }
 
 /**
- * `state` belongs to the calibrated classifier alone. `probability` is the chance to show: the
+ * `state` belongs to the calibrated classifier alone. `probability` is the number to show: the
  * calibrated one when it exists, else the Model B estimate the heat map is drawn from.
  */
 export interface LandslideRiskPrediction {

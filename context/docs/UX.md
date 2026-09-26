@@ -73,7 +73,7 @@ Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain o
 
 The page has no rain section and no reasoning side panel: the Weather card's trace carries the rain, and each card's trace is the reasoning. The hiker card is not on this page for now.
 
-Until the per-trail model and the agents are wired in, the trail scores, the traces, and the measures are illustrative, and the panel says so.
+On Mount Rainier the trail scores come from the saved heat map and the traces and measures from a live run. The scripted traces on static mountains are illustrative.
 
 The wordmark returns to the globe. The mountain panel does not reopen by itself.
 

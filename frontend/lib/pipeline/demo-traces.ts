@@ -17,8 +17,16 @@ export interface ScriptedAgent {
 
 const LEVEL_WORDS = { low: "Low", moderate: "Moderate", high: "High", extreme: "Extreme" } as const;
 
-function pct(score: number): string {
-  return score.toFixed(2);
+function pct(score: number | null): string {
+  return score === null ? "unscored" : score.toFixed(2);
+}
+
+function slope(t: TrailRisk): string {
+  return t.slopeDeg === null ? "unmeasured slope" : `${t.slopeDeg}°`;
+}
+
+function factor(t: TrailRisk): string {
+  return (t.primaryFactor ?? "terrain").toLowerCase();
 }
 
 function trailList(trails: TrailRisk[], describe: (t: TrailRisk) => string): string {
@@ -34,17 +42,17 @@ function terrain(hill: HillView): ScriptedAgent {
       durationMs: 1600,
     };
   }
-  const steepest = [...trails].sort((a, b) => b.slopeDeg - a.slopeDeg)[0];
-  const over30 = trails.filter((t) => t.slopeDeg >= 30);
+  const steepest = [...trails].sort((a, b) => (b.slopeDeg ?? 0) - (a.slopeDeg ?? 0))[0];
+  const over30 = trails.filter((t) => (t.slopeDeg ?? 0) >= 30);
   return {
     steps: [
       `Loaded the 10 m elevation grid for ${hill.name} (${stats.areaKm2} km² box, peak ${stats.elevationM} m).`,
-      `Sampled slope under ${trails.length} trail regions: ${trailList(trails, (t) => `${t.name} ${t.slopeDeg}°`)}.`,
+      `Sampled slope under ${trails.length} trail regions: ${trailList(trails, (t) => `${t.name} ${slope(t)}`)}.`,
       `Mean hillside slope across the box is ${stats.meanSlopeDeg}°; ${over30.length} of ${trails.length} regions sit at 30° or steeper.`,
-      `Steepest region: ${steepest.name} at ${steepest.slopeDeg}°, inside the 30–40° band where shallow slides start most often.`,
-      `Primary driver per region: ${trailList(trails, (t) => `${t.letter} ${t.primaryFactor.toLowerCase()}`)}.`,
+      `Steepest region: ${steepest.name} at ${slope(steepest)}, inside the 30–40° band where shallow slides start most often.`,
+      `Primary driver per region: ${trailList(trails, (t) => `${t.letter} ${factor(t)}`)}.`,
     ],
-    summary: `${over30.length} of ${trails.length} regions at 30°+, steepest ${steepest.name} ${steepest.slopeDeg}°`,
+    summary: `${over30.length} of ${trails.length} regions at 30°+, steepest ${steepest.name} ${slope(steepest)}`,
     durationMs: 2400,
   };
 }
@@ -78,7 +86,7 @@ function trailsAgent(hill: HillView): ScriptedAgent {
     steps: [
       `Read ${trails.length} trails that cross the scored regions.`,
       ...trails.map(
-        (t) => `${t.letter}. ${t.name}: ${pct(t.score)} ${LEVEL_WORDS[t.level].toLowerCase()}, driven by ${t.primaryFactor.toLowerCase()}.`,
+        (t) => `${t.letter}. ${t.name}: ${pct(t.score)} ${LEVEL_WORDS[t.level].toLowerCase()}, driven by ${factor(t)}.`,
       ),
       `${atRisk.length} of ${trails.length} trails are high or extreme; ${top.name} leads at ${pct(top.score)}.`,
     ],
@@ -94,7 +102,7 @@ function synthesizer(hill: HillView): ScriptedAgent {
     steps: [
       "Read the Terrain, Weather, and Trails reports.",
       top
-        ? `Weighted the trail scores by exposure; ${top.name} (${pct(top.score)}) and its ${top.primaryFactor.toLowerCase()} carry the most weight.`
+        ? `Weighted the trail scores by exposure; ${top.name} (${pct(top.score)}) and its ${factor(top)} carry the most weight.`
         : "No trail scores to weight; used the mountain's current level.",
       "Raised confidence: the rain story and the steep-slope regions point the same way.",
       `Overall score ${pct(risk.score)}, level ${LEVEL_WORDS[risk.level]}.`,
@@ -160,7 +168,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
     {
       category: "closures",
       title: `Close ${a.name}`,
-      detail: `${pct(a.score)} ${a.level}, ${a.slopeDeg}° with ${a.primaryFactor.toLowerCase()}. Gate the trailhead and post closure signs through the storm.`,
+      detail: `${pct(a.score)} ${a.level}, ${slope(a)} with ${factor(a)}. Gate the trailhead and post closure signs through the storm.`,
       timing: "now",
       letter: a.letter,
     },
@@ -169,7 +177,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
     measures.push({
       category: "closures",
       title: `Restrict ${b.name} to the lower miles`,
-      detail: `Hold hikers below the ${b.slopeDeg}° crossings until a patrol clears them.`,
+      detail: `Hold hikers below the ${slope(b)} crossings until a patrol clears them.`,
       timing: "within-1h",
       letter: b.letter,
     });
@@ -208,7 +216,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
     measures.push({
       category: "monitoring",
       title: `Patrol ${c.name} after the heaviest rain`,
-      detail: `Walk it at first light and log any new slumps or downed trees at ${c.slopeDeg}°.`,
+      detail: `Walk it at first light and log any new slumps or downed trees at ${slope(c)}.`,
       timing: "within-24h",
       letter: c.letter,
     });

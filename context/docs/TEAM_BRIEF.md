@@ -9,7 +9,7 @@ Written Thursday, Sep 24, 2026. Status updated Saturday, Sep 26, 2026.
 - The hackathon scope is locked. One live mountain (Mount Rainier), landslide risk only, seven agents, the hill detail card, one mountain panel with a runout simulation. Discord was dropped on Sep 25, 2026: the ranger alert stays in the app.
 - Steps 1–9, 13, 15, 16, and 18–25 are done on main. Step 24 was dropped. The globe, the hill card, the heat map, the bypass, and the agent pipeline all run.
 - Steps 10, 11, 12, 14, and 17 are built on `origin/step-10-local-nasa-export` and are not on main. Merge that branch. Do not rebuild it. On main there are still no landslide points, LightGBM is untrained, and the heat map is the susceptibility stand-in.
-- Step 31 is half done. **Analyze now** on Rainier streams the seven agents into the five cards, and Reactive Measures come from the advisory. Trail scores, the overall score, and preventative measures are still illustrative.
+- Step 31 is half done. **Analyze now** on Rainier streams the seven agents into the five cards, and Reactive Measures come from the advisory. Trail scores, the overall score, and preventative measures come from the saved heat map. Left: the fake-LLM check against the advisory.
 - Steps 26–30 (pressure points, runout, simulate, the mountain panel) are not started.
 - The default globe seed is 138 peaks (`SEED_MODE=mountainstest`), drawn 50 at a time. `data/seed/mountains.json` has 648. No hosted Postgres yet, and no live Gemini or xAI call has run.
 - Each folder has an `AGENTS.md` harness, and `.claude/agents/` defines a builder per track plus a reviewer. Start at the root [`AGENTS.md`](../../AGENTS.md).

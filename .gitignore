@@ -10,6 +10,7 @@ data/processed/
 # Large model outputs. metrics.json and small artifacts stay in git.
 ml/artifacts/*.tif
 ml/artifacts/packs/*/*.tif
+ml/artifacts/legacy_rainier_only/*.tif
 # Production risk artifacts are generated from external, timestamped data and must be promoted
 # through the deployment artifact store, not committed with the source tree.
 ml/artifacts/landslide_risk_lgbm.txt

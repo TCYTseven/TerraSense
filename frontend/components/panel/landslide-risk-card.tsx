@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import { LEVEL_TEXT, LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import { getLandslideRisk } from "@/lib/api";
 import { formatLatLon, formatUtc, humanize } from "@/lib/format";
-import type { LandslideRiskPrediction, LandslideRiskState, RiskEstimate, RiskEstimateDriver } from "@/lib/types";
+import type {
+  LandslideRiskPrediction,
+  LandslideRiskState,
+  RiskEstimate,
+  RiskEstimateDriver,
+  RiskEstimateValidation,
+} from "@/lib/types";
 
 const STATE_LABEL: Record<LandslideRiskState, string> = {
   HIGH_RISK: "High risk",
@@ -35,8 +41,8 @@ function reasonLabel(code: string): string {
 }
 
 const EFFECT_GLYPH: Record<RiskEstimateDriver["effect"], { glyph: string; label: string }> = {
-  raises: { glyph: "▲", label: "Raises the chance" },
-  lowers: { glyph: "▼", label: "Lowers the chance" },
+  raises: { glyph: "▲", label: "Raises the risk" },
+  lowers: { glyph: "▼", label: "Lowers the risk" },
   neutral: { glyph: "–", label: "Little effect" },
 };
 
@@ -46,6 +52,15 @@ function formatPercent(value: number): string {
   if (percent < 0.1) return "<0.1%";
   if (percent < 9.95) return `${percent.toFixed(1)}%`;
   return `${Math.round(percent)}%`;
+}
+
+/** The Model B index on its 0 to 1 scale: 0.628 → "0.63", 0.004 → "<0.01". */
+function formatIndex(value: number): string {
+  return value < 0.005 ? "<0.01" : value.toFixed(2);
+}
+
+function formatAuc(value: number, [low, high]: [number, number]): string {
+  return `${value.toFixed(2)} (${low.toFixed(2)}–${high.toFixed(2)})`;
 }
 
 function formatCellSize(meters: number): string {
@@ -63,9 +78,10 @@ interface Settled {
 }
 
 /**
- * The landslide chance at the last map click. The headline is the calibrated probability when
- * the strict classifier has one, else the uncalibrated Model B estimate the heat map is drawn
- * from. The classifier's own state sits in the audit disclosure and is never shown as safe.
+ * The landslide risk at the last map click. The headline is the calibrated probability when the
+ * strict classifier has one, else the Model B risk index the heat map is drawn from, shown on its
+ * 0 to 1 scale with its held-out skill. The classifier's own state sits in the audit disclosure
+ * and is never shown as safe.
  */
 export default function LandslideRiskCard({ latitude, longitude }: { latitude: number; longitude: number }) {
   const [attempt, setAttempt] = useState(0);
@@ -99,7 +115,7 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="cell-risk-heading" className="text-sm text-muted-foreground">
-          Landslide chance · next 72 hours
+          Landslide risk · next 72 hours
         </h2>
         {loading && settled && <span className="text-xs text-muted-foreground">Checking…</span>}
       </div>
@@ -172,7 +188,7 @@ function Headline({ prediction }: { prediction: LandslideRiskPrediction }) {
   return (
     <p className="mt-2 flex items-baseline gap-3">
       <span className={`font-mono text-4xl/10 font-semibold tracking-tight ${level ? LEVEL_TEXT[level] : ""}`}>
-        {formatPercent(probability)}
+        {prediction.probability_source === "model_b_estimate" ? formatIndex(probability) : formatPercent(probability)}
       </span>
       {level && <LevelWord level={level} className="text-base font-semibold" />}
     </p>
@@ -191,10 +207,10 @@ function Source({ prediction }: { prediction: LandslideRiskPrediction }) {
   if (prediction.probability_source === "model_b_estimate") {
     return (
       <div className="text-xs text-muted-foreground">
-        <p className="font-medium text-foreground">Model B estimate · uncalibrated</p>
+        <p className="font-medium text-foreground">Model B risk index, 0 to 1</p>
         <p className="mt-0.5">
-          The same model that colors the heat map: terrain susceptibility plus forecast and recent rain. Not a
-          safety clearance.
+          The model that colors the heat map: terrain odds times rain odds, each fitted on mapped and dated
+          landslides. It ranks places and days. It is not the chance of a slide, and not a safety clearance.
         </p>
       </div>
     );
@@ -203,7 +219,7 @@ function Source({ prediction }: { prediction: LandslideRiskPrediction }) {
 }
 
 function EstimateDetails({ estimate }: { estimate: RiskEstimate }) {
-  const { drivers, cell, rain } = estimate;
+  const { drivers, cell, rain, validation } = estimate;
   return (
     <>
       {drivers.length > 0 && (
@@ -229,8 +245,8 @@ function EstimateDetails({ estimate }: { estimate: RiskEstimate }) {
       )}
       {cell && (
         <p className="text-xs text-muted-foreground">
-          {formatCellSize(cell.size_m)} cell: average <span className="font-mono text-foreground">{formatPercent(cell.mean)}</span>, peak{" "}
-          <span className="font-mono text-foreground">{formatPercent(cell.max)}</span>,{" "}
+          {formatCellSize(cell.size_m)} cell: average <span className="font-mono text-foreground">{formatIndex(cell.mean)}</span>, peak{" "}
+          <span className="font-mono text-foreground">{formatIndex(cell.max)}</span>,{" "}
           <span className="font-mono text-foreground">{formatPercent(cell.share_high)}</span> of it high or above
         </p>
       )}
@@ -239,7 +255,49 @@ function EstimateDetails({ estimate }: { estimate: RiskEstimate }) {
           Rain from {rain.source === "open-meteo" ? "Open-Meteo" : humanize(rain.source)}, as of <span className="font-mono">{formatUtc(rain.as_of)}</span>
         </p>
       )}
+      {validation && <Validation validation={validation} />}
     </>
+  );
+}
+
+/** Held-out ROC-AUC with 95% intervals: 0.5 is a coin flip, 1 ranks every slide above every non-slide. */
+function Validation({ validation: v }: { validation: RiskEstimateValidation }) {
+  const rows = [
+    {
+      label: "Terrain, western Cascades",
+      value: formatAuc(v.terrain_roc_auc, v.terrain_roc_auc_ci95),
+      detail: `${v.terrain_positives.toLocaleString("en-US")} mapped slide pixels, 10 km spatial blocks held out`,
+    },
+    {
+      label: "Terrain, Mount Rainier only",
+      value: formatAuc(v.rainier_roc_auc, v.rainier_roc_auc_ci95),
+      detail: `${v.rainier_positives} mapped slides in this box, never trained on`,
+    },
+    {
+      label: "Rain trigger, by day",
+      value: formatAuc(v.trigger_roc_auc, v.trigger_roc_auc_ci95),
+      detail: `${v.trigger_events} dated slides, ${v.trigger_storms} storms, ${v.trigger_years[0]}–${v.trigger_years[1]}, whole years held out`,
+    },
+  ];
+  return (
+    <div>
+      <h3 className="text-xs text-muted-foreground">How far to trust it · held-out ROC-AUC, 95% interval</h3>
+      <ul className="mt-1 space-y-1.5">
+        {rows.map((row) => (
+          <li key={row.label} className="text-xs">
+            <span className="flex flex-wrap justify-between gap-x-3">
+              <span className="text-foreground">{row.label}</span>
+              <span className="font-mono text-foreground">{row.value}</span>
+            </span>
+            <span className="text-muted-foreground">{row.detail}</span>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-1 text-xs text-muted-foreground">
+        0.5 is a coin flip. On Rainier&apos;s own slides the terrain ranking is weak, and the rain skill assumes a
+        perfect forecast, so live skill is lower.
+      </p>
+    </div>
   );
 }
 
@@ -257,7 +315,7 @@ function ClassifierAudit({ prediction }: { prediction: LandslideRiskPrediction }
         {state === "UNCERTAIN" && (
           <p className="rounded-md border border-amber-400/30 bg-amber-400/10 px-2 py-1 text-amber-200">
             The strict classifier abstains until it has calibrated artifacts and production forecast inputs. The
-            estimate above is not a safety clearance.
+            index above is not a safety clearance.
           </p>
         )}
         <div className="grid grid-cols-2 gap-x-4 gap-y-1">

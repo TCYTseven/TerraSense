@@ -1,18 +1,19 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
 import SimulateButton from "@/components/pipeline/simulate-button";
 import ReactiveMeasures from "@/components/pipeline/reactive-measures";
 import SimulationBar from "@/components/map/simulation-bar";
 import LandslideRiskCard from "@/components/panel/landslide-risk-card";
-import { buildHillView } from "@/lib/fixtures/hill-demo";
+import { getRiskSummary } from "@/lib/api";
+import { buildHillView } from "@/lib/hill-view";
 import type { CameraFocus, TrailLetter } from "@/lib/hill";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
 import { useSimulation } from "@/lib/use-simulation";
-import type { LayerTiles, MountainDetail } from "@/lib/types";
+import type { LayerTiles, MountainDetail, MountainRiskSummary } from "@/lib/types";
 import HillHeader from "./hill-header";
 import OverallRisk from "./overall-risk";
 import PreventativeMeasures from "./preventative-measures";
@@ -28,17 +29,34 @@ export interface HillCardProps {
   mountain: MountainDetail;
   probability: LayerTiles | null;
   susceptibility: LayerTiles | null;
+  /** The trail scores on the saved heat map at page load. Null before the first save. */
+  riskSummary: MountainRiskSummary | null;
 }
 
 /**
  * The hill detail card: the 3D mountain on the left, one scrollable stats panel on the right
  * with the Analyze button pinned under it. "View" on a trail row flies the camera to its marker.
  */
-export default function HillCard({ mountain, probability, susceptibility }: HillCardProps) {
-  const hill = useMemo(() => buildHillView(mountain), [mountain]);
+export default function HillCard({ mountain, probability, susceptibility, riskSummary }: HillCardProps) {
+  const [summary, setSummary] = useState(riskSummary);
+  const hill = useMemo(() => buildHillView(mountain, summary), [mountain, summary]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
+  const finished = pipeline.state.orchestrator === "done";
+
+  // A finished run saves a new map, so the trail scores are read again.
+  useEffect(() => {
+    if (!finished || !mountain.is_live) return;
+    const controller = new AbortController();
+    getRiskSummary(mountain.slug, { signal: controller.signal }).then(
+      (next) => {
+        if (!controller.signal.aborted) setSummary(next);
+      },
+      () => {},
+    );
+    return () => controller.abort();
+  }, [finished, mountain.slug, mountain.is_live]);
   const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
   const hasRoutes = mountain.trails.length > 0;
