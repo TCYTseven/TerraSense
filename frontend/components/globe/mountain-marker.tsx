@@ -39,6 +39,17 @@ const LIVE_RING_OPACITY = 0.35;
 const FADE_START = 0.2;
 const FADE_END = 0.03;
 
+/**
+ * Zoom scaling: at or beyond this camera-to-marker distance (the default view is about 2.4)
+ * a marker draws at full size. Closer in, it shrinks in proportion, so it keeps a steady
+ * size on screen while the gaps between neighboring peaks open up as you zoom.
+ */
+const FULL_SIZE_DISTANCE = 2.4;
+const MIN_ZOOM_SCALE = 0.2;
+
+/** Extra scale on the hovered marker. */
+const HOVER_SCALE = 1.35;
+
 /** Height of the mountain glyph, in globe radii. */
 const GLYPH_SIZE = 0.05;
 
@@ -122,6 +133,12 @@ export default function MountainMarker({
     outward.copy(worldPosition).normalize();
     toCamera.copy(camera.position).sub(worldPosition).normalize();
     const fade = MathUtils.smoothstep(outward.dot(toCamera), FADE_END, FADE_START);
+    const zoomScale = MathUtils.clamp(
+      camera.position.distanceTo(worldPosition) / FULL_SIZE_DISTANCE,
+      MIN_ZOOM_SCALE,
+      1,
+    );
+    group.scale.setScalar(zoomScale * (hovered ? HOVER_SCALE : 1));
 
     facingCamera.current = fade > 0.5;
     group.visible = fade > 0.01;
@@ -160,7 +177,7 @@ export default function MountainMarker({
   }
 
   return (
-    <group ref={groupRef} position={position} quaternion={quaternion} scale={hovered ? 1.35 : 1}>
+    <group ref={groupRef} position={position} quaternion={quaternion}>
       {dangerRadius && (
         <mesh position={[0, 0, 0.004]} raycast={noRaycast}>
           <sphereGeometry args={[dangerRadius, 32, 32]} />
