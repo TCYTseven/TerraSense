@@ -2,7 +2,7 @@
 
 import { Billboard, Html, useCursor } from "@react-three/drei";
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import {
   DoubleSide,
   type Group,
@@ -16,6 +16,7 @@ import {
 import RiskBadge from "@/components/risk-badge";
 import { displayRiskLevel, formatElevation } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
+import { prefetchSatellitePreview, satellitePreviewUrl } from "@/lib/satellite-preview";
 import type { Mountain } from "@/lib/types";
 import { latLonToVector3 } from "./geo";
 
@@ -160,6 +161,7 @@ export default function MountainMarker({
     }
     event.stopPropagation();
     if (!hovered) {
+      prefetchSatellitePreview(mountain.satellite_image_url);
       onHoverChange(mountain.slug);
     }
   }
@@ -260,6 +262,11 @@ export default function MountainMarker({
 
 /** Hover card: name, elevation, region, satellite preview, and risk. */
 function MarkerCard({ mountain }: { mountain: Mountain }) {
+  const previewSrc = mountain.satellite_image_url
+    ? satellitePreviewUrl(mountain.satellite_image_url)
+    : null;
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-border bg-popover/95 px-3.5 py-3 shadow-xl shadow-foreground/10 backdrop-blur-sm">
       <div className="flex items-baseline justify-between gap-3">
@@ -267,14 +274,18 @@ function MarkerCard({ mountain }: { mountain: Mountain }) {
         <p className="font-mono text-xs text-muted-foreground">{formatElevation(mountain.elevation_m)}</p>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{mountain.region}</p>
-      {mountain.satellite_image_url ? (
-        <img
-          src={mountain.satellite_image_url}
-          alt={`Satellite view of ${mountain.name}`}
-          className="mt-2.5 aspect-square w-full rounded-sm object-cover"
-          loading="lazy"
-          decoding="async"
-        />
+      {previewSrc ? (
+        <div className="relative mx-auto mt-2.5 aspect-square w-[84%] overflow-hidden rounded-sm bg-muted">
+          {!imageLoaded ? <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden /> : null}
+          <img
+            src={previewSrc}
+            alt={`Satellite view of ${mountain.name}`}
+            className={`size-full object-cover transition-opacity duration-200 ${imageLoaded ? "opacity-100" : "opacity-0"}`}
+            decoding="async"
+            fetchPriority="high"
+            onLoad={() => setImageLoaded(true)}
+          />
+        </div>
       ) : null}
       <RiskBadge level={displayRiskLevel(mountain)} className="mt-2.5 text-xs text-foreground" />
     </div>

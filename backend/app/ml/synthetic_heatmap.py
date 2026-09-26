@@ -116,6 +116,17 @@ class _Field:
     contrast: float
 
 
+@dataclass
+class _EdgeProfile:
+    phase2: float
+    phase3: float
+    phase5: float
+    sector: list[float]
+
+
+EDGE_SECTORS = 12
+
+
 def _fbm(nx: float, ny: float, octaves: list[_Octave]) -> float:
     noise = 0.0
     weight = 0.0
@@ -179,11 +190,31 @@ def _score_at(nx: float, ny: float, field: _Field) -> float:
     return max(0.0, min(1.0, score))
 
 
-def _edge_mask(u: float, v: float) -> float:
-    dx = (u - 0.5) / 0.58
-    dy = (v - 0.5) / 0.68
-    dist = math.hypot(dx, dy)
-    return 1 - _smoothstep(0.68, 1.02, dist)
+def _build_edge_profile(seed: int) -> _EdgeProfile:
+    rand = _mulberry32(seed)
+    sector = [(rand() - 0.5) * 0.22 for _ in range(EDGE_SECTORS)]
+    return _EdgeProfile(
+        phase2=rand() * math.pi * 2,
+        phase3=rand() * math.pi * 2,
+        phase5=rand() * math.pi * 2,
+        sector=sector,
+    )
+
+
+def _organic_edge_mask(nx: float, ny: float, profile: _EdgeProfile) -> float:
+    dist = math.hypot(nx * 0.94, ny * 1.02)
+    if dist > 1.08:
+        return 0.0
+    angle = math.atan2(ny, nx)
+    sector_idx = int(((angle + math.pi) / (2 * math.pi)) * EDGE_SECTORS) % EDGE_SECTORS
+    boundary = (
+        0.44
+        + 0.1 * math.sin(angle * 2 + profile.phase2)
+        + 0.07 * math.sin(angle * 3 + profile.phase3)
+        + 0.05 * math.sin(angle * 5 + profile.phase5)
+        + profile.sector[sector_idx]
+    )
+    return 1 - _smoothstep(boundary - 0.04, boundary + 0.16, dist)
 
 
 def mountain_footprint_bbox(lon: float, lat: float, elevation_m: int | None) -> tuple[float, float, float, float]:
@@ -235,6 +266,7 @@ def render_synthetic_tile(
     west, south, east, north = mountain_footprint_bbox(lon, lat, elevation_m)
     bounds = mercantile.bounds(x, y, z)
     field = _field_for_peak(slug, lon, lat)
+    edge = _build_edge_profile(_hash_seed(slug, "edge-mask"))
 
     lons = np.linspace(bounds.west, bounds.east, TILE_SIZE, dtype=np.float64)
     lats = np.linspace(bounds.north, bounds.south, TILE_SIZE, dtype=np.float64)
@@ -251,8 +283,8 @@ def render_synthetic_tile(
         for col in range(TILE_SIZE):
             if not inside[row, col]:
                 continue
-            mask = _edge_mask(float(u[row, col]), float(v[row, col]))
-            if mask <= 0:
+            mask = _organic_edge_mask(float(nx[row, col]), float(ny[row, col]), edge)
+            if mask <= 0.01:
                 continue
             scores[row, col] = _score_at(float(nx[row, col]), float(ny[row, col]), field)
 

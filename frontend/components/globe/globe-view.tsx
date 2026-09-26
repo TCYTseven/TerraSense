@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
 import { globeMountainLimit, selectGlobeMountains } from "@/lib/globe-display-mountains";
+import { prefetchSatellitePreviews } from "@/lib/satellite-preview";
 import { HOME_THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
@@ -54,6 +55,12 @@ export default function GlobeView() {
     () => selectGlobeMountains(allMountains, globeLimit),
     [allMountains, globeLimit],
   );
+
+  useEffect(() => {
+    if (globeMountains.length > 0) {
+      prefetchSatellitePreviews(globeMountains);
+    }
+  }, [globeMountains]);
 
   function retry() {
     setState({ status: "loading" });

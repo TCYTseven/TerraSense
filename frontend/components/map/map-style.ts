@@ -53,20 +53,20 @@ export function openingBearing(lon: number, lat: number, slug?: string): number 
 /** Map-only colors. Risk colors come from lib/theme.ts and mark risk only. */
 export const MAP_COLORS = {
   /** The page behind the map and the sky above it, so the horizon fades into the page. */
-  paper: "#F4F6F8",
+  paper: "#EEF1F5",
   /**
-   * Elevation tint: the ground around the mountain stays white, and the mountain itself, from its
-   * base up to the summit, is gray, so the mountain reads at a glance.
+   * Elevation tint: valleys stay a cool off-white, and the mountain itself, from its base up to
+   * the summit, is gray, so the massif reads at a glance without washing out.
    */
-  tint: ["#FFFFFF", "#FFFFFF", "#AEB7C1", "#96A0AC", "#85909C"],
-  /** The wash that fades everything outside the mountain's footprint back to white. */
-  surround: "#FFFFFF",
+  tint: ["#E8ECF1", "#DDE3EA", "#A3ADB8", "#8A96A3", "#75808D"],
+  /** The wash that fades everything outside the mountain's footprint back to the valley tint. */
+  surround: "#E8ECF1",
   /** Slopes turned away from the light. */
   shadow: "#334155",
   /** Slopes facing the light. */
-  highlight: "#FFFFFF",
+  highlight: "#E8EDF2",
   /** Sharp breaks: ridgelines and gully walls. */
-  accent: "#64748B",
+  accent: "#5C6A78",
   /** The hero trail before the model scores it. */
   trail: "#0F172A",
   /** Every other trail: context, not a finding. */
@@ -454,7 +454,7 @@ export function mountainStyle({
         source: SOURCE.relief,
         paint: {
           // Imagery already carries shadows, so the relief only sharpens it.
-          "hillshade-exaggeration": satellite ? 0.2 : 0.4,
+          "hillshade-exaggeration": satellite ? 0.22 : 0.48,
           "hillshade-shadow-color": MAP_COLORS.shadow,
           "hillshade-highlight-color": MAP_COLORS.highlight,
           "hillshade-accent-color": MAP_COLORS.accent,

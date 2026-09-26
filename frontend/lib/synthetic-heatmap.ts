@@ -208,15 +208,45 @@ function colorForScore(score: number): [number, number, number, number] {
   return [r, g, b, Math.round(level.alpha * enter * 255)];
 }
 
-/**
- * Soft elliptical falloff centered on the summit (north/top of the drape). One smooth edge
- * avoids the old ring artifacts from stacking a box mask and a radial mask.
- */
-function edgeMask(u: number, v: number): number {
-  const dx = (u - 0.5) / 0.58;
-  const dy = (v - 0.5) / 0.68;
-  const dist = Math.hypot(dx, dy);
-  return 1 - smoothstep(0.68, 1.02, dist);
+const EDGE_SECTORS = 12;
+
+interface EdgeProfile {
+  phase2: number;
+  phase3: number;
+  phase5: number;
+  sector: Float32Array;
+}
+
+/** Per-peak outline: lobes plus stepped sector jitter so the drape reads as an uneven blob, not a map square. */
+function buildEdgeProfile(seed: number): EdgeProfile {
+  const rand = mulberry32(seed);
+  const sector = new Float32Array(EDGE_SECTORS);
+  for (let i = 0; i < EDGE_SECTORS; i += 1) {
+    sector[i] = (rand() - 0.5) * 0.22;
+  }
+  return {
+    phase2: rand() * Math.PI * 2,
+    phase3: rand() * Math.PI * 2,
+    phase5: rand() * Math.PI * 2,
+    sector,
+  };
+}
+
+function organicEdgeMask(nx: number, ny: number, profile: EdgeProfile): number {
+  const dist = Math.hypot(nx * 0.94, ny * 1.02);
+  if (dist > 1.08) {
+    return 0;
+  }
+  const angle = Math.atan2(ny, nx);
+  const sectorIdx =
+    Math.floor(((angle + Math.PI) / (2 * Math.PI)) * EDGE_SECTORS) % EDGE_SECTORS;
+  const boundary =
+    0.44 +
+    0.1 * Math.sin(angle * 2 + profile.phase2) +
+    0.07 * Math.sin(angle * 3 + profile.phase3) +
+    0.05 * Math.sin(angle * 5 + profile.phase5) +
+    profile.sector[sectorIdx];
+  return 1 - smoothstep(boundary - 0.04, boundary + 0.16, dist);
 }
 
 /**
@@ -246,6 +276,7 @@ export function buildSyntheticHeatOverlay(
   }
 
   const field = buildField(mulberry32(hashSeed(slug, lon.toFixed(4), lat.toFixed(4))));
+  const edge = buildEdgeProfile(hashSeed(slug, "edge-mask"));
   const image = ctx.createImageData(SIZE, SIZE);
   for (let y = 0; y < SIZE; y += 1) {
     const v = y / (SIZE - 1);
@@ -253,12 +284,17 @@ export function buildSyntheticHeatOverlay(
     for (let x = 0; x < SIZE; x += 1) {
       const u = x / (SIZE - 1);
       const nx = u * 2 - 1;
-      const [r, g, b, a] = colorForScore(scoreAt(nx, ny, field));
+      const mask = organicEdgeMask(nx, ny, edge);
       const i = (y * SIZE + x) * 4;
+      if (mask <= 0.01) {
+        image.data[i + 3] = 0;
+        continue;
+      }
+      const [r, g, b, a] = colorForScore(scoreAt(nx, ny, field));
       image.data[i] = r;
       image.data[i + 1] = g;
       image.data[i + 2] = b;
-      image.data[i + 3] = Math.round(a * edgeMask(u, v));
+      image.data[i + 3] = Math.round(a * mask);
     }
   }
   ctx.putImageData(image, 0, 0);
