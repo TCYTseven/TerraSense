@@ -1,90 +1,97 @@
 # TerraSense conventions
 
-TerraSense is landslide hazard intelligence for Mount Rainier, built for park rangers and hikers. The UI is dark and operational, like a small dispatch screen. The globe and the heat map are the two loud moments, and everything else stays quiet. These rules come from the product spec's Design Language and the team's design addendum.
+TerraSense is landslide hazard intelligence for park rangers and hikers. The ranger UI is dark and operational, like a small dispatch screen ("basalt and glacier"). The globe home is the one light surface. Color is information: risk colors mean risk, the glacier cyan means "you can press this", and everything else is text or muted text. These rules come from the product spec's Design Language and the team's design addendum.
 
 ## Setup
 
-- Link `styles.css` and load `_ds_bundle.js`. No provider is needed: `styles.css` sets the dark background, the text color, Space Grotesk, and the 2 px focus ring on its own.
-- The bundle exports `RiskBadge`, `RISK_LEVELS` (`["low","moderate","high","extreme"]`), `riskLabel(level)` (`"high"` → `"High"`), and `RISK_COLORS` (hex values for canvas or SVG code only).
-- Styling is Tailwind v4 utilities, **precompiled**: a class exists only if it is in `_ds_bundle.css`. Tailwind's default palette is removed. `text-red-500` and `bg-white` do not exist. Use only the tokens below.
+- Link `styles.css` and load `_ds_bundle.js`. No provider is needed: `styles.css` sets the dark background, the text color, Space Grotesk, and the 2 px focus ring.
+- Components live on `window.TerraSense`: `RiskBadge`, `LevelWord`, `NeedsReviewTag`, `TrailBadge`, `OverallRisk`, `TrailList`, `PreventativeMeasures`, `AgentPipeline`, `AgentCard`, `StatusGlyph`, `ReactiveMeasures`, `AnalyzeButton`. Helpers: `RISK_LEVELS`, `riskLabel`, `levelForScore(score)` (bins: low < 0.2, moderate < 0.45, high ≤ 0.7, extreme above), `formatScore`, `PIPELINE_LABELS`, `MEASURE_CATEGORY_LABELS`, `initialPipelineState()`, and `usePipeline(hill)`, which plays a scripted agent run (`{state, running, analyze}`).
+- Each component's `.d.ts` spells out its data shapes inline. Read it before passing props.
+- Styling is Tailwind v4 utilities, **precompiled**: a class exists only if it is in `_ds_bundle.css`. Tailwind's default palette is removed, so `text-red-500` and `bg-white` do not exist. Use only the tokens below.
+- **The globe home** sits in the light scope: put `theme-home-light` on the home screen's root. Every role token swaps to its light value there. Mountain pages stay dark.
 
-## Color: role tokens (shadcn names)
+## Color: role tokens
 
 | Utility | Role |
 |---|---|
-| `bg-background` | Page (the dark end) |
-| `bg-muted` | Inset fields, skeleton bars (the light end) |
-| `bg-card` `bg-popover` `bg-secondary` | Side panel, toggle group, hover card, popups, search results |
+| `bg-background` / `bg-muted` | Page / inset fields and skeleton bars |
+| `bg-card` `bg-popover` `bg-secondary` | Panel, hover card, popups, search results |
 | `text-foreground` / `text-muted-foreground` | Body text / labels, secondary lines, waiting states |
-| `bg-primary` `text-primary` `border-primary` `outline-ring` | **The interactive cyan**: primary button, focus, selected, toggles when on |
+| `bg-primary` `text-primary` `border-primary` `outline-ring` | **The interactive cyan**: primary button, View, focus, selected |
 | `text-primary-foreground` | Text on the cyan |
-| `border-border` `border-input` | Every 1 px border (white at 10%) |
-| `bg-accent` | Hover surface for list rows (white at 6%). **Not the cyan** |
-| `text-destructive` | Error text. It is the text color, because errors never borrow risk red |
+| `border-border` | Every 1 px border (the text color at 10%) |
+| `bg-accent` | Hover and selected-row surface (text at 6%). **Not the cyan** |
+| `text-destructive` | Error text. It is the text color: errors never borrow risk red |
 | `{bg,text,border}-risk-{low,moderate,high,extreme}` | **Risk only** |
 
-- Color is information. Risk colors mean risk. Cyan means "you can press this." Everything else is text or muted text.
-- Risk color goes only on markers, trail lines, hazard polygons and pins, level words, and the High and Extreme treatment. Never on buttons, agent status, success lines, or error lines.
-- A risk color always sits beside its level word (`RiskBadge` does this). No level means no color: show muted "Not analyzed yet."
-- **High and Extreme treatment:** `border-l-3 border-risk-high bg-risk-high/8` (the `extreme` equivalents for Extreme). Low and Moderate get neither.
+- Risk color goes only on markers, trail lines, level words and dots, trail badges, and the High/Extreme treatment. Never on buttons, agent status, or error lines. A risk color always sits beside its level word.
+- **High and Extreme treatment:** `border-l-3 border-risk-high bg-risk-high/8` (`extreme` for Extreme), always on top of `bg-card`. `OverallRisk` and `ReactiveMeasures` apply it themselves.
 
 ## Surfaces and shape
 
-- Flat. **No shadows. No gradients. No cards inside the panel.** Surfaces separate with a 1 px `border-border`. A heavier stroke always means selection, severity, or status.
-- Radius: controls `rounded-md` (6 px), surfaces floating over the map or globe `rounded-lg` (8 px), side panel `rounded-none`, flush to the viewport edge.
-- Panel: `w-[clamp(360px,30vw,440px)] border-l border-border bg-card`, with `px-5` side padding. Sections are divided by `border-t border-border` with `py-4`.
+- Flat. No shadows. No gradients (except the home's backdrop). Sections separate with `border-t border-border` and `px-5 py-4`.
+- Radius: controls `rounded-md` (6 px), floating surfaces and measure cards `rounded-lg` (8 px), the panel `rounded-none`.
+- **Mountain page:** map left `md:w-[55%]`, one scrolling panel right `md:w-[45%] border-l border-border bg-card`, and `AnalyzeButton` in a footer pinned below the scroll area. Panel order: header, `OverallRisk`, `TrailList`, `PreventativeMeasures`, an "Agents" section with `AgentPipeline`, then `ReactiveMeasures` once a run finishes. No second sidebar and no drawer.
 
 ## Type
 
-Space Grotesk (`font-sans`) for UI text. JetBrains Mono (`font-mono`) for **values only**: a number with its unit (`3.2 mi`, `0.82`, `12 min`). Write mono values as `font-mono text-[0.92em]`. Sentence case everywhere: no all-caps labels and no letter-spaced eyebrows.
+Space Grotesk (`font-sans`) for UI text. JetBrains Mono (`font-mono`) for **values only**, a number with its unit (`3.2 mi`, `0.74`, `2.4 s`). Write mono inside sentences as `font-mono text-[0.92em]`. Sentence case everywhere.
 
 | Role | Classes |
 |---|---|
-| Wordmark | `text-base/5 font-semibold tracking-[-0.01em]` |
 | Panel title | `text-2xl/7 font-semibold tracking-[-0.01em]` |
-| Lead (risk sentence) | `text-base` |
-| Body (rows, values) | `text-sm` |
-| Meta (labels, hover card, status lines) | `text-xs` |
-| Button | `text-sm font-medium` |
-| Hiker level / sentence / bypass name | `text-4xl font-semibold tracking-[-0.02em]` / `text-[21px]/[30px]` / `text-lg/6 font-semibold` |
+| Overall score | `font-mono text-4xl/10 font-semibold tracking-tight` |
+| Section title (Reactive Measures) | `text-xl font-semibold tracking-[-0.01em]` |
+| Rows, trail names, bullets, agent names | `text-base` |
+| Labels, secondary lines, status, traces | `text-sm` (section labels `text-sm text-muted-foreground`) |
+| Chips and tags | `text-xs` |
 
 ## Numbers and copy
 
-- US units: `3.2 mi`, `mi 4.2–5.1` in rows, "mile 4.2 to 5.1" in sentences, `+1.2 mi`, `+350 ft`, `14,410 ft`, `1.84 in`. Probability, confidence, and score run 0 to 1 with two decimals and no percent (`0.82`). Times read `12 min ago` or `14:05` (24-hour).
-- Level words are Low, Moderate, High, and Extreme. They appear in all caps only in ranger copy: "Debris flow risk HIGH. East fork drainage, Ridge Trail mile 4.2 to 5.1. Confidence 0.82."
-- Plain verbs, no apologies. The actions are **Analyze now** (then "Analyzing…") and **Hiker forecast**.
-- Status and error lines: `text-xs border-l-2 border-foreground/40 pl-2`, never a risk color.
+- US units: `14,410 ft`, `3.2 mi`, `1.84 in`, slope `34°`. Scores run 0 to 1 with two decimals and no percent (`0.74`). Times read `12 min ago` or `14:05`.
+- Level words: Low, Moderate, High, Extreme. The agents are Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer, under one Orchestrator.
+- Reactive Measures group in this order: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, public notice. Each has a deadline ("Now", "Within 1 h"). **Every public notice is a draft, "Draft, not sent"; nothing is ever sent, and no public notice gets a send button.**
+- Plain verbs, no apologies. The action is **Analyze now** (then "Analyzing…").
 
-## Motion and interaction
+## Motion
 
-- No `transition-*`. Hover, focus, open, and close change instantly. The only animation class is `animate-work`, used for running agent rows (`bg-foreground/4`) and skeleton bars.
-- Primary button: `h-10 w-full rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 disabled:opacity-40`.
-- Secondary button: `h-10 w-full rounded-md border border-primary text-primary text-sm font-medium hover:bg-primary/10`.
+No `transition-*`. The only animation class is `animate-work` (the running agent card, skeleton bars), with `motion-reduce:animate-none`.
 
 ## Where the truth lives
 
-`_ds_bundle.css` holds the compiled utilities, with the `:root` role variables at the top. `components/general/RiskBadge/RiskBadge.prompt.md` has the component examples.
+`_ds_bundle.css` holds the compiled utilities and the `:root` and `.theme-home-light` role variables at the top. Each `components/<group>/<Name>/<Name>.prompt.md` has worked examples, and `<Name>.d.ts` has the props.
 
 ## Example
 
 ```jsx
-const { RiskBadge } = window.TerraSense;
+const { OverallRisk, TrailList, AgentPipeline, ReactiveMeasures, AnalyzeButton, usePipeline } = window.TerraSense;
 
-<aside className="w-[clamp(360px,30vw,440px)] border-l border-border bg-card">
-  <section className="border-l-3 border-risk-high bg-risk-high/8 px-5 py-4">
-    <RiskBadge level="high" className="text-base font-semibold text-risk-high" />
-    <p className="mt-1 text-base">
-      Debris flow risk HIGH. East fork drainage, Ridge Trail mile 4.2 to 5.1. Confidence{" "}
-      <span className="font-mono text-[0.92em]">0.82</span>.
-    </p>
-  </section>
-  <footer className="border-t border-border px-5 py-4">
-    <button className="h-10 w-full rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90">
-      Analyze now
-    </button>
-    <button className="mt-2 h-10 w-full rounded-md border border-primary text-sm font-medium text-primary hover:bg-primary/10">
-      Hiker forecast
-    </button>
-  </footer>
-</aside>
+function RangerPanel({ hill }) {
+  const pipeline = usePipeline(hill);
+  const [selected, setSelected] = React.useState(null);
+  return (
+    <aside className="flex h-dvh flex-col border-l border-border bg-card md:w-[45%]">
+      <div className="flex-1 overflow-y-auto">
+        <header className="px-5 pb-4 pt-5">
+          <h1 className="text-2xl/7 font-semibold tracking-[-0.01em]">{hill.name}</h1>
+          <p className="mt-1.5 text-base text-muted-foreground">
+            <span className="font-mono text-[0.92em] text-foreground">14,410 ft</span> {hill.region}
+          </p>
+        </header>
+        <OverallRisk hill={hill} />
+        <TrailList trails={hill.trails} selected={selected} onView={setSelected} />
+        <section className="border-t border-border px-5 py-4">
+          <h2 className="text-sm text-muted-foreground">Agents</h2>
+          <div className="mt-2"><AgentPipeline state={pipeline.state} /></div>
+        </section>
+        {pipeline.state.measures && (
+          <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
+        )}
+      </div>
+      <footer className="border-t border-border px-5 py-4">
+        <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} />
+      </footer>
+    </aside>
+  );
+}
 ```
