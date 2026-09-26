@@ -68,7 +68,8 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 |---|---|---|
 | Tokens, Type, Units and numbers, Risk mapping | 2 | Frontend |
 | Raster layers | 13, 18 | ML and data |
-| Globe, Motion | 8, 9 | Frontend |
+| Globe, Motion | 8, 9, 40 | Frontend |
+| Hill marker, Hill page | 40 | Frontend |
 | Map | 15, 16, 18, 19 | Frontend |
 | Copy | 20, 21 | Backend and agents |
 | Review sheet | Before 23 | Frontend |
@@ -171,14 +172,22 @@ Step 8 builds it with `react-globe.gl`. Property names below are that library's.
 - **Atmosphere.** `atmosphereColor` at the text color, `atmosphereAltitude` 0.12. Not the accent: the glow is not interactive.
 - **Backdrop.** A radial gradient behind a transparent globe canvas: background light end at the center, dark end at the edges. This is the only gradient in the app.
 - **Start view.** Over Mount Rainier (46.85, −121.76) at altitude 2.5. The idle spin starts from there.
-- **Markers.** A mountain logo instead of a dot: two peaks in the level color with a white snowcap and a dark outline, always facing the camera, centered on the mountain's point. The halo ring stays, and Rainier keeps its extra live ring. Dangerous mountains (High and Extreme) also get a translucent sphere in the level color at 40% alpha, centered on the logo and larger at Extreme. Only the invisible hit sphere takes the pointer. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2).
+- **Markers.** A mountain logo instead of a dot: two peaks in the level color with a white snowcap and a dark outline, always facing the camera, centered on the mountain's point. A hill uses the same construction with one lower rounded rise and no snowcap. The halo ring stays, and Rainier keeps its extra live ring. Dangerous mountains and hills (High and Extreme) also get a translucent sphere in the level color at 40% alpha, centered on the logo and larger at Extreme. Only the invisible hit sphere takes the pointer. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2). No new hue for a hill.
 - **Hover card.** Panel surface, border, 8 px radius, 12 px padding, 12 px right of the marker. It appears and disappears at once. Three lines:
   1. The name, body size, 600.
   2. The level dot and word.
-  3. For Rainier, "Updated 12 min ago" or "Not analyzed yet." For a static mountain, "Display marker. Not analyzed live." (UX.md rule 8).
+  3. For Rainier, "Updated 12 min ago" or "Not analyzed yet." For a static mountain, "Display marker. Not analyzed live." (UX.md rule 8). For a hill, "Hill. Landslide model." The card on screen also shows elevation, region, and a satellite preview; the hill line is added under the region. It does not replace those.
 - **Wordmark. [confirm]** "TerraSense" at the top left, 24 px in. On the mountain page it stays at the top left over the map, on a panel-surface pill with an 8 px radius, and a click returns to the globe. This is demo step 7's return to the globe.
 - **Click.** A marker click or a search pick opens the [mountain panel](#mountain-panel). It no longer routes straight to the mountain page.
-- **Search. [confirm]** Top center, level with the wordmark. 360 px wide, 40 px tall, inset surface, border, 6 px radius. Placeholder "Search mountains". Typing lists up to three matching names below the field on a panel surface. Enter opens the top match, a click opens the chosen one, and arrow keys move through the list. Search stays above the scrim while the panel is open, and a pick swaps the panel to that mountain.
+- **Search. [confirm]** Top center, level with the wordmark. 360 px wide, 40 px tall, inset surface, border, 6 px radius. Placeholder "Search mountains and hills". Typing lists up to three matching names below the field on a panel surface. Enter opens the top match, a click opens the chosen one, and arrow keys move through the list. Search stays above the scrim while the panel is open, and a pick swaps the panel to that mountain. A hill pick opens the hill page.
+
+## Hill page
+
+Added Sep 26, 2026. One live hill, Turtle Mountain. The page reuses the mountain page: left about 55% is the 3D terrain, right about 45% is the panel. No new color, face, or radius.
+
+- **Prevention.** The 72-hour card, then the trail list when scores exist. With no trails, the line "No trails are mapped here." **Simulate** is absent until the hill has routes.
+- **Response.** The five agent cards in their idle state. **Analyze now** is absent. The page does not start a run.
+- **Loading, missing, and error.** The same states as `/mountains/[slug]`.
 
 ## Mountain panel
 

@@ -1,6 +1,6 @@
 # Implementation steps
 
-Thirty-one steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8), and step 31 the same night, to wire the rebuilt mountain page to the backend.
+Steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8), step 31 the same night to wire the mountain page to the backend, and steps 36 to 40 on Sep 26, 2026 for hills. Steps 33 and 34 were never assigned.
 
 This file has two parts:
 
@@ -28,6 +28,11 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 31. Wire the mountain page to the run stream and the advisory (agents, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Left: the fake-LLM check that the five trails match the advisory)
 - [ ] 32. Build mountain data packs for the demo peaks (Rainier-style DEM, land cover, index, tiles, and trails for 7 more peaks, 1-2 per continent)
 - [x] 35. Validate the landslide models across regions (leave-one-region-out terrain ROC-AUC 0.77 against 0.82 spatial CV; combined index 0.86 on dated events outside Rainier; see [docs/geographic_validation.md](docs/geographic_validation.md))
+- [x] 36. Rename the mountain page off the word hill
+- [x] 37. Record hills in the spec (Turtle Mountain, Crowsnest Pass: slug, peak, elevation, and bbox in the shared facts; the existing landslide model scores hills)
+- [ ] 38. Seed and serve Turtle Mountain
+- [ ] 39. Score Turtle Mountain with the existing landslide model
+- [ ] 40. Draw the hill glyph and open the hill page
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -59,15 +64,20 @@ Use these values everywhere so the globe, the model, and the map describe the sa
 
 | Item | Value |
 |---|---|
-| Live mountain | Mount Rainier. Slug `mount-rainier`. `is_live = true` |
+| Live mountain | Mount Rainier. Slug `mount-rainier`. `kind = "mountain"`. `is_live = true` |
 | Peak | 46.8523, -121.7603. Elevation 4392 m |
 | Bounding box | West -121.93, south 46.76, east -121.54, north 46.96 |
+| Live hill | Turtle Mountain, Crowsnest Pass, Alberta. Slug `turtle-mountain`. `kind = "hill"`. `is_live = true`. The Frank Slide site, not Turtle Mountain in Manitoba |
+| Hill peak | 49.57694, -114.41222. Elevation 2210 m. Region `Crowsnest Pass, Alberta, Canada` |
+| Hill bounding box | West -114.48, south 49.54, east -114.34, north 49.64 |
 | Static markers | Two other peaks. Name, lat, lon, and a fixed risk level only |
 | Risk levels | `low`, `moderate`, `high`, `extreme` |
 | Probability bins | Low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7 |
 | Tiles | XYZ, EPSG:3857, so they sit on the map's 3D terrain |
 
 Rainier bounding box as numbers: `[-121.93, 46.76, -121.54, 46.96]`.
+
+Turtle Mountain bounding box as numbers: `[-114.48, 49.54, -114.34, 49.64]`. The summit (Wikipedia, "Turtle Mountain (Alberta)") and the Frank Slide point (Wikipedia, "Frank Slide", 49.59111, -114.39528) both sit inside it. The west edge is about 5 km west of the summit and the east edge is about 4 km east of that slide point, so the east-face deposit is in the box. Cited in [data/seed/sources.md](../data/seed/sources.md). No slide volume: published volumes disagree.
 
 ## Repo shape
 
@@ -268,6 +278,46 @@ Track: ML and data, with small backend and frontend seams. Added Sep 26, 2026 so
 A pack reruns steps 10-14 and 19 for one more mountain, driven by the registry in `ml/scripts/mountain_packs.py`: DEM and WorldCover windows mosaicked from the same public COGs, the 30 m feature stack in the peak's own UTM zone, the knowledge-driven susceptibility index (never the Rainier LightGBM: its landslide labels are Rainier's), XYZ tiles, and OpenStreetMap trails via Overture with the longest named trail as the hero. Peaks: Mount Hood, Aconcagua, Matterhorn, Kilimanjaro, Mount Fuji, Mount Everest, Aoraki / Mount Cook. Rainier keeps its legacy paths and trained model; packs live under `packs/<slug>/` folders.
 
 **Done when.** `python ml/scripts/build_pack.py <slug>` builds a pack end to end, the API serves that pack's tiles and trails by slug, and opening a packed peak in the browser shows its own heat map and trails with the index labeled as an index. A peak with no named trails shows an empty trail list, never Rainier's.
+
+## 36. Rename the mountain page off the word hill
+
+Track: frontend. Done Sep 26, 2026 on `step-36-rename-mountain-page`.
+
+The ranger page was built as the hill detail card. Those names now say mountain: `frontend/components/mountain/`, `MountainCard`, `MountainView`, `buildMountainView`, `frontend/components/map/mountain-terrain-view.tsx`. The route stays `/mountains/[slug]`. Hillshade, uphill, downhill, hillside, and the foothills region labels were left as terrain words.
+
+**Done when.** A search for `HillCard`, `HillView`, `buildHillView`, `components/hill`, and "hill detail card" finds nothing, and `npm run typecheck` and `npm run lint` pass in `frontend/`.
+
+## 37. Record hills in the spec
+
+Track: product. Docs only.
+
+A hill is a new place kind. Mountains are the catalog, Rainier, and the mountain page. The first hill is Turtle Mountain, Crowsnest Pass, Alberta, with the shared facts above. The existing regional LightGBM plus Model B scores hills. Rainier stays the demo mountain on that same code until a separate mountain model exists. That model is not started. Avalanche and snowpack stay out of scope. The Frank Slide (29 April 1903) is the historical event; it was a rockslide, so Model B's rain trigger is not an explanation of 1903. Washington AUC figures are not this hill's accuracy.
+
+**Done when.** The shared-facts table names the slug, peak, elevation, and bbox, and the decision log says the old hill detail card is the mountain page and the existing landslide model scores the new hills.
+
+## 38. Seed and serve Turtle Mountain
+
+Track: backend and `data/`.
+
+Add `kind` (`mountain` or `hill`) to the mountains table, the Pydantic model, and `frontend/lib/types.ts`. Load `data/seed/hills.json` beside the mountain catalog so a mountain reseed does not drop it. `GET /mountains` includes the row. `GET /hills/turtle-mountain` returns the same detail shape plus `kind="hill"`, and 404s for a mountain. Do not put the slug in `mountains.json` or `mountains_test.json`. Until the terrain window exists, `predict_summit` returns unavailable for this slug, never `placeholder_terrain_sample`.
+
+**Done when.** curl shows `is_live=true` and `kind="hill"`, and the row is not in the mountain catalog files.
+
+## 39. Score Turtle Mountain with the existing landslide model
+
+Track: ML and data, with a small backend seam.
+
+Build a DEM and WorldCover window for the hill bbox, compute the booster's feature bands, and apply the existing LightGBM and isotonic calibration. Do not retrain. Do not register a step 32 pack. Write the rasters under `ml/artifacts/hills/turtle-mountain/`, run Model B with rain at the hill's coordinates, and render tiles into `backend/tiles/turtle-mountain/`. Rainier's `susceptibility.tif` and `probability.tif` stay where they are. A click inside the hill box keeps the production classifier fail-closed and fills `probability` from the hill raster, without the Washington validation block as this site's skill. Trails stay empty. No hand-placed Frank Slide pin.
+
+**Done when.** The probability and risk-summary endpoints return real rasters, `model_input` names the Turtle Mountain window, and a Python call shows the summit is not `placeholder_terrain_sample`.
+
+## 40. Draw the hill glyph and open the hill page
+
+Track: frontend.
+
+A hill glyph beside the mountain glyph: one lower rounded rise, no snowcap, same risk color and rings. A click flies to `/hills/turtle-mountain`. The page reuses `MountainCard` with orchestration off: the Agents block stays idle and **Analyze now** is absent. **Simulate** only when the hill has routes.
+
+**Done when.** A browser walk clicks the hill glyph, lands on the split page, sees the heat map and the risk summary, and the Response tab does not start a run. `npm run lint` and `npm run typecheck` pass.
 
 ## Before the demo
 

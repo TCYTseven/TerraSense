@@ -99,3 +99,11 @@ One Rainier-style bundle per demo peak, built 2026-09-26 by `python ml/scripts/b
 - **Land cover:** ESA WorldCover 2021 v200 windows from `https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/`: mount-washington `N42W072`; kilimanjaro `S06E036`, `S03E036`; mount-everest `N27E084`, `N27E087`. Licence as the Rainier entry. **mount-erebus downloads nothing:** WorldCover maps nothing south of 60 deg S, so `download_sources.py` writes a synthetic raster on the DEM's grid — class 70 (snow and ice) everywhere except sea-level DEM cells, which carry class 80 (water) so the index zeroes McMurdo Sound. 55.1% ice, 44.9% water.
 - **Landslides:** the cached NASA GLC export above, filtered to each bbox. mount-washington holds 1 event (GLC 5732, a 2013 snow avalanche); the other three boxes hold none and their records start honestly empty.
 - **Trails:** OpenStreetMap foot paths via the Overture Maps transportation theme, release `2026-09-23.0` (same URL and ODbL terms as the Rainier trails entry), windowed parquet reads per bbox. kilimanjaro and mount-everest additionally read OSM walking-route relations from Overpass (`https://overpass-api.de/api/interpreter`, accessed 2026-09-26) because their trek names live on route relations over nameless ways; the payloads are cached in `data/raw/packs/<slug>/route_relations.json`. Relation names are OSM data, so the derived seeds stay ODbL with the same attribution.
+
+## Turtle Mountain (hill)
+
+The first hill. Crowsnest Pass, Alberta, Canada (Blairmore Range, NTS 82G/9). This is the Frank Slide site. Turtle Mountain in Manitoba is a different place.
+
+- **Summit.** 49.57694, -114.41222. Elevation 2210 m. Wikipedia, "Turtle Mountain (Alberta)", read 2026-09-26. https://en.wikipedia.org/wiki/Turtle_Mountain_(Alberta)
+- **Frank Slide point.** 49.59111, -114.39528. 29 April 1903. Wikipedia, "Frank Slide", read 2026-09-26. https://en.wikipedia.org/wiki/Frank_Slide
+- **Bounding box.** `[-114.48, 49.54, -114.34, 49.64]` (west, south, east, north). Drawn so both points sit inside: about 5 km west of the summit and about 4 km east of the slide point. No slide volume is used. Published volumes disagree, and none is shown in the app.

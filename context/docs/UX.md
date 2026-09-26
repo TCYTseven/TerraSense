@@ -40,7 +40,9 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 
 Full viewport. Dark earth, three markers colored by risk, slow idle rotation, hover card (name, risk, last refresh), and search.
 
-A marker click or a search pick turns the globe to face the mountain, then opens the mountain panel in the center of the screen. The spin pauses while the panel is open.
+A mountain click or a search pick turns the globe to face the mountain, then opens the mountain panel in the center of the screen. The spin pauses while the panel is open. Built today, that click flies straight into `/mountains/[slug]`.
+
+A hill uses a single-rise glyph. Turtle Mountain is the one hill. Its click uses the same fly-to and opens the hill page. Search matches hills and mountains.
 
 ### Mountain panel (team decision, Sep 25, 2026)
 
@@ -77,6 +79,14 @@ On Mount Rainier the trail scores come from the saved heat map and the traces an
 
 The wordmark returns to the globe. The mountain panel does not reopen by itself.
 
+### Hill page
+
+One page, `/hills/[slug]`, for Turtle Mountain. It uses the mountain page's split: 3D terrain on the left, the same panel on the right. Prevention shows the 72-hour card and, when trails exist, the trail list. With no trails it says "No trails are mapped here." and does not show **Simulate**.
+
+Response shows the five agent cards idle. **Analyze now** is absent. Nothing on this page starts a run.
+
+The hover card on the globe adds the line "Hill. Landslide model." beside the name, elevation, region, and risk badge the mountain markers already use.
+
 ## What would make the UX wrong
 
 - A third audience (search and rescue, insurance, event organizers) gets its own screen.
@@ -90,6 +100,8 @@ The wordmark returns to the globe. The mountain panel does not reopen by itself.
 - A callout reads as if a message was sent, or a public notice has a send button.
 - The simulation shows a timing or a flow path as a prediction.
 - The mountain panel shows agent cards or **Analyze now**. Those live on the mountain page.
+- The hill page runs the agents, or **Analyze now** appears there.
+- The hill glyph uses a new color. Risk color is the only difference between a safe hill and a dangerous one.
 
 ## How to check a UI change
 
