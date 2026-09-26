@@ -1,5 +1,65 @@
 [
   {
+    "name": "Mount Vinson",
+    "slug": "mount-vinson",
+    "lat": -78.5254,
+    "lon": -85.6174,
+    "elevation_m": 4892,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Tyree",
+    "slug": "mount-tyree",
+    "lat": -78.4,
+    "lon": -85.9167,
+    "elevation_m": 4852,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Shinn",
+    "slug": "mount-shinn",
+    "lat": -78.4677,
+    "lon": -85.7289,
+    "elevation_m": 4660,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kirkpatrick",
+    "slug": "mount-kirkpatrick",
+    "lat": -84.3333,
+    "lon": 166.4167,
+    "elevation_m": 4528,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Galicia peak",
+    "slug": "galicia-peak",
+    "lat": -78.508,
+    "lon": -85.7,
+    "elevation_m": 4480,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Elizabeth",
+    "slug": "mount-elizabeth",
+    "lat": -83.8584,
+    "lon": 168.3883,
+    "elevation_m": 4480,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
     "name": "Mount Rainier",
     "slug": "mount-rainier",
     "lat": 46.8523,
@@ -10,22 +70,6412 @@
     "is_live": true
   },
   {
-    "name": "Huascarán",
-    "slug": "huascaran",
-    "lat": -9.1219,
-    "lon": -77.6042,
-    "elevation_m": 6768,
-    "region": "Cordillera Blanca, Peru",
-    "current_risk_level": "high",
+    "name": "Mount Markham",
+    "slug": "mount-markham",
+    "lat": -82.85,
+    "lon": 161.35,
+    "elevation_m": 4350,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
     "is_live": false
   },
   {
-    "name": "Mount Fuji",
-    "slug": "mount-fuji",
-    "lat": 35.3606,
-    "lon": 138.7274,
-    "elevation_m": 3776,
-    "region": "Honshu, Japan",
+    "name": "Mount Kaplan",
+    "slug": "mount-kaplan",
+    "lat": -84.5523,
+    "lon": 175.3103,
+    "elevation_m": 4230,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Minto",
+    "slug": "mount-minto",
+    "lat": -71.7848,
+    "lon": 168.7531,
+    "elevation_m": 4165,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Miller",
+    "slug": "mount-miller",
+    "lat": -83.3329,
+    "lon": 165.7991,
+    "elevation_m": 4160,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Anderson",
+    "slug": "mount-anderson",
+    "lat": -78.1808,
+    "lon": -86.1384,
+    "elevation_m": 4157,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Dome Argus",
+    "slug": "dome-argus",
+    "lat": -80.3667,
+    "lon": 77.3499,
+    "elevation_m": 4091,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Fridtjof Nansen",
+    "slug": "mount-fridtjof-nansen",
+    "lat": -85.3476,
+    "lon": -167.5547,
+    "elevation_m": 4070,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Monte San Valentin",
+    "slug": "monte-san-valentin",
+    "lat": -46.5957,
+    "lon": -73.3451,
+    "elevation_m": 4058,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lister",
+    "slug": "mount-lister",
+    "lat": -78.0636,
+    "lon": 162.6844,
+    "elevation_m": 4025,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Adam",
+    "slug": "mount-adam",
+    "lat": -71.7833,
+    "lon": 168.6167,
+    "elevation_m": 4010,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Rada Peak",
+    "slug": "rada-peak",
+    "lat": -78.6166,
+    "lon": -85.2169,
+    "elevation_m": 4001,
+    "region": "OpenStreetMap",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hooker",
+    "slug": "mount-hooker",
+    "lat": -78.0908,
+    "lon": 162.7219,
+    "elevation_m": 3835,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rücker",
+    "slug": "mount-rucker",
+    "lat": -78.1873,
+    "lon": 162.5398,
+    "elevation_m": 3831,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dome Fuji",
+    "slug": "dome-fuji",
+    "lat": -77.3162,
+    "lon": 39.6972,
+    "elevation_m": 3810,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Huggins",
+    "slug": "mount-huggins",
+    "lat": -78.2851,
+    "lon": 162.4855,
+    "elevation_m": 3741,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hewson",
+    "slug": "mount-hewson",
+    "lat": -73.9667,
+    "lon": 162.6333,
+    "elevation_m": 3740,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Borg Bastion",
+    "slug": "borg-bastion",
+    "lat": -78.1607,
+    "lon": 162.4834,
+    "elevation_m": 3728,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cuerno de Plata",
+    "slug": "cerro-cuerno-de-plata",
+    "lat": -46.6188,
+    "lon": -73.315,
+    "elevation_m": 3725,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Sabine",
+    "slug": "mount-sabine",
+    "lat": -71.9167,
+    "lon": 169.55,
+    "elevation_m": 3719,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte San Lorenzo",
+    "slug": "monte-san-lorenzo",
+    "lat": -47.5918,
+    "lon": -72.311,
+    "elevation_m": 3706,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Roper",
+    "slug": "mount-roper",
+    "lat": -78.1191,
+    "lon": 162.7535,
+    "elevation_m": 3660,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Supernal",
+    "slug": "mount-supernal",
+    "lat": -73.0667,
+    "lon": 165.7,
+    "elevation_m": 3655,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Rester Peak",
+    "slug": "rester-peak",
+    "lat": -78.173,
+    "lon": 162.613,
+    "elevation_m": 3638,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Waiparahoaka Mountain",
+    "slug": "waiparahoaka-mountain",
+    "lat": -78.2897,
+    "lon": 162.4228,
+    "elevation_m": 3608,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Menzies",
+    "slug": "mount-menzies",
+    "lat": -73.4625,
+    "lon": 61.8784,
+    "elevation_m": 3555,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Salient Peak",
+    "slug": "salient-peak",
+    "lat": -78.1442,
+    "lon": 162.7501,
+    "elevation_m": 3508,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Murchison",
+    "slug": "mount-murchison",
+    "lat": -73.4167,
+    "lon": 166.3,
+    "elevation_m": 3501,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Vostok",
+    "slug": "vostok",
+    "lat": -78.4652,
+    "lon": 106.8379,
+    "elevation_m": 3500,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount McClintock",
+    "slug": "mount-mcclintock",
+    "lat": -80.2167,
+    "lon": 157.4333,
+    "elevation_m": 3490,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Berlin",
+    "slug": "mount-berlin",
+    "lat": -76.0552,
+    "lon": -135.8654,
+    "elevation_m": 3478,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Puke Toropā Mountain",
+    "slug": "puke-toropa-mountain",
+    "lat": -78.2368,
+    "lon": 162.4263,
+    "elevation_m": 3465,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "O'Regan Peak",
+    "slug": "o-regan-peak",
+    "lat": -78.1524,
+    "lon": 162.7172,
+    "elevation_m": 3434,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Fitz Roy",
+    "slug": "monte-fitz-roy",
+    "lat": -49.2712,
+    "lon": -73.0432,
+    "elevation_m": 3405,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Sladen Summit",
+    "slug": "sladen-summit",
+    "lat": -78.1147,
+    "lon": 162.391,
+    "elevation_m": 3395,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Francisco Moreno / Cerro Hernán Merino Correa",
+    "slug": "cerro-francisco-moreno-cerro-hernan-merino-correa",
+    "lat": -49.3208,
+    "lon": -73.4166,
+    "elevation_m": 3393,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Potter",
+    "slug": "mount-potter",
+    "lat": -78.1372,
+    "lon": 162.2939,
+    "elevation_m": 3369,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Bishop Peak",
+    "slug": "bishop-peak",
+    "lat": -78.1596,
+    "lon": 162.1752,
+    "elevation_m": 3368,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lynch",
+    "slug": "mount-lynch",
+    "lat": -78.1703,
+    "lon": 162.0657,
+    "elevation_m": 3339,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Herschel",
+    "slug": "mount-herschel",
+    "lat": -72.2022,
+    "lon": 169.5245,
+    "elevation_m": 3335,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rabot",
+    "slug": "mount-rabot",
+    "lat": -83.1802,
+    "lon": 161.2877,
+    "elevation_m": 3334,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mellizo Sur",
+    "slug": "cerro-mellizo-sur",
+    "lat": -48.5549,
+    "lon": -73.1411,
+    "elevation_m": 3300,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Engebretson Peak",
+    "slug": "engebretson-peak",
+    "lat": -78.1351,
+    "lon": 162.457,
+    "elevation_m": 3271,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dome C Charlie",
+    "slug": "dome-c-charlie",
+    "lat": -75.0287,
+    "lon": 123.5534,
+    "elevation_m": 3260,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dome Charlie",
+    "slug": "dome-charlie",
+    "lat": -75.0285,
+    "lon": 123.5552,
+    "elevation_m": 3260,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Brava",
+    "slug": "punta-brava",
+    "lat": -49.3438,
+    "lon": -73.4301,
+    "elevation_m": 3260,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Roma",
+    "slug": "cerro-roma",
+    "lat": -49.9657,
+    "lon": -73.5039,
+    "elevation_m": 3240,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hope",
+    "slug": "mount-hope",
+    "lat": -69.7976,
+    "lon": -64.457,
+    "elevation_m": 3239,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Pimple",
+    "slug": "the-pimple",
+    "lat": -77.9808,
+    "lon": 162.6732,
+    "elevation_m": 3212,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pico Sur",
+    "slug": "pico-sur",
+    "lat": -46.621,
+    "lon": -73.3837,
+    "elevation_m": 3198,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Jackson",
+    "slug": "mount-jackson",
+    "lat": -71.3833,
+    "lon": -63.3667,
+    "elevation_m": 3184,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Bertrand",
+    "slug": "cerro-bertrand",
+    "lat": -50.0144,
+    "lon": -73.4457,
+    "elevation_m": 3180,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Fang",
+    "slug": "the-fang",
+    "lat": -77.4833,
+    "lon": 167.1999,
+    "elevation_m": 3159,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Fang",
+    "slug": "the-fang-2",
+    "lat": -77.4863,
+    "lon": 167.2018,
+    "elevation_m": 3153,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Torre",
+    "slug": "cerro-torre",
+    "lat": -49.2919,
+    "lon": -73.0992,
+    "elevation_m": 3128,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Bennett",
+    "slug": "mount-bennett",
+    "lat": -84.8198,
+    "lon": -178.9357,
+    "elevation_m": 3090,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Hyades",
+    "slug": "cerro-hyades",
+    "lat": -46.8479,
+    "lon": -73.2394,
+    "elevation_m": 3078,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dos Cuernos",
+    "slug": "cerro-dos-cuernos",
+    "lat": -49.363,
+    "lon": -73.4311,
+    "elevation_m": 3074,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Agassiz",
+    "slug": "cerro-agassiz",
+    "lat": -49.9605,
+    "lon": -73.4516,
+    "elevation_m": 3064,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Murcray Heights",
+    "slug": "murcray-heights",
+    "lat": -78.0799,
+    "lon": 162.2404,
+    "elevation_m": 3058,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Paine Grande",
+    "slug": "cerro-paine-grande",
+    "lat": -50.9951,
+    "lon": -73.0867,
+    "elevation_m": 3050,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dos Cumbres",
+    "slug": "cerro-dos-cumbres",
+    "lat": -49.3933,
+    "lon": -73.4265,
+    "elevation_m": 3049,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro García",
+    "slug": "cerro-garcia",
+    "lat": -47.1689,
+    "lon": -73.4827,
+    "elevation_m": 3048,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Azul",
+    "slug": "cerro-azul",
+    "lat": -48.515,
+    "lon": -73.1679,
+    "elevation_m": 3018,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Christian Buracchio",
+    "slug": "cerro-christian-buracchio",
+    "lat": -49.5269,
+    "lon": -73.6163,
+    "elevation_m": 3018,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Matataua Peak",
+    "slug": "matataua-peak",
+    "lat": -78.1116,
+    "lon": 161.963,
+    "elevation_m": 3013,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Feather",
+    "slug": "mount-feather",
+    "lat": -77.959,
+    "lon": 160.3521,
+    "elevation_m": 3011,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kempe",
+    "slug": "mount-kempe",
+    "lat": -78.3225,
+    "lon": 162.7198,
+    "elevation_m": 3006,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pared Norte",
+    "slug": "cerro-pared-norte",
+    "lat": -47.3232,
+    "lon": -73.4118,
+    "elevation_m": 3005,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Poincenot",
+    "slug": "aguja-poincenot",
+    "lat": -49.2805,
+    "lon": -73.0398,
+    "elevation_m": 3002,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Arco",
+    "slug": "cerro-arco",
+    "lat": -47.2767,
+    "lon": -73.4418,
+    "elevation_m": 2992,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Stephenson",
+    "slug": "mount-stephenson",
+    "lat": -69.8148,
+    "lon": -69.7117,
+    "elevation_m": 2987,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pietrobelli",
+    "slug": "cerro-pietrobelli",
+    "lat": -50.5351,
+    "lon": -73.3575,
+    "elevation_m": 2950,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Schwerdtfeger",
+    "slug": "mount-schwerdtfeger",
+    "lat": -78.3491,
+    "lon": 162.7658,
+    "elevation_m": 2950,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mimosa",
+    "slug": "cerro-mimosa",
+    "lat": -49.0031,
+    "lon": -73.4898,
+    "elevation_m": 2940,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Adela",
+    "slug": "adela",
+    "lat": -49.3049,
+    "lon": -73.1029,
+    "elevation_m": 2938,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Paget",
+    "slug": "mount-paget",
+    "lat": -54.4498,
+    "lon": -36.5253,
+    "elevation_m": 2934,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ulvetanna",
+    "slug": "ulvetanna",
+    "lat": -71.8596,
+    "lon": 8.3418,
+    "elevation_m": 2930,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Bolados",
+    "slug": "cerro-bolados",
+    "lat": -50.0539,
+    "lon": -73.4617,
+    "elevation_m": 2925,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro O'Higgins",
+    "slug": "cerro-o-higgins",
+    "lat": -48.8029,
+    "lon": -73.1587,
+    "elevation_m": 2911,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Shupe Peak",
+    "slug": "shupe-peak",
+    "lat": -78.1664,
+    "lon": 161.9226,
+    "elevation_m": 2910,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Gorra Blanca",
+    "slug": "cerro-gorra-blanca",
+    "lat": -49.134,
+    "lon": -73.083,
+    "elevation_m": 2907,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Penitentes",
+    "slug": "cerro-penitentes",
+    "lat": -47.6733,
+    "lon": -72.2535,
+    "elevation_m": 2900,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Chiang",
+    "slug": "mount-chiang",
+    "lat": -77.962,
+    "lon": 162.6536,
+    "elevation_m": 2899,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tomek",
+    "slug": "cerro-tomek",
+    "lat": -50.046,
+    "lon": -73.5014,
+    "elevation_m": 2880,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Schopf",
+    "slug": "mount-schopf",
+    "lat": -84.7987,
+    "lon": -113.4424,
+    "elevation_m": 2870,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Serrucho",
+    "slug": "cerro-serrucho",
+    "lat": -47.3604,
+    "lon": -73.4307,
+    "elevation_m": 2845,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Adela Sur",
+    "slug": "adela-sur",
+    "lat": -49.312,
+    "lon": -73.0954,
+    "elevation_m": 2840,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Masters",
+    "slug": "cerro-masters",
+    "lat": -50.0597,
+    "lon": -73.5003,
+    "elevation_m": 2834,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Murallón",
+    "slug": "cerro-murallon",
+    "lat": -49.7894,
+    "lon": -73.4511,
+    "elevation_m": 2831,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Deakin",
+    "slug": "mount-deakin",
+    "lat": -84.6667,
+    "lon": 170.6667,
+    "elevation_m": 2810,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Paris",
+    "slug": "mount-paris",
+    "lat": -68.9842,
+    "lon": -70.8417,
+    "elevation_m": 2800,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Largo",
+    "slug": "cerro-largo",
+    "lat": -46.9589,
+    "lon": -73.3762,
+    "elevation_m": 2798,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ñato",
+    "slug": "cerro-nato",
+    "lat": -49.3185,
+    "lon": -73.0941,
+    "elevation_m": 2797,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cumbre Norte",
+    "slug": "cumbre-norte",
+    "lat": -50.9849,
+    "lon": -73.1105,
+    "elevation_m": 2770,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Tobler",
+    "slug": "torre-tobler",
+    "lat": -46.6801,
+    "lon": -73.3892,
+    "elevation_m": 2768,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Français",
+    "slug": "mount-francais",
+    "lat": -64.6279,
+    "lon": -63.4405,
+    "elevation_m": 2761,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Grande",
+    "slug": "cerro-grande",
+    "lat": -49.3386,
+    "lon": -73.098,
+    "elevation_m": 2751,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Bockheim",
+    "slug": "mount-bockheim",
+    "lat": -78.0396,
+    "lon": 161.9834,
+    "elevation_m": 2749,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Harmsworth",
+    "slug": "mount-harmsworth",
+    "lat": -78.6835,
+    "lon": 160.9125,
+    "elevation_m": 2747,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Zeballos",
+    "slug": "monte-zeballos",
+    "lat": -47.0358,
+    "lon": -71.7009,
+    "elevation_m": 2743,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Tabular Mountain",
+    "slug": "tabular-mountain",
+    "lat": -77.8605,
+    "lon": 160.2398,
+    "elevation_m": 2740,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Sutherland",
+    "slug": "mount-sutherland",
+    "lat": -77.5035,
+    "lon": 168.4741,
+    "elevation_m": 2739,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Shapeless Mountain",
+    "slug": "shapeless-mountain",
+    "lat": -77.4278,
+    "lon": 160.4099,
+    "elevation_m": 2736,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Martin Dome",
+    "slug": "martin-dome",
+    "lat": -83.2913,
+    "lon": 157.3658,
+    "elevation_m": 2733,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Mermoz",
+    "slug": "aguja-mermoz",
+    "lat": -49.2636,
+    "lon": -73.0371,
+    "elevation_m": 2732,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cima Central",
+    "slug": "cima-central",
+    "lat": -51.0107,
+    "lon": -73.1102,
+    "elevation_m": 2730,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Morning",
+    "slug": "mount-morning",
+    "lat": -78.5167,
+    "lon": 163.5832,
+    "elevation_m": 2725,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Vørterkaka Nunatak",
+    "slug": "vrterkaka-nunatak",
+    "lat": -72.3333,
+    "lon": 27.4833,
+    "elevation_m": 2725,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kintanna",
+    "slug": "kintanna",
+    "lat": -71.8896,
+    "lon": 8.3622,
+    "elevation_m": 2724,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tilman",
+    "slug": "cerro-tilman",
+    "lat": -50.6687,
+    "lon": -73.1514,
+    "elevation_m": 2721,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Tasch Peak",
+    "slug": "tasch-peak",
+    "lat": -76.6692,
+    "lon": -118.0511,
+    "elevation_m": 2709,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Murphy",
+    "slug": "mount-murphy",
+    "lat": -75.338,
+    "lon": -110.7392,
+    "elevation_m": 2705,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Domo Blanco",
+    "slug": "cerro-domo-blanco",
+    "lat": -49.2669,
+    "lon": -73.1038,
+    "elevation_m": 2700,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Piergiorgio",
+    "slug": "cerro-piergiorgio",
+    "lat": -49.2567,
+    "lon": -73.0947,
+    "elevation_m": 2700,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Almirante Nieto",
+    "slug": "monte-almirante-nieto",
+    "lat": -50.9725,
+    "lon": -72.9638,
+    "elevation_m": 2697,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Brabant Island",
+    "slug": "brabant-island",
+    "lat": -64.2179,
+    "lon": -62.3641,
+    "elevation_m": 2688,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pangrec",
+    "slug": "cerro-pangrec",
+    "lat": -48.9878,
+    "lon": -73.4756,
+    "elevation_m": 2685,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Discovery",
+    "slug": "mount-discovery",
+    "lat": -78.3667,
+    "lon": 165.0166,
+    "elevation_m": 2681,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Cloudmaker",
+    "slug": "the-cloudmaker",
+    "lat": -84.2836,
+    "lon": 169.4441,
+    "elevation_m": 2681,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Fortaleza",
+    "slug": "cerro-fortaleza",
+    "lat": -50.9566,
+    "lon": -73.0225,
+    "elevation_m": 2679,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Huemul",
+    "slug": "cerro-huemul",
+    "lat": -49.4235,
+    "lon": -73.0344,
+    "elevation_m": 2677,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Castillo",
+    "slug": "cerro-castillo",
+    "lat": -46.0629,
+    "lon": -72.2062,
+    "elevation_m": 2675,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Stearns",
+    "slug": "mount-stearns",
+    "lat": -78.3195,
+    "lon": 162.8245,
+    "elevation_m": 2670,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Heim",
+    "slug": "cerro-heim",
+    "lat": -50.1637,
+    "lon": -73.3702,
+    "elevation_m": 2669,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Neumayer",
+    "slug": "cerro-neumayer",
+    "lat": -49.1516,
+    "lon": -73.0603,
+    "elevation_m": 2669,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Doblado",
+    "slug": "cerro-doblado",
+    "lat": -49.3253,
+    "lon": -73.102,
+    "elevation_m": 2665,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Bariloche",
+    "slug": "punta-bariloche",
+    "lat": -51.0212,
+    "lon": -73.1044,
+    "elevation_m": 2660,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Holtanna",
+    "slug": "holtanna",
+    "lat": -71.9071,
+    "lon": 8.3758,
+    "elevation_m": 2650,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Olympus",
+    "slug": "mount-olympus",
+    "lat": -80.2106,
+    "lon": 156.827,
+    "elevation_m": 2650,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Agudo",
+    "slug": "cerro-agudo",
+    "lat": -46.8161,
+    "lon": -73.1593,
+    "elevation_m": 2648,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Harvey Summit",
+    "slug": "harvey-summit",
+    "lat": -78.3139,
+    "lon": 162.2983,
+    "elevation_m": 2644,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pirámide",
+    "slug": "cerro-piramide",
+    "lat": -49.0677,
+    "lon": -73.2665,
+    "elevation_m": 2642,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Grootes Peak",
+    "slug": "grootes-peak",
+    "lat": -78.0529,
+    "lon": 161.5952,
+    "elevation_m": 2635,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cachet",
+    "slug": "cerro-cachet",
+    "lat": -47.0533,
+    "lon": -73.3859,
+    "elevation_m": 2632,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Onelli Central",
+    "slug": "cerro-onelli-central",
+    "lat": -50.1561,
+    "lon": -73.5125,
+    "elevation_m": 2620,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Barbeau Peak",
+    "slug": "barbeau-peak",
+    "lat": 81.9267,
+    "lon": -74.9867,
+    "elevation_m": 2616,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Moyano",
+    "slug": "cerro-moyano",
+    "lat": -49.7497,
+    "lon": -73.1146,
+    "elevation_m": 2615,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Bertachi",
+    "slug": "cerro-bertachi",
+    "lat": -49.8797,
+    "lon": -73.4668,
+    "elevation_m": 2612,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Frio Peak",
+    "slug": "frio-peak",
+    "lat": -78.1417,
+    "lon": 162.8708,
+    "elevation_m": 2605,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Almirante Óscar Viel / Cerro Teniente Feilberg",
+    "slug": "cerro-almirante-oscar-viel-cerro-teniente-feilberg",
+    "lat": -50.6383,
+    "lon": -73.1689,
+    "elevation_m": 2602,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro La Torre",
+    "slug": "cerro-la-torre",
+    "lat": -46.8111,
+    "lon": -73.0488,
+    "elevation_m": 2602,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Padre Hurtado",
+    "slug": "cerro-padre-hurtado",
+    "lat": -49.5395,
+    "lon": -73.5633,
+    "elevation_m": 2600,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Tuati Peak",
+    "slug": "tuati-peak",
+    "lat": -77.9575,
+    "lon": 162.8249,
+    "elevation_m": 2596,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Victor",
+    "slug": "mount-victor",
+    "lat": -72.6066,
+    "lon": 31.3027,
+    "elevation_m": 2590,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pico Triangular Sur",
+    "slug": "pico-triangular-sur",
+    "lat": -46.9852,
+    "lon": -71.9186,
+    "elevation_m": 2588,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Tirohanga Hukapō",
+    "slug": "tirohanga-hukapo",
+    "lat": -78.4993,
+    "lon": 163.4335,
+    "elevation_m": 2585,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cagliero",
+    "slug": "cerro-cagliero",
+    "lat": -49.1233,
+    "lon": -73.0385,
+    "elevation_m": 2584,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro MacAndrews",
+    "slug": "cerro-macandrews",
+    "lat": -49.9412,
+    "lon": -73.3817,
+    "elevation_m": 2581,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pollone",
+    "slug": "cerro-pollone",
+    "lat": -49.253,
+    "lon": -73.0897,
+    "elevation_m": 2579,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Guillaumet",
+    "slug": "aguja-guillaumet",
+    "lat": -49.2609,
+    "lon": -73.033,
+    "elevation_m": 2574,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Divisadero",
+    "slug": "cerro-divisadero",
+    "lat": -49.6589,
+    "lon": -73.1539,
+    "elevation_m": 2570,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Shipton",
+    "slug": "monte-shipton",
+    "lat": -54.6585,
+    "lon": -69.5973,
+    "elevation_m": 2568,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Nevado Riso Patrón",
+    "slug": "nevado-riso-patron",
+    "lat": -49.5787,
+    "lon": -73.677,
+    "elevation_m": 2563,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pirámide",
+    "slug": "cerro-piramide-2",
+    "lat": -46.5791,
+    "lon": -73.4306,
+    "elevation_m": 2560,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Solvay",
+    "slug": "mount-solvay",
+    "lat": -72.5774,
+    "lon": 31.4055,
+    "elevation_m": 2560,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Saint-Exupéry",
+    "slug": "aguja-saint-exupery",
+    "lat": -49.2882,
+    "lon": -73.0388,
+    "elevation_m": 2558,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Stetind",
+    "slug": "stetind",
+    "lat": -71.8787,
+    "lon": 8.3495,
+    "elevation_m": 2558,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Desmochada",
+    "slug": "aguja-desmochada",
+    "lat": -49.2782,
+    "lon": -73.0489,
+    "elevation_m": 2550,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pared Sur",
+    "slug": "cerro-pared-sur",
+    "lat": -47.4266,
+    "lon": -73.4608,
+    "elevation_m": 2548,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cristal",
+    "slug": "cerro-cristal",
+    "lat": -46.7589,
+    "lon": -73.3041,
+    "elevation_m": 2535,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Skew Peak",
+    "slug": "skew-peak",
+    "lat": -77.2189,
+    "lon": 160.7033,
+    "elevation_m": 2534,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Spire",
+    "slug": "the-spire",
+    "lat": -78.1415,
+    "lon": 161.634,
+    "elevation_m": 2532,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Gargantúa",
+    "slug": "cerro-gargantua",
+    "lat": -46.9833,
+    "lon": -73.385,
+    "elevation_m": 2530,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Van der Essen",
+    "slug": "mount-van-der-essen",
+    "lat": -72.5944,
+    "lon": 31.4126,
+    "elevation_m": 2525,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro De Geer",
+    "slug": "cerro-de-geer",
+    "lat": -47.0217,
+    "lon": -73.6009,
+    "elevation_m": 2520,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Boë",
+    "slug": "mount-boe",
+    "lat": -72.5988,
+    "lon": 31.3436,
+    "elevation_m": 2520,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Parry",
+    "slug": "mount-parry",
+    "lat": -64.2569,
+    "lon": -62.4053,
+    "elevation_m": 2520,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro General Carrera / Cerro General Helbling",
+    "slug": "cerro-general-carrera-cerro-general-helbling",
+    "lat": -49.4056,
+    "lon": -73.4674,
+    "elevation_m": 2516,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Sur",
+    "slug": "torre-sur",
+    "lat": -50.953,
+    "lon": -72.9893,
+    "elevation_m": 2501,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Espada",
+    "slug": "cerro-espada",
+    "lat": -50.9787,
+    "lon": -73.0251,
+    "elevation_m": 2500,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Imbert",
+    "slug": "mount-imbert",
+    "lat": -72.5755,
+    "lon": 31.5114,
+    "elevation_m": 2495,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Onelli Sur",
+    "slug": "cerro-onelli-sur",
+    "lat": -50.1666,
+    "lon": -73.4792,
+    "elevation_m": 2493,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Padre de Agostini",
+    "slug": "cerro-padre-de-agostini",
+    "lat": -49.4367,
+    "lon": -73.4829,
+    "elevation_m": 2487,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Totoa Nunatak",
+    "slug": "totoa-nunatak",
+    "lat": -77.3202,
+    "lon": 160.4251,
+    "elevation_m": 2486,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Onelli Norte",
+    "slug": "cerro-onelli-norte",
+    "lat": -50.0895,
+    "lon": -73.4653,
+    "elevation_m": 2485,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Dromedary",
+    "slug": "mount-dromedary",
+    "lat": -78.3084,
+    "lon": 163.0429,
+    "elevation_m": 2485,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cuerno Blanco",
+    "slug": "cerro-cuerno-blanco",
+    "lat": -50.4672,
+    "lon": -73.3533,
+    "elevation_m": 2480,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hoge",
+    "slug": "mount-hoge",
+    "lat": -72.5921,
+    "lon": 31.4508,
+    "elevation_m": 2480,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Fogle Peak",
+    "slug": "fogle-peak",
+    "lat": -77.9568,
+    "lon": 162.5708,
+    "elevation_m": 2476,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Gillet",
+    "slug": "mount-gillet",
+    "lat": -72.588,
+    "lon": 31.4293,
+    "elevation_m": 2475,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lahaye",
+    "slug": "mount-lahaye",
+    "lat": -72.6129,
+    "lon": 31.2017,
+    "elevation_m": 2475,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pivot Peak",
+    "slug": "pivot-peak",
+    "lat": -78.0256,
+    "lon": 161.018,
+    "elevation_m": 2471,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Lear Spire",
+    "slug": "lear-spire",
+    "lat": -78.0841,
+    "lon": 161.505,
+    "elevation_m": 2470,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Launoit",
+    "slug": "mount-launoit",
+    "lat": -72.5819,
+    "lon": 31.4883,
+    "elevation_m": 2470,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Plüschow",
+    "slug": "cerro-pluschow",
+    "lat": -48.7284,
+    "lon": -73.2519,
+    "elevation_m": 2469,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Planchón",
+    "slug": "cerro-planchon",
+    "lat": -49.8151,
+    "lon": -73.0178,
+    "elevation_m": 2468,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Gunn",
+    "slug": "mount-gunn",
+    "lat": -76.8714,
+    "lon": 160.7011,
+    "elevation_m": 2468,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Enroque",
+    "slug": "cerro-enroque",
+    "lat": -47.0677,
+    "lon": -73.5742,
+    "elevation_m": 2466,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Rincón",
+    "slug": "cerro-rincon",
+    "lat": -49.2667,
+    "lon": -73.1332,
+    "elevation_m": 2465,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Comandante Dublé Almeyda / Cerro Comandante Piedra Buena",
+    "slug": "cerro-comandante-duble-almeyda-cerro-comandante-piedra-buena",
+    "lat": -50.7023,
+    "lon": -73.1718,
+    "elevation_m": 2464,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Gardener",
+    "slug": "cerro-gardener",
+    "lat": -50.5942,
+    "lon": -73.243,
+    "elevation_m": 2461,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Luna",
+    "slug": "monte-luna",
+    "lat": -54.6513,
+    "lon": -69.6701,
+    "elevation_m": 2461,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Brouwer",
+    "slug": "mount-brouwer",
+    "lat": -72.5898,
+    "lon": 31.4742,
+    "elevation_m": 2460,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mesón",
+    "slug": "cerro-meson",
+    "lat": -49.7747,
+    "lon": -73.0234,
+    "elevation_m": 2458,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cruz del Sur",
+    "slug": "cerro-cruz-del-sur",
+    "lat": -50.2001,
+    "lon": -73.4161,
+    "elevation_m": 2454,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Lettau Peak",
+    "slug": "lettau-peak",
+    "lat": -77.9526,
+    "lon": 162.4971,
+    "elevation_m": 2453,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Inan Peak",
+    "slug": "inan-peak",
+    "lat": -78.3298,
+    "lon": 162.6338,
+    "elevation_m": 2451,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Knobhead",
+    "slug": "knobhead",
+    "lat": -77.9155,
+    "lon": 161.5272,
+    "elevation_m": 2450,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Van Mieghem",
+    "slug": "mount-van-mieghem",
+    "lat": -72.6064,
+    "lon": 31.2516,
+    "elevation_m": 2450,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Henderson Pyramid",
+    "slug": "henderson-pyramid",
+    "lat": -78.101,
+    "lon": 161.4485,
+    "elevation_m": 2449,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Spegazzini Norte",
+    "slug": "cerro-spegazzini-norte",
+    "lat": -50.2266,
+    "lon": -73.4485,
+    "elevation_m": 2447,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cono",
+    "slug": "cerro-cono",
+    "lat": -49.8682,
+    "lon": -73.4022,
+    "elevation_m": 2440,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Quackenbush",
+    "slug": "mount-quackenbush",
+    "lat": -80.3527,
+    "lon": 156.9762,
+    "elevation_m": 2433,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Fenris",
+    "slug": "fenris",
+    "lat": -71.8596,
+    "lon": 8.2366,
+    "elevation_m": 2430,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Jiracek",
+    "slug": "mount-jiracek",
+    "lat": -73.7668,
+    "lon": 163.9324,
+    "elevation_m": 2430,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pico Naranja",
+    "slug": "pico-naranja",
+    "lat": -46.9336,
+    "lon": -73.3755,
+    "elevation_m": 2430,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Bastin",
+    "slug": "mount-bastin",
+    "lat": -72.5363,
+    "lon": 31.3272,
+    "elevation_m": 2429,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cresta Blanca",
+    "slug": "cerro-cresta-blanca",
+    "lat": -54.6781,
+    "lon": -69.6465,
+    "elevation_m": 2428,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Weller",
+    "slug": "mount-weller",
+    "lat": -77.8422,
+    "lon": 160.4772,
+    "elevation_m": 2422,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Don Bosco",
+    "slug": "cerro-don-bosco",
+    "lat": -49.7573,
+    "lon": -73.4163,
+    "elevation_m": 2420,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Loodts",
+    "slug": "mount-loodts",
+    "lat": -72.5469,
+    "lon": 31.2287,
+    "elevation_m": 2420,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Paulus",
+    "slug": "mount-paulus",
+    "lat": -72.6247,
+    "lon": 31.0295,
+    "elevation_m": 2420,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Alesna",
+    "slug": "cerro-alesna",
+    "lat": -48.7489,
+    "lon": -73.0862,
+    "elevation_m": 2416,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Campbell Peak",
+    "slug": "campbell-peak",
+    "lat": -53.0928,
+    "lon": 73.5481,
+    "elevation_m": 2415,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ōhau Peak",
+    "slug": "ohau-peak",
+    "lat": -77.4975,
+    "lon": 168.7049,
+    "elevation_m": 2412,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Rotunda",
+    "slug": "rotunda",
+    "lat": -78.0174,
+    "lon": 161.5614,
+    "elevation_m": 2410,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ilse von Rentzell",
+    "slug": "cerro-ilse-von-rentzell",
+    "lat": -48.7243,
+    "lon": -73.4229,
+    "elevation_m": 2408,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Kristine",
+    "slug": "cerro-kristine",
+    "lat": -46.8873,
+    "lon": -72.2787,
+    "elevation_m": 2405,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Hill Peak",
+    "slug": "hill-peak",
+    "lat": -77.506,
+    "lon": 168.7509,
+    "elevation_m": 2404,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Koci Cliffs",
+    "slug": "koci-cliffs",
+    "lat": -78.0751,
+    "lon": 161.5737,
+    "elevation_m": 2401,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Gaston de Gerlache",
+    "slug": "mount-gaston-de-gerlache",
+    "lat": -71.7336,
+    "lon": 35.8263,
+    "elevation_m": 2400,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kerckhove de Denterghem",
+    "slug": "mount-kerckhove-de-denterghem",
+    "lat": -72.628,
+    "lon": 31.1511,
+    "elevation_m": 2400,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Verdugo",
+    "slug": "cerro-verdugo",
+    "lat": -49.5883,
+    "lon": -73.6785,
+    "elevation_m": 2396,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Talmadge",
+    "slug": "mount-talmadge",
+    "lat": -78.4199,
+    "lon": 162.5704,
+    "elevation_m": 2395,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Bífida",
+    "slug": "aguja-bifida",
+    "lat": -49.2792,
+    "lon": -73.0989,
+    "elevation_m": 2394,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro San Martín",
+    "slug": "cerro-san-martin",
+    "lat": -48.4726,
+    "lon": -73.1188,
+    "elevation_m": 2390,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cervantes",
+    "slug": "cerro-cervantes",
+    "lat": -50.5711,
+    "lon": -73.1463,
+    "elevation_m": 2380,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mayo",
+    "slug": "cerro-mayo",
+    "lat": -50.3425,
+    "lon": -73.3225,
+    "elevation_m": 2380,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Perov",
+    "slug": "mount-perov",
+    "lat": -72.5807,
+    "lon": 31.2086,
+    "elevation_m": 2380,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Fremantle Peak",
+    "slug": "fremantle-peak",
+    "lat": -53.0868,
+    "lon": 73.5068,
+    "elevation_m": 2375,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Nora",
+    "slug": "cerro-nora",
+    "lat": -47.1124,
+    "lon": -73.404,
+    "elevation_m": 2370,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Ronca",
+    "slug": "mount-ronca",
+    "lat": -82.6251,
+    "lon": 155.178,
+    "elevation_m": 2370,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cristal",
+    "slug": "cerro-cristal-2",
+    "lat": -46.518,
+    "lon": -72.4382,
+    "elevation_m": 2366,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Hipótilo",
+    "slug": "cerro-hipotilo",
+    "lat": -48.8158,
+    "lon": -73.2125,
+    "elevation_m": 2364,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Gefiontinde",
+    "slug": "gefiontinde",
+    "lat": 76.4696,
+    "lon": -25.6426,
+    "elevation_m": 2364,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cubo",
+    "slug": "cerro-cubo",
+    "lat": -50.7432,
+    "lon": -73.1934,
+    "elevation_m": 2358,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Nordenskjöld Peak",
+    "slug": "nordenskjold-peak",
+    "lat": -54.489,
+    "lon": -36.3609,
+    "elevation_m": 2355,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Collard",
+    "slug": "mount-collard",
+    "lat": -72.6385,
+    "lon": 31.1593,
+    "elevation_m": 2350,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Limburg Stirum",
+    "slug": "mount-limburg-stirum",
+    "lat": -72.5798,
+    "lon": 31.3425,
+    "elevation_m": 2350,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ellesmere / Beitstad Peak",
+    "slug": "ellesmere-beitstad-peak",
+    "lat": 78.8004,
+    "lon": -79.5373,
+    "elevation_m": 2347,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Midgård",
+    "slug": "midgard",
+    "lat": -71.8772,
+    "lon": 8.2275,
+    "elevation_m": 2345,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "West Beacon",
+    "slug": "west-beacon",
+    "lat": -77.8247,
+    "lon": 160.8033,
+    "elevation_m": 2345,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Inmaculado",
+    "slug": "cerro-inmaculado",
+    "lat": -50.3195,
+    "lon": -73.486,
+    "elevation_m": 2343,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mascarello",
+    "slug": "cerro-mascarello",
+    "lat": -49.6322,
+    "lon": -73.1127,
+    "elevation_m": 2342,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Blackwelder",
+    "slug": "mount-blackwelder",
+    "lat": -77.9797,
+    "lon": 161.0796,
+    "elevation_m": 2341,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Hel",
+    "slug": "hel",
+    "lat": -71.869,
+    "lon": 8.3419,
+    "elevation_m": 2335,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Don Sixto",
+    "slug": "cerro-don-sixto",
+    "lat": -50.1799,
+    "lon": -73.4414,
+    "elevation_m": 2332,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Carse",
+    "slug": "mount-carse",
+    "lat": -54.7097,
+    "lon": -36.1083,
+    "elevation_m": 2331,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ugolini Peak",
+    "slug": "ugolini-peak",
+    "lat": -78.0124,
+    "lon": 161.5319,
+    "elevation_m": 2329,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dreschhoff Peak",
+    "slug": "dreschhoff-peak",
+    "lat": -78.0228,
+    "lon": 161.0859,
+    "elevation_m": 2326,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kenney Nunatak",
+    "slug": "kenney-nunatak",
+    "lat": -78.0597,
+    "lon": 161.4994,
+    "elevation_m": 2326,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Sugartop",
+    "slug": "mount-sugartop",
+    "lat": -54.3669,
+    "lon": -36.6255,
+    "elevation_m": 2323,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Los Pumas",
+    "slug": "cerro-los-pumas",
+    "lat": -46.3895,
+    "lon": -72.4659,
+    "elevation_m": 2320,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Revaltoppe",
+    "slug": "revaltoppe",
+    "lat": 76.6611,
+    "lon": -25.7041,
+    "elevation_m": 2320,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Murallón del Viedma",
+    "slug": "cerro-murallon-del-viedma",
+    "lat": -49.3575,
+    "lon": -73.1291,
+    "elevation_m": 2319,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Single Cone",
+    "slug": "single-cone",
+    "lat": -45.0715,
+    "lon": 168.8078,
+    "elevation_m": 2319,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Castillo Chico",
+    "slug": "cerro-castillo-chico",
+    "lat": -46.0583,
+    "lon": -72.201,
+    "elevation_m": 2318,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Budd Peak",
+    "slug": "budd-peak",
+    "lat": -53.1184,
+    "lon": 73.553,
+    "elevation_m": 2315,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Gaudry",
+    "slug": "mount-gaudry",
+    "lat": -67.5422,
+    "lon": -68.6089,
+    "elevation_m": 2315,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rees",
+    "slug": "mount-rees",
+    "lat": -78.4766,
+    "lon": 162.4771,
+    "elevation_m": 2314,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mt Rees",
+    "slug": "mt-rees",
+    "lat": -78.4765,
+    "lon": 168.4768,
+    "elevation_m": 2314,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aguja Pollone",
+    "slug": "aguja-pollone",
+    "lat": -49.2515,
+    "lon": -73.0705,
+    "elevation_m": 2313,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Summerson",
+    "slug": "mount-summerson",
+    "lat": -82.713,
+    "lon": 155.0781,
+    "elevation_m": 2309,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Tūwhakarōria",
+    "slug": "mount-tuwhakaroria",
+    "lat": -45.1396,
+    "lon": 168.8476,
+    "elevation_m": 2307,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Dearborn",
+    "slug": "mount-dearborn",
+    "lat": -77.2257,
+    "lon": 160.1376,
+    "elevation_m": 2306,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ap Iwan",
+    "slug": "cerro-ap-iwan",
+    "lat": -46.1573,
+    "lon": -71.8665,
+    "elevation_m": 2305,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Belgrano",
+    "slug": "cerro-belgrano",
+    "lat": -47.6943,
+    "lon": -71.8704,
+    "elevation_m": 2305,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tronco",
+    "slug": "cerro-tronco",
+    "lat": -46.7757,
+    "lon": -73.298,
+    "elevation_m": 2305,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Brown Scarp",
+    "slug": "brown-scarp",
+    "lat": -78.0646,
+    "lon": 161.3967,
+    "elevation_m": 2303,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Shadbolt",
+    "slug": "mount-shadbolt",
+    "lat": -76.6728,
+    "lon": 160.4838,
+    "elevation_m": 2301,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Máscara",
+    "slug": "cerro-mascara",
+    "lat": -50.9894,
+    "lon": -73.0195,
+    "elevation_m": 2300,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Elkins",
+    "slug": "mount-elkins",
+    "lat": -66.6667,
+    "lon": 54.15,
+    "elevation_m": 2300,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Maere",
+    "slug": "mount-maere",
+    "lat": -72.5422,
+    "lon": 31.3095,
+    "elevation_m": 2300,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Verhaegen",
+    "slug": "mount-verhaegen",
+    "lat": -72.5749,
+    "lon": 31.1554,
+    "elevation_m": 2300,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "New Mountain",
+    "slug": "new-mountain",
+    "lat": -77.8651,
+    "lon": 161.1283,
+    "elevation_m": 2298,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pascua",
+    "slug": "cerro-pascua",
+    "lat": -48.6565,
+    "lon": -72.9221,
+    "elevation_m": 2285,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Sphinx",
+    "slug": "mount-sphinx",
+    "lat": -72.3571,
+    "lon": 31.2884,
+    "elevation_m": 2285,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Marconi",
+    "slug": "cerro-marconi",
+    "lat": -49.223,
+    "lon": -73.1473,
+    "elevation_m": 2284,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Roots",
+    "slug": "mount-roots",
+    "lat": -54.4778,
+    "lon": -36.4127,
+    "elevation_m": 2280,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ona",
+    "slug": "cerro-ona",
+    "lat": -54.615,
+    "lon": -69.8383,
+    "elevation_m": 2279,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Bove",
+    "slug": "monte-bove",
+    "lat": -54.8647,
+    "lon": -69.0874,
+    "elevation_m": 2279,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Tungespissen",
+    "slug": "tungespissen",
+    "lat": -71.8252,
+    "lon": 8.2765,
+    "elevation_m": 2277,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Camels Hump",
+    "slug": "camels-hump",
+    "lat": -77.9198,
+    "lon": 162.5677,
+    "elevation_m": 2273,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Eepuj",
+    "slug": "cerro-eepuj",
+    "lat": -54.6466,
+    "lon": -69.704,
+    "elevation_m": 2273,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro La Leona",
+    "slug": "cerro-la-leona",
+    "lat": -47.0298,
+    "lon": -72.1168,
+    "elevation_m": 2273,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Charlotte's Fjeld",
+    "slug": "charlotte-s-fjeld",
+    "lat": 76.2258,
+    "lon": -26.4289,
+    "elevation_m": 2272,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro York Minster",
+    "slug": "cerro-york-minster",
+    "lat": -54.7428,
+    "lon": -69.5007,
+    "elevation_m": 2270,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro de La Concepción",
+    "slug": "cerro-de-la-concepcion",
+    "lat": -50.1126,
+    "lon": -73.6918,
+    "elevation_m": 2269,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Handle",
+    "slug": "the-handle",
+    "lat": -77.9926,
+    "lon": 161.9595,
+    "elevation_m": 2269,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dalla Vedova",
+    "slug": "cerro-dalla-vedova",
+    "lat": -54.7467,
+    "lon": -69.2241,
+    "elevation_m": 2266,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "East Beacon",
+    "slug": "east-beacon",
+    "lat": -77.8368,
+    "lon": 160.897,
+    "elevation_m": 2263,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Darwin",
+    "slug": "monte-darwin",
+    "lat": -54.7733,
+    "lon": -69.4576,
+    "elevation_m": 2261,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Francés",
+    "slug": "monte-frances",
+    "lat": -54.8929,
+    "lon": -69.1512,
+    "elevation_m": 2261,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Stoppani",
+    "slug": "cerro-stoppani",
+    "lat": -54.7796,
+    "lon": -69.1814,
+    "elevation_m": 2260,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Volcán",
+    "slug": "cerro-volcan",
+    "lat": -47.7351,
+    "lon": -72.2254,
+    "elevation_m": 2260,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pintura",
+    "slug": "cerro-pintura",
+    "lat": -46.956,
+    "lon": -72.2122,
+    "elevation_m": 2259,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Eléctrico",
+    "slug": "cerro-electrico",
+    "lat": -49.2518,
+    "lon": -73.0086,
+    "elevation_m": 2257,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Lady Jane",
+    "slug": "cerro-lady-jane",
+    "lat": -54.6692,
+    "lon": -69.7311,
+    "elevation_m": 2257,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Vishniac Peak",
+    "slug": "vishniac-peak",
+    "lat": -77.2466,
+    "lon": 160.5284,
+    "elevation_m": 2257,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Paredón",
+    "slug": "cerro-paredon",
+    "lat": -50.4267,
+    "lon": -73.4206,
+    "elevation_m": 2256,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mié",
+    "slug": "cerro-mie",
+    "lat": -47.9241,
+    "lon": -72.1498,
+    "elevation_m": 2254,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Vivien's Fjeld",
+    "slug": "vivien-s-fjeld",
+    "lat": 76.5014,
+    "lon": -25.9323,
+    "elevation_m": 2253,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Te Kārearea Peak",
+    "slug": "te-karearea-peak",
+    "lat": -45.1491,
+    "lon": 168.8578,
+    "elevation_m": 2252,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Chuan Peak",
+    "slug": "chuan-peak",
+    "lat": -77.4891,
+    "lon": 168.3495,
+    "elevation_m": 2250,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Balmaceda",
+    "slug": "monte-balmaceda",
+    "lat": -51.415,
+    "lon": -73.1978,
+    "elevation_m": 2250,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rossel",
+    "slug": "mount-rossel",
+    "lat": -72.6139,
+    "lon": 31.0315,
+    "elevation_m": 2250,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Gara-dake",
+    "slug": "gara-dake",
+    "lat": -72.5498,
+    "lon": 31.2915,
+    "elevation_m": 2247,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Sarmiento",
+    "slug": "monte-sarmiento",
+    "lat": -54.45,
+    "lon": -70.8313,
+    "elevation_m": 2246,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Bastión Blanco",
+    "slug": "cerro-bastion-blanco",
+    "lat": -50.3839,
+    "lon": -73.4838,
+    "elevation_m": 2245,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Árido",
+    "slug": "cerro-arido",
+    "lat": -47.8196,
+    "lon": -72.3005,
+    "elevation_m": 2245,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Nido de Cóndor",
+    "slug": "cerro-nido-de-condor",
+    "lat": -50.9403,
+    "lon": -72.9814,
+    "elevation_m": 2243,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Shark Fin",
+    "slug": "shark-fin",
+    "lat": -78.3684,
+    "lon": 162.9111,
+    "elevation_m": 2242,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dickens Bjerg",
+    "slug": "dickens-bjerg",
+    "lat": 76.391,
+    "lon": -26.3354,
+    "elevation_m": 2241,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Escudo",
+    "slug": "cerro-escudo",
+    "lat": -50.9459,
+    "lon": -73.025,
+    "elevation_m": 2240,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pináculo",
+    "slug": "cerro-pinaculo",
+    "lat": -50.7601,
+    "lon": -72.2555,
+    "elevation_m": 2240,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Battleship",
+    "slug": "battleship",
+    "lat": -78.0129,
+    "lon": 161.7384,
+    "elevation_m": 2239,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Gran",
+    "slug": "mount-gran",
+    "lat": -76.9777,
+    "lon": 160.9823,
+    "elevation_m": 2238,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Chocolate",
+    "slug": "cerro-chocolate",
+    "lat": -46.049,
+    "lon": -72.2569,
+    "elevation_m": 2237,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Margarita",
+    "slug": "cerro-margarita",
+    "lat": -46.9913,
+    "lon": -73.6134,
+    "elevation_m": 2236,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Piedras Sueltas",
+    "slug": "piedras-sueltas",
+    "lat": -46.9671,
+    "lon": -71.7408,
+    "elevation_m": 2235,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ben Nevis",
+    "slug": "ben-nevis",
+    "lat": -45.1676,
+    "lon": 168.8483,
+    "elevation_m": 2234,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Puño",
+    "slug": "cerro-puno",
+    "lat": -47.288,
+    "lon": -73.1191,
+    "elevation_m": 2233,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Robison Peak",
+    "slug": "robison-peak",
+    "lat": -77.1969,
+    "lon": 160.2615,
+    "elevation_m": 2231,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Baker",
+    "slug": "cerro-baker",
+    "lat": -47.0988,
+    "lon": -71.9149,
+    "elevation_m": 2230,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cabeza de Indio",
+    "slug": "cerro-cabeza-de-indio",
+    "lat": -50.9456,
+    "lon": -73.048,
+    "elevation_m": 2230,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Kennedy",
+    "slug": "cerro-kennedy",
+    "lat": -50.0529,
+    "lon": -73.41,
+    "elevation_m": 2230,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dos Picos",
+    "slug": "cerro-dos-picos",
+    "lat": -50.4966,
+    "lon": -73.2735,
+    "elevation_m": 2227,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Roncagli",
+    "slug": "monte-roncagli",
+    "lat": -54.8484,
+    "lon": -69.1175,
+    "elevation_m": 2226,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Paso",
+    "slug": "cerro-el-paso",
+    "lat": -54.6281,
+    "lon": -69.7083,
+    "elevation_m": 2224,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kaldbakur",
+    "slug": "kaldbakur",
+    "lat": 76.525,
+    "lon": -26.1729,
+    "elevation_m": 2222,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Moxley",
+    "slug": "mount-moxley",
+    "lat": -78.4162,
+    "lon": 162.3484,
+    "elevation_m": 2222,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "University Peak",
+    "slug": "university-peak",
+    "lat": -77.8691,
+    "lon": 160.7694,
+    "elevation_m": 2220,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Fuegia Basket",
+    "slug": "cerro-fuegia-basket",
+    "lat": -54.7516,
+    "lon": -69.4908,
+    "elevation_m": 2217,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Puntudo",
+    "slug": "cerro-puntudo",
+    "lat": -46.0734,
+    "lon": -72.3022,
+    "elevation_m": 2216,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Fantasma",
+    "slug": "cerro-fantasma",
+    "lat": -46.9764,
+    "lon": -73.4265,
+    "elevation_m": 2215,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Tetris",
+    "slug": "monte-tetris",
+    "lat": -48.1907,
+    "lon": -72.1196,
+    "elevation_m": 2215,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cóndor",
+    "slug": "cerro-condor",
+    "lat": -48.8123,
+    "lon": -73.1117,
+    "elevation_m": 2213,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "South Beacon",
+    "slug": "south-beacon",
+    "lat": -77.8505,
+    "lon": 160.7813,
+    "elevation_m": 2211,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Desfiladero",
+    "slug": "cerro-desfiladero",
+    "lat": -47.4253,
+    "lon": -73.191,
+    "elevation_m": 2210,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Marconi Norte",
+    "slug": "cerro-marconi-norte",
+    "lat": -49.1986,
+    "lon": -73.1401,
+    "elevation_m": 2210,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Outlook Peak",
+    "slug": "outlook-peak",
+    "lat": 79.7404,
+    "lon": -91.3962,
+    "elevation_m": 2210,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Spegazzini Sur",
+    "slug": "cerro-spegazzini-sur",
+    "lat": -50.2522,
+    "lon": -73.4272,
+    "elevation_m": 2207,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro W",
+    "slug": "cerro-w",
+    "lat": -47.7333,
+    "lon": -72.4354,
+    "elevation_m": 2203,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Hoja",
+    "slug": "cerro-hoja",
+    "lat": -50.9834,
+    "lon": -73.0239,
+    "elevation_m": 2200,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cuerno Norte",
+    "slug": "cuerno-norte",
+    "lat": -50.9991,
+    "lon": -73.0166,
+    "elevation_m": 2200,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lorette",
+    "slug": "mount-lorette",
+    "lat": -72.5462,
+    "lon": 31.184,
+    "elevation_m": 2200,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dykes Peak",
+    "slug": "dykes-peak",
+    "lat": -77.2139,
+    "lon": 161.0305,
+    "elevation_m": 2199,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Trono Blanco",
+    "slug": "cerro-trono-blanco",
+    "lat": -50.9511,
+    "lon": -73.0849,
+    "elevation_m": 2197,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Slump Mountain",
+    "slug": "slump-mountain",
+    "lat": -77.8769,
+    "lon": 160.7299,
+    "elevation_m": 2197,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Patterson",
+    "slug": "mount-patterson",
+    "lat": -54.6634,
+    "lon": -36.1304,
+    "elevation_m": 2195,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Navajo Butte",
+    "slug": "navajo-butte",
+    "lat": -77.9711,
+    "lon": 162.0424,
+    "elevation_m": 2194,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Eléctrico NE",
+    "slug": "cerro-electrico-ne",
+    "lat": -49.2508,
+    "lon": -73.0041,
+    "elevation_m": 2183,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "The Altar",
+    "slug": "the-altar",
+    "lat": -71.6632,
+    "lon": 11.285,
+    "elevation_m": 2181,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mulligan Peak",
+    "slug": "mulligan-peak",
+    "lat": -77.1846,
+    "lon": 160.2617,
+    "elevation_m": 2180,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Scanniello Peak",
+    "slug": "scanniello-peak",
+    "lat": -77.5112,
+    "lon": 168.8137,
+    "elevation_m": 2180,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Heke Peak",
+    "slug": "heke-peak",
+    "lat": -77.9753,
+    "lon": 162.8811,
+    "elevation_m": 2177,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Buttress Nunatak",
+    "slug": "buttress-nunatak",
+    "lat": -78.024,
+    "lon": 161.219,
+    "elevation_m": 2175,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Prøvestenen",
+    "slug": "prvestenen",
+    "lat": 76.4281,
+    "lon": -26.7608,
+    "elevation_m": 2175,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punktum",
+    "slug": "punktum",
+    "lat": 76.3667,
+    "lon": -26.8667,
+    "elevation_m": 2175,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punktun",
+    "slug": "punktun",
+    "lat": 76.4337,
+    "lon": -26.833,
+    "elevation_m": 2175,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "JuanHamilton's Bjerg",
+    "slug": "juanhamilton-s-bjerg",
+    "lat": 76.2397,
+    "lon": -26.5653,
+    "elevation_m": 2170,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Catedral",
+    "slug": "cerro-catedral",
+    "lat": -50.965,
+    "lon": -73.1245,
+    "elevation_m": 2167,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Chueco",
+    "slug": "cerro-chueco",
+    "lat": -47.2297,
+    "lon": -73.0425,
+    "elevation_m": 2166,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dagmar Aaen",
+    "slug": "cerro-dagmar-aaen",
+    "lat": -50.3083,
+    "lon": -73.5138,
+    "elevation_m": 2165,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mojón Rojo",
+    "slug": "mojon-rojo",
+    "lat": -49.2972,
+    "lon": -73.0344,
+    "elevation_m": 2163,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Kaiyush",
+    "slug": "cerro-kaiyush",
+    "lat": -54.6636,
+    "lon": -69.8674,
+    "elevation_m": 2162,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Incas Leap",
+    "slug": "incas-leap",
+    "lat": -77.82,
+    "lon": 160.4858,
+    "elevation_m": 2160,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Yagán",
+    "slug": "cerro-yagan",
+    "lat": -54.5949,
+    "lon": -69.5076,
+    "elevation_m": 2158,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Turret",
+    "slug": "cerro-turret",
+    "lat": -46.8485,
+    "lon": -73.3918,
+    "elevation_m": 2156,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Techado Negro",
+    "slug": "techado-negro",
+    "lat": -49.3003,
+    "lon": -73.0132,
+    "elevation_m": 2152,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "England Peak",
+    "slug": "england-peak",
+    "lat": -82.6239,
+    "lon": -52.8133,
+    "elevation_m": 2150,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mt Duvall",
+    "slug": "mt-duvall",
+    "lat": -78.3669,
+    "lon": 162.5277,
+    "elevation_m": 2149,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Vespignani",
+    "slug": "cerro-vespignani",
+    "lat": -49.0508,
+    "lon": -72.9269,
+    "elevation_m": 2146,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Nudo Orográfico",
+    "slug": "cerro-nudo-orografico",
+    "lat": -46.042,
+    "lon": -72.2163,
+    "elevation_m": 2143,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Penderyn",
+    "slug": "penderyn",
+    "lat": 76.2234,
+    "lon": -26.6387,
+    "elevation_m": 2143,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Stokes",
+    "slug": "monte-stokes",
+    "lat": -50.8121,
+    "lon": -73.1908,
+    "elevation_m": 2140,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cacique Casimiro / Cerro Cacique Papón",
+    "slug": "cerro-cacique-casimiro-cerro-cacique-papon",
+    "lat": -50.6093,
+    "lon": -73.2364,
+    "elevation_m": 2131,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Gaviota",
+    "slug": "cerro-gaviota",
+    "lat": -49.5695,
+    "lon": -73.683,
+    "elevation_m": 2130,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Terra Nova",
+    "slug": "mount-terra-nova",
+    "lat": -77.5167,
+    "lon": 167.95,
+    "elevation_m": 2130,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Altar Mountain",
+    "slug": "altar-mountain",
+    "lat": -77.892,
+    "lon": 160.8759,
+    "elevation_m": 2128,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Gemelos Blancos",
+    "slug": "cerro-gemelos-blancos",
+    "lat": -49.4817,
+    "lon": -73.4638,
+    "elevation_m": 2127,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "La Gloria",
+    "slug": "la-gloria",
+    "lat": -46.8008,
+    "lon": -72.1807,
+    "elevation_m": 2127,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monastery Nunatak",
+    "slug": "monastery-nunatak",
+    "lat": -77.9722,
+    "lon": 160.6077,
+    "elevation_m": 2127,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Handsley",
+    "slug": "mount-handsley",
+    "lat": -77.9363,
+    "lon": 161.6014,
+    "elevation_m": 2126,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ovejero",
+    "slug": "cerro-ovejero",
+    "lat": -54.6316,
+    "lon": -69.7464,
+    "elevation_m": 2125,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Falkonerklippe",
+    "slug": "falkonerklippe",
+    "lat": 76.4713,
+    "lon": -26.4281,
+    "elevation_m": 2125,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Littlepage",
+    "slug": "mount-littlepage",
+    "lat": -77.2035,
+    "lon": 160.039,
+    "elevation_m": 2125,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Falso Gaviota",
+    "slug": "cerro-falso-gaviota",
+    "lat": -49.9486,
+    "lon": -73.778,
+    "elevation_m": 2124,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Bergen",
+    "slug": "mount-bergen",
+    "lat": -76.9792,
+    "lon": 160.8222,
+    "elevation_m": 2123,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lisicky",
+    "slug": "mount-lisicky",
+    "lat": -78.453,
+    "lon": 162.1065,
+    "elevation_m": 2123,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kottmeier Mesa",
+    "slug": "kottmeier-mesa",
+    "lat": -77.646,
+    "lon": 162.1457,
+    "elevation_m": 2122,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Solo",
+    "slug": "cerro-solo",
+    "lat": -49.3429,
+    "lon": -73.0277,
+    "elevation_m": 2121,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pyramid Mountain",
+    "slug": "pyramid-mountain",
+    "lat": -77.784,
+    "lon": 160.6649,
+    "elevation_m": 2121,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Beacon Heights",
+    "slug": "beacon-heights",
+    "lat": -77.8392,
+    "lon": 160.8469,
+    "elevation_m": 2119,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ada",
+    "slug": "cerro-ada",
+    "lat": -54.8526,
+    "lon": -69.0968,
+    "elevation_m": 2113,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Ventisquero",
+    "slug": "cerro-el-ventisquero",
+    "lat": -46.6972,
+    "lon": -72.2968,
+    "elevation_m": 2110,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cuerno Principal",
+    "slug": "cuerno-principal",
+    "lat": -50.9989,
+    "lon": -73.0064,
+    "elevation_m": 2110,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Campana",
+    "slug": "cerro-campana",
+    "lat": -49.7117,
+    "lon": -73.1825,
+    "elevation_m": 2105,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Foster",
+    "slug": "mount-foster",
+    "lat": -62.9927,
+    "lon": -62.5541,
+    "elevation_m": 2105,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tosello",
+    "slug": "cerro-tosello",
+    "lat": -49.7984,
+    "lon": -73.394,
+    "elevation_m": 2104,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Trunco",
+    "slug": "cerro-trunco",
+    "lat": -47.3825,
+    "lon": -73.0221,
+    "elevation_m": 2103,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Moffat Peak",
+    "slug": "moffat-peak",
+    "lat": -45.0327,
+    "lon": 168.117,
+    "elevation_m": 2102,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Sin Nombre",
+    "slug": "torre-sin-nombre",
+    "lat": -46.2153,
+    "lon": -72.5742,
+    "elevation_m": 2101,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Emperador Guillermo",
+    "slug": "cerro-emperador-guillermo",
+    "lat": -45.3103,
+    "lon": -72.1825,
+    "elevation_m": 2100,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hulshagen",
+    "slug": "mount-hulshagen",
+    "lat": -72.5186,
+    "lon": 31.2997,
+    "elevation_m": 2100,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Aparición",
+    "slug": "punta-aparicion",
+    "lat": -50.3162,
+    "lon": -73.4996,
+    "elevation_m": 2100,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Witte",
+    "slug": "cerro-witte",
+    "lat": -49.4975,
+    "lon": -73.4236,
+    "elevation_m": 2095,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Áspero",
+    "slug": "cerro-aspero",
+    "lat": -47.8666,
+    "lon": -72.3599,
+    "elevation_m": 2094,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Jemmy Button",
+    "slug": "cerro-jemmy-button",
+    "lat": -54.734,
+    "lon": -69.5158,
+    "elevation_m": 2092,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Middlemass",
+    "slug": "mount-middlemass",
+    "lat": 76.1844,
+    "lon": -26.5129,
+    "elevation_m": 2092,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Escuela",
+    "slug": "cerro-escuela",
+    "lat": -46.8622,
+    "lon": -73.388,
+    "elevation_m": 2091,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Raney Peak",
+    "slug": "raney-peak",
+    "lat": -77.2162,
+    "lon": 160.5395,
+    "elevation_m": 2088,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Jatko Peak",
+    "slug": "jatko-peak",
+    "lat": -77.1878,
+    "lon": 160.9583,
+    "elevation_m": 2086,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Veli Peak",
+    "slug": "veli-peak",
+    "lat": -77.6412,
+    "lon": 161.4681,
+    "elevation_m": 2085,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Bryn Poeth",
+    "slug": "bryn-poeth",
+    "lat": 76.3491,
+    "lon": -26.3449,
+    "elevation_m": 2084,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Heros",
+    "slug": "cerro-heros",
+    "lat": -47.8948,
+    "lon": -72.2634,
+    "elevation_m": 2084,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "White Crown Mountain",
+    "slug": "white-crown-mountain",
+    "lat": 79.9258,
+    "lon": -92.3101,
+    "elevation_m": 2082,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Anne Hill",
+    "slug": "anne-hill",
+    "lat": -78.2399,
+    "lon": 162.7116,
+    "elevation_m": 2079,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Constitución",
+    "slug": "cerro-constitucion",
+    "lat": -46.4949,
+    "lon": -72.4374,
+    "elevation_m": 2079,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Norte del Avellano",
+    "slug": "torre-norte-del-avellano",
+    "lat": -46.4065,
+    "lon": -72.5227,
+    "elevation_m": 2074,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Colorado Alto",
+    "slug": "cerro-colorado-alto",
+    "lat": -46.7183,
+    "lon": -71.9638,
+    "elevation_m": 2072,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Peine",
+    "slug": "cerro-peine",
+    "lat": -48.6084,
+    "lon": -73.0702,
+    "elevation_m": 2072,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Sara",
+    "slug": "cerro-sara",
+    "lat": -54.6943,
+    "lon": -69.6433,
+    "elevation_m": 2072,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "James Peak",
+    "slug": "james-peak",
+    "lat": -45.2467,
+    "lon": 168.8454,
+    "elevation_m": 2072,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Falso Stokes",
+    "slug": "cerro-falso-stokes",
+    "lat": -50.8206,
+    "lon": -73.2009,
+    "elevation_m": 2070,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Padre",
+    "slug": "cerro-padre",
+    "lat": -49.1049,
+    "lon": -72.8568,
+    "elevation_m": 2068,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Peineta",
+    "slug": "cerro-peineta",
+    "lat": -50.2288,
+    "lon": -73.3859,
+    "elevation_m": 2068,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Coparohsyn",
+    "slug": "coparohsyn",
+    "lat": 76.255,
+    "lon": -26.3493,
+    "elevation_m": 2067,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Irvine",
+    "slug": "mount-irvine",
+    "lat": -77.6295,
+    "lon": 162.2655,
+    "elevation_m": 2067,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Odin",
+    "slug": "mount-odin",
+    "lat": -77.5782,
+    "lon": 161.6676,
+    "elevation_m": 2066,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Belvedere",
+    "slug": "cerro-belvedere",
+    "lat": -49.7342,
+    "lon": -73.1688,
+    "elevation_m": 2065,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Jeinimeni",
+    "slug": "cerro-jeinimeni",
+    "lat": -46.867,
+    "lon": -72.2116,
+    "elevation_m": 2065,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ola Blanca",
+    "slug": "cerro-ola-blanca",
+    "lat": -46.9083,
+    "lon": -73.4065,
+    "elevation_m": 2065,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Catenary Nunatak",
+    "slug": "catenary-nunatak",
+    "lat": -77.9858,
+    "lon": 160.5196,
+    "elevation_m": 2062,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Italia",
+    "slug": "cerro-italia",
+    "lat": -54.8774,
+    "lon": -69.2303,
+    "elevation_m": 2062,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Poutini Peak",
+    "slug": "poutini-peak",
+    "lat": -78.1468,
+    "lon": 163.0978,
+    "elevation_m": 2062,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cuerno",
+    "slug": "cerro-cuerno",
+    "lat": -50.4463,
+    "lon": -73.3589,
+    "elevation_m": 2060,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Milanesio",
+    "slug": "cerro-milanesio",
+    "lat": -49.0295,
+    "lon": -72.9813,
+    "elevation_m": 2053,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Nunatak 67",
+    "slug": "nunatak-67",
+    "lat": 76.6031,
+    "lon": -25.9079,
+    "elevation_m": 2053,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Lliwedd",
+    "slug": "lliwedd",
+    "lat": 76.259,
+    "lon": -26.336,
+    "elevation_m": 2052,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Oeste del Avellano",
+    "slug": "torre-oeste-del-avellano",
+    "lat": -46.4037,
+    "lon": -72.5328,
+    "elevation_m": 2052,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "P.",
+    "slug": "p",
+    "lat": -64.7011,
+    "lon": -61.4098,
+    "elevation_m": 2051,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Crestón",
+    "slug": "cerro-creston",
+    "lat": -49.0647,
+    "lon": -72.9356,
+    "elevation_m": 2050,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Forecastle Summit",
+    "slug": "forecastle-summit",
+    "lat": -76.7605,
+    "lon": 161.0975,
+    "elevation_m": 2050,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pico de Las Vacas",
+    "slug": "pico-de-las-vacas",
+    "lat": -48.2463,
+    "lon": -72.1113,
+    "elevation_m": 2050,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Wye Dome",
+    "slug": "wye-dome",
+    "lat": -45.0669,
+    "lon": 168.8187,
+    "elevation_m": 2050,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Carnedd môr Ladron",
+    "slug": "carnedd-mor-ladron",
+    "lat": 76.261,
+    "lon": -26.3749,
+    "elevation_m": 2049,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Melton",
+    "slug": "mount-melton",
+    "lat": -77.5079,
+    "lon": 168.8635,
+    "elevation_m": 2049,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Águila",
+    "slug": "cerro-aguila",
+    "lat": -46.8569,
+    "lon": -71.9337,
+    "elevation_m": 2045,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Montura",
+    "slug": "cerro-montura",
+    "lat": -46.0406,
+    "lon": -72.208,
+    "elevation_m": 2044,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Kolliker",
+    "slug": "cerro-kolliker",
+    "lat": -49.5017,
+    "lon": -73.4885,
+    "elevation_m": 2042,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cabeza de León",
+    "slug": "cerro-cabeza-de-leon",
+    "lat": -47.2434,
+    "lon": -72.993,
+    "elevation_m": 2040,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mallory Fjeld",
+    "slug": "mallory-fjeld",
+    "lat": 76.37,
+    "lon": -26.217,
+    "elevation_m": 2040,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Three Brothers",
+    "slug": "three-brothers",
+    "lat": -54.2862,
+    "lon": -36.8,
+    "elevation_m": 2040,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torres del Avellano",
+    "slug": "torres-del-avellano",
+    "lat": -46.4057,
+    "lon": -72.5282,
+    "elevation_m": 2040,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Fulcrum",
+    "slug": "fulcrum",
+    "lat": -78.0333,
+    "lon": 161.1237,
+    "elevation_m": 2035,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Marvin Nunatak",
+    "slug": "marvin-nunatak",
+    "lat": -77.7662,
+    "lon": 160.0554,
+    "elevation_m": 2030,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Aniversario",
+    "slug": "cerro-aniversario",
+    "lat": -49.2024,
+    "lon": -73.0196,
+    "elevation_m": 2029,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Bonete",
+    "slug": "cerro-bonete",
+    "lat": -49.1236,
+    "lon": -72.8099,
+    "elevation_m": 2028,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Shakatuj",
+    "slug": "cerro-shakatuj",
+    "lat": -54.6775,
+    "lon": -69.8116,
+    "elevation_m": 2028,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Trapalanda",
+    "slug": "cerro-trapalanda",
+    "lat": -54.6448,
+    "lon": -69.8215,
+    "elevation_m": 2027,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Millennium Peak",
+    "slug": "millennium-peak",
+    "lat": -77.5084,
+    "lon": 167.4377,
+    "elevation_m": 2027,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Mignone",
+    "slug": "mount-mignone",
+    "lat": -77.8711,
+    "lon": 162.5123,
+    "elevation_m": 2026,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Murihau Peak",
+    "slug": "murihau-peak",
+    "lat": -78.142,
+    "lon": 163.1748,
+    "elevation_m": 2026,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Bromley Peak",
+    "slug": "bromley-peak",
+    "lat": -77.6334,
+    "lon": 162.073,
+    "elevation_m": 2020,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Iorana",
+    "slug": "cerro-iorana",
+    "lat": -54.6705,
+    "lon": -69.7117,
+    "elevation_m": 2020,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ohi",
+    "slug": "cerro-ohi",
+    "lat": -54.7433,
+    "lon": -69.1291,
+    "elevation_m": 2019,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Sentinel Peak",
+    "slug": "sentinel-peak",
+    "lat": -77.7785,
+    "lon": 162.3828,
+    "elevation_m": 2014,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pana",
+    "slug": "cerro-pana",
+    "lat": -49.2993,
+    "lon": -72.3729,
+    "elevation_m": 2012,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Basurto",
+    "slug": "mount-basurto",
+    "lat": -76.9344,
+    "lon": 160.6945,
+    "elevation_m": 2012,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Coltrane",
+    "slug": "cerro-coltrane",
+    "lat": -54.6991,
+    "lon": -69.5497,
+    "elevation_m": 2011,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Desconsuelo",
+    "slug": "cerro-desconsuelo",
+    "lat": -51.1933,
+    "lon": -73.4844,
+    "elevation_m": 2011,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Negro",
+    "slug": "cerro-negro",
+    "lat": -50.3902,
+    "lon": -73.2443,
+    "elevation_m": 2011,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Velluda",
+    "slug": "punta-velluda",
+    "lat": -49.2698,
+    "lon": -73.0149,
+    "elevation_m": 2010,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ginés",
+    "slug": "cerro-gines",
+    "lat": -54.6877,
+    "lon": -69.5569,
+    "elevation_m": 2006,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Adriana",
+    "slug": "cerro-adriana",
+    "lat": -50.6238,
+    "lon": -73.0456,
+    "elevation_m": 2005,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Astillado",
+    "slug": "cerro-astillado",
+    "lat": -49.1559,
+    "lon": -72.5994,
+    "elevation_m": 2005,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Brearley",
+    "slug": "mount-brearley",
+    "lat": -77.7991,
+    "lon": 161.7642,
+    "elevation_m": 2005,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Seepain",
+    "slug": "cerro-seepain",
+    "lat": -54.6393,
+    "lon": -69.7527,
+    "elevation_m": 2004,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Blanco Sur",
+    "slug": "cerro-blanco-sur",
+    "lat": -50.9516,
+    "lon": -73.1685,
+    "elevation_m": 2002,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "EjaBjerg",
+    "slug": "ejabjerg",
+    "lat": 76.1991,
+    "lon": -26.8128,
+    "elevation_m": 2002,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Yr Esgair",
+    "slug": "yr-esgair",
+    "lat": 76.2982,
+    "lon": -26.5431,
+    "elevation_m": 2002,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Huemules",
+    "slug": "cerro-huemules",
+    "lat": -45.7357,
+    "lon": -72.4495,
+    "elevation_m": 2001,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cota 2000",
+    "slug": "cerro-cota-2000",
+    "lat": -50.9719,
+    "lon": -73.1151,
+    "elevation_m": 2000,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cuerno Este",
+    "slug": "cuerno-este",
+    "lat": -51.0013,
+    "lon": -72.9985,
+    "elevation_m": 2000,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Eventyrfjelde",
+    "slug": "eventyrfjelde",
+    "lat": 76.0917,
+    "lon": -24.3733,
+    "elevation_m": 2000,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Jutulhogget",
+    "slug": "jutulhogget",
+    "lat": -72.0169,
+    "lon": 2.8435,
+    "elevation_m": 2000,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Electra",
+    "slug": "mount-electra",
+    "lat": -77.5,
+    "lon": 160.8999,
+    "elevation_m": 2000,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Custodio",
+    "slug": "cerro-custodio",
+    "lat": -46.0741,
+    "lon": -72.0794,
+    "elevation_m": 1998,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Largo",
+    "slug": "cerro-largo-2",
+    "lat": -46.9072,
+    "lon": -73.2434,
+    "elevation_m": 1993,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Punto Alto",
+    "slug": "cerro-punto-alto",
+    "lat": -50.1071,
+    "lon": -72.993,
+    "elevation_m": 1993,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Jane Peak",
+    "slug": "jane-peak",
+    "lat": -45.3279,
+    "lon": 168.3236,
+    "elevation_m": 1992,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Mavora",
+    "slug": "mount-mavora",
+    "lat": -45.0876,
+    "lon": 168.1763,
+    "elevation_m": 1990,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Peón",
+    "slug": "cerro-peon",
+    "lat": -46.8913,
+    "lon": -72.1251,
+    "elevation_m": 1986,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Lliboutry",
+    "slug": "cerro-lliboutry",
+    "lat": -49.1371,
+    "lon": -73.2132,
+    "elevation_m": 1980,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Rincón",
+    "slug": "cerro-rincon-2",
+    "lat": -47.0676,
+    "lon": -71.7441,
+    "elevation_m": 1980,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "In Pin",
+    "slug": "in-pin",
+    "lat": 76.4343,
+    "lon": -26.267,
+    "elevation_m": 1980,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Maya Mountain",
+    "slug": "maya-mountain",
+    "lat": -77.7851,
+    "lon": 160.5979,
+    "elevation_m": 1979,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cecil Peak",
+    "slug": "cecil-peak",
+    "lat": -45.1216,
+    "lon": 168.6332,
+    "elevation_m": 1978,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Campanario",
+    "slug": "cerro-campanario",
+    "lat": -48.1934,
+    "lon": -72.4298,
+    "elevation_m": 1978,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Sombrero",
+    "slug": "cerro-el-sombrero",
+    "lat": -45.8466,
+    "lon": -72.2092,
+    "elevation_m": 1976,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hawkes",
+    "slug": "mount-hawkes",
+    "lat": -83.917,
+    "lon": -56.0839,
+    "elevation_m": 1975,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Carnedd y Genod",
+    "slug": "carnedd-y-genod",
+    "lat": 76.454,
+    "lon": -26.08,
+    "elevation_m": 1974,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Windle",
+    "slug": "mount-windle",
+    "lat": -77.9004,
+    "lon": 162.2917,
+    "elevation_m": 1972,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Balgownie",
+    "slug": "balgownie",
+    "lat": 76.1121,
+    "lon": -26.5478,
+    "elevation_m": 1971,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Brown",
+    "slug": "cerro-brown",
+    "lat": -47.3369,
+    "lon": -72.0759,
+    "elevation_m": 1970,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tres Frailes",
+    "slug": "cerro-tres-frailes",
+    "lat": -48.6641,
+    "lon": -72.6857,
+    "elevation_m": 1970,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Henriksen Buttress",
+    "slug": "henriksen-buttress",
+    "lat": -54.3918,
+    "lon": -36.5531,
+    "elevation_m": 1970,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro de Los Fósiles",
+    "slug": "cerro-de-los-fosiles",
+    "lat": -50.1338,
+    "lon": -72.9602,
+    "elevation_m": 1969,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Eyre Peak",
+    "slug": "eyre-peak",
+    "lat": -45.3237,
+    "lon": 168.4599,
+    "elevation_m": 1969,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre Sur del Avellano",
+    "slug": "torre-sur-del-avellano",
+    "lat": -46.4304,
+    "lon": -72.5335,
+    "elevation_m": 1967,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Benninghoff",
+    "slug": "mount-benninghoff",
+    "lat": -77.9141,
+    "lon": 161.3181,
+    "elevation_m": 1964,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mocho",
+    "slug": "cerro-mocho",
+    "lat": -48.6774,
+    "lon": -73.164,
+    "elevation_m": 1962,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tres Hermanos Sur",
+    "slug": "cerro-tres-hermanos-sur",
+    "lat": -47.8004,
+    "lon": -72.4914,
+    "elevation_m": 1960,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Golden Dome",
+    "slug": "golden-dome",
+    "lat": 76.455,
+    "lon": -26.1147,
+    "elevation_m": 1954,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "El Mocho",
+    "slug": "el-mocho",
+    "lat": -49.2929,
+    "lon": -73.0792,
+    "elevation_m": 1953,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Irving",
+    "slug": "mount-irving",
+    "lat": -61.2768,
+    "lon": -54.13,
+    "elevation_m": 1950,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Catalina",
+    "slug": "punta-catalina",
+    "lat": -50.9469,
+    "lon": -73.0623,
+    "elevation_m": 1950,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta El Olvido",
+    "slug": "punta-el-olvido",
+    "lat": -46.0423,
+    "lon": -72.2489,
+    "elevation_m": 1950,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dufek Massif",
+    "slug": "dufek-massif",
+    "lat": -82.6282,
+    "lon": -53.1192,
+    "elevation_m": 1949,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Desfiladero",
+    "slug": "cerro-desfiladero-2",
+    "lat": -47.4182,
+    "lon": -73.0706,
+    "elevation_m": 1948,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Duff Peak",
+    "slug": "duff-peak",
+    "lat": -77.7816,
+    "lon": 162.4519,
+    "elevation_m": 1946,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Peary Land H.P.",
+    "slug": "peary-land-h-p",
+    "lat": 83.3185,
+    "lon": -33.201,
+    "elevation_m": 1946,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cangrejo",
+    "slug": "cerro-cangrejo",
+    "lat": -49.3323,
+    "lon": -72.4395,
+    "elevation_m": 1944,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Arturo Merino Benítez / Cerro Capitán Olezza",
+    "slug": "cerro-arturo-merino-benitez-cerro-capitan-olezza",
+    "lat": -49.727,
+    "lon": -73.3884,
+    "elevation_m": 1942,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kuipers",
+    "slug": "mount-kuipers",
+    "lat": -77.9099,
+    "lon": 161.402,
+    "elevation_m": 1942,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aonach Mor",
+    "slug": "aonach-mor",
+    "lat": 76.4348,
+    "lon": -26.2105,
+    "elevation_m": 1941,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mesa",
+    "slug": "cerro-mesa",
+    "lat": -45.3142,
+    "lon": -72.1875,
+    "elevation_m": 1941,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "DB Peak",
+    "slug": "db-peak",
+    "lat": 76.4507,
+    "lon": -26.258,
+    "elevation_m": 1941,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tridente",
+    "slug": "cerro-tridente",
+    "lat": -50.8079,
+    "lon": -72.2346,
+    "elevation_m": 1940,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Spaaman",
+    "slug": "mount-spaaman",
+    "lat": -54.2728,
+    "lon": -36.8625,
+    "elevation_m": 1940,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Trueno",
+    "slug": "cerro-el-trueno",
+    "lat": -48.9395,
+    "lon": -72.9142,
+    "elevation_m": 1937,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Caña Brava",
+    "slug": "cerro-cana-brava",
+    "lat": -47.4442,
+    "lon": -72.9903,
+    "elevation_m": 1933,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Los Gemelos",
+    "slug": "cerro-los-gemelos",
+    "lat": -50.9512,
+    "lon": -73.1064,
+    "elevation_m": 1930,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mayo",
+    "slug": "cerro-mayo-2",
+    "lat": -48.4155,
+    "lon": -73.1071,
+    "elevation_m": 1930,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Miller",
+    "slug": "punta-miller",
+    "lat": -46.4296,
+    "lon": -72.5685,
+    "elevation_m": 1930,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Helvetia Tinde",
+    "slug": "helvetia-tinde",
+    "lat": 83.3749,
+    "lon": -35.2736,
+    "elevation_m": 1929,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Castillo",
+    "slug": "punta-castillo",
+    "lat": -54.7545,
+    "lon": -69.4281,
+    "elevation_m": 1929,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro La Paloma",
+    "slug": "cerro-la-paloma",
+    "lat": -45.8675,
+    "lon": -72.1544,
+    "elevation_m": 1928,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Ohnet",
+    "slug": "cerro-ohnet",
+    "lat": -50.8397,
+    "lon": -73.1555,
+    "elevation_m": 1927,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Castillo de Aysén",
+    "slug": "cerro-castillo-de-aysen",
+    "lat": -45.4236,
+    "lon": -72.3092,
+    "elevation_m": 1925,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Guanaco",
+    "slug": "cerro-guanaco",
+    "lat": -47.9809,
+    "lon": -72.132,
+    "elevation_m": 1925,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Teresa",
+    "slug": "cerro-teresa",
+    "lat": -46.1552,
+    "lon": -73.1845,
+    "elevation_m": 1924,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Devon Island H.P.",
+    "slug": "devon-island-h-p",
+    "lat": 75.3446,
+    "lon": -82.1423,
+    "elevation_m": 1921,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Sombrero",
+    "slug": "cerro-sombrero",
+    "lat": -49.3041,
+    "lon": -72.6259,
+    "elevation_m": 1920,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Holm-Hansen",
+    "slug": "mount-holm-hansen",
+    "lat": -77.6022,
+    "lon": 162.1882,
+    "elevation_m": 1920,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Lápiz",
+    "slug": "cerro-lapiz",
+    "lat": -47.1189,
+    "lon": -71.7333,
+    "elevation_m": 1919,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Campbell Crag",
+    "slug": "campbell-crag",
+    "lat": -78.4579,
+    "lon": 163.5405,
+    "elevation_m": 1918,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Adolfo Ibáñez",
+    "slug": "cerro-adolfo-ibanez",
+    "lat": -54.7627,
+    "lon": -69.4297,
+    "elevation_m": 1918,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Foel Fras",
+    "slug": "foel-fras",
+    "lat": 76.2761,
+    "lon": -26.3993,
+    "elevation_m": 1917,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Cassidy",
+    "slug": "mount-cassidy",
+    "lat": -77.456,
+    "lon": 160.7857,
+    "elevation_m": 1917,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Rincón",
+    "slug": "punta-rincon",
+    "lat": -45.3245,
+    "lon": -72.1968,
+    "elevation_m": 1915,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Travesía",
+    "slug": "cerro-travesia",
+    "lat": -51.1577,
+    "lon": -73.5215,
+    "elevation_m": 1913,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Blanco",
+    "slug": "cerro-blanco",
+    "lat": -50.909,
+    "lon": -73.4182,
+    "elevation_m": 1910,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Baume",
+    "slug": "mount-baume",
+    "lat": -54.6558,
+    "lon": -36.231,
+    "elevation_m": 1910,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Turnbull",
+    "slug": "mount-turnbull",
+    "lat": -45.1305,
+    "lon": 168.3212,
+    "elevation_m": 1910,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Rullman Peak",
+    "slug": "rullman-peak",
+    "lat": -79.2211,
+    "lon": -84.5704,
+    "elevation_m": 1910,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cascabel",
+    "slug": "cerro-cascabel",
+    "lat": -48.7856,
+    "lon": -72.6579,
+    "elevation_m": 1908,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Alto Las Lajas",
+    "slug": "alto-las-lajas",
+    "lat": -46.7622,
+    "lon": -72.0156,
+    "elevation_m": 1905,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Hudson",
+    "slug": "monte-hudson",
+    "lat": -45.9522,
+    "lon": -72.9225,
+    "elevation_m": 1905,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Dinky Do",
+    "slug": "dinky-do",
+    "lat": 76.4559,
+    "lon": -26.128,
+    "elevation_m": 1904,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Essinger",
+    "slug": "mount-essinger",
+    "lat": -77.8716,
+    "lon": 162.6441,
+    "elevation_m": 1903,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Morrison",
+    "slug": "mount-morrison",
+    "lat": -76.895,
+    "lon": 161.5495,
+    "elevation_m": 1903,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Llave de Granito",
+    "slug": "cerro-llave-de-granito",
+    "lat": -46.63,
+    "lon": -72.3242,
+    "elevation_m": 1902,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mayo",
+    "slug": "cerro-mayo-3",
+    "lat": -54.6288,
+    "lon": -70.0202,
+    "elevation_m": 1900,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Macklin",
+    "slug": "mount-macklin",
+    "lat": -54.7546,
+    "lon": -36.0451,
+    "elevation_m": 1900,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ben Cruachan",
+    "slug": "ben-cruachan",
+    "lat": -45.0464,
+    "lon": 168.8664,
+    "elevation_m": 1895,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Hatcher",
+    "slug": "cerro-hatcher",
+    "lat": -48.4904,
+    "lon": -72.2775,
+    "elevation_m": 1895,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Coates",
+    "slug": "mount-coates",
+    "lat": -77.7908,
+    "lon": 162.0851,
+    "elevation_m": 1894,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mynedd Glaslyn",
+    "slug": "mynedd-glaslyn",
+    "lat": 76.4692,
+    "lon": -26.0148,
+    "elevation_m": 1893,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lyall",
+    "slug": "mount-lyall",
+    "lat": -45.275,
+    "lon": 167.5367,
+    "elevation_m": 1892,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cono",
+    "slug": "cerro-cono-2",
+    "lat": -48.0422,
+    "lon": -72.4281,
+    "elevation_m": 1890,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Colorado Oeste",
+    "slug": "colorado-oeste",
+    "lat": -46.8664,
+    "lon": -71.7602,
+    "elevation_m": 1890,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Duff",
+    "slug": "punta-duff",
+    "lat": -46.0443,
+    "lon": -72.2256,
+    "elevation_m": 1889,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Rocky Mount",
+    "slug": "rocky-mount",
+    "lat": -45.3981,
+    "lon": 168.9769,
+    "elevation_m": 1885,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Mochileros",
+    "slug": "punta-mochileros",
+    "lat": -45.3574,
+    "lon": -72.25,
+    "elevation_m": 1884,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Eléctrico oeste",
+    "slug": "cerro-electrico-oeste",
+    "lat": -49.2409,
+    "lon": -73.0419,
+    "elevation_m": 1882,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Redondo",
+    "slug": "cerro-redondo",
+    "lat": -50.6466,
+    "lon": -72.4011,
+    "elevation_m": 1882,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Century",
+    "slug": "century",
+    "lat": 77.1736,
+    "lon": -61.1068,
+    "elevation_m": 1880,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Paine Chico Norte",
+    "slug": "cerro-paine-chico-norte",
+    "lat": -50.8925,
+    "lon": -73.1537,
+    "elevation_m": 1880,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Fagerli",
+    "slug": "mount-fagerli",
+    "lat": -54.339,
+    "lon": -36.7091,
+    "elevation_m": 1880,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Cordón",
+    "slug": "cerro-cordon",
+    "lat": -49.2542,
+    "lon": -72.5803,
+    "elevation_m": 1879,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tridente",
+    "slug": "cerro-tridente-2",
+    "lat": -50.9311,
+    "lon": -73.0147,
+    "elevation_m": 1878,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "La Count Mountain",
+    "slug": "la-count-mountain",
+    "lat": -77.9948,
+    "lon": 161.7092,
+    "elevation_m": 1877,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pico Agudo",
+    "slug": "cerro-pico-agudo",
+    "lat": -47.507,
+    "lon": -72.2289,
+    "elevation_m": 1876,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Black Face",
+    "slug": "black-face",
+    "lat": -77.8511,
+    "lon": 160.8795,
+    "elevation_m": 1875,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Paulsen Peak",
+    "slug": "paulsen-peak",
+    "lat": -54.3304,
+    "lon": -36.648,
+    "elevation_m": 1875,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Static Nunatak",
+    "slug": "static-nunatak",
+    "lat": -77.9302,
+    "lon": 160.829,
+    "elevation_m": 1875,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Margaret Hill",
+    "slug": "margaret-hill",
+    "lat": -78.2038,
+    "lon": 162.9225,
+    "elevation_m": 1874,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cordillera Sarmiento",
+    "slug": "cordillera-sarmiento",
+    "lat": -51.8021,
+    "lon": -73.3842,
+    "elevation_m": 1870,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Crichton",
+    "slug": "mount-crichton",
+    "lat": -45.0272,
+    "lon": 168.4862,
+    "elevation_m": 1870,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Plomo",
+    "slug": "plomo",
+    "lat": -47.0068,
+    "lon": -71.7978,
+    "elevation_m": 1867,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Punta Puma",
+    "slug": "punta-puma",
+    "lat": -50.8931,
+    "lon": -73.1808,
+    "elevation_m": 1866,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Footscrew Nunatak",
+    "slug": "footscrew-nunatak",
+    "lat": -77.9093,
+    "lon": 160.951,
+    "elevation_m": 1865,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Hobler",
+    "slug": "cerro-hobler",
+    "lat": -50.1334,
+    "lon": -72.8866,
+    "elevation_m": 1864,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Navarro",
+    "slug": "cerro-navarro",
+    "lat": -54.565,
+    "lon": -70.429,
+    "elevation_m": 1864,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Irene",
+    "slug": "mount-irene",
+    "lat": -45.1778,
+    "lon": 167.3595,
+    "elevation_m": 1859,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pico Jano",
+    "slug": "pico-jano",
+    "lat": -54.7921,
+    "lon": -69.2822,
+    "elevation_m": 1859,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Cóndor",
+    "slug": "cerro-el-condor",
+    "lat": -46.9771,
+    "lon": -71.8799,
+    "elevation_m": 1855,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Holmes Block",
+    "slug": "holmes-block",
+    "lat": -78.2198,
+    "lon": 161.5901,
+    "elevation_m": 1854,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Eglinton",
+    "slug": "mount-eglinton",
+    "lat": -45.0176,
+    "lon": 167.9716,
+    "elevation_m": 1854,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Submarino",
+    "slug": "cerro-submarino",
+    "lat": -48.5175,
+    "lon": -72.5018,
+    "elevation_m": 1851,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "No' Point",
+    "slug": "no-point",
+    "lat": 76.8043,
+    "lon": -26.5483,
+    "elevation_m": 1851,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Pilar",
+    "slug": "cerro-pilar",
+    "lat": -50.6617,
+    "lon": -72.433,
+    "elevation_m": 1849,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Tuerto",
+    "slug": "cerro-tuerto",
+    "lat": -47.8306,
+    "lon": -73.1667,
+    "elevation_m": 1848,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Torii",
+    "slug": "mount-torii",
+    "lat": -77.6154,
+    "lon": 162.7281,
+    "elevation_m": 1848,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Wistar Bjerg",
+    "slug": "wistar-bjerg",
+    "lat": 82.8873,
+    "lon": -32.8967,
+    "elevation_m": 1847,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "P.",
+    "slug": "p-2",
+    "lat": -63.9695,
+    "lon": -59.8149,
+    "elevation_m": 1845,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Redondo",
+    "slug": "cerro-redondo-2",
+    "lat": -46.2181,
+    "lon": -72.4407,
+    "elevation_m": 1842,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Rasgado",
+    "slug": "cerro-rasgado",
+    "lat": -48.0721,
+    "lon": -72.3839,
+    "elevation_m": 1840,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Marikoppa",
+    "slug": "marikoppa",
+    "lat": -54.3277,
+    "lon": -36.701,
+    "elevation_m": 1840,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Smoky Wall",
+    "slug": "smoky-wall",
+    "lat": -54.5966,
+    "lon": -36.1903,
+    "elevation_m": 1840,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Neuburg Peak",
+    "slug": "neuburg-peak",
+    "lat": -82.6167,
+    "lon": -52.9,
+    "elevation_m": 1839,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Aislado",
+    "slug": "cerro-el-aislado",
+    "lat": -45.9529,
+    "lon": -72.0594,
+    "elevation_m": 1838,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Rodado",
+    "slug": "cerro-el-rodado",
+    "lat": -49.0214,
+    "lon": -72.8046,
+    "elevation_m": 1838,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ridge Peak",
+    "slug": "ridge-peak",
+    "lat": -45.2019,
+    "lon": 168.3995,
+    "elevation_m": 1838,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Selk'nam",
+    "slug": "cerro-selk-nam",
+    "lat": -54.6426,
+    "lon": -69.4829,
+    "elevation_m": 1837,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Iglesia",
+    "slug": "cerro-iglesia",
+    "lat": -45.8239,
+    "lon": -72.3183,
+    "elevation_m": 1835,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Azara",
+    "slug": "cerro-azara",
+    "lat": -49.3783,
+    "lon": -73.1278,
+    "elevation_m": 1834,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Softice",
+    "slug": "softice",
+    "lat": 76.3312,
+    "lon": -26.3323,
+    "elevation_m": 1833,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Verlika",
+    "slug": "cerro-verlika",
+    "lat": -50.6205,
+    "lon": -72.2615,
+    "elevation_m": 1832,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Filo Helado",
+    "slug": "cerro-filo-helado",
+    "lat": -54.6374,
+    "lon": -69.9505,
+    "elevation_m": 1830,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pagano Nunatak",
+    "slug": "pagano-nunatak",
+    "lat": -83.6862,
+    "lon": -87.607,
+    "elevation_m": 1830,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Rahi Peak",
+    "slug": "rahi-peak",
+    "lat": -77.7333,
+    "lon": 162.8316,
+    "elevation_m": 1830,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Stepaside Knoll",
+    "slug": "stepaside-knoll",
+    "lat": -78.224,
+    "lon": 161.4062,
+    "elevation_m": 1829,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Torre El Diente",
+    "slug": "torre-el-diente",
+    "lat": -46.4183,
+    "lon": -72.5284,
+    "elevation_m": 1827,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Universidad de Magallanes",
+    "slug": "cerro-universidad-de-magallanes",
+    "lat": -54.7349,
+    "lon": -69.2918,
+    "elevation_m": 1825,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Mangrullo",
+    "slug": "cerro-mangrullo",
+    "lat": -50.6194,
+    "lon": -72.1569,
+    "elevation_m": 1824,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Countess Peak",
+    "slug": "countess-peak",
+    "lat": -45.093,
+    "lon": 168.0414,
+    "elevation_m": 1823,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Hoopers Shoulder",
+    "slug": "hoopers-shoulder",
+    "lat": -77.5309,
+    "lon": 166.8872,
+    "elevation_m": 1820,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Schmidtman",
+    "slug": "mount-schmidtman",
+    "lat": -76.5678,
+    "lon": 160.993,
+    "elevation_m": 1820,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro La Leonera",
+    "slug": "cerro-la-leonera",
+    "lat": -46.6322,
+    "lon": -72.2251,
+    "elevation_m": 1812,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Madsen",
+    "slug": "cerro-madsen",
+    "lat": -49.2694,
+    "lon": -72.9925,
+    "elevation_m": 1806,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Pukeraki / Mount Dick",
+    "slug": "pukeraki-mount-dick",
+    "lat": -45.2646,
+    "lon": 168.6829,
+    "elevation_m": 1805,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Las Chivas",
+    "slug": "cerro-las-chivas",
+    "lat": -47.5123,
+    "lon": -72.2911,
+    "elevation_m": 1804,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Don Antonio",
+    "slug": "cerro-don-antonio",
+    "lat": -46.1095,
+    "lon": -73.1009,
+    "elevation_m": 1803,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro El Faldeo",
+    "slug": "cerro-el-faldeo",
+    "lat": -49.3442,
+    "lon": -72.7447,
+    "elevation_m": 1803,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Chenque",
+    "slug": "cerro-chenque",
+    "lat": -47.1293,
+    "lon": -71.5383,
+    "elevation_m": 1802,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Giuliana",
+    "slug": "cerro-giuliana",
+    "lat": -54.7314,
+    "lon": -69.1051,
+    "elevation_m": 1801,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Dieciocho",
+    "slug": "cerro-dieciocho",
+    "lat": -46.1303,
+    "lon": -72.7557,
+    "elevation_m": 1800,
+    "region": "OpenStreetMap",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Walter Peak",
+    "slug": "walter-peak",
+    "lat": -45.1283,
+    "lon": 168.5617,
+    "elevation_m": 1800,
+    "region": "OpenStreetMap",
     "current_risk_level": "low",
     "is_live": false
   }
