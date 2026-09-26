@@ -1,45 +1,47 @@
 /*
  * TerraSense design tokens for Claude Design.
  * Sources, in precedence order:
- *   - Hex values: context/TerraSense.md, Design Language (the addendum defers color to it).
+ *   - Hex values: context/TerraSense.md, Design Language ("basalt and glacier"; the addendum
+ *     defers color to it). frontend/app/globals.css :root carries the same values today.
  *   - Variable names, roles, radius, type, motion: context/design-addendum.md (Tokens, Type, Motion).
- * build-pkg.mjs compiles this file with Tailwind v4. frontend/app/globals.css is NOT
- * read here: it predates the addendum and uses different names. See NOTES.md.
+ *   - .theme-home-light: the globe home's light scope, from frontend/app/globals.css and
+ *     HOME_THEME in frontend/lib/theme.ts (the spec's Design Language has no light values yet).
+ * build-pkg.mjs compiles this file with Tailwind v4. See NOTES.md.
  */
 @import "tailwindcss" source(none);
 
 :root {
-  /* Design Language: background #0A0E14 to #0F1419. */
-  --background: #0a0e14; /* dark end: page, globe backdrop edge, map fog */
-  --muted: #0f1419; /* light end: inset fields, skeleton bars, globe backdrop center */
+  /* Design Language: background #0D0C0A to #13120F. */
+  --background: #0d0c0a; /* dark end: page, globe backdrop edge, map fog */
+  --muted: #13120f; /* light end: inset fields, skeleton bars */
 
-  /* Design Language: panels #151B23. */
-  --card: #151b23;
-  --popover: #151b23;
-  --secondary: #151b23;
+  /* Design Language: panels #1A1814. */
+  --card: #1a1814;
+  --popover: #1a1814;
+  --secondary: #1a1814;
 
-  /* Design Language: text #E6EDF3, muted #8B949E. */
-  --foreground: #e6edf3;
-  --card-foreground: #e6edf3;
-  --popover-foreground: #e6edf3;
-  --secondary-foreground: #e6edf3;
-  --accent-foreground: #e6edf3;
-  --muted-foreground: #8b949e;
+  /* Design Language: text #ECE6DC, muted #9C9387. */
+  --foreground: #ece6dc;
+  --card-foreground: #ece6dc;
+  --popover-foreground: #ece6dc;
+  --secondary-foreground: #ece6dc;
+  --accent-foreground: #ece6dc;
+  --muted-foreground: #9c9387;
 
-  /* Design Language: interactive accent #22D3EE. Addendum: it is --primary, never --accent. */
-  --primary: #22d3ee;
-  --ring: #22d3ee;
-  --primary-foreground: #0a0e14;
+  /* Design Language: interactive accent #7FDDE6. Addendum: it is --primary, never --accent. */
+  --primary: #7fdde6;
+  --ring: #7fdde6;
+  --primary-foreground: #0d0c0a;
 
-  /* Design Language: 1 px border at about 10% white. */
-  --border: rgb(255 255 255 / 0.1);
-  --input: rgb(255 255 255 / 0.1);
+  /* Design Language: 1 px border at about 10% of the text color. */
+  --border: color-mix(in srgb, #ece6dc 10%, transparent);
+  --input: color-mix(in srgb, #ece6dc 10%, transparent);
 
-  /* Addendum: shadcn's hover surface for list rows. White at 6%. Not the cyan. */
-  --accent: rgb(255 255 255 / 0.06);
+  /* Addendum: shadcn's hover surface for list rows. Text at 6%. Not the cyan. */
+  --accent: color-mix(in srgb, #ece6dc 6%, transparent);
 
   /* Addendum: errors never borrow risk red. */
-  --destructive: #e6edf3;
+  --destructive: #ece6dc;
 
   /* Design Language: risk only. */
   --risk-low: #22c55e;
@@ -51,6 +53,35 @@
   --radius: 6px;
 }
 
+/*
+ * The globe home's light scope. Put the class on the home screen's root only; mountain pages
+ * stay on the dark dispatch theme. Every role is set explicitly here, because a var() alias
+ * resolved at :root would keep the dark theme's value inside this scope.
+ */
+.theme-home-light {
+  color-scheme: light;
+  --background: #f5f2eb;
+  --muted: #ebe6dd;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --secondary: #ffffff;
+  --foreground: #1a1814;
+  --card-foreground: #1a1814;
+  --popover-foreground: #1a1814;
+  --secondary-foreground: #1a1814;
+  --accent-foreground: #1a1814;
+  --muted-foreground: #6b6359;
+  --primary: #2ba8b5;
+  --ring: #2ba8b5;
+  --primary-foreground: #f5f2eb;
+  --border: color-mix(in srgb, #1a1814 12%, transparent);
+  --input: color-mix(in srgb, #1a1814 12%, transparent);
+  --accent: color-mix(in srgb, #1a1814 6%, transparent);
+  --destructive: #1a1814;
+  background: radial-gradient(ellipse at center, var(--muted) 0%, var(--background) 72%);
+  color: var(--foreground);
+}
+
 @theme {
   /* Only the palette above exists. Tailwind's default colors are removed, because color is information. */
   --color-*: initial;
@@ -58,7 +89,7 @@
   --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
-  /* Addendum, Motion: the work pulse. Running agent rows and skeleton bars only. */
+  /* Addendum, Motion: the work pulse. Running agent cards, the current step, and skeleton bars only. */
   --animate-work: work-pulse 1.2s ease-in-out infinite;
 
   @keyframes work-pulse {

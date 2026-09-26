@@ -10,7 +10,48 @@
   "overrides": {
     "RiskBadge": {
       "cardMode": "column"
+    },
+    "OverallRisk": {
+      "cardMode": "column"
+    },
+    "TrailList": {
+      "cardMode": "column"
+    },
+    "PreventativeMeasures": {
+      "cardMode": "column"
+    },
+    "ReactiveMeasures": {
+      "cardMode": "column",
+      "viewport": "900x1500"
+    },
+    "AnalyzeButton": {
+      "cardMode": "column"
+    },
+    "AgentPipeline": {
+      "cardMode": "column"
+    },
+    "AgentCard": {
+      "cardMode": "column"
+    },
+    "LevelWord": {
+      "cardMode": "column"
+    },
+    "NeedsReviewTag": {
+      "cardMode": "column"
     }
   },
-  "readmeHeader": ".design-sync/conventions.md"
+  "readmeHeader": ".design-sync/conventions.md",
+  "docsMap": {
+    "RiskBadge": "../../docs/risk.md",
+    "LevelWord": "../../docs/risk.md",
+    "NeedsReviewTag": "../../docs/risk.md"
+  },
+  "dtsPropsFor": {
+    "OverallRisk": "/** The mountain. OverallRisk reads name-independent fields: isLive, risk, isDemo. */\n  hill: {\n    slug: string;\n    name: string;\n    region: string;\n    /** False for display markers: they show the fixed level and one line, no score. */\n    isLive: boolean;\n    stats: { elevationM: number; meanSlopeDeg: number; areaKm2: number };\n    /** The overall score, 0 to 1, and its level. High and Extreme get the border and tint. */\n    risk: { score: number; level: \"low\" | \"moderate\" | \"high\" | \"extreme\" };\n    /** The top five trails (the TrailList item shape). OverallRisk does not render them; [] is fine. */\n    trails: unknown[];\n    preventative: string[];\n    /** True adds the line \"Illustrative scores until the trail model lands.\" */\n    isDemo: boolean;\n  };",
+    "TrailList": "/** The top five, riskiest first, lettered A to E. Each item: */\n  trails: Array<{\n    id: string;\n    /** A for the riskiest, E for the fifth. The row and the map marker share it. */\n    letter: \"A\" | \"B\" | \"C\" | \"D\" | \"E\";\n    name: string;\n    /** 0 to 1, two decimals when shown. */\n    score: number;\n    level: \"low\" | \"moderate\" | \"high\" | \"extreme\";\n    /** Hillside slope at the riskiest point, in degrees. */\n    slopeDeg: number;\n    /** The driver that contributes most, in plain words (\"Steep slopes\", \"Drainage channel\"). */\n    primaryFactor: string;\n    /** [longitude, latitude] of the marker. */\n    center: [number, number];\n    /** Camera zoom that View flies to, about 13. */\n    zoom: number;\n    /** GeoJSON LineString of the trail, or null. */\n    geom: { type: \"LineString\"; coordinates: [number, number][] } | null;\n  }>;\n  /** The row last viewed (accent left border), or null. */\n  selected: \"A\" | \"B\" | \"C\" | \"D\" | \"E\" | null;\n  /** Called by a row's View button with its letter. */\n  onView: (letter: \"A\" | \"B\" | \"C\" | \"D\" | \"E\") => void;",
+    "AgentCard": "agent: {\n    id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n    status: \"idle\" | \"running\" | \"done\" | \"error\";\n    /** One line under the card's name. */\n    summary: string;\n    /** The full reasoning trace, one step per entry, shown when expanded. */\n    trace: string[];\n    /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n    startedAt: number | null;\n    finishedAt: number | null;\n  };\n  /** Shows the trace directly beneath the card. The parent keeps one open at a time. */\n  expanded: boolean;\n  /** An idle agent a failed run never reached: its status reads \"not reached\". */\n  notReached: boolean;\n  onToggle: () => void;",
+    "AgentPipeline": "state: {\n    orchestrator: \"idle\" | \"running\" | \"done\" | \"error\";\n    /** One entry per agent. Terrain, Weather, and Trails run together; then Synthesizer; then alertWriter (Mass Alert Writer). */\n    agents: {\n      terrain: {\n        id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n        status: \"idle\" | \"running\" | \"done\" | \"error\";\n        /** One line under the card's name. */\n        summary: string;\n        /** The full reasoning trace, one step per entry, shown when expanded. */\n        trace: string[];\n        /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n        startedAt: number | null;\n        finishedAt: number | null;\n      };\n      weather: {\n        id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n        status: \"idle\" | \"running\" | \"done\" | \"error\";\n        /** One line under the card's name. */\n        summary: string;\n        /** The full reasoning trace, one step per entry, shown when expanded. */\n        trace: string[];\n        /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n        startedAt: number | null;\n        finishedAt: number | null;\n      };\n      trails: {\n        id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n        status: \"idle\" | \"running\" | \"done\" | \"error\";\n        /** One line under the card's name. */\n        summary: string;\n        /** The full reasoning trace, one step per entry, shown when expanded. */\n        trace: string[];\n        /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n        startedAt: number | null;\n        finishedAt: number | null;\n      };\n      synthesizer: {\n        id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n        status: \"idle\" | \"running\" | \"done\" | \"error\";\n        /** One line under the card's name. */\n        summary: string;\n        /** The full reasoning trace, one step per entry, shown when expanded. */\n        trace: string[];\n        /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n        startedAt: number | null;\n        finishedAt: number | null;\n      };\n      alertWriter: {\n        id: \"terrain\" | \"weather\" | \"trails\" | \"synthesizer\" | \"alertWriter\";\n        status: \"idle\" | \"running\" | \"done\" | \"error\";\n        /** One line under the card's name. */\n        summary: string;\n        /** The full reasoning trace, one step per entry, shown when expanded. */\n        trace: string[];\n        /** Epoch ms, or null before the agent starts. The card shows the duration once both are set. */\n        startedAt: number | null;\n        finishedAt: number | null;\n      };\n    };\n    /** Null until the Mass Alert Writer finishes. Render them with ReactiveMeasures. */\n    measures: Array<{\n    /** Groups render in this order: closures, evacuation, rescue, monitoring, coordination, public. */\n    category: \"closures\" | \"evacuation\" | \"rescue\" | \"monitoring\" | \"coordination\" | \"public\";\n    title: string;\n    detail: string;\n    /** Deadline chip, such as \"Now\" (drawn solid), \"Within 1 h\", \"Next morning\". Public items show \"Draft, not sent\" instead. */\n    when: string;\n    /** The trail it concerns (its badge takes the trail's level color from `trails`), or null. */\n    letter: \"A\" | \"B\" | \"C\" | \"D\" | \"E\" | null;\n  }> | null;\n    /** The Orchestrator's line when orchestrator is \"error\". */\n    error: string | null;\n  };\n  /* initialPipelineState() returns the idle state; usePipeline(hill) plays a scripted run. */",
+    "ReactiveMeasures": "measures: Array<{\n    /** Groups render in this order: closures, evacuation, rescue, monitoring, coordination, public. */\n    category: \"closures\" | \"evacuation\" | \"rescue\" | \"monitoring\" | \"coordination\" | \"public\";\n    title: string;\n    detail: string;\n    /** Deadline chip, such as \"Now\" (drawn solid), \"Within 1 h\", \"Next morning\". Public items show \"Draft, not sent\" instead. */\n    when: string;\n    /** The trail it concerns (its badge takes the trail's level color from `trails`), or null. */\n    letter: \"A\" | \"B\" | \"C\" | \"D\" | \"E\" | null;\n  }>;\n  /** The overall level: High and Extreme give the section the 3 px border and 8% tint. */\n  level: \"low\" | \"moderate\" | \"high\" | \"extreme\";\n  /** The top five trails, so each measure's letter badge takes its trail's level color. */\n  trails: Array<{\n    id: string;\n    /** A for the riskiest, E for the fifth. The row and the map marker share it. */\n    letter: \"A\" | \"B\" | \"C\" | \"D\" | \"E\";\n    name: string;\n    /** 0 to 1, two decimals when shown. */\n    score: number;\n    level: \"low\" | \"moderate\" | \"high\" | \"extreme\";\n    /** Hillside slope at the riskiest point, in degrees. */\n    slopeDeg: number;\n    /** The driver that contributes most, in plain words (\"Steep slopes\", \"Drainage channel\"). */\n    primaryFactor: string;\n    /** [longitude, latitude] of the marker. */\n    center: [number, number];\n    /** Camera zoom that View flies to, about 13. */\n    zoom: number;\n    /** GeoJSON LineString of the trail, or null. */\n    geom: { type: \"LineString\"; coordinates: [number, number][] } | null;\n  }>;",
+    "NeedsReviewTag": "/** No props. Place it beside a LevelWord. */"
+  }
 }
