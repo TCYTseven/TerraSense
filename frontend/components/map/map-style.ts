@@ -112,6 +112,7 @@ export const SOURCE = {
   history: "historical-events",
   trailRisk: "trail-risk",
   flow: "runout-flow",
+  flowField: "runout-field",
 } as const;
 
 export const LAYER = {
@@ -131,6 +132,7 @@ export const LAYER = {
   trailRisk: "trail-risk-line",
   flow: "runout-flow",
   flowEdge: "runout-flow-edge",
+  flowField: "runout-field",
 } as const;
 
 /**

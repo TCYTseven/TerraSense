@@ -2,9 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSimulation, simulationStreamUrl, startSimulation } from "./api";
+import { type Playhead, playheadTime } from "./runout-field";
 import type { FlowFeatureCollection, Position, Simulation, SimulationCallout } from "./types";
 
+/** Playback runs this long per traced frame, so a longer runout plays longer. */
 const FRAME_MS = 500;
+/** How often the clock and the step label update. The map itself animates every frame. */
+const TICK_MS = 100;
 
 export type SimulationPhase = "idle" | "loading" | "playing" | "finished" | "error";
 
@@ -22,10 +26,12 @@ export interface ReleaseCamera {
 export interface SimulationPlayback {
   phase: SimulationPhase;
   simulation: Simulation | null;
-  /** The frame the map should draw. Null until the first snapshot. */
+  /** The polygon frame for the current time, for a backend that sends no field. */
   frameIndex: number;
-  /** Simulated seconds at the current frame. */
+  /** Simulated seconds, updated every TICK_MS. */
   timeS: number;
+  /** The continuous clock the map sweeps the field by. Null before the first snapshot. */
+  playhead: Playhead | null;
   error: string | null;
   /** Flies the map to the release. Set once per run, not on replay. */
   camera: ReleaseCamera | null;
@@ -72,14 +78,32 @@ function bearingDeg(a: Position, b: Position): number {
   return (Math.atan2(y, x) / rad + 360) % 360;
 }
 
+function durationOf(sim: Simulation): number {
+  return sim.duration_s || sim.frames.at(-1)?.t_s || 1;
+}
+
+/** The last polygon frame whose time has come. */
+function frameAt(sim: Simulation, timeS: number): number {
+  let index = 0;
+  sim.frames.forEach((frame, i) => {
+    if (frame.t_s <= timeS + 1e-6) {
+      index = i;
+    }
+  });
+  return index;
+}
+
 /**
- * Starts a runout, follows its stream, and advances one frame every 500 ms.
- * Replay uses the frames already loaded.
+ * Starts a runout, follows its stream, and plays it on a continuous clock: the map reads
+ * the playhead every animation frame, and the clock text updates every TICK_MS.
+ * Replay uses the run already loaded.
  */
 export function useSimulation(slug: string): SimulationPlayback {
   const [phase, setPhase] = useState<SimulationPhase>("idle");
   const [simulation, setSimulation] = useState<Simulation | null>(null);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [timeS, setTimeS] = useState(0);
+  const [playhead, setPlayhead] = useState<Playhead | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [camera, setCamera] = useState<ReleaseCamera | null>(null);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -94,27 +118,31 @@ export function useSimulation(slug: string): SimulationPlayback {
   }, []);
 
   const play = useCallback(
-    (sim: Simulation, from: number) => {
+    (sim: Simulation) => {
       clearTimer();
-      const last = Math.max(0, sim.frames.length - 1);
-      if (prefersReducedMotion() || sim.frames.length <= 1) {
-        setFrameIndex(last);
+      const durationS = durationOf(sim);
+      const msPerS = (Math.max(8, sim.frames.length) * FRAME_MS) / durationS;
+      if (prefersReducedMotion() || (sim.frames.length <= 1 && !sim.field)) {
+        setPlayhead({ t0: Number.NEGATIVE_INFINITY, msPerS, durationS });
+        setTimeS(durationS);
+        setFrameIndex(Math.max(0, sim.frames.length - 1));
         setPhase("finished");
         return;
       }
-      let index = from;
-      setFrameIndex(from);
+      const head = { t0: performance.now(), msPerS, durationS };
+      setPlayhead(head);
+      setTimeS(0);
+      setFrameIndex(0);
       setPhase("playing");
       timer.current = setInterval(() => {
-        index += 1;
-        if (index >= sim.frames.length) {
+        const t = playheadTime(head, performance.now());
+        setTimeS(t);
+        setFrameIndex(frameAt(sim, t));
+        if (t >= durationS) {
           clearTimer();
-          setFrameIndex(sim.frames.length - 1);
           setPhase("finished");
-          return;
         }
-        setFrameIndex(index);
-      }, FRAME_MS);
+      }, TICK_MS);
     },
     [clearTimer],
   );
@@ -130,6 +158,8 @@ export function useSimulation(slug: string): SimulationPlayback {
     setError(null);
     setPhase("loading");
     setFrameIndex(0);
+    setTimeS(0);
+    setPlayhead(null);
     void startSimulation(slug)
       .then(({ simulation_id }) => {
         stopStream.current = follow(simulation_id, {
@@ -139,7 +169,7 @@ export function useSimulation(slug: string): SimulationPlayback {
             if (point) {
               setCamera(frontCamera(sim, point.lon, point.lat));
             }
-            play(sim, 0);
+            play(sim);
           },
           onCallout(callout) {
             setSimulation((prev) => {
@@ -179,7 +209,7 @@ export function useSimulation(slug: string): SimulationPlayback {
       return;
     }
     setError(null);
-    play(sim, 0);
+    play(sim);
   }, [play]);
 
   useEffect(
@@ -190,12 +220,12 @@ export function useSimulation(slug: string): SimulationPlayback {
     [clearTimer],
   );
 
-  const frame = simulation?.frames[frameIndex];
   return {
     phase,
     simulation,
     frameIndex,
-    timeS: frame?.t_s ?? 0,
+    timeS,
+    playhead,
     error,
     camera,
     start,

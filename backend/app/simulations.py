@@ -31,6 +31,7 @@ class SimulationState:
     distance_m: float = 0
     drop_m: float = 0
     frames: list = field(default_factory=list)
+    flow_field: dict | None = None
     steps: list = field(default_factory=list)
     callouts: list = field(default_factory=list)
     callouts_from_templates: bool = False
@@ -50,6 +51,7 @@ class SimulationState:
             "distance_m": self.distance_m,
             "drop_m": self.drop_m,
             "frames": self.frames,
+            "field": self.flow_field,
             "steps": self.steps,
             "callouts": self.callouts,
             "callouts_from_templates": self.callouts_from_templates,
@@ -87,6 +89,7 @@ class SimulationRegistry:
             state.distance_m = traced["distance_m"]
             state.drop_m = traced["drop_m"]
             state.frames = traced["frames"]
+            state.flow_field = traced.get("field")
             state.steps = traced["steps"]
             self._broadcast(state, {"type": "snapshot", "simulation": state.view()})
             mountain = state.mountain or {"slug": state.slug, "name": state.slug.replace("-", " ").title()}

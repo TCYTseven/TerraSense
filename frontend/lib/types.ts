@@ -677,6 +677,21 @@ export interface SimulationCallout {
 }
 
 /** An illustrative debris-flow runout. Times are simulated seconds, not a forecast. */
+/**
+ * The runout on a Web Mercator grid, mirrored from backend/app/ml/flow_field.py. Rows run
+ * top to bottom. `cover` and `depth` are base64 uint8 (0–255). `arrival` is base64
+ * little-endian uint16: seconds / duration_s * 65534, and 65535 where the flow never arrives.
+ */
+export interface RunoutField {
+  /** [lon, lat] for top-left, top-right, bottom-right, bottom-left. */
+  corners: [Position, Position, Position, Position];
+  width: number;
+  height: number;
+  cover: string;
+  arrival: string;
+  depth: string;
+}
+
 export interface Simulation {
   id: string;
   mountain_slug: string;
@@ -688,6 +703,8 @@ export interface Simulation {
   distance_m: number;
   drop_m: number;
   frames: RunoutFrame[];
+  /** The whole runout as one field the map sweeps smoothly. Null from an older backend. */
+  field?: RunoutField | null;
   steps: RunoutStep[];
   callouts: SimulationCallout[];
   callouts_from_templates: boolean;
