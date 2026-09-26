@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { formatScore, riskLabel } from "@/lib/format";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
 import { RISK_COLORS, THEME } from "@/lib/theme";
+import { uphillBearing } from "./fall-line";
 import { HAZARD_OUTLINE_COLOR, LAYER, SOURCE, trailRiskFeatures, trailRiskPaint } from "./map-style";
 
 /** Hovering the ground this close to a trail's center shows its tooltip, in meters. */
@@ -345,8 +346,8 @@ export function useTrailMarkers(
     }
   }, [map, signature, selected]);
 
-  // A new focus (a new nonce, even for the same letter) flies to that trail's region, then
-  // shows its tooltip. Under reduced motion the camera jumps.
+  // A new focus (a new nonce, even for the same letter) flies to that trail's region, turned to
+  // look up the slope there, then shows its tooltip. Under reduced motion the camera jumps.
   useEffect(() => {
     if (!map || !focus) {
       return;
@@ -368,7 +369,9 @@ export function useTrailMarkers(
     };
     map.on("moveend", onEnd);
     controller.current?.pin(null);
-    const camera = { center: trail.center, zoom: trail.zoom, pitch: FOCUS_PITCH, bearing: map.getBearing() };
+    // Face uphill at the marker, so the slope a landslide would come down fronts the viewer.
+    const bearing = uphillBearing(map, trail.center[0], trail.center[1]) ?? map.getBearing();
+    const camera = { center: trail.center, zoom: trail.zoom, pitch: FOCUS_PITCH, bearing };
     if (prefersReducedMotion()) {
       map.jumpTo(camera, tag);
     } else {

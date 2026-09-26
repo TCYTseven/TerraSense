@@ -224,7 +224,7 @@ The right column before a simulation, top to bottom:
 
 ### Simulation
 
-Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A bar across the top of the mountain view shows the current step, the simulated clock, and the span from release to stop. The bar is a display: it does not scrub, and it stays in step with the footprint. The method line under it never hides. Until a 30 m grid is on disk it reads "Illustrative runout along the trail's downhill line. Not a forecast of timing." Callouts sit on the map. The column swap below is the globe panel's layout, and that panel is not built. The rules for the flow, the method line, the callouts, and the lack of a scrubber still apply.
+Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A bar across the top of the mountain view shows the current step, the simulated clock, and the span from release to stop. The bar is a display: it does not scrub, and it stays in step with the footprint. The method line under it never hides. On terrain it reads "Illustrative runout from a travel-angle model on 26 m terrain. Not a forecast of timing." When no terrain tile can be read it reads "Illustrative runout along the trail's downhill line. Not a forecast of timing." Callouts sit on the map. The column swap below is the globe panel's layout, and that panel is not built. The rules for the flow, the method line, the callouts, and the lack of a scrubber still apply.
 
 **Right column, top to bottom**
 
@@ -241,7 +241,7 @@ Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A ba
 - **Flow.** Sep 26, 2026: the footprint is dirt on the ground, not a risk color. Each frame is five nested bands, a narrow dark core (`shade` 0) that follows the path from the release, then wider and paler bands out to the edge (`shade` 4), each at 0.85 opacity. The outer bands widen as the flow descends, so it starts dark brown at the release and pales toward its sides downhill. The five browns (`#4A2C16`, `#6B4226`, `#8B5E3C`, `#AD8358`, `#CDAE84`) live only in `FLOW_COLORS` in `frontend/lib/theme.ts`. The flow's level stays in the steps, callouts, and trail marks. While a simulation shows, the heat map drops to 35% `raster-opacity` at once, so the flow reads on top of it. Back to pressure points restores it.
 - **Edge.** A 1.5 px line in the text color at 70% traces the footprint's current edge. It is geometry, not a level, so it is not a risk color.
 - **Trail marks.** Where the flow first crosses a trail, a 20 px version of the hazard pin (level color, dark ring, warning triangle) appears when that step is reached. The crossed miles of the hero trail keep their segment colors.
-- **Camera.** It does not move during playback. If the final footprint falls outside the frame, fit its bounds with `duration: 0` before playback starts.
+- **Camera.** Sep 26, 2026: **Simulate** flies once to fit the final footprint (80 px padding, pitch 60, max zoom 15), with the bearing pointing uphill from where the flow stops to the release. The flow's front then runs toward the viewer instead of away behind a ridge. It does not move again during playback or replay, and the idle orbit stays off while a runout is framed.
 - **Other pins.** Pressure point pins other than the source hide while a simulation shows.
 
 ### Callouts
@@ -328,7 +328,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 - **Markers.** One per top-five trail at its region's center, matching the panel badge, with a 1 px ring so it reads on the relief. Each marker is a button labelled "Trail A, <name>, risk 0.74".
 - **Tooltip.** Hover or keyboard focus opens a popup with no close button: the trail name, the mono score with its level word, the slope, and the primary risk factor. It closes when the pointer leaves.
 - **Zoom limit.** The map can zoom out a third of a zoom level past its opening frame (`CAMERA.zoomOutRoom` 0.33) and no further, so the mountain always fills the view.
-- **View, or a click on the map.** **View**, a click on a trail's marker, a click on its line (6 px slop), or a click within 400 m of its marker all do the same thing: select the trail's row and fly the camera to the trail's region in 1.5 s (UX.md rule 10's fly-to), pitched for the 3D view, and opens the tooltip on arrival. The marker takes a 2 px accent ring while it is selected. Reduced motion jumps instead.
+- **View, or a click on the map.** **View**, a click on a trail's marker, a click on its line (6 px slop), or a click within 400 m of its marker all do the same thing: select the trail's row and fly the camera to the trail's region in 1.5 s (UX.md rule 10's fly-to), pitched for the 3D view and turned to look straight up the slope at the marker (Sep 26, 2026), so the face a landslide would come down is toward the viewer, and opens the tooltip on arrival. Where the terrain is not loaded or the ground is flat, the bearing stays as it was. The marker takes a 2 px accent ring while it is selected. Reduced motion jumps instead.
 
 ### Agent pipeline
 
