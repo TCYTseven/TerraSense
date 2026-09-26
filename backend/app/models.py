@@ -165,3 +165,35 @@ class LandslideRiskPrediction(BaseModel):
     drivers: list[RiskDriver]
     data_sources: dict[str, Any]
     model: dict[str, Any]
+
+
+class TrailRiskEntry(BaseModel):
+    """One of the most exposed trails on the current map. Every number is read off the map."""
+
+    trail_id: UUID
+    name: str
+    score: float  # the worst probability on the tread
+    mean_probability: float
+    share_high: float  # share of the walk at high or above
+    level: RiskLevel
+    point: list[float] | None  # [lon, lat] of the worst point: where the marker sits
+    slope_deg: float | None  # hillside slope at that point, None without the terrain stack
+    primary_factor: str  # the terrain factor at that point, in plain words
+    length_mi: float | None
+
+
+class TrailRiskView(BaseModel):
+    """GET /mountains/{slug}/trail-risk: the hill card's trail list, overall score, and measures."""
+
+    mountain_slug: str
+    method: str  # the map's method, "model b" or the stand-in label
+    source: Literal["run", "preview"]  # the last run's published map, or a preview on current rain
+    computed_at: datetime
+    score: float  # the mean of the trails' scores
+    level: RiskLevel
+    map_mean: float | None
+    map_share_high: float | None  # share of the map at high or above
+    mean_slope_deg: float | None
+    area_km2: float
+    trails: list[TrailRiskEntry]
+    preventative: list[str]

@@ -91,7 +91,7 @@ function tooltipContent(trail: TrailRisk): HTMLElement {
   root.append(
     name,
     row("Risk", formatScore(trail.score), true, riskLabel(trail.level)),
-    row("Slope", `${Math.round(trail.slopeDeg)}°`, true),
+    row("Slope", trail.slopeDeg === null ? "n/a" : `${Math.round(trail.slopeDeg)}°`, true),
     row("Primary factor", trail.primaryFactor, false),
   );
   return root;

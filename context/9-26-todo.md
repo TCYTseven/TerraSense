@@ -18,12 +18,14 @@ Open work only. Build notes stay in [implementation-steps.md](implementation-ste
 - [ ] **28.** Expose simulate, the stream, and the callouts.
 - [ ] **29.** Open the mountain panel over the globe.
 - [ ] **30.** Play the simulation in the panel.
-- [ ] **31.** Finish the hill card. **Analyze now** on a live mountain already streams the seven agents into the five cards, and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Still illustrative, from `frontend/lib/fixtures/hill-demo.ts`: trail scores and markers, the overall score, mean slope, and preventative measures. Drop the "Illustrative scores" line only for numbers that came from a run.
+- [x] **31.** Finish the hill card. Trail scores, markers, the overall score, mean slope, and preventative measures now come from `GET /mountains/{slug}/trail-risk`. `frontend/lib/fixtures/hill-demo.ts` is only the fallback when that endpoint does not answer.
+- [ ] **ML: Model B saturates.** With the trained susceptibility (median 0.000, mean 0.058), the storm fixture puts 100% of the map at extreme and a dry week puts all of it at low, because the terrain term is centered at 0.5 and moves the logit by at most ±1.2 while rain moves it by ±3.6. The heat map then has no spatial pattern and Skyline is flagged end to end, so no bypass exists. A log-odds form (`logit(susceptibility) + w2·rain + w3·moisture`) keeps the terrain pattern (storm: 11% extreme) but never flags Skyline. The ML track decides.
 
 ## Before the demo
 
 - [ ] Provision hosted Postgres, set `DATABASE_URL`, then run `python -m app.schema && python -m app.seed` from `backend/`.
-- [ ] Set `GEMINI_API_KEY` and `XAI_API_KEY`. Run `python -m app.agents.pipeline` once, then one **Analyze now** in the browser.
+- [ ] Set `GEMINI_API_KEY` and `XAI_API_KEY`. Run `python -m app.agents.pipeline` once, then one **Analyze now** in the browser. Without a key, **Analyze now** answers 503 and says which key to set. `curl 'localhost:8000/health?verbose=1'` shows which keys are present.
+- [ ] Keep `OPEN_METEO_FALLBACK_FIXTURE` set, so a venue network that blocks Open-Meteo still runs (on the last good response first, then the storm fixture, each labeled).
 - [ ] Rehearse the demo script in [TerraSense.md](TerraSense.md) three times. Keep one finished run on screen as a fallback.
 - [ ] After the merge, write the measured AUC (0.715 on that branch) into the Devpost draft.
 

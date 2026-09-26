@@ -34,8 +34,8 @@ function terrain(hill: HillView): ScriptedAgent {
       durationMs: 1600,
     };
   }
-  const steepest = [...trails].sort((a, b) => b.slopeDeg - a.slopeDeg)[0];
-  const over30 = trails.filter((t) => t.slopeDeg >= 30);
+  const steepest = [...trails].sort((a, b) => (b.slopeDeg ?? 0) - (a.slopeDeg ?? 0))[0];
+  const over30 = trails.filter((t) => (t.slopeDeg ?? 0) >= 30);
   return {
     steps: [
       `Loaded the 10 m elevation grid for ${hill.name} (${stats.areaKm2} km² box, peak ${stats.elevationM} m).`,

@@ -2,9 +2,9 @@ import { TRAIL_LETTERS, type HillView, type TrailRisk } from "../hill";
 import type { MountainDetail, RiskLevel } from "../types";
 
 /**
- * The hill card's view model from a mountain, with illustrative trail scores until the
- * per-trail model lands. Names, midpoints, and the mountain's own fields are real; scores,
- * slopes, and factors are not model output, so the view is marked `isDemo`.
+ * The hill card's fallback view model, used only when GET /mountains/{slug}/trail-risk does
+ * not answer (see `lib/hill-view.ts`). Names, midpoints, and the mountain's own fields are
+ * real; scores, slopes, and factors are not model output, so the view is marked `isDemo`.
  */
 
 /** Shared fact: Rainier's box, [west, south, east, north]. */
@@ -20,7 +20,7 @@ export function levelForScore(score: number): RiskLevel {
 
 const KM_PER_DEG_LAT = 111.2;
 
-function boxAreaKm2([west, south, east, north]: readonly number[]): number {
+export function boxAreaKm2([west, south, east, north]: readonly number[]): number {
   const midLat = ((south + north) / 2) * (Math.PI / 180);
   return Math.round((east - west) * KM_PER_DEG_LAT * Math.cos(midLat) * (north - south) * KM_PER_DEG_LAT);
 }
@@ -59,6 +59,7 @@ export function buildHillView(mountain: MountainDetail): HillView {
       trails: [],
       preventative: [],
       isDemo: false,
+      scoreSource: null,
     };
   }
   const byName = new Map(mountain.trails.map((trail) => [trail.name, trail]));
@@ -82,5 +83,6 @@ export function buildHillView(mountain: MountainDetail): HillView {
     trails,
     preventative: RAINIER_PREVENTATIVE,
     isDemo: true,
+    scoreSource: "illustrative",
   };
 }

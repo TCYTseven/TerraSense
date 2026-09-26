@@ -11,8 +11,19 @@ from app.db import get_conn
 from app.history import historical_events
 from app.mountain_catalog import ensure_catalog, sync_catalog
 from app.ml.tiles import read_metadata
-from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
+from app.models import (
+    Hazard,
+    LayerTiles,
+    Mountain,
+    MountainDetail,
+    Trail,
+    TrailRiskEntry,
+    TrailRiskView,
+    TrailSegment,
+)
+from app.ml.readiness import format_missing_artifacts
 from app.runs import registry
+from app.trailrisk import trail_risk
 
 router = APIRouter(prefix="/mountains", tags=["mountains"])
 
@@ -134,4 +145,36 @@ def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles
         maxzoom=metadata["maxzoom"],
         method=metadata.get("method"),
         updated_at=metadata["created_at"],
+    )
+
+
+@router.get("/{slug}/trail-risk", responses={
+    404: {"description": "No mountain with this slug, or a static marker with no trail map."},
+    503: {"description": "The susceptibility map is not built yet."},
+})
+def get_trail_risk(slug: str, conn: Conn) -> TrailRiskView:
+    """The five most exposed trails on the current map, the overall score, and preventative measures.
+
+    Reads the last run's published map. Before any run it scores a preview on the current rain and
+    says so in `source`.
+    """
+    mountain = conn.execute("SELECT lat, lon, is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    if mountain is None:
+        raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
+    if not mountain["is_live"]:
+        raise HTTPException(status_code=404, detail=f"{slug!r} is a static marker and has no trail map")
+    try:
+        result = trail_risk(conn, slug, (mountain["lat"], mountain["lon"]))
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=format_missing_artifacts(exc)) from exc
+    return TrailRiskView(
+        mountain_slug=slug, method=result.method, source=result.source, computed_at=result.computed_at,
+        score=result.score, level=result.level, map_mean=result.map_mean, map_share_high=result.map_share_high,
+        mean_slope_deg=result.mean_slope_deg, area_km2=result.area_km2,
+        trails=[TrailRiskEntry(
+            trail_id=t.trail_id, name=t.name, score=t.score, mean_probability=t.mean_probability,
+            share_high=t.share_high, level=t.level, point=list(t.point) if t.point else None,
+            slope_deg=t.slope_deg, primary_factor=t.primary_factor, length_mi=t.length_mi,
+        ) for t in result.trails],
+        preventative=result.preventative,
     )

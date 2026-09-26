@@ -71,6 +71,7 @@ curl localhost:8000/health
 curl localhost:8000/mountains
 curl localhost:8000/mountains/mount-rainier
 curl localhost:8000/mountains/mount-rainier/layers/probability
+curl localhost:8000/mountains/mount-rainier/trail-risk   # the hill card's top five trails, overall score, and measures
 curl -X POST localhost:8000/mountains/mount-rainier/analyze   # step 22: { run_id }; follow ws://localhost:8000/runs/<run_id>/stream
 curl localhost:8000/runs/<run_id>
 curl localhost:8000/runs/<run_id>/advisory        # the run's whole conclusion: 3 routes to avoid, 3 safe, the ranger response

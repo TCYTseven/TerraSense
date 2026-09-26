@@ -1,4 +1,12 @@
-import type { Forecast, LandslideRiskPrediction, LayerTiles, Mountain, MountainDetail, Run } from "./types";
+import type {
+  Forecast,
+  LandslideRiskPrediction,
+  LayerTiles,
+  Mountain,
+  MountainDetail,
+  Run,
+  TrailRiskView,
+} from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -79,8 +87,20 @@ export async function getLayer(slug: string, layer: string, init?: RequestInit):
   }
 }
 
+/** The top trails on the current map, with the overall score. Resolves to null when unavailable. */
+export async function getTrailRisk(slug: string, init?: RequestInit): Promise<TrailRiskView | null> {
+  try {
+    return await getJson<TrailRiskView>(`/mountains/${encodeURIComponent(slug)}/trail-risk`, init);
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 503)) {
+      return null;
+    }
+    throw error;
+  }
+}
+
 /**
- * Start the five-agent analysis for a live mountain (step 22). Resolves to the run id: a new
+ * Start the agent analysis for a live mountain (step 22). Resolves to the run id: a new
  * run, or the one already going for this mountain.
  */
 export async function startAnalysis(slug: string, init?: RequestInit): Promise<string> {

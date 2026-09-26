@@ -2,6 +2,12 @@ import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import { formatScore } from "@/lib/format";
 import type { HillView } from "@/lib/hill";
 
+const SOURCE_NOTE: Record<NonNullable<HillView["scoreSource"]>, string> = {
+  run: "Mean of the five trails' worst points on the last run's map.",
+  preview: "Preview on the current rain data. Analyze now to run the agents on it.",
+  illustrative: "Illustrative scores: the trail-risk API did not answer.",
+};
+
 /** The overall score and its level. Static mountains show their fixed level only. */
 export default function OverallRisk({ hill }: { hill: HillView }) {
   const { level, score } = hill.risk;
@@ -15,9 +21,7 @@ export default function OverallRisk({ hill }: { hill: HillView }) {
         <LevelWord level={level} className="text-base font-semibold" />
       </p>
       {!hill.isLive && <p className="mt-2 text-base">Display marker. Live analysis runs on Mount Rainier only.</p>}
-      {hill.isDemo && (
-        <p className="mt-2 text-sm text-muted-foreground">Illustrative scores until the trail model lands.</p>
-      )}
+      {hill.scoreSource && <p className="mt-2 text-sm text-muted-foreground">{SOURCE_NOTE[hill.scoreSource]}</p>}
     </section>
   );
 }

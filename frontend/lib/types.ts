@@ -166,6 +166,45 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
+/** One of the most exposed trails on the current map. Mirrors TrailRiskEntry in backend/app/models.py. */
+export interface TrailRiskEntry {
+  trail_id: string;
+  name: string;
+  /** The worst probability on the tread, 0 to 1. */
+  score: number;
+  mean_probability: number;
+  /** Share of the walk at high or above. */
+  share_high: number;
+  level: RiskLevel;
+  /** [lon, lat] of the worst point: where the marker sits. */
+  point: Position | null;
+  /** Hillside slope at that point. Null without the terrain stack. */
+  slope_deg: number | null;
+  /** The terrain factor at that point, in plain words. */
+  primary_factor: string;
+  length_mi: number | null;
+}
+
+/** GET /mountains/{slug}/trail-risk: the hill card's trails, overall score, and measures. */
+export interface TrailRiskView {
+  mountain_slug: string;
+  /** "model b", or the stand-in label. */
+  method: string;
+  /** The last run's published map, or a preview scored on the current rain. */
+  source: "run" | "preview";
+  computed_at: string;
+  /** The mean of the trails' scores. */
+  score: number;
+  level: RiskLevel;
+  map_mean: number | null;
+  /** Share of the map at high or above. */
+  map_share_high: number | null;
+  mean_slope_deg: number | null;
+  area_km2: number;
+  trails: TrailRiskEntry[];
+  preventative: string[];
+}
+
 export type LandslideRiskState = "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN";
 
 export interface LandslideRiskPrediction {

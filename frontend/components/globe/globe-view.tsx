@@ -27,6 +27,9 @@ type LoadState =
  * background over the last part of the flight, then opens /mountains/[slug].
  * The globe is browser-only because WebGL cannot render during server rendering.
  */
+// One empty list for every render while loading, so the globe selection is not recomputed each time.
+const NO_MOUNTAINS: Mountain[] = [];
+
 export default function GlobeView() {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
@@ -48,7 +51,7 @@ export default function GlobeView() {
     return () => controller.abort();
   }, [attempt]);
 
-  const allMountains = state.status === "ready" ? state.mountains : [];
+  const allMountains = state.status === "ready" ? state.mountains : NO_MOUNTAINS;
   const globeLimit = globeMountainLimit();
   const globeMountains = useMemo(
     () => selectGlobeMountains(allMountains, globeLimit),

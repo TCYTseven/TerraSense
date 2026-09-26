@@ -25,7 +25,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 28. Expose simulate, the stream, and the callouts
 - [ ] 29. Open the mountain panel over the globe
 - [ ] 30. Play the simulation in the panel
-- [ ] 31. Wire the hill card to the run stream and the advisory (agents and Reactive Measures stream from the API. Trail scores, the overall score, and preventative measures are still illustrative)
+- [x] 31. Wire the hill card to the run stream and the advisory (trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/trail-risk`; the illustrative fixture is only a fallback when that endpoint does not answer)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -246,10 +246,7 @@ Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as
 
 **Done so far (Sep 26).** On a live mountain, **Analyze now** calls `POST /mountains/{slug}/analyze` and follows the run socket (`frontend/lib/pipeline/live-run.ts`, used by `usePipeline`). The seven API agents fold onto the five cards: Trail, History, and Route Scout share the Trails row. Reactive Measures come from the run advisory. Static mountains still use the scripted source in `frontend/lib/pipeline/orchestrator.ts`.
 
-**Left.** `buildHillView()` in `frontend/lib/fixtures/hill-demo.ts` still supplies the trail scores, markers, overall score, mean slope, and preventative measures, and the card still says the scores are illustrative.
-
-- **Trails.** Build `HillView.trails` from the scored catalog: the Route Scout's exposed trails, or `trailscan` scores served with the mountain. Put each marker at the trail's worst point. The slope and primary factor come from the terrain stats.
-- **Honesty.** Drop the "Illustrative scores" line only for numbers that came from a run.
+**Shipped.** `GET /mountains/{slug}/trail-risk` (`backend/app/trailrisk.py`) scores the trails on the last run's published map, or on a preview before any run, ranked like the advisory's avoid shortlist. `frontend/lib/hill-view.ts` builds the card from it: each marker at the trail's worst point, slope and primary factor from the terrain stack, the overall score, mean slope, and one preventative measure per trail at high or above. The card says whether the numbers came from the last run or a preview, and falls back to the illustrative fixture only when the endpoint does not answer. After a run the page refreshes, so the heat map, hazard pin, and trails show the run's map. The hazard pin opens the hazard block, **Open the hiker view** shows the hiker card, a page opened mid-run follows that run, and a blocked WebSocket falls back to polling `GET /runs/{id}`.
 
 **Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
 

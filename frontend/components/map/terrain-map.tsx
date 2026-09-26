@@ -8,6 +8,7 @@ import {
   type MapMouseEvent,
   type MapSourceDataEvent,
   Marker,
+  type PointLike,
   NavigationControl,
   Popup,
   type RasterTileSource,
@@ -44,6 +45,8 @@ import { useTrailMarkers } from "./use-trail-markers";
 const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
 
 const CATALOG_ATTRIBUTION = "NASA Global Landslide Catalog";
+// How close to a lettered trail a click counts as a click on it (use-trail-markers.ts uses the same).
+const TRAIL_CLICK_SLOP_PX = 6;
 
 type MapStatus = "loading" | "ready" | "no-webgl" | "error";
 
@@ -378,7 +381,7 @@ export default function TerrainMap({
       setStatus((current) => (current === "ready" ? current : "error"));
     });
     return () => instance.remove();
-  }, [name, lon, lat, elevationM, webgl]);
+  }, [name, slug, lon, lat, elevationM, webgl]);
 
   useEffect(() => {
     map?.getSource<GeoJSONSource>(SOURCE.trails)?.setData(trailFeatures(trails));
@@ -532,7 +535,13 @@ export default function TerrainMap({
     }
     const onClick = (event: MapMouseEvent) => {
       const onPin = map.getLayer(LAYER.history) && map.queryRenderedFeatures(event.point, { layers: [LAYER.history] }).length;
-      if (!onPin) {
+      // A click on a lettered trail selects that trail; it is not a cell for the classifier.
+      const box: [PointLike, PointLike] = [
+        [event.point.x - TRAIL_CLICK_SLOP_PX, event.point.y - TRAIL_CLICK_SLOP_PX],
+        [event.point.x + TRAIL_CLICK_SLOP_PX, event.point.y + TRAIL_CLICK_SLOP_PX],
+      ];
+      const onTrail = map.getLayer(LAYER.trailRisk) && map.queryRenderedFeatures(box, { layers: [LAYER.trailRisk] }).length;
+      if (!onPin && !onTrail) {
         mapClick.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
       }
     };
@@ -624,7 +633,7 @@ export default function TerrainMap({
               label: "Past landslides",
               on: showHistory,
               unavailable:
-                historicalEvents.length > 0 ? undefined : "No catalog landslides in the Rainier box yet.",
+                historicalEvents.length > 0 ? undefined : `No catalog landslides around ${name} yet.`,
             },
           ]}
           onToggle={toggle}

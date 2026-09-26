@@ -1,10 +1,10 @@
 /**
  * The hill detail card's view model: what the mountain page renders, independent of where the
- * numbers come from. `lib/fixtures/hill-demo.ts` fills it from the mountain plus illustrative
- * values until the models land; a real adapter replaces it without touching the components.
+ * numbers come from. `lib/hill-view.ts` fills it from GET /mountains/{slug}/trail-risk, and
+ * falls back to the illustrative `lib/fixtures/hill-demo.ts` when that does not answer.
  */
 
-import type { LineString, Position, RiskLevel } from "./types";
+import type { Advisory, LineString, Position, RiskLevel } from "./types";
 
 export const TRAIL_LETTERS = ["A", "B", "C", "D", "E"] as const;
 export type TrailLetter = (typeof TRAIL_LETTERS)[number];
@@ -18,8 +18,8 @@ export interface TrailRisk {
   /** 0 to 1. The level follows the shared bins. */
   score: number;
   level: RiskLevel;
-  /** Hillside slope at the riskiest point, in degrees. */
-  slopeDeg: number;
+  /** Hillside slope at the riskiest point, in degrees. Null when the terrain stack is missing. */
+  slopeDeg: number | null;
   /** The driver that contributes most, in plain words ("Steep slopes"). */
   primaryFactor: string;
   /** Where the marker sits and where "View" centers the camera. */
@@ -33,8 +33,8 @@ export interface TrailRisk {
 /** The header's one line of basic stats. */
 export interface HillStats {
   elevationM: number;
-  /** Mean hillside slope across the mountain's box, in degrees. */
-  meanSlopeDeg: number;
+  /** Mean hillside slope across the mountain's box, in degrees. Null when unknown. */
+  meanSlopeDeg: number | null;
   /** Area of the mountain's bounding box, in km². */
   areaKm2: number;
 }
@@ -53,6 +53,8 @@ export interface HillView {
   preventative: string[];
   /** True while any number above is illustrative rather than model output. */
   isDemo: boolean;
+  /** Where the scores come from: the last run's map, a preview before any run, or the fixture. */
+  scoreSource: "run" | "preview" | "illustrative" | null;
 }
 
 /** A request to fly the camera to a trail. `nonce` changes on every click, so a repeat click flies again. */
@@ -130,5 +132,7 @@ export interface PipelineState {
   agents: Record<PipelineAgentId, PipelineAgentState>;
   /** Null until the Mass Alert Writer finishes. */
   measures: ReactiveMeasure[] | null;
+  /** The live run's whole conclusion. Null for the scripted demo and until a live run finishes. */
+  advisory: Advisory | null;
   error: string | null;
 }

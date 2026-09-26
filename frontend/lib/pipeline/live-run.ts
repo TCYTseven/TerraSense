@@ -7,6 +7,7 @@ import {
   type PipelineAgentState,
   type PipelineState,
   type ReactiveMeasure,
+  type TrailRisk,
 } from "@/lib/hill";
 import type { Advisory, AgentEvent, AgentName, Run } from "@/lib/types";
 
@@ -80,7 +81,18 @@ function traceLines(event: AgentEvent): string[] {
   return lines;
 }
 
-function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null): PipelineState {
+interface Outcome {
+  orchestrator: PipelineState["orchestrator"];
+  error: string | null;
+  measures: ReactiveMeasure[] | null;
+  advisory: Advisory | null;
+}
+
+function project(
+  events: Partial<Record<AgentName, AgentEvent>>,
+  outcome: Outcome,
+  firstSeen: Partial<Record<PipelineAgentId, number>>,
+): PipelineState {
   const agents = {} as PipelineState["agents"];
   for (const id of PIPELINE_AGENTS) {
     const group = CARD_AGENTS[id].map((name) => events[name]).filter((event): event is AgentEvent => event != null);
@@ -95,32 +107,50 @@ function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: P
     const latest = failed ?? [...group].reverse().find((event) => event.status === "running") ?? group[group.length - 1]!;
     const started = group.map((event) => (event.trace?.started_at ? Date.parse(event.trace.started_at) : NaN)).filter((t) => !Number.isNaN(t));
     const finished = group.map((event) => (event.trace?.finished_at ? Date.parse(event.trace.finished_at) : NaN)).filter((t) => !Number.isNaN(t));
+    // Without trace timestamps, the first time this card was seen stands in, so the elapsed
+    // time does not restart on every repaint.
+    const seen = (firstSeen[id] ??= Date.now());
     agents[id] = {
       id,
       status,
       summary: latest.summary,
       trace: group.flatMap(traceLines),
-      startedAt: started.length ? Math.min(...started) : Date.now(),
+      startedAt: started.length ? Math.min(...started) : seen,
       finishedAt: status === "done" || status === "error" ? (finished.length ? Math.max(...finished) : Date.now()) : null,
     };
   }
-  return { orchestrator, agents, measures, error };
+  return { ...outcome, agents };
 }
 
-function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
+function normalizedName(name: string): string {
+  return name.toLowerCase().replace(/^the\s+/, "").replace(/\s+trail$/, "").trim();
+}
+
+function measuresFromAdvisory(advisory: Advisory, trails: readonly TrailRisk[]): ReactiveMeasure[] {
   const timing = advisory.response.priority_rank >= 2 ? "within-1h" : "within-6h";
+  // A route that is also one of the card's lettered trails carries its badge.
+  const letters = new Map(trails.map((trail) => [normalizedName(trail.name), trail.letter]));
   const measures: ReactiveMeasure[] = advisory.avoid.map((route) => ({
     category: "closures" as const,
     title: `Keep hikers off ${route.trail}`,
     detail: `${route.reason} ${route.guidance}`.trim(),
     timing: "now" as const,
-    letter: null,
+    letter: letters.get(normalizedName(route.trail)) ?? null,
   }));
   for (const action of advisory.response.actions) {
     measures.push({
       category: "coordination",
       title: action,
       detail: advisory.response.headline,
+      timing,
+      letter: null,
+    });
+  }
+  if (advisory.safe.length > 0) {
+    measures.push({
+      category: "public",
+      title: `Send hikers to ${advisory.safe.map((route) => route.trail).join(", ")}`,
+      detail: advisory.safe.map((route) => `${route.trail}: ${route.guidance}`).join(" "),
       timing,
       letter: null,
     });
@@ -132,7 +162,23 @@ function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
     timing,
     letter: null,
   });
+  if (advisory.response.escalate_if) {
+    measures.push({
+      category: "monitoring",
+      title: "Escalate if conditions change",
+      detail: advisory.response.escalate_if,
+      timing: "within-24h",
+      letter: null,
+    });
+  }
   return measures;
+}
+
+export interface LiveRunOptions {
+  /** A run already going, such as the one a page opened mid-run: follow it instead of starting one. */
+  runId?: string;
+  /** The card's lettered trails, so a measure about one of them carries its badge. */
+  trails?: readonly TrailRisk[];
 }
 
 /**
@@ -143,15 +189,22 @@ export function runLiveAnalysis(
   slug: string,
   onUpdate: (state: PipelineState) => void,
   signal: AbortSignal,
+  options: LiveRunOptions = {},
 ): Promise<void> {
   const events: Partial<Record<AgentName, AgentEvent>> = {};
+  const firstSeen: Partial<Record<PipelineAgentId, number>> = {};
   let stop = () => {};
 
-  const publish = (orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null) => {
+  const publish = (
+    orchestrator: PipelineState["orchestrator"],
+    error: string | null,
+    measures: ReactiveMeasure[] | null = null,
+    advisory: Advisory | null = null,
+  ) => {
     if (signal.aborted) {
       return;
     }
-    onUpdate(project(events, orchestrator, error, measures));
+    onUpdate(project(events, { orchestrator, error, measures, advisory }, firstSeen));
   };
 
   return new Promise((resolve) => {
@@ -163,7 +216,7 @@ export function runLiveAnalysis(
 
     onUpdate({ ...initialPipelineState(), orchestrator: "running" });
 
-    startAnalysis(slug, { signal })
+    (options.runId ? Promise.resolve(options.runId) : startAnalysis(slug, { signal }))
       .then((runId) => {
         if (signal.aborted) {
           finish();
@@ -172,7 +225,7 @@ export function runLiveAnalysis(
         stop = followRun(runId, {
           onEvent(event) {
             events[event.agent] = event;
-            publish("running", null, null);
+            publish("running", null);
           },
           onRun(run: Run) {
             for (const event of Object.values(run.agents)) {
@@ -181,19 +234,20 @@ export function runLiveAnalysis(
               }
             }
             if (run.status === "running") {
-              publish("running", null, null);
+              publish("running", null);
               return;
             }
             if (run.status === "error") {
-              publish("error", run.error ?? run.message, null);
+              publish("error", run.error ? `${run.message} ${run.error}` : run.message);
               finish();
               return;
             }
-            publish("done", null, run.advisory ? measuresFromAdvisory(run.advisory) : null);
+            const advisory = run.advisory ?? null;
+            publish("done", null, advisory ? measuresFromAdvisory(advisory, options.trails ?? []) : null, advisory);
             finish();
           },
           onLost() {
-            publish("error", "Lost the analysis stream. The API may still be running the agents.", null);
+            publish("error", "Lost the analysis stream. The API may still be running the agents.");
             finish();
           },
         });

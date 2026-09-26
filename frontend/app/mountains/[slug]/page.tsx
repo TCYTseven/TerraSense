@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import HillCard from "@/components/hill/hill-card";
-import { getLayer, getMountain } from "@/lib/api";
-import type { LayerTiles } from "@/lib/types";
+import { getLayer, getMountain, getTrailRisk } from "@/lib/api";
+import type { LayerTiles, TrailRiskView } from "@/lib/types";
 
 // One API call per request, shared by the metadata and the page.
 const loadMountain = cache((slug: string) => getMountain(slug));
@@ -33,6 +33,15 @@ export async function generateMetadata({
   }
 }
 
+/** The top trails on the current map, or null. The card falls back to illustrative scores. */
+async function loadTrailRisk(slug: string): Promise<TrailRiskView | null> {
+  try {
+    return await getTrailRisk(slug);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * The hill detail card: the 3D mountain view and the stats panel. Live mountains also get the
  * heat map layers, the top five trails, and the agents.
@@ -43,10 +52,12 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
   if (!mountain) {
     notFound();
   }
-  // Static mountains have no raster layers.
-  const [probability, susceptibility] = mountain.is_live
-    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility")])
-    : [null, null];
+  // Static mountains have no raster layers and no trail map.
+  const [probability, susceptibility, trailRisk] = mountain.is_live
+    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility"), loadTrailRisk(slug)])
+    : [null, null, null];
 
-  return <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} />;
+  return (
+    <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} trailRisk={trailRisk} />
+  );
 }

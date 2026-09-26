@@ -32,7 +32,7 @@ function orchestratorLine(state: PipelineState): React.ReactNode {
     const total = ((Math.max(...ends) - Math.min(...starts)) / 1000).toFixed(1);
     return (
       <>
-        All five agents finished in <span className="font-mono">{total} s</span>. Reactive Measures are below.
+        All agents finished in <span className="font-mono">{total} s</span>. Reactive Measures are below.
       </>
     );
   }

@@ -1,7 +1,7 @@
 "use client";
 
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
-import type { LayerTiles, MountainDetail } from "@/lib/types";
+import type { Bypass, LayerTiles, MountainDetail } from "@/lib/types";
 import MountainMap from "./mountain-map";
 
 export interface HillMountainViewProps {
@@ -16,9 +16,13 @@ export interface HillMountainViewProps {
   onTrailSelect: (letter: TrailLetter) => void;
   /** A click on an empty map cell selects it for the production classifier. */
   onMapClick: (coordinate: { latitude: number; longitude: number }) => void;
+  /** True while the hazard block is open in the panel. */
+  hazardSelected: boolean;
+  /** A click on the hazard pin opens or closes the hazard block. */
+  onHazardClick: () => void;
+  /** The hiker card's bypass, drawn dashed while the card is open. */
+  bypass: Bypass | null;
 }
-
-function noop() {}
 
 /**
  * The hill card's left column: the 3D terrain map with its heat map, trails, and layer
@@ -33,6 +37,9 @@ export default function HillMountainView({
   focus,
   onTrailSelect,
   onMapClick,
+  hazardSelected,
+  onHazardClick,
+  bypass,
 }: HillMountainViewProps) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-muted">
@@ -48,8 +55,9 @@ export default function HillMountainView({
         probability={probability}
         susceptibility={susceptibility}
         hazard={mountain.active_hazard}
-        hazardSelected={false}
-        onHazardClick={noop}
+        hazardSelected={hazardSelected}
+        onHazardClick={onHazardClick}
+        bypass={bypass}
         onMapClick={onMapClick}
         historicalEvents={mountain.historical_events}
         trailMarkers={trails}

@@ -41,7 +41,13 @@ export default function TrailList({ trails, selected, onView }: TrailListProps) 
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{trail.name}</span>
                 <span className="block text-sm text-muted-foreground">
-                  {trail.primaryFactor} · <span className="font-mono">{trail.slopeDeg}°</span>
+                  {trail.primaryFactor}
+                  {trail.slopeDeg !== null && (
+                    <>
+                      {" · "}
+                      <span className="font-mono">{Math.round(trail.slopeDeg)}°</span>
+                    </>
+                  )}
                 </span>
               </span>
               <span className={`flex shrink-0 items-center gap-1.5 ${LEVEL_TEXT[trail.level]}`}>

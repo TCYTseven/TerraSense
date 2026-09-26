@@ -45,6 +45,7 @@ export function initialPipelineState(): PipelineState {
     orchestrator: "idle",
     agents: Object.fromEntries(PIPELINE_AGENTS.map((id) => [id, idleAgent(id)])) as PipelineState["agents"],
     measures: null,
+    advisory: null,
     error: null,
   };
 }
