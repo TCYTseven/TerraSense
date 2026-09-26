@@ -1,21 +1,40 @@
-"""The five-agent pipeline (step 21).
+"""The agent pipeline: five analysts at once, then one synthesizer, then the copy.
 
-Terrain and Weather run together, then Trail, the Risk Synthesizer, and the Alert Writer. For
-each agent the router picks a provider, the agent's tools gather facts, and one model call returns
-JSON that must pass the agent's schema and checks. The code then merges the facts back in. An
-AgentEvent goes out when each agent starts and when it finishes or fails, with its full trace:
-the route, the tool calls, every attempt, the model's reasoning, and what the code changed.
+    terrain ─┐
+    weather ─┤
+    trail   ─┼─▶ synthesizer ─▶ writer
+    history ─┤
+    routes  ─┘
+
+The five analysts fan out together in a single asyncio.gather. None of them reads another's
+answer, so none of them waits: the run costs one analyst's latency, not five. Each reads the same
+ML prediction as its source of truth (tools.get_model_prediction) and adds what the model could
+not see: the ground under the zone, the rain around it, the miles hikers walk, the landslide
+record, and the other 66 trails on the mountain.
+
+The Risk Synthesizer is the only agent that sees all five, and the only one that decides
+anything. It returns the run's whole conclusion in one object: the final severity and action,
+three routes to keep hikers off, three that are safe today, and the response the park should
+mount, from "put it in the newsletter" to "get everyone off the mountain". The Alert Writer then
+turns that decision into the ranger and hiker copy; it writes, it does not decide.
+
+For each agent the router picks a provider, the agent's tools gather facts, and one model call
+returns JSON that must pass the agent's schema and checks. An AgentEvent goes out when each agent
+starts and when it finishes or fails, with its full trace: the route, the tool calls, every
+attempt, the model's reasoning, and what the code changed.
 
 A call that fails is retried once on the same provider when the failure is temporary, and an
 answer that fails a check is sent back once with the problems listed. After that the router's
 fallback provider gets the same two chances. An agent fails only when both providers do.
 
-Code, not a model, decides three things:
-- confidence: the weighted average of the three analysts' confidence (CONFIDENCE_WEIGHTS);
+Code, not a model, decides these:
+- confidence: the weighted average of the analysts' confidence (CONFIDENCE_WEIGHTS);
 - needs_review: set when two analysts' severities sit two or more levels apart, which turns the
   ranger alert into an advisory;
-- the Synthesizer's guard rails: its severity stays within the analysts' range, and an advisory
-  or a low or moderate level recommends "monitor", never "close".
+- the Synthesizer's guard rails (app/agents/advisory.py): its severity stays within the analysts'
+  range; an advisory or a low or moderate level recommends "monitor", never "close"; every route
+  it names must be one the code shortlisted from the scored catalog; and the ranger posture,
+  priority, and channels have to match the severity the run actually reached.
 
 Run once from backend/ against the local database:
     python -m app.agents.pipeline [--fixture-rain]
@@ -42,9 +61,12 @@ from app.assessment import (
     signed_feet,
     signed_miles,
 )
+from app.history import historical_events
 from app.risk import RiskLevel, level_index, level_spread
+from app.trailscan import TrailScore, relative_only, resolve
 from app.weather import summarize
 
+from . import advisory as guards
 from .prompts import REPAIR, SYSTEM_PROMPTS
 from .providers import LLMRequest, LLMResult, Provider, ProviderError, llm_schema
 from .router import NoProviderError, Router, Signals
@@ -52,24 +74,38 @@ from .schemas import (
     AGENT_LABELS,
     AGENT_ORDER,
     AGENT_OUTPUTS,
+    ANALYSTS,
+    Advisory,
+    AdvisoryAlert,
+    AdvisoryConditions,
+    AdvisoryHazard,
+    AdvisoryModel,
+    AdvisoryResponse,
+    AdvisoryRoute,
     AgentEvent,
     AgentName,
     AgentOutput,
     AgentTrace,
+    AgentVerdict,
     AlertDraft,
     Attempt,
+    HistoryReport,
     ProviderName,
+    RouteScan,
     SynthesisReport,
     TerrainReport,
     TrailReport,
     WeatherReport,
 )
-from .tools import RunContext, ToolError, call_tool, threshold_mm
+from .tools import MOUNTAIN_HISTORY_RADIUS_KM, RunContext, ToolError, call_tool, threshold_mm
 
 # How much each analyst's confidence counts toward the final one. Terrain is the most direct
 # evidence of where ground can fail; the weather is one reading for the whole box; the trail
-# report restates the other two against the miles.
-CONFIDENCE_WEIGHTS: dict[AgentName, float] = {"terrain": 0.40, "weather": 0.35, "trail": 0.25}
+# report restates them against the miles hikers walk; the record and the wider network are
+# context, so they weigh least. The weights are fixed here, not chosen by a model.
+CONFIDENCE_WEIGHTS: dict[AgentName, float] = {
+    "terrain": 0.30, "weather": 0.25, "trail": 0.20, "routes": 0.15, "history": 0.10,
+}
 REVIEW_SPREAD = 2  # analysts this many levels apart put the alert out as an advisory
 HIKER_MAX_WORDS = 25
 MODEL_WORDS = ("probability", "confidence", "model", "susceptibility")
@@ -109,6 +145,8 @@ class Final:
     what: str
     why: str
     how_to_avoid: str
+    # The run's whole conclusion: routes, response, analysis. Always set on a finished run.
+    advisory: Advisory | None = None
 
 
 @dataclass
@@ -191,11 +229,14 @@ class Pipeline:
     # --- the run ---------------------------------------------------------------------------
 
     async def run(self) -> PipelineResult:
-        await asyncio.gather(self.terrain(), self.weather())
+        """The five analysts together, then the Synthesizer, then the Writer.
+
+        The gather is the whole point: five model calls are in flight at once, so the analyst
+        stage costs the slowest one rather than the sum. An analyst that fails does not stop the
+        others, and the run ends at the first failure in panel order once they are all back.
+        """
+        await asyncio.gather(*(getattr(self, agent)() for agent in ANALYSTS))
         failed = self._first_failure()
-        if failed is None:
-            await self.trail()
-            failed = self._first_failure()
         if failed is None:
             await self.synthesizer()
             failed = self._first_failure()
@@ -270,6 +311,13 @@ class Pipeline:
         if trace.started_at:
             trace.latency_ms = round((trace.finished_at - trace.started_at).total_seconds() * 1000)
 
+    @staticmethod
+    def _tool(run: AgentRun, name: str) -> dict | None:
+        """One tool's result from an agent's trace, by name rather than by position."""
+        if run.trace is None:
+            return None
+        return next((call.result for call in run.trace.tools if call.name == name), None)
+
     def _message(self, agent: AgentName, trace: AgentTrace, context: dict) -> str:
         parts = [f"{self.ctx.mountain}, run {self.ctx.run_id}. You are the {AGENT_LABELS[agent]}."]
         if trace.tools:
@@ -336,9 +384,17 @@ class Pipeline:
     def a(self) -> Assessment:
         return self.ctx.assessment
 
+    @property
+    def scores(self) -> list[TrailScore]:
+        return self.a.trail_scores
+
+    def _prediction(self) -> tuple[str, dict]:
+        """The tool call every agent makes first: the ML model's output as the source of truth."""
+        return ("get_model_prediction", {"mountain": self.ctx.slug})
+
     async def terrain(self) -> AgentRun:
         zone = self.a.zone
-        tools = [("get_raster_summary", {"mountain": self.ctx.slug})]
+        tools = [self._prediction(), ("get_raster_summary", {"mountain": self.ctx.slug})]
         if zone is not None:
             tools.append(("get_historical_events", {"lat": zone.centroid[1], "lon": zone.centroid[0], "radius_km": 5.0}))
         run, _ = await self._call("terrain", signals=Signals(zone_peak=zone.max_probability if zone else None),
@@ -347,7 +403,7 @@ class Pipeline:
             return run
         out: TerrainReport = run.output
         drivers, dropped = list(out.drivers), []
-        history = next((c.result for c in run.trace.tools if c.name == "get_historical_events"), {"events": []})
+        history = self._tool(run, "get_historical_events") or {"events": []}
         for driver in list(drivers):
             if driver in ("recent_rain", "forecast_rain") or (driver == "past_landslides" and not history["events"]):
                 drivers.remove(driver)
@@ -380,11 +436,12 @@ class Pipeline:
         lat, lon = self.ctx.peak
         run, _ = await self._call("weather", signals=Signals(rain_ratio=ratio),
                                   running="Checking past and forecast rain at Paradise.",
-                                  tools=[("get_weather", {"lat": lat, "lon": lon})], context={})
+                                  tools=[self._prediction(), ("get_weather", {"lat": lat, "lon": lon})],
+                                  context={})
         if run.error:
             return run
         out: WeatherReport = run.output
-        facts = run.trace.tools[0].result
+        facts = self._tool(run, "get_weather")
         payload = {
             "modifier": out.modifier,
             "severity": out.severity,
@@ -392,9 +449,11 @@ class Pipeline:
             "rain_past_72h_mm": facts["mm"]["past_72h"],
             "rain_next_24h_mm": facts["mm"]["next_24h"],
             "rain_source": facts["source"],
+            "conditions": facts["conditions"],
             "note": out.note,
         }
-        run.trace.checks.append("Rain totals in the payload come from the Open-Meteo facts, not the model.")
+        run.trace.checks.append("Rain totals and conditions in the payload come from the Open-Meteo facts, "
+                                "not the model.")
         trend = {"worse": "The zone is getting worse.", "stable": "The zone holds steady.",
                  "better": "The zone is easing."}[out.modifier]
         await self._done(run, f"{facts['mm']['past_72h']:.0f} mm in the past 72 hours and "
@@ -405,10 +464,9 @@ class Pipeline:
         flagged, bypass = self.a.flagged, self.a.bypass
         signals = Signals(bypass_exists=(bypass is not None) if flagged else None,
                           bypass_level=bypass.level if bypass else None)
-        context = {"Terrain Analyst's report": self.runs["terrain"].payload,
-                   "Weather Analyst's report": self.runs["weather"].payload}
         run, _ = await self._call("trail", signals=signals, running="Checking the flagged miles and the bypass.",
-                                  tools=[("get_trail_segments", {"mountain": self.ctx.slug})], context=context)
+                                  tools=[self._prediction(),
+                                         ("get_trail_segments", {"mountain": self.ctx.slug})], context={})
         if run.error:
             return run
         out: TrailReport = run.output
@@ -440,31 +498,151 @@ class Pipeline:
         await self._done(run, summary[:1].upper() + summary[1:], payload)
         return run
 
+    async def history(self) -> AgentRun:
+        """What the landslide catalog says. The model has never seen a past slide; this agent has."""
+        lat, lon = self.ctx.peak
+        if self.a.zone is not None:
+            lon, lat = self.a.zone.centroid
+        tools = [self._prediction(),
+                 ("get_historical_events", {"lat": lat, "lon": lon, "radius_km": MOUNTAIN_HISTORY_RADIUS_KM})]
+        # The router needs the event count before the call, so the tool's own radius is counted here.
+        count = len(historical_events(self.ctx.slug))
+        run, _ = await self._call("history", signals=Signals(analog_count=count),
+                                  running="Reading the landslide record near the zone.", tools=tools, context={})
+        if run.error:
+            return run
+        out: HistoryReport = run.output
+        facts = self._tool(run, "get_historical_events") or {"events": []}
+        events = facts.get("events", [])
+        nearest = events[0] if events else None
+        if not events and out.precedent != "none":
+            run.trace.checks.append(f"Set the precedent to none from {out.precedent}: the catalog returned no "
+                                    "event within the search radius.")
+            out = out.model_copy(update={"precedent": "none"})
+        payload = {
+            "precedent": out.precedent,
+            "severity": out.severity,
+            "confidence": out.confidence,
+            "events_within_radius": len(events),
+            "search_radius_km": facts.get("radius_km", MOUNTAIN_HISTORY_RADIUS_KM),
+            "nearest_event": nearest,
+            "catalog_note": facts.get("catalog_note"),
+            "note": out.note,
+        }
+        run.trace.checks.append("The event count and the nearest event come from the catalog, not the model.")
+        if not events:
+            run.trace.checks.append("An empty catalog is not evidence of safety: it is usually evidence that "
+                                    "nobody recorded a slide here.")
+            summary = "No catalog landslide near the zone. Absence of record, not absence of risk."
+        else:
+            summary = (f"{len(events)} past slide{'s' if len(events) != 1 else ''} within "
+                       f"{payload['search_radius_km']:.0f} km. Precedent {out.precedent}.")
+        await self._done(run, summary, payload)
+        return run
+
+    async def routes(self) -> AgentRun:
+        """Every mapped trail, not just the hero trail: where else the risk falls, and what stays clear."""
+        clear = sum(1 for s in self.scores if s.recommendable)
+        run, _ = await self._call("routes", signals=Signals(clear_routes=clear),
+                                  running="Scoring every trail on the mountain, not just the hero trail.",
+                                  tools=[self._prediction(),
+                                         ("get_trail_catalog", {"mountain": self.ctx.slug})], context={})
+        if run.error:
+            return run
+        out: RouteScan = run.output
+        comparative = relative_only(self.scores, needed=3, limit=guards.SAFE_POOL)
+
+        def named(notes, kept: list[dict], dropped: list[str]) -> None:
+            for note in notes:
+                match = resolve(self.scores, note.trail)
+                if match is None:
+                    dropped.append(note.trail)
+                else:
+                    kept.append({**match.to_json(), "note": note.note})
+
+        exposed: list[dict] = []
+        clear_routes: list[dict] = []
+        dropped: list[str] = []
+        named(out.exposed, exposed, dropped)
+        named(out.clear, clear_routes, dropped)
+        if dropped:
+            run.trace.checks.append(f"Dropped {', '.join(repr(name) for name in dropped)}: not a trail in the "
+                                    "route catalog, so the map says nothing about it.")
+        if not exposed:
+            exposed = [s.to_json() for s in guards.avoid_pool(self.scores)[:3]]
+            run.trace.checks.append("No named trail survived, so the catalog's own worst three stand in.")
+        if not clear_routes:
+            clear_routes = [s.to_json() for s in guards.safe_pool(self.scores)[:3]]
+            run.trace.checks.append("No named trail survived, so the catalog's own cleanest three stand in.")
+        payload = {
+            "severity": out.severity,
+            "confidence": out.confidence,
+            "exposed": exposed,
+            "clear": clear_routes,
+            "trails_scored": len(self.scores),
+            "clear_of_the_safe_ceiling": clear,
+            "safety_is_relative": comparative,
+            "note": out.note,
+        }
+        run.trace.checks.append("Every probability, mile, and level here is the map's, sampled along each trail: "
+                                "the agent chose which trails to name, not what they score.")
+        if comparative:
+            run.trace.checks.append(f"Only {clear} trail{'s' if clear != 1 else ''} clear the safe ceiling, so the "
+                                    "clear list is the least exposed ground rather than safe ground.")
+        worst = exposed[0]["trail"] if exposed else "none"
+        await self._done(run, f"{len(self.scores)} trails scored. Worst: the {worst}. "
+                              f"{clear} clear the safe ceiling.", payload)
+        return run
+
     async def synthesizer(self) -> AgentRun:
-        reports = {a: self.runs[a].output for a in ("terrain", "weather", "trail")}
-        levels = tuple(r.severity for r in reports.values())
-        confidence = weighted_confidence({a: r.confidence for a, r in reports.items()})
+        """The one agent that decides: severity, action, six routes, and the park's response."""
+        reports = {agent: self.runs[agent].output for agent in ANALYSTS}
+        levels = tuple(report.severity for report in reports.values())
+        confidence = weighted_confidence({agent: report.confidence for agent, report in reports.items()})
         spread = level_spread(levels)
         needs_review = spread >= REVIEW_SPREAD
+        avoid_pool = guards.avoid_pool(self.scores)
+        safe_pool = guards.safe_pool(self.scores)
+        comparative = relative_only(self.scores, needed=3, limit=guards.SAFE_POOL)
+        bypass = self.a.bypass
         context = {
-            "Terrain Analyst's report": self.runs["terrain"].payload,
-            "Weather Analyst's report": self.runs["weather"].payload,
-            "Trail Analyst's report": self.runs["trail"].payload,
-            "Computed by code": {"final_confidence": confidence, "severity_spread_levels": spread,
-                                 "needs_review": needs_review, "weights": CONFIDENCE_WEIGHTS},
+            f"{AGENT_LABELS[agent]}'s report": self.runs[agent].payload for agent in ANALYSTS
         }
-        run, _ = await self._call("synthesizer", signals=Signals(report_levels=levels),
-                                  running="Combining the terrain, weather, and trail reports.", tools=[],
-                                  context=context)
+        context["Routes to avoid: the shortlist you must pick three from"] = [s.to_json() for s in avoid_pool]
+        context["Safe route candidates: the shortlist you must pick three from"] = {
+            "safety_is_relative": comparative,
+            "note": ("No trail on the mountain clears the safe ceiling today, so these are the least exposed "
+                     "ground, not safe ground. Every caution must say so."
+                     if comparative else "These trails clear the safe ceiling today."),
+            "trails": [s.to_json() for s in safe_pool],
+        }
+        context["The named bypass around the flagged miles"] = None if bypass is None else {
+            "name": bypass.name, "leaves_at_mile": bypass.leaves_at_mile,
+            "rejoins_at_mile": bypass.rejoins_at_mile, "worst_ground_level": bypass.level,
+        }
+        context["Computed by code"] = {
+            "final_confidence": confidence, "severity_spread_levels": spread, "needs_review": needs_review,
+            "weights": CONFIDENCE_WEIGHTS, "analyst_severities": dict(zip(ANALYSTS, levels, strict=True)),
+        }
+
+        def check(report: SynthesisReport) -> list[str]:
+            return guards.route_problems(report.avoid, report.safe, self.scores)
+
+        run, remaining = await self._call(
+            "synthesizer", signals=Signals(report_levels=levels),
+            running="Weighing five reports into one call, six routes, and a response.", tools=[],
+            context=context, check=check, soft_check=True)
         if run.error:
             return run
         out: SynthesisReport = run.output
+
         terms = " + ".join(f"{reports[a].confidence:.2f} x {CONFIDENCE_WEIGHTS[a]:.2f}" for a in reports)
         run.trace.checks.append(f"Confidence {confidence:.2f} = ({terms}) / {sum(CONFIDENCE_WEIGHTS.values()):.2f}, "
                                 "with the weights fixed in code.")
         run.trace.checks.append(
-            f"The reports span {spread} level{'s' if spread != 1 else ''} ({', '.join(levels)}): "
+            f"The {len(levels)} reports span {spread} level{'s' if spread != 1 else ''} ({', '.join(levels)}): "
             + ("needs review, so the alert goes out as an advisory." if needs_review else "no review needed."))
+
         low, high = min(levels, key=level_index), max(levels, key=level_index)
         severity = out.severity
         if level_index(severity) < level_index(low) or level_index(severity) > level_index(high):
@@ -478,19 +656,101 @@ class Pipeline:
         elif action == "close" and level_index(severity) <= level_index("moderate"):
             action = "monitor"
             run.trace.checks.append(f"Changed close to monitor: a {severity} level does not close a trail.")
+
+        avoid, safe = self._routes(out, remaining, run)
+        response, response_checks = guards.clamp_response(out.response, severity, action, needs_review)
+        run.trace.checks.extend(response_checks)
+        run.trace.checks.append(
+            f"Posture {response.posture} and priority {response.priority} are what a {severity} rating with "
+            f"a {action} recommendation allows; code turns down anything louder.")
+
         payload = {
             "severity": severity,
             "confidence": confidence,
             "needs_review": needs_review,
             "recommended_action": action,
             "summary": out.summary,
-            "reports": {a: r.severity for a, r in reports.items()},
+            "analysis": out.analysis,
+            "avoid": [route.model_dump() for route in avoid],
+            "safe": [route.model_dump() for route in safe],
+            "response": self._response_payload(response, action),
+            "reports": {agent: report.severity for agent, report in reports.items()},
             "weights": CONFIDENCE_WEIGHTS,
+            "safety_is_relative": comparative,
         }
-        agreement = "The three reports agree." if spread == 0 else \
-            f"The reports span {spread} level{'s' if spread != 1 else ''}" + (", so this is an advisory." if needs_review else ".")
-        await self._done(run, f"Final severity {severity}, confidence {confidence:.2f}. {agreement}", payload)
+        agreement = "All five reports agree." if spread == 0 else \
+            f"The reports span {spread} level{'s' if spread != 1 else ''}" + \
+            (", so this is an advisory." if needs_review else ".")
+        await self._done(run, f"Final severity {severity}, confidence {confidence:.2f}. {agreement} "
+                              f"Posture {response.posture}.", payload)
         return run
+
+    def _routes(self, out: SynthesisReport, remaining: list[str], run: AgentRun):
+        """The three and three the agent picked, checked against the catalog, or the code's own.
+
+        A route the checks still reject after every attempt is replaced from the shortlist rather
+        than dropped: the advisory always carries three of each, and the trace says which are the
+        agent's and which are the code's.
+        """
+        broken = {problem.split(".")[1] for problem in remaining if problem.startswith(("avoid.", "safe."))}
+        fallback_avoid, fallback_safe = guards.fallback_routes(
+            self.scores, self.a.trail.name, self.a.bypass.name if self.a.bypass else None)
+        avoid = self._merge_side(out.avoid, fallback_avoid, guards.avoid_pool(self.scores), "avoid",
+                                 broken, remaining, run, lambda route: route.instead)
+        safe = self._merge_side(out.safe, fallback_safe, guards.safe_pool(self.scores), "safe",
+                                broken, remaining, run, lambda route: route.caution)
+        return avoid, safe
+
+    def _merge_side(self, chosen, fallback, pool, side: str, broken: set[str], remaining: list[str],
+                    run: AgentRun, guidance):
+        """One side of the advisory: the agent's sentences over the catalog's numbers."""
+        merged, used = [], set()
+        for index, route in enumerate(chosen):
+            match = None if str(index) in broken else resolve(self.scores, route.trail)
+            if match is not None and match.name not in used:
+                merged.append(guards.merge_route(match, route.reason, guidance(route)))
+                used.add(match.name)
+        if len(merged) < 3:
+            missing = [f for f in fallback if resolve(self.scores, f.trail) and
+                       resolve(self.scores, f.trail).name not in used]
+            spare = [s for s in pool if s.name not in used]
+            for filler in missing:
+                if len(merged) >= 3:
+                    break
+                match = resolve(self.scores, filler.trail)
+                merged.append(guards.merge_route(match, filler.reason,
+                                                 getattr(filler, "instead", None) or filler.caution))
+                used.add(match.name)
+            for score in spare:  # only if the fallback itself could not fill three
+                if len(merged) >= 3:
+                    break
+                if score.name in used:
+                    continue
+                merged.append(guards.merge_route(
+                    score, f"The map puts the {score.name} at {score.level}, peaking at "
+                           f"{score.max_probability:.2f}.",
+                    "See the catalog numbers above."))
+                used.add(score.name)
+            run.trace.checks.append(
+                f"Filled the {side} list from the code's own shortlist: the agent's picks did not pass the "
+                "catalog check after every attempt.")
+        return merged[:3]
+
+    @staticmethod
+    def _response_payload(response, action: str) -> dict:
+        return AdvisoryResponse(
+            posture=response.posture,
+            posture_rank=guards.posture_rank(response.posture),
+            priority=response.priority,
+            priority_rank=guards.priority_rank(response.priority),
+            recommended_action=action,
+            headline=response.headline,
+            channels=list(response.channels),
+            actions=list(response.actions),
+            staffing=response.staffing,
+            timeline=response.timeline,
+            escalate_if=response.escalate_if,
+        ).model_dump()
 
     async def writer(self) -> AgentRun:
         synth = self.runs["synthesizer"].payload
@@ -506,6 +766,13 @@ class Pipeline:
             "needs_review": synth["needs_review"],
             "recommended_action": synth["recommended_action"],
             "summary": synth["summary"],
+            # The Synthesizer decided the posture. The Writer matches its tone to it and never
+            # writes copy louder or quieter than the posture the code allowed.
+            "ranger_posture": synth["response"]["posture"],
+            "ranger_priority": synth["response"]["priority"],
+            "ranger_headline": synth["response"]["headline"],
+            "routes_to_avoid": [route["trail"] for route in synth["avoid"]],
+            "safe_routes": [route["trail"] for route in synth["safe"]],
             "ranger_title": title,
             "hazard": {"type": terrain["type"], "place": terrain["place"], "drivers": terrain["drivers"],
                        "trail": trail, "miles": mile_text(flagged.start_mile, flagged.end_mile) if flagged else None},
@@ -578,11 +845,11 @@ class Pipeline:
         writer = self.runs["writer"].payload
         drivers = list(terrain["drivers"])
         if weather.modifier == "worse":
-            facts = self.runs["weather"].trace.tools[0].result
-            rain_driver = "recent_rain" if facts["past_72h_vs_threshold"] >= 1 else "forecast_rain"
+            facts = self._tool(self.runs["weather"], "get_weather") or {}
+            rain_driver = "recent_rain" if facts.get("past_72h_vs_threshold", 0) >= 1 else "forecast_rain"
             if rain_driver not in drivers:
                 drivers.append(rain_driver)
-        return Final(
+        final = Final(
             hazard_type=terrain["type"],
             severity=synth["severity"],
             confidence=synth["confidence"],
@@ -597,6 +864,112 @@ class Pipeline:
             why=writer["hazard"]["why"],
             how_to_avoid=writer["hazard"]["how_to_avoid"],
         )
+        final.advisory = self._advisory(final)
+        return final
+
+    def _advisory(self, final: Final) -> Advisory:
+        """The run's whole conclusion in one object: what GET /runs/{id}/advisory returns."""
+        synth = self.runs["synthesizer"].payload
+        terrain = self.runs["terrain"].payload["hazard_zone"]
+        prediction = self._tool(self.runs["terrain"], "get_model_prediction") or {}
+        weather_facts = self._tool(self.runs["weather"], "get_weather")
+        zone, flagged, bypass = self.a.zone, self.a.flagged, self.a.bypass
+
+        hazard = None
+        if zone is not None:
+            hazard = AdvisoryHazard(
+                type=final.hazard_type,
+                severity=final.severity,
+                place=terrain["place"],
+                max_probability=terrain["max_probability"],
+                area_km2=zone.area_km2,
+                drivers=final.drivers,
+                trail=self.a.trail.name,
+                start_mile=flagged.start_mile if flagged else None,
+                end_mile=flagged.end_mile if flagged else None,
+                bypass_name=bypass.name if bypass else None,
+                bypass_added_mi=round(bypass.added_km / 1.609344, 1) if bypass else None,
+                bypass_added_ft=int(round(bypass.added_elevation_m * 3.28084 / 10) * 10) if bypass else None,
+            )
+
+        conditions = None
+        if weather_facts is not None:
+            extra = weather_facts["conditions"]
+            conditions = AdvisoryConditions(
+                source=weather_facts["source"],
+                as_of=weather_facts["as_of"],
+                rain_past_72h_mm=weather_facts["mm"]["past_72h"],
+                rain_next_24h_mm=weather_facts["mm"]["next_24h"],
+                rain_past_72h_in=weather_facts["inches"]["past_72h"],
+                rain_next_24h_in=weather_facts["inches"]["next_24h"],
+                temp_now_c=extra["temperature_c_now"],
+                temp_min_next_72h_c=extra["temperature_c_next_72h"]["min"],
+                temp_max_next_72h_c=extra["temperature_c_next_72h"]["max"],
+                freeze_thaw_cycles_next_72h=extra["freeze_thaw_cycles_next_72h"],
+                snowfall_next_72h_cm=extra["snowfall_cm_next_72h"],
+                wind_max_next_24h_kmh=extra["wind_kmh_max_next_24h"],
+                soil_moisture_now=extra["soil_moisture_top_7cm_now"],
+                freezing_level_now_m=extra["freezing_level_m_now"],
+            )
+
+        map_summary = prediction.get("map") or self.a.map_summary
+        return Advisory(
+            run_id=self.ctx.run_id,
+            mountain_slug=self.ctx.slug,
+            mountain=self.ctx.mountain,
+            generated_at=datetime.now(UTC),
+            severity=final.severity,
+            confidence=final.confidence,
+            needs_review=final.needs_review,
+            summary=final.summary,
+            analysis=synth["analysis"],
+            hazard=hazard,
+            avoid=[AdvisoryRoute.model_validate(route) for route in synth["avoid"]],
+            safe=[AdvisoryRoute.model_validate(route) for route in synth["safe"]],
+            response=AdvisoryResponse.model_validate(synth["response"]),
+            conditions=conditions,
+            model=AdvisoryModel(
+                method=self.a.method,
+                is_stand_in=self.a.probability.is_stand_in,
+                note=prediction.get("method_note", ""),
+                map_max=map_summary.get("max"),
+                map_mean=map_summary.get("mean"),
+                share_at_high=round(sum(map_summary["share"][level] for level in ("high", "extreme")), 3)
+                if map_summary.get("share") else None,
+            ),
+            alert=AdvisoryAlert(
+                title=final.ranger_title,
+                body=final.ranger_body,
+                hiker=final.hiker,
+                what=final.what,
+                why=final.why,
+                how_to_avoid=final.how_to_avoid,
+            ),
+            agents=self._verdicts(),
+            checks=[check for agent in AGENT_ORDER if (run := self.runs.get(agent)) and run.trace
+                    for check in run.trace.checks],
+        )
+
+    def _verdicts(self) -> dict[AgentName, AgentVerdict]:
+        """Each agent's rating and who answered it, so the panel can show where they agreed."""
+        verdicts: dict[AgentName, AgentVerdict] = {}
+        for agent in AGENT_ORDER:
+            run = self.runs.get(agent)
+            if run is None:
+                continue
+            payload = run.payload
+            severity = payload.get("severity")
+            if agent == "terrain":
+                severity = payload.get("hazard_zone", {}).get("severity")
+            verdicts[agent] = AgentVerdict(
+                label=AGENT_LABELS[agent],
+                severity=severity,
+                confidence=payload.get("confidence") or payload.get("hazard_zone", {}).get("confidence"),
+                provider=run.trace.route.provider if run.trace else None,
+                model=run.trace.route.label if run.trace else None,
+                latency_ms=run.trace.latency_ms if run.trace else None,
+            )
+        return verdicts
 
 
 # --- CLI ------------------------------------------------------------------------------------
@@ -625,24 +998,31 @@ async def _main(fixture_rain: bool) -> int:
 
     started = time.perf_counter()
     result = await Pipeline(ctx, router, providers, show).run()
-    print()
-    for agent in AGENT_ORDER:
-        run = result.runs.get(agent)
-        if run and run.payload:
-            print(json.dumps({"agent": agent, "payload": run.payload}, indent=2))
     print(f"\nstatus {result.status} in {time.perf_counter() - started:.1f} s")
     if result.final is None:
         print(f"failed at {result.failed_agent}: {result.error}")
         return 1
-    final = result.final
-    print(f"final severity {final.severity}, confidence {final.confidence}, needs_review {final.needs_review}, "
-          f"action {final.recommended_action}")
-    print(f"\nRanger: {final.ranger_title}\n{final.ranger_body}\n\nHiker: {final.hiker}")
+    advisory = result.final.advisory
+    print(f"\n{'=' * 78}\nADVISORY\n{'=' * 78}")
+    print(json.dumps(advisory.model_dump(mode="json"), indent=2))
+    print(f"\n{advisory.response.posture.upper()} / {advisory.response.priority}: "
+          f"{advisory.response.headline}")
+    print("\nAvoid:")
+    for route in advisory.avoid:
+        print(f"  - {route.trail} ({route.level}, peak {route.max_probability:.2f}): {route.reason}")
+    print("Safe:")
+    for route in advisory.safe:
+        print(f"  - {route.trail} ({route.level}, peak {route.max_probability:.2f}): {route.reason}")
+    print("\nRangers:")
+    for action in advisory.response.actions:
+        print(f"  - {action}")
+    print(f"  channels: {', '.join(advisory.response.channels)}")
+    print(f"\nRanger: {result.final.ranger_title}\n{result.final.ranger_body}\n\nHiker: {result.final.hiker}")
     return 0
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the five agents once for Mount Rainier.")
+    parser = argparse.ArgumentParser(description="Run the agents once for Mount Rainier and print the advisory.")
     parser.add_argument("--fixture-rain", action="store_true",
                         help="read backend/fixtures/open_meteo_storm.json (a synthetic storm) instead of Open-Meteo")
     raise SystemExit(asyncio.run(_main(parser.parse_args().fixture_rain)))

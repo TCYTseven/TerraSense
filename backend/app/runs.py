@@ -4,11 +4,13 @@ POST /mountains/{slug}/analyze starts a run, or hands back the one already runni
 
 1. inserts its analysis_runs row;
 2. fetches rain once and scores the step 18 map, trail risk, zone, and step 19 bypass;
-3. runs the five agents, relaying each AgentEvent to the run's stream listeners;
+3. runs the agents, five analysts at once and then the Synthesizer and the Alert Writer,
+   relaying each AgentEvent to the run's stream listeners;
 4. on success, renders the probability tiles, stores the trail's segment risk, saves the hazard
    with the agents' text, and sets the mountain's risk level and last_analyzed_at, all in one
    transaction;
-5. stores the whole run (every agent's last event and trace) on its analysis_runs row.
+5. stores the whole run (every agent's last event and trace, and the advisory) on its
+   analysis_runs row, so GET /runs/{id}/advisory still answers after a restart.
 
 A run that fails writes nothing from step 4, so the map keeps the last good hazard. Either way
 the stream gets a final RunUpdate and closes: a listener never hangs.
@@ -27,6 +29,7 @@ from app.agents.pipeline import Final, Pipeline
 from app.agents.providers import Provider, make_providers
 from app.agents.router import Router
 from app.agents.schemas import (
+    Advisory,
     AgentEvent,
     AgentName,
     ProviderName,
@@ -48,6 +51,8 @@ STEP_NAMES: dict[AgentName, str] = {
     "terrain": "Terrain",
     "weather": "Weather",
     "trail": "Trail",
+    "history": "History",
+    "routes": "Route Scout",
     "synthesizer": "Synthesizer",
     "writer": "Alert Writer",
 }
@@ -74,6 +79,7 @@ class RunState:
     rain: RainTotals | None = None
     error: str | None = None
     failed_agent: AgentName | None = None
+    advisory: Advisory | None = None
     listeners: set[asyncio.Queue] = field(default_factory=set)
     task: asyncio.Task | None = None
 
@@ -96,6 +102,7 @@ class RunState:
             rain=self.rain,
             error=self.error,
             failed_agent=self.failed_agent,
+            advisory=self.advisory,
         )
 
 
@@ -184,7 +191,8 @@ class RunRegistry:
             assessment = await asyncio.to_thread(_assess, state.slug, rain)
             state.method = assessment.method
 
-            await self._phase(state, "agents", "Five agents are reading the map, the rain, and the trail.")
+            await self._phase(state, "agents",
+                              "Five analysts are reading the model's map at once, then one synthesizer decides.")
             router, providers = self._llm()
             ctx = RunContext(run_id=state.id, slug=state.slug, mountain=state.mountain_name, peak=state.peak,
                              assessment=assessment, rain=rain, rain_error=rain_error, started=state.started)
@@ -197,7 +205,11 @@ class RunRegistry:
             await self._phase(state, "saving", "Saving the hazard, the heat map, and the trail's risk.")
             state.hazard_id = await asyncio.to_thread(_commit, state, assessment, result.final)
             state.severity, state.needs_review = result.final.severity, result.final.needs_review
+            # The advisory is the run's whole conclusion, and it rides on every later view of the
+            # run: the stream, GET /runs/{id}, and the stored row.
+            state.advisory = result.final.advisory
             await self._finish(state, result.final)
+            _log_agent_latencies(state, result)
         except FileNotFoundError as exc:
             logger.exception("run %s failed during scoring (missing file)", state.id)
             await self._fail(
@@ -231,6 +243,19 @@ class RunRegistry:
 
 
 # --- database work, run in worker threads ------------------------------------------------------
+
+
+def _log_agent_latencies(state: RunState, result) -> None:
+    """One line per finished run: where time went, for demo tuning."""
+    parts: list[str] = []
+    for name in ("terrain", "weather", "trail", "history", "routes", "synthesizer", "writer"):
+        run = result.runs.get(name)
+        if run and run.trace and run.trace.latency_ms is not None:
+            provider = run.trace.route.provider if run.trace.route else "?"
+            parts.append(f"{name}={run.trace.latency_ms}ms({provider})")
+    if parts:
+        elapsed = (state.finished_at or datetime.now(UTC)) - state.started_at
+        logger.info("run %s done in %.1fs: %s", state.id, elapsed.total_seconds(), ", ".join(parts))
 
 
 def _rain_totals(rain: HourlyRain) -> RainTotals:
@@ -303,6 +328,30 @@ def load_run(run_id: str) -> Run | None:
                finished_at=row["finished_at"], elapsed_s=None, agents={}, hazard_id=None, severity=None,
                needs_review=None, method=None, rain=None, error="The API process ended during the run.",
                failed_agent=None)
+
+
+def latest_advisory(slug: str) -> Advisory | None:
+    """The newest advisory stored for a mountain, or None when no run has finished with one.
+
+    Runs this process started are in memory, but a restart, a second worker, or a demo reload
+    would lose them. The advisory rides on the run's stored view, so it survives all three.
+    """
+    with get_pool().connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.agent_outputs
+            FROM analysis_runs r JOIN mountains m ON m.id = r.mountain_id
+            WHERE m.slug = %s AND r.status = 'done'
+            ORDER BY r.finished_at DESC NULLS LAST, r.started_at DESC
+            LIMIT 5
+            """,
+            (slug,),
+        ).fetchall()
+    for row in rows:
+        stored = ((row["agent_outputs"] or {}).get("run") or {}).get("advisory")
+        if stored:
+            return Advisory.model_validate(stored)
+    return None
 
 
 registry = RunRegistry()

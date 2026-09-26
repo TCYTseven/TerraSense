@@ -34,6 +34,7 @@ from app.ml.hazard import (
 )
 from app.ml.tiles import render_xyz
 from app.risk import RISK_LEVELS
+from app.trailscan import TrailScore, scan_trails
 from app.weather import HourlyRain
 
 PROBABILITY_LAYER = "probability"
@@ -71,6 +72,9 @@ class Assessment:
     flagged: FlaggedRun | None
     zone: HazardZone | None
     bypass: Bypass | None
+    # Every mapped trail scored on the same map, so the advisory can name routes off the hero
+    # trail. Empty only when the mountain has no trail geometry.
+    trail_scores: list[TrailScore]
     computed_at: datetime
     elapsed_s: float
 
@@ -128,6 +132,8 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
         flagged=flagged,
         zone=zone,
         bypass=find_bypass(flagged, probability),
+        trail_scores=scan_trails(conn, slug, probability, trail.trail_id,
+                                 zone.polygon if zone is not None else None),
         computed_at=datetime.now(UTC),
         elapsed_s=round(time.perf_counter() - started, 2),
     )

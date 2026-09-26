@@ -4,6 +4,17 @@ Landslide hazard intelligence for one mountain, Mount Rainier. Built for HackGT.
 
 TerraSense reads terrain and rain for Rainier, predicts where a landslide is likely in the next 72 hours, and turns that into a ranger alert and a hiker forecast.
 
+The prediction comes from an ML model over satellite terrain, land cover, and rain. Five agents
+then read that one map at the same time, each for something the model is blind to: the ground
+under the zone, the weather around it, the miles hikers walk, the landslide record, and the other
+66 trails on the mountain. A sixth agent reads all five and decides: three routes to keep hikers
+off today, three that are safest, and what the park should do about it, from a line in the
+newsletter to clearing the mountain.
+
+```bash
+curl 'http://localhost:8000/mountains/mount-rainier/advisory'   # after one Analyze run
+```
+
 ## Setup
 
 ```bash
@@ -36,6 +47,8 @@ PYTHONPATH=backend python ml/scripts/render_tiles.py
 ```
 
 Check setup: `curl 'http://localhost:8000/health?verbose=1'`
+
+No API keys, or no network to Gemini and xAI? `backend/AGENTS.md` has the offline fake-provider commands.
 
 **3. Where the spec lives.**
 

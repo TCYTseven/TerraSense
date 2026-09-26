@@ -166,8 +166,16 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
-export const AGENT_NAMES = ["terrain", "weather", "trail", "synthesizer", "writer"] as const;
+/**
+ * Panel order. The first five are analysts: the backend fans them out together in one
+ * asyncio.gather, so several rows can be "running" at once. The Risk Synthesizer waits for all
+ * five, and the Alert Writer waits for the Synthesizer.
+ */
+export const AGENT_NAMES = ["terrain", "weather", "trail", "history", "routes", "synthesizer", "writer"] as const;
 export type AgentName = (typeof AGENT_NAMES)[number];
+
+/** The agents that run in parallel. None of them reads another's answer. */
+export const ANALYST_NAMES = ["terrain", "weather", "trail", "history", "routes"] as const;
 
 export const AGENT_STATUSES = ["waiting", "running", "done", "error"] as const;
 export type AgentStatus = (typeof AGENT_STATUSES)[number];
@@ -286,6 +294,161 @@ export interface Run {
   rain: RainTotals | null;
   error: string | null;
   failed_agent: AgentName | null;
+  /** The run's whole conclusion. Null until the Alert Writer finishes, and on a failed run. */
+  advisory: Advisory | null;
+}
+
+
+/**
+ * The advisory: everything one run concluded, in one object. It rides on the Run, and
+ * GET /runs/{id}/advisory and GET /mountains/{slug}/advisory return it on its own.
+ *
+ * Every field is either a fact the backend computed or a sentence an agent wrote about those
+ * facts. The route numbers, miles, and levels are the map's, never a model's, so they are safe
+ * to render as data.
+ */
+
+/** Quietest to loudest. How loudly the park is speaking today. */
+export const POSTURES = ["all_clear", "watch", "advisory", "warning", "evacuate"] as const;
+export type Posture = (typeof POSTURES)[number];
+
+/** How fast rangers have to act. */
+export const PRIORITIES = ["routine", "elevated", "urgent", "emergency"] as const;
+export type Priority = (typeof PRIORITIES)[number];
+
+/** How the park tells people. The newsletter is the quietest; the broadcast is an evacuation only. */
+export type Channel =
+  | "newsletter"
+  | "website_banner"
+  | "trailhead_signage"
+  | "visitor_center_briefing"
+  | "ranger_radio"
+  | "social_media"
+  | "press_release"
+  | "emergency_broadcast";
+
+/** One route on the avoid or the safe list, with the catalog numbers behind it. */
+export interface AdvisoryRoute {
+  trail: string;
+  level: RiskLevel;
+  max_probability: number;
+  /** Share of the walk at high or above: one bad switchback reads differently from a bad trail. */
+  share_at_high: number;
+  length_mi: number | null;
+  elevation_gain_ft: number | null;
+  crosses_hazard_zone: boolean;
+  km_to_hazard_zone: number | null;
+  is_hero_trail: boolean;
+  /** The agent's sentence, citing the numbers above. */
+  reason: string;
+  /** Where to go instead (avoid), or the day's caution (safe). */
+  guidance: string;
+}
+
+/** What the park does about it, scaled to the hazard. */
+export interface AdvisoryResponse {
+  posture: Posture;
+  /** 0 all_clear to 4 evacuate, so a component can sort or color without a lookup. */
+  posture_rank: number;
+  priority: Priority;
+  /** 0 routine to 3 emergency. */
+  priority_rank: number;
+  recommended_action: "monitor" | "close";
+  headline: string;
+  channels: Channel[];
+  actions: string[];
+  staffing: string;
+  timeline: string;
+  escalate_if: string;
+}
+
+/** The zone the advisory is about. Null when no mile of the hero trail reaches high. */
+export interface AdvisoryHazard {
+  type: HazardType;
+  severity: RiskLevel;
+  place: string;
+  max_probability: number;
+  area_km2: number | null;
+  drivers: string[];
+  trail: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
+  bypass_name: string | null;
+  bypass_added_mi: number | null;
+  bypass_added_ft: number | null;
+}
+
+/** The weather the agents read. Null fields mean this run's source lacked that series. */
+export interface AdvisoryConditions {
+  source: string;
+  as_of: string;
+  rain_past_72h_mm: number;
+  rain_next_24h_mm: number;
+  rain_past_72h_in: number;
+  rain_next_24h_in: number;
+  temp_now_c: number | null;
+  temp_min_next_72h_c: number | null;
+  temp_max_next_72h_c: number | null;
+  freeze_thaw_cycles_next_72h: number | null;
+  snowfall_next_72h_cm: number | null;
+  wind_max_next_24h_kmh: number | null;
+  soil_moisture_now: number | null;
+  freezing_level_now_m: number | null;
+}
+
+/** The ML prediction the agents treated as their source of truth. */
+export interface AdvisoryModel {
+  method: string;
+  is_stand_in: boolean;
+  note: string;
+  map_max: number | null;
+  map_mean: number | null;
+  share_at_high: number | null;
+}
+
+/** One agent's rating, so the panel can show where the agents agreed. */
+export interface AgentVerdict {
+  label: string;
+  severity: RiskLevel | null;
+  confidence: number | null;
+  provider: ProviderName | null;
+  model: string | null;
+  latency_ms: number | null;
+}
+
+/** The Alert Writer's copy, for the panel and the hiker card. */
+export interface AdvisoryAlert {
+  title: string;
+  body: string;
+  hiker: string;
+  what: string;
+  why: string;
+  how_to_avoid: string;
+}
+
+export interface Advisory {
+  run_id: string;
+  mountain_slug: string;
+  mountain: string;
+  generated_at: string;
+  severity: RiskLevel;
+  confidence: number;
+  needs_review: boolean;
+  summary: string;
+  /** A paragraph for the reasoning panel: where the analysts agreed and where they did not. */
+  analysis: string;
+  hazard: AdvisoryHazard | null;
+  /** Exactly three routes to keep hikers off today, worst first. */
+  avoid: AdvisoryRoute[];
+  /** Exactly three routes that are safest today, best first. */
+  safe: AdvisoryRoute[];
+  response: AdvisoryResponse;
+  conditions: AdvisoryConditions | null;
+  model: AdvisoryModel;
+  alert: AdvisoryAlert;
+  agents: Partial<Record<AgentName, AgentVerdict>>;
+  /** What the backend changed or refused in the agents' answers, for the reasoning panel. */
+  checks: string[];
 }
 
 /** A stream message about the run as a whole. Agent messages are plain AgentEvents. */
