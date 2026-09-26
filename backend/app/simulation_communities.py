@@ -21,10 +21,16 @@ class CommunityAlertOutput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     places: list[str] = Field(
-        description="Real villages, towns, monasteries, or camps within roughly 30 km downvalley that should be notified."
+        description=(
+            '2–4 real settlements, each with a type prefix: "Village …", "Town …", or "Monastery …" '
+            "(never a bare name)."
+        )
     )
     alert: str = Field(
-        description="One short paragraph (under 75 words) for rangers: who to contact and why, illustrative not a forecast."
+        description=(
+            "One tight paragraph, at most 45 words. Relative geography only (downvalley, along the kora, below the trailhead). "
+            "Who to warn and stay out of channels. Illustrative, not a forecast."
+        )
     )
 
 
@@ -86,14 +92,13 @@ def _prompt_payload(
 
 
 SYSTEM = """You help park rangers draft an illustrative debris-flow community alert for a demo app.
-Use real geography only: name actual villages, towns, monasteries, or trailhead settlements in the
-valleys below the mountain that could be affected if debris followed creek channels from the
-sketched runout. This is not an operational forecast.
+Use real geography only. This is not an operational forecast.
 Rules:
-- places: 2–5 real names, most relevant downvalley from the release.
-- alert: one paragraph under 75 words, active voice, says who to notify and to stay out of channels.
-- Do not mention AI, models, or mile markers on trails unless essential.
-- If the mountain is Mount Kailash, include Darchen and other settlements on or below the kora route when appropriate."""
+- places: 2–4 entries. Every name must start with Village, Town, or Monastery (e.g. Village Darchen,
+  Monastery Zutulpuk). Pick settlements downvalley or along drainages from the sketched runout.
+- alert: at most 45 words, active voice, two short sentences max. Relative WHERE (downvalley, east of the kora,
+  below the release). Who to warn; stay out of channels. No filler, no AI talk, no trail mile markers.
+- Mount Kailash: Village Darchen and kora-side monasteries when relevant."""
 
 
 async def generate_community_callout(
@@ -121,11 +126,9 @@ async def generate_community_callout(
         try:
             result = await provider.generate(request)
             parsed = CommunityAlertOutput.model_validate_json(result.text)
+            places = [_label_place(name) for name in parsed.places]
             text = parsed.alert.strip()
-            if parsed.places and parsed.places[0].lower() not in text.lower():
-                names = ", ".join(parsed.places[:5])
-                text = f"{text} Settlements to alert: {names}."
-            return _callout(text, parsed.places, t_s=0.0), True
+            return _callout(text, places, t_s=0.0), True
         except (ProviderError, ValueError, json.JSONDecodeError) as exc:
             logger.warning("simulation community alert via %s failed: %s", provider.name, exc)
             continue
@@ -146,19 +149,19 @@ def fallback_community_callout(
     km = distance_m / 1000
     hints: dict[str, tuple[list[str], str]] = {
         "mount-kailash": (
-            ["Darchen", "Hor Qu", "Purang (Burang)"],
-            f"Illustrative runout from {trail} could send debris into kora-side channels. "
-            f"Notify Darchen, Hor Qu, and settlements toward Purang (Burang); keep pilgrims out of creek beds below the release.",
+            ["Village Darchen", "Monastery Drirapuk", "Town Purang (Burang)"],
+            f"Warn Village Darchen at the kora trailhead and monasteries east along the inner circuit; debris from {trail} could reach channels below the north flank. "
+            f"Keep pilgrims out of creek beds downvalley toward Town Purang.",
         ),
         "mount-rainier": (
-            ["Longmire", "Ashford", "Paradise"],
-            f"Illustrative runout from {trail} (~{km:.1f} km sketched) could reach Nisqually and Tahoma Creek valleys. "
-            f"Alert Longmire, Ashford, and Paradise-area staff; close affected trail segments and keep visitors out of channels.",
+            ["Village Longmire", "Town Ashford", "Village Paradise"],
+            f"Alert Village Longmire in the Nisqually valley and Town Ashford at the gateway; sketched runout from {trail} follows drainages below the peak. "
+            f"Clear channels near Village Paradise and keep visitors off low crossings.",
         ),
         "mount-everest": (
-            ["Namche Bazaar", "Lukla", "Phakding"],
-            f"Illustrative slope release above {trail} could affect Khumbu valley drainages. "
-            f"Notify Namche Bazaar, Phakding, and Lukla-area lodges; keep trekkers off paths in active creek channels.",
+            ["Village Namche Bazaar", "Village Lukla", "Village Phakding"],
+            f"Notify Village Namche Bazaar mid-valley and Village Phakding downstream; release above {trail} threatens Khumbu-side channels. "
+            f"Brief airfield staff at Village Lukla and keep trekkers off creek paths.",
         ),
     }
     places, alert = hints.get(
@@ -170,6 +173,19 @@ def fallback_community_callout(
         ),
     )
     return _callout(alert, places, t_s=0.0)
+
+
+def _label_place(name: str) -> str:
+    """Ensure list rows read Village … / Town … / Monastery …"""
+    cleaned = name.strip()
+    lower = cleaned.lower()
+    if lower.startswith(("village ", "town ", "monastery ")):
+        return cleaned
+    if "monastery" in lower or "gompa" in lower or "temple" in lower:
+        return f"Monastery {cleaned}"
+    if "town" in lower or "bazaar" in lower or "city" in lower:
+        return f"Town {cleaned}"
+    return f"Village {cleaned}"
 
 
 def _callout(text: str, places: list[str], *, t_s: float) -> dict:

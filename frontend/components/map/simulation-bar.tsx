@@ -63,13 +63,13 @@ export default function SimulationBar({
         </div>
       </div>
       {(community || waitingForCommunity) && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-14 z-20 md:inset-x-4 md:bottom-16">
+        <div className="pointer-events-none absolute bottom-14 left-3 right-[4.75rem] z-20 md:bottom-16 md:left-4 md:right-[5.25rem]">
           {community ? (
             <CommunityAlert callout={community} />
           ) : (
-            <div className="border-l-2 border-foreground/35 bg-card/95 px-2.5 py-2 backdrop-blur-sm">
+            <div className="border-l-2 border-foreground/35 bg-card/95 px-2.5 py-1.5 backdrop-blur-sm">
               <p className="text-[11px] leading-tight text-muted-foreground">Communities to alert</p>
-              <p className="mt-1 text-sm leading-snug text-muted-foreground animate-pulse">Identifying downvalley settlements…</p>
+              <p className="mt-0.5 text-sm leading-snug text-muted-foreground animate-pulse">Identifying downvalley settlements…</p>
             </div>
           )}
         </div>
@@ -81,15 +81,15 @@ export default function SimulationBar({
 function CommunityAlert({ callout }: { callout: SimulationCallout }) {
   const places = callout.places?.filter(Boolean) ?? [];
   return (
-    <div className="border-l-2 border-amber-500/80 bg-card/95 px-2.5 py-2 backdrop-blur-sm">
+    <div className="border-l-2 border-amber-500/80 bg-card/95 px-2.5 py-1.5 backdrop-blur-sm">
       <p className="flex items-baseline justify-between gap-2 text-[11px] leading-tight text-muted-foreground">
         <span className="min-w-0 truncate">Communities to alert · illustrative</span>
         <span className="shrink-0 font-mono tabular-nums">{simulationClock(callout.t_s)}</span>
       </p>
       {places.length > 0 && (
-        <p className="mt-1 text-xs font-medium leading-snug text-foreground">{places.join(" · ")}</p>
+        <p className="mt-0.5 text-[11px] font-medium leading-snug text-foreground">{places.join(" · ")}</p>
       )}
-      <p className="mt-1 text-sm leading-snug text-foreground">{callout.text}</p>
+      <p className="mt-0.5 text-[13px] leading-snug text-foreground">{callout.text}</p>
     </div>
   );
 }
