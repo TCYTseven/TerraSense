@@ -1,0 +1,1382 @@
+[
+  {
+    "name": "Mount Everest",
+    "slug": "mount-everest",
+    "lat": 27.988,
+    "lon": 86.925,
+    "elevation_m": 8849,
+    "region": "Mahalangur Himal, Nepal / China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "K2",
+    "slug": "k2",
+    "lat": 35.882,
+    "lon": 76.513,
+    "elevation_m": 8611,
+    "region": "Karakoram, Pakistan / China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Kangchenjunga",
+    "slug": "kangchenjunga",
+    "lat": 27.703,
+    "lon": 88.147,
+    "elevation_m": 8586,
+    "region": "Himalaya, Nepal / India",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Manaslu",
+    "slug": "manaslu",
+    "lat": 28.55,
+    "lon": 84.56,
+    "elevation_m": 8163,
+    "region": "Mansiri Himal, Nepal",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Nanga Parbat",
+    "slug": "nanga-parbat",
+    "lat": 35.238,
+    "lon": 74.589,
+    "elevation_m": 8126,
+    "region": "Himalaya, Pakistan",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Annapurna I",
+    "slug": "annapurna-i",
+    "lat": 28.596,
+    "lon": 83.82,
+    "elevation_m": 8091,
+    "region": "Annapurna Himal, Nepal",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Nanda Devi",
+    "slug": "nanda-devi",
+    "lat": 30.376,
+    "lon": 79.971,
+    "elevation_m": 7816,
+    "region": "Garhwal Himalaya, India",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Rakaposhi",
+    "slug": "rakaposhi",
+    "lat": 36.142,
+    "lon": 74.489,
+    "elevation_m": 7788,
+    "region": "Karakoram, Pakistan",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Namcha Barwa",
+    "slug": "namcha-barwa",
+    "lat": 29.631,
+    "lon": 95.056,
+    "elevation_m": 7782,
+    "region": "Eastern Himalaya, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Tirich Mir",
+    "slug": "tirich-mir",
+    "lat": 36.255,
+    "lon": 71.84,
+    "elevation_m": 7708,
+    "region": "Hindu Kush, Pakistan",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Kongur Tagh",
+    "slug": "kongur-tagh",
+    "lat": 38.594,
+    "lon": 75.312,
+    "elevation_m": 7649,
+    "region": "Pamir, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Minya Konka",
+    "slug": "minya-konka",
+    "lat": 29.596,
+    "lon": 101.879,
+    "elevation_m": 7556,
+    "region": "Daxue Mountains, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Muztagh Ata",
+    "slug": "muztagh-ata",
+    "lat": 38.276,
+    "lon": 75.116,
+    "elevation_m": 7509,
+    "region": "Pamir, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Jengish Chokusu",
+    "slug": "jengish-chokusu",
+    "lat": 42.035,
+    "lon": 80.128,
+    "elevation_m": 7439,
+    "region": "Tian Shan, Kyrgyzstan / China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Lenin Peak",
+    "slug": "lenin-peak",
+    "lat": 39.343,
+    "lon": 72.878,
+    "elevation_m": 7134,
+    "region": "Pamir, Kyrgyzstan / Tajikistan",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Khan Tengri",
+    "slug": "khan-tengri",
+    "lat": 42.211,
+    "lon": 80.175,
+    "elevation_m": 7010,
+    "region": "Tian Shan, Kyrgyzstan / Kazakhstan / China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Ulugh Muztagh",
+    "slug": "ulugh-muztagh",
+    "lat": 36.412,
+    "lon": 87.385,
+    "elevation_m": 6973,
+    "region": "Kunlun Mountains, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Aconcagua",
+    "slug": "aconcagua",
+    "lat": -32.653,
+    "lon": -70.011,
+    "elevation_m": 6961,
+    "region": "Andes, Argentina",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Ojos del Salado",
+    "slug": "ojos-del-salado",
+    "lat": -27.109,
+    "lon": -68.542,
+    "elevation_m": 6893,
+    "region": "Andes, Chile / Argentina",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Huascarán",
+    "slug": "huascaran",
+    "lat": -9.122,
+    "lon": -77.604,
+    "elevation_m": 6768,
+    "region": "Cordillera Blanca, Peru",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Kawagebo",
+    "slug": "kawagebo",
+    "lat": 28.439,
+    "lon": 98.684,
+    "elevation_m": 6740,
+    "region": "Meili Snow Mountains, China",
+    "current_risk_level": "high",
+    "is_live": false
+  },
+  {
+    "name": "Illimani",
+    "slug": "illimani",
+    "lat": -16.654,
+    "lon": -67.784,
+    "elevation_m": 6438,
+    "region": "Cordillera Real, Bolivia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Amne Machin",
+    "slug": "amne-machin",
+    "lat": 34.8,
+    "lon": 99.462,
+    "elevation_m": 6282,
+    "region": "Kunlun / Amne Machin, China",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Chimborazo",
+    "slug": "chimborazo",
+    "lat": -1.469,
+    "lon": -78.817,
+    "elevation_m": 6263,
+    "region": "Andes, Ecuador",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Siguniang",
+    "slug": "siguniang",
+    "lat": 31.107,
+    "lon": 102.902,
+    "elevation_m": 6250,
+    "region": "Qionglai Mountains, China",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Denali",
+    "slug": "denali",
+    "lat": 63.0695,
+    "lon": -151.0074,
+    "elevation_m": 6190,
+    "region": "Alaska Range, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Logan",
+    "slug": "mount-logan",
+    "lat": 60.567,
+    "lon": -140.405,
+    "elevation_m": 5959,
+    "region": "Saint Elias Mountains, Canada",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Cotopaxi",
+    "slug": "cotopaxi",
+    "lat": -0.68,
+    "lon": -78.437,
+    "elevation_m": 5897,
+    "region": "Andes, Ecuador",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Kilimanjaro",
+    "slug": "kilimanjaro",
+    "lat": -3.067,
+    "lon": 37.356,
+    "elevation_m": 5895,
+    "region": "Tanzania",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Hkakabo Razi",
+    "slug": "hkakabo-razi",
+    "lat": 28.33,
+    "lon": 97.536,
+    "elevation_m": 5881,
+    "region": "Kachin, Myanmar",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Pico Cristóbal Colón",
+    "slug": "pico-cristobal-colon",
+    "lat": 10.838,
+    "lon": -73.687,
+    "elevation_m": 5700,
+    "region": "Sierra Nevada de Santa Marta, Colombia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Elbrus",
+    "slug": "mount-elbrus",
+    "lat": 43.349,
+    "lon": 42.445,
+    "elevation_m": 5642,
+    "region": "Caucasus, Russia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Pico de Orizaba",
+    "slug": "pico-de-orizaba",
+    "lat": 19.03,
+    "lon": -97.269,
+    "elevation_m": 5636,
+    "region": "Trans-Mexican Volcanic Belt, Mexico",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Damavand",
+    "slug": "damavand",
+    "lat": 35.956,
+    "lon": 52.109,
+    "elevation_m": 5609,
+    "region": "Alborz, Iran",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Jade Dragon Snow Mountain",
+    "slug": "jade-dragon-snow-mountain",
+    "lat": 27.098,
+    "lon": 100.178,
+    "elevation_m": 5596,
+    "region": "Yunnan, China",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Bogda Peak",
+    "slug": "bogda-peak",
+    "lat": 43.801,
+    "lon": 88.335,
+    "elevation_m": 5445,
+    "region": "Tian Shan, China",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Popocatépetl",
+    "slug": "popocatepetl",
+    "lat": 19.023,
+    "lon": -98.628,
+    "elevation_m": 5393,
+    "region": "Trans-Mexican Volcanic Belt, Mexico",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Nevado del Ruiz",
+    "slug": "nevado-del-ruiz",
+    "lat": 4.892,
+    "lon": -75.324,
+    "elevation_m": 5321,
+    "region": "Cordillera Central, Colombia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kenya",
+    "slug": "mount-kenya",
+    "lat": -0.152,
+    "lon": 37.308,
+    "elevation_m": 5199,
+    "region": "Kenya",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Ararat",
+    "slug": "mount-ararat",
+    "lat": 39.702,
+    "lon": 44.298,
+    "elevation_m": 5137,
+    "region": "Armenian Highlands, Turkey",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Stanley",
+    "slug": "mount-stanley",
+    "lat": 0.386,
+    "lon": 29.873,
+    "elevation_m": 5109,
+    "region": "Rwenzori Mountains, Uganda / DR Congo",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kazbek",
+    "slug": "mount-kazbek",
+    "lat": 42.7,
+    "lon": 44.518,
+    "elevation_m": 5033,
+    "region": "Caucasus, Georgia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Pico Bolívar",
+    "slug": "pico-bolivar",
+    "lat": 8.541,
+    "lon": -71.045,
+    "elevation_m": 4978,
+    "region": "Sierra Nevada de Mérida, Venezuela",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Vinson Massif",
+    "slug": "vinson-massif",
+    "lat": -78.525,
+    "lon": -85.617,
+    "elevation_m": 4892,
+    "region": "Sentinel Range, Antarctica",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Puncak Jaya",
+    "slug": "puncak-jaya",
+    "lat": -4.079,
+    "lon": 137.158,
+    "elevation_m": 4884,
+    "region": "Sudirman Range, Indonesia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Sabalan",
+    "slug": "sabalan",
+    "lat": 38.269,
+    "lon": 47.837,
+    "elevation_m": 4811,
+    "region": "Iran",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mont Blanc",
+    "slug": "mont-blanc",
+    "lat": 45.833,
+    "lon": 6.865,
+    "elevation_m": 4808,
+    "region": "Alps, France / Italy",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Klyuchevskaya Sopka",
+    "slug": "klyuchevskaya-sopka",
+    "lat": 56.057,
+    "lon": 160.644,
+    "elevation_m": 4754,
+    "region": "Kamchatka, Russia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Fairweather",
+    "slug": "mount-fairweather",
+    "lat": 58.906,
+    "lon": -137.527,
+    "elevation_m": 4671,
+    "region": "Saint Elias Mountains, Alaska / British Columbia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Ras Dashen",
+    "slug": "ras-dashen",
+    "lat": 13.236,
+    "lon": 38.372,
+    "elevation_m": 4550,
+    "region": "Simien Mountains, Ethiopia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Wilhelm",
+    "slug": "mount-wilhelm",
+    "lat": -5.78,
+    "lon": 145.03,
+    "elevation_m": 4509,
+    "region": "Bismarck Range, Papua New Guinea",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Belukha",
+    "slug": "belukha",
+    "lat": 49.807,
+    "lon": 86.59,
+    "elevation_m": 4506,
+    "region": "Altai Mountains, Russia / Kazakhstan",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Matterhorn",
+    "slug": "matterhorn",
+    "lat": 45.976,
+    "lon": 7.659,
+    "elevation_m": 4478,
+    "region": "Alps, Switzerland / Italy",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Whitney",
+    "slug": "mount-whitney",
+    "lat": 36.579,
+    "lon": -118.292,
+    "elevation_m": 4421,
+    "region": "Sierra Nevada, California, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Elbert",
+    "slug": "mount-elbert",
+    "lat": 39.118,
+    "lon": -106.445,
+    "elevation_m": 4401,
+    "region": "Sawatch Range, Colorado, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rainier",
+    "slug": "mount-rainier",
+    "lat": 46.8523,
+    "lon": -121.7603,
+    "elevation_m": 4392,
+    "region": "Cascade Range, Washington, USA",
+    "current_risk_level": "moderate",
+    "is_live": true
+  },
+  {
+    "name": "Longs Peak",
+    "slug": "longs-peak",
+    "lat": 40.255,
+    "lon": -105.615,
+    "elevation_m": 4346,
+    "region": "Rocky Mountain National Park, Colorado, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Shasta",
+    "slug": "mount-shasta",
+    "lat": 41.409,
+    "lon": -122.195,
+    "elevation_m": 4322,
+    "region": "Cascade Range, California, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Elgon",
+    "slug": "mount-elgon",
+    "lat": 1.121,
+    "lon": 34.535,
+    "elevation_m": 4321,
+    "region": "Uganda / Kenya",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Pikes Peak",
+    "slug": "pikes-peak",
+    "lat": 38.841,
+    "lon": -105.044,
+    "elevation_m": 4302,
+    "region": "Front Range, Colorado, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Nevado de Colima",
+    "slug": "nevado-de-colima",
+    "lat": 19.563,
+    "lon": -103.608,
+    "elevation_m": 4270,
+    "region": "Trans-Mexican Volcanic Belt, Mexico",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Volcán Tajumulco",
+    "slug": "volcan-tajumulco",
+    "lat": 15.043,
+    "lon": -91.903,
+    "elevation_m": 4220,
+    "region": "Sierra Madre, Guatemala",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Gannett Peak",
+    "slug": "gannett-peak",
+    "lat": 43.184,
+    "lon": -109.654,
+    "elevation_m": 4207,
+    "region": "Wind River Range, Wyoming, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mauna Kea",
+    "slug": "mauna-kea",
+    "lat": 19.821,
+    "lon": -155.468,
+    "elevation_m": 4207,
+    "region": "Hawaii, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Grand Teton",
+    "slug": "grand-teton",
+    "lat": 43.741,
+    "lon": -110.802,
+    "elevation_m": 4199,
+    "region": "Teton Range, Wyoming, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mauna Loa",
+    "slug": "mauna-loa",
+    "lat": 19.476,
+    "lon": -155.605,
+    "elevation_m": 4169,
+    "region": "Hawaii, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Toubkal",
+    "slug": "toubkal",
+    "lat": 31.059,
+    "lon": -7.916,
+    "elevation_m": 4167,
+    "region": "Atlas Mountains, Morocco",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Jungfrau",
+    "slug": "jungfrau",
+    "lat": 46.537,
+    "lon": 7.963,
+    "elevation_m": 4158,
+    "region": "Bernese Alps, Switzerland",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Kings Peak",
+    "slug": "kings-peak",
+    "lat": 40.776,
+    "lon": -110.373,
+    "elevation_m": 4123,
+    "region": "Uinta Mountains, Utah, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kinabalu",
+    "slug": "mount-kinabalu",
+    "lat": 6.075,
+    "lon": 116.558,
+    "elevation_m": 4095,
+    "region": "Sabah, Malaysia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Cameroon",
+    "slug": "mount-cameroon",
+    "lat": 4.217,
+    "lon": 9.17,
+    "elevation_m": 4040,
+    "region": "Cameroon",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Waddington",
+    "slug": "mount-waddington",
+    "lat": 51.3737,
+    "lon": -125.2636,
+    "elevation_m": 4019,
+    "region": "Coast Mountains, British Columbia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Wheeler Peak",
+    "slug": "wheeler-peak",
+    "lat": 36.557,
+    "lon": -105.417,
+    "elevation_m": 4011,
+    "region": "Sangre de Cristo Mountains, New Mexico, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Otgontenger",
+    "slug": "otgontenger",
+    "lat": 47.608,
+    "lon": 97.553,
+    "elevation_m": 4008,
+    "region": "Khangai Mountains, Mongolia",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Boundary Peak",
+    "slug": "boundary-peak",
+    "lat": 37.846,
+    "lon": -118.351,
+    "elevation_m": 4007,
+    "region": "White Mountains, Nevada, USA",
+    "current_risk_level": "moderate",
+    "is_live": false
+  },
+  {
+    "name": "Mount Robson",
+    "slug": "mount-robson",
+    "lat": 53.1106,
+    "lon": -119.1567,
+    "elevation_m": 3954,
+    "region": "Canadian Rockies, British Columbia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Yushan",
+    "slug": "yushan",
+    "lat": 23.47,
+    "lon": 120.957,
+    "elevation_m": 3952,
+    "region": "Taiwan",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kaçkar Dağı",
+    "slug": "kackar-dag",
+    "lat": 40.836,
+    "lon": 41.16,
+    "elevation_m": 3937,
+    "region": "Pontic Mountains, Turkey",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Erciyes Dağı",
+    "slug": "erciyes-dag",
+    "lat": 38.532,
+    "lon": 35.447,
+    "elevation_m": 3917,
+    "region": "Central Anatolia, Turkey",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Borah Peak",
+    "slug": "borah-peak",
+    "lat": 44.137,
+    "lon": -113.781,
+    "elevation_m": 3859,
+    "region": "Lost River Range, Idaho, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Humphreys Peak",
+    "slug": "humphreys-peak",
+    "lat": 35.346,
+    "lon": -111.678,
+    "elevation_m": 3852,
+    "region": "San Francisco Peaks, Arizona, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Cerro Chirripó",
+    "slug": "cerro-chirripo",
+    "lat": 9.484,
+    "lon": -83.488,
+    "elevation_m": 3820,
+    "region": "Talamanca Range, Costa Rica",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kerinci",
+    "slug": "mount-kerinci",
+    "lat": -1.697,
+    "lon": 101.264,
+    "elevation_m": 3805,
+    "region": "Sumatra, Indonesia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Grossglockner",
+    "slug": "grossglockner",
+    "lat": 47.074,
+    "lon": 12.694,
+    "elevation_m": 3798,
+    "region": "High Tauern, Austria",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Erebus",
+    "slug": "mount-erebus",
+    "lat": -77.528,
+    "lon": 167.155,
+    "elevation_m": 3794,
+    "region": "Ross Island, Antarctica",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Fuji",
+    "slug": "mount-fuji",
+    "lat": 35.361,
+    "lon": 138.727,
+    "elevation_m": 3776,
+    "region": "Honshu, Japan",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Adams",
+    "slug": "mount-adams",
+    "lat": 46.202,
+    "lon": -121.491,
+    "elevation_m": 3743,
+    "region": "Cascade Range, Washington, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Rinjani",
+    "slug": "mount-rinjani",
+    "lat": -8.411,
+    "lon": 116.457,
+    "elevation_m": 3726,
+    "region": "Lombok, Indonesia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aoraki / Mount Cook",
+    "slug": "aoraki-mount-cook",
+    "lat": -43.595,
+    "lon": 170.142,
+    "elevation_m": 3724,
+    "region": "Southern Alps, New Zealand",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Teide",
+    "slug": "teide",
+    "lat": 28.272,
+    "lon": -16.642,
+    "elevation_m": 3715,
+    "region": "Canary Islands, Spain",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Gunnbjørn Fjeld",
+    "slug": "gunnbjrn-fjeld",
+    "lat": 68.917,
+    "lon": -29.9,
+    "elevation_m": 3694,
+    "region": "Watkins Range, Greenland",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Semeru",
+    "slug": "mount-semeru",
+    "lat": -8.108,
+    "lon": 112.922,
+    "elevation_m": 3676,
+    "region": "Java, Indonesia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Munku-Sardyk",
+    "slug": "munku-sardyk",
+    "lat": 51.719,
+    "lon": 100.598,
+    "elevation_m": 3491,
+    "region": "Sayan Mountains, Russia / Mongolia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Thabana Ntlenyana",
+    "slug": "thabana-ntlenyana",
+    "lat": -29.468,
+    "lon": 29.268,
+    "elevation_m": 3482,
+    "region": "Drakensberg, Lesotho",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mulhacén",
+    "slug": "mulhacen",
+    "lat": 37.054,
+    "lon": -3.311,
+    "elevation_m": 3479,
+    "region": "Sierra Nevada, Spain",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Emi Koussi",
+    "slug": "emi-koussi",
+    "lat": 19.794,
+    "lon": 18.546,
+    "elevation_m": 3445,
+    "region": "Tibesti Mountains, Chad",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Hood",
+    "slug": "mount-hood",
+    "lat": 45.374,
+    "lon": -121.696,
+    "elevation_m": 3429,
+    "region": "Cascade Range, Oregon, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Monte Fitz Roy",
+    "slug": "monte-fitz-roy",
+    "lat": -49.271,
+    "lon": -73.043,
+    "elevation_m": 3405,
+    "region": "Patagonia, Argentina / Chile",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Aneto",
+    "slug": "aneto",
+    "lat": 42.631,
+    "lon": 0.657,
+    "elevation_m": 3404,
+    "region": "Pyrenees, Spain",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Etna",
+    "slug": "mount-etna",
+    "lat": 37.751,
+    "lon": 14.993,
+    "elevation_m": 3357,
+    "region": "Sicily, Italy",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount San Jacinto",
+    "slug": "mount-san-jacinto",
+    "lat": 33.815,
+    "lon": -116.679,
+    "elevation_m": 3302,
+    "region": "Peninsular Ranges, California, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Baker",
+    "slug": "mount-baker",
+    "lat": 48.777,
+    "lon": -121.814,
+    "elevation_m": 3286,
+    "region": "Cascade Range, Washington, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Glacier Peak",
+    "slug": "glacier-peak",
+    "lat": 48.112,
+    "lon": -121.114,
+    "elevation_m": 3213,
+    "region": "Cascade Range, Washington, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Lassen",
+    "slug": "mount-lassen",
+    "lat": 40.488,
+    "lon": -121.505,
+    "elevation_m": 3187,
+    "region": "Cascade Range, California, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "South Sister",
+    "slug": "south-sister",
+    "lat": 44.103,
+    "lon": -121.769,
+    "elevation_m": 3159,
+    "region": "Cascade Range, Oregon, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Fansipan",
+    "slug": "fansipan",
+    "lat": 22.303,
+    "lon": 103.776,
+    "elevation_m": 3143,
+    "region": "Hoàng Liên Sơn, Vietnam",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Haleakala",
+    "slug": "haleakala",
+    "lat": 20.71,
+    "lon": -156.253,
+    "elevation_m": 3055,
+    "region": "Maui, Hawaii, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Aspiring",
+    "slug": "mount-aspiring",
+    "lat": -44.384,
+    "lon": 168.729,
+    "elevation_m": 3033,
+    "region": "Southern Alps, New Zealand",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Tate",
+    "slug": "mount-tate",
+    "lat": 36.575,
+    "lon": 137.617,
+    "elevation_m": 3015,
+    "region": "Hida Mountains, Japan",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Sapitwa Peak",
+    "slug": "sapitwa-peak",
+    "lat": -15.95,
+    "lon": 35.592,
+    "elevation_m": 3002,
+    "region": "Mulanje Massif, Malawi",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Zugspitze",
+    "slug": "zugspitze",
+    "lat": 47.421,
+    "lon": 10.986,
+    "elevation_m": 2962,
+    "region": "Bavarian Alps, Germany / Austria",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Apo",
+    "slug": "mount-apo",
+    "lat": 6.987,
+    "lon": 125.271,
+    "elevation_m": 2954,
+    "region": "Mindanao, Philippines",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Musala",
+    "slug": "musala",
+    "lat": 42.179,
+    "lon": 23.585,
+    "elevation_m": 2925,
+    "region": "Rila Mountains, Bulgaria",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Olympus",
+    "slug": "mount-olympus-2",
+    "lat": 40.085,
+    "lon": 22.358,
+    "elevation_m": 2917,
+    "region": "Olympus Range, Greece",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Gran Sasso",
+    "slug": "gran-sasso",
+    "lat": 42.469,
+    "lon": 13.565,
+    "elevation_m": 2912,
+    "region": "Apennines, Italy",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Triglav",
+    "slug": "triglav",
+    "lat": 46.378,
+    "lon": 13.837,
+    "elevation_m": 2864,
+    "region": "Julian Alps, Slovenia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Paektu Mountain",
+    "slug": "paektu-mountain",
+    "lat": 41.993,
+    "lon": 128.077,
+    "elevation_m": 2744,
+    "region": "China / North Korea",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Guadalupe Peak",
+    "slug": "guadalupe-peak",
+    "lat": 31.891,
+    "lon": -104.861,
+    "elevation_m": 2667,
+    "region": "Guadalupe Mountains, Texas, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Gerlachovský štít",
+    "slug": "gerlachovsky-stit",
+    "lat": 49.164,
+    "lon": 20.134,
+    "elevation_m": 2655,
+    "region": "High Tatras, Slovakia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Königstein",
+    "slug": "konigstein",
+    "lat": -21.146,
+    "lon": 14.578,
+    "elevation_m": 2573,
+    "region": "Brandberg, Namibia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Moldoveanu Peak",
+    "slug": "moldoveanu-peak",
+    "lat": 45.6,
+    "lon": 24.736,
+    "elevation_m": 2544,
+    "region": "Făgăraș Mountains, Romania",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Taranaki",
+    "slug": "mount-taranaki",
+    "lat": -39.297,
+    "lon": 174.064,
+    "elevation_m": 2518,
+    "region": "North Island, New Zealand",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Galdhøpiggen",
+    "slug": "galdhpiggen",
+    "lat": 61.636,
+    "lon": 8.312,
+    "elevation_m": 2469,
+    "region": "Jotunheimen, Norway",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Olympus",
+    "slug": "mount-olympus",
+    "lat": 47.801,
+    "lon": -123.71,
+    "elevation_m": 2428,
+    "region": "Olympic Mountains, Washington, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Asahi",
+    "slug": "mount-asahi",
+    "lat": 43.664,
+    "lon": 142.854,
+    "elevation_m": 2291,
+    "region": "Daisetsuzan, Hokkaido, Japan",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Kosciuszko",
+    "slug": "mount-kosciuszko",
+    "lat": -36.456,
+    "lon": 148.264,
+    "elevation_m": 2228,
+    "region": "Snowy Mountains, Australia",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Kebnekaise",
+    "slug": "kebnekaise",
+    "lat": 67.9,
+    "lon": 18.517,
+    "elevation_m": 2097,
+    "region": "Scandinavian Mountains, Sweden",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Hoverla",
+    "slug": "hoverla",
+    "lat": 48.16,
+    "lon": 24.5,
+    "elevation_m": 2061,
+    "region": "Carpathians, Ukraine",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Mitchell",
+    "slug": "mount-mitchell",
+    "lat": 35.765,
+    "lon": -82.265,
+    "elevation_m": 2037,
+    "region": "Blue Ridge Mountains, North Carolina, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Clingmans Dome",
+    "slug": "clingmans-dome",
+    "lat": 35.563,
+    "lon": -83.498,
+    "elevation_m": 2025,
+    "region": "Great Smoky Mountains, Tennessee / North Carolina",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Hallasan",
+    "slug": "hallasan",
+    "lat": 33.362,
+    "lon": 126.529,
+    "elevation_m": 1947,
+    "region": "Jeju Island, South Korea",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Washington",
+    "slug": "mount-washington",
+    "lat": 44.271,
+    "lon": -71.304,
+    "elevation_m": 1917,
+    "region": "White Mountains, New Hampshire, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Jirisan",
+    "slug": "jirisan",
+    "lat": 35.337,
+    "lon": 127.731,
+    "elevation_m": 1915,
+    "region": "South Korea",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Mount Yotei",
+    "slug": "mount-yotei",
+    "lat": 42.828,
+    "lon": 140.811,
+    "elevation_m": 1898,
+    "region": "Hokkaido, Japan",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Seoraksan",
+    "slug": "seoraksan",
+    "lat": 38.119,
+    "lon": 128.466,
+    "elevation_m": 1708,
+    "region": "South Korea",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Katahdin",
+    "slug": "katahdin",
+    "lat": 45.904,
+    "lon": -68.921,
+    "elevation_m": 1606,
+    "region": "Appalachian Mountains, Maine, USA",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Ben Nevis",
+    "slug": "ben-nevis",
+    "lat": 56.797,
+    "lon": -5.004,
+    "elevation_m": 1345,
+    "region": "Grampian Mountains, Scotland",
+    "current_risk_level": "low",
+    "is_live": false
+  },
+  {
+    "name": "Table Mountain",
+    "slug": "table-mountain",
+    "lat": -33.962,
+    "lon": 18.41,
+    "elevation_m": 1085,
+    "region": "Cape Town, South Africa",
+    "current_risk_level": "low",
+    "is_live": false
+  }
+]

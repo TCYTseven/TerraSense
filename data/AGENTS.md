@@ -16,7 +16,8 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 
 | File | Step | Loaded by |
 |---|---|---|
-| `seed/mountains.json` | 5 | `backend/app/seed.py`. Committed catalog (~1000 peaks, stratified across latitude bands and longitude slices, pins at least 1° apart). Regenerate offline: `python -m app.mountain_catalog --write-seed --source overpass` from `backend/`. Reseeding removes static mountains the file no longer lists. The API does not fetch externally at runtime. |
+| `seed/mountains_test.json` | 5 | Catalog when `SEED_MODE=mountainstest` (the default). ~140 named peaks spaced across the Americas, Europe, Africa, and Asia, plus Mount Rainier. |
+| `seed/mountains.json` | 5 | Full Overpass catalog. Regenerated offline: `python -m app.mountain_catalog --write-seed --source overpass` from `backend/`. Loaded when `SEED_MODE=reseed`. Reseeding removes static mountains the active file no longer lists. |
 | `seed/trails.geojson` | 5, replaced in 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_segments.geojson` | 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_network.geojson` | 19 | `backend/app/bypass.py`. Written by `ml/scripts/build_trail_network.py` |

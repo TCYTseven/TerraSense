@@ -16,6 +16,7 @@ import http.client
 import itertools
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -34,6 +35,8 @@ from app.config import REPO_ROOT
 log = logging.getLogger(__name__)
 
 SEED_PATH = REPO_ROOT / "data" / "seed" / "mountains.json"
+# Spaced worldwide sample. SEED_MODE=mountainstest loads this; SEED_MODE=reseed loads mountains.json.
+TEST_SEED_PATH = REPO_ROOT / "data" / "seed" / "mountains_test.json"
 # Raw Overpass rows land here (gitignored) so selection can be re-tuned without re-fetching.
 RAW_CACHE_PATH = REPO_ROOT / "data" / "raw" / "overpass_peaks_raw.json"
 TARGET_COUNT = 1000
@@ -516,10 +519,28 @@ def build_seed_list(rows: list[dict]) -> list[dict]:
     return sorted(by_slug.values(), key=lambda m: (-m["elevation_m"], m["name"]))
 
 
+def catalog_seed_path() -> Path:
+    """Which committed JSON the API and `app.seed` load.
+
+    `SEED_MODE=mountainstest` (default) loads `mountains_test.json`.
+    `SEED_MODE=reseed` loads the full Overpass dump in `mountains.json`.
+    """
+    mode = os.environ.get("SEED_MODE", "mountainstest").strip().lower()
+    if mode == "reseed":
+        return SEED_PATH
+    if mode not in ("", "mountainstest"):
+        log.warning("Unknown SEED_MODE %r; using mountainstest.", mode)
+    if TEST_SEED_PATH.is_file():
+        return TEST_SEED_PATH
+    return SEED_PATH
+
+
 def read_seed_file() -> list[dict] | None:
-    if not SEED_PATH.is_file():
+    path = catalog_seed_path()
+    if not path.is_file():
         return None
-    return json.loads(SEED_PATH.read_text(encoding="utf-8"))
+    log.info("Loading mountain catalog from %s", path.name)
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def distribution_note(mountains: list[dict]) -> str:
