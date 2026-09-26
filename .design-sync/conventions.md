@@ -5,7 +5,7 @@ TerraSense is landslide hazard intelligence for park rangers and hikers. The ran
 ## Setup
 
 - Link `styles.css` and load `_ds_bundle.js`. No provider is needed: `styles.css` sets the dark background, the text color, Space Grotesk, and the 2 px focus ring.
-- Components live on `window.TerraSense`: `RiskBadge`, `LevelWord`, `NeedsReviewTag`, `TrailBadge`, `OverallRisk`, `TrailList`, `PreventativeMeasures`, `AgentPipeline`, `AgentCard`, `StatusGlyph`, `ReactiveMeasures`, `AnalyzeButton`. Helpers: `RISK_LEVELS`, `riskLabel`, `levelForScore(score)` (bins: low < 0.2, moderate < 0.45, high ≤ 0.7, extreme above), `formatScore`, `PIPELINE_LABELS`, `MEASURE_CATEGORY_LABELS`, `initialPipelineState()`, and `usePipeline(hill)`, which plays a scripted agent run (`{state, running, analyze}`).
+- Components live on `window.TerraSense`: `RiskBadge`, `LevelWord`, `NeedsReviewTag`, `TrailBadge`, `OverallRisk`, `TrailList`, `PreventativeMeasures`, `AgentPipeline`, `AgentCard`, `StatusGlyph`, `ReactiveMeasures`, `AnalyzeButton`. Helpers: `RISK_LEVELS`, `riskLabel`, `levelForScore(score)` (bins: low < 0.2, moderate < 0.45, high ≤ 0.7, extreme above), `formatScore`, `PIPELINE_LABELS`, `MEASURE_CATEGORY_LABELS`, `MEASURE_TIMINGS`, `MEASURE_TIMING_LABELS`, `initialPipelineState()`, and `usePipeline(hill)`, which plays a scripted agent run (`{state, running, analyze}`).
 - Each component's `.d.ts` spells out its data shapes inline. Read it before passing props.
 - Styling is Tailwind v4 utilities, **precompiled**: a class exists only if it is in `_ds_bundle.css`. Tailwind's default palette is removed, so `text-red-500` and `bg-white` do not exist. Use only the tokens below.
 - **The globe home** sits in the light scope: put `theme-home-light` on the home screen's root. Every role token swaps to its light value there. Mountain pages stay dark.
@@ -50,7 +50,7 @@ Space Grotesk (`font-sans`) for UI text. JetBrains Mono (`font-mono`) for **valu
 
 - US units: `14,410 ft`, `3.2 mi`, `1.84 in`, slope `34°`. Scores run 0 to 1 with two decimals and no percent (`0.74`). Times read `12 min ago` or `14:05`.
 - Level words: Low, Moderate, High, Extreme. The agents are Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer, under one Orchestrator.
-- Reactive Measures group in this order: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, public notice. Each has a deadline ("Now", "Within 1 h"). **Every public notice is a draft, "Draft, not sent"; nothing is ever sent, and no public notice gets a send button.**
+- Reactive Measures cluster **by timing, soonest first**: `now`, `within-1h`, `within-6h`, `within-24h` (`MEASURE_TIMINGS`, labels in `MEASURE_TIMING_LABELS`). Each measure also carries its kind of work as a card label (`MEASURE_CATEGORY_LABELS`: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, public notice). **Every public notice is a draft, "Draft, not sent"; nothing is ever sent, and no public notice gets a send button.**
 - Plain verbs, no apologies. The action is **Analyze now** (then "Analyzing…").
 
 ## Motion

@@ -16,6 +16,10 @@ Project: https://claude.ai/design/p/9607f63c-dacc-478a-8997-39b63859a0b3
 - **Scope grew from `RiskBadge` to 12 components.** The hill card rebuild (PRs #5 and #7) put the ranger UI in `frontend/components/hill/` and `components/pipeline/`, using the addendum's role names, so it compiles correctly under these tokens. `entry.ts` exports them plus the data helpers and `usePipeline`.
 - **Left out on purpose:** `HillHeader` (`next/link` needs the Next router), the map and globe (MapLibre, three.js), `HikerCard` and `HazardBlock` (not rendered on the page), and `THEME` (WebGL values).
 
+## Re-sync of 2026-09-26: Reactive Measures cluster by timing
+
+- The user decided that measures group by **when** they must happen, not by kind of work. `ReactiveMeasure.when` (free text) became `timing` (`now`, `within-1h`, `within-6h`, `within-24h`), and the category is now a card label. Updated: the `ReactiveMeasures` preview data, the `ReactiveMeasures` and `AgentPipeline` bodies in `dtsPropsFor`, the `entry.ts` exports (`MEASURE_TIMINGS`, `MEASURE_TIMING_LABELS`, `MeasureTiming`), and `conventions.md`.
+
 ## Drift: the app vs the addendum (for the frontend track, not fixed by this sync)
 
 - The app loads Geist and Geist Mono (`frontend/app/layout.tsx`). The addendum specifies Space Grotesk and JetBrains Mono, so designs built here use the addendum's faces.
@@ -49,6 +53,6 @@ Project: https://claude.ai/design/p/9607f63c-dacc-478a-8997-39b63859a0b3
 - If the addendum or the spec's Design Language changes, `tokens.css`, the safelist, `conventions.md`, and the previews all need a manual update. Nothing reads those files automatically.
 - `.theme-home-light` is copied from `globals.css`. If the home theme changes there, update `tokens.css`.
 - `RISK_COLORS` in the bundle comes from `frontend/lib/theme.ts`. If the app's hexes drift from Design Language, the bundle's JS values drift while the CSS stays on-spec.
-- The hand-written `dtsPropsFor` bodies mirror `frontend/lib/hill.ts` (TrailRisk, HillView, PipelineState, ReactiveMeasure). Step 31 (wiring the card to the backend) or seven agent cards will change those shapes.
+- The hand-written `dtsPropsFor` bodies mirror `frontend/lib/hill.ts` (TrailRisk, HillView, PipelineState, ReactiveMeasure with its `timing` clusters). The measure shape appears twice, in `ReactiveMeasures` and in `AgentPipeline`; change both. Step 31 (wiring the card to the backend) or seven agent cards will change those shapes.
 - The card shows five agents; the backend runs seven. When step 31 adds History and Route Scout cards, re-author the `AgentPipeline` and `AgentCard` previews.
 - Toolchain assumptions: Node 22, Tailwind v4, and Google Fonts reachable at runtime.

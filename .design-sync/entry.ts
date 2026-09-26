@@ -37,6 +37,8 @@ export {
   PIPELINE_LABELS,
   MEASURE_CATEGORIES,
   MEASURE_CATEGORY_LABELS,
+  MEASURE_TIMINGS,
+  MEASURE_TIMING_LABELS,
 } from "@/lib/hill";
 export type {
   TrailLetter,
@@ -48,6 +50,7 @@ export type {
   PipelineAgentState,
   PipelineState,
   MeasureCategory,
+  MeasureTiming,
   ReactiveMeasure,
 } from "@/lib/hill";
 export { usePipeline } from "@/lib/pipeline/use-pipeline";
