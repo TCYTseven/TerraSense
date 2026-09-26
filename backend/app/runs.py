@@ -40,6 +40,7 @@ from app.agents.schemas import (
 )
 from app.agents.tools import RunContext
 from app.assessment import Assessment, assess, publish, save_hazard
+from app import previous_runs
 from app.db import get_pool
 from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import format_missing_artifacts, setup_ready_for_analyze
@@ -364,15 +365,27 @@ def _commit(state: RunState, assessment: Assessment, final: Final) -> str | None
 
 
 def _store_run(state: RunState) -> None:
-    """The run's final view on its row, so GET /runs/{id} still answers after a restart."""
+    """The run's final view on its row, so GET /runs/{id} still answers after a restart.
+
+    Then log the same view to previous_runs, which is the /history page's table. Both writes
+    are fail-soft: the run's own outcome matters more than its record.
+    """
+    view = state.view().model_dump(mode="json")
     try:
         with get_pool().connection() as conn:
             conn.execute(
                 "UPDATE analysis_runs SET status = %s, finished_at = %s, agent_outputs = %s WHERE id = %s",
-                (state.status, state.finished_at, Jsonb({"run": state.view().model_dump(mode="json")}), state.id),
+                (state.status, state.finished_at, Jsonb({"run": view}), state.id),
             )
     except Exception:  # the run's own outcome matters more than its record
         logger.exception("could not store run %s", state.id)
+    previous_runs.record(view, {
+        "id": state.mountain_id,
+        "name": state.mountain_name,
+        "lat": state.peak[0],
+        "lon": state.peak[1],
+        "elevation_m": state.elevation_m,
+    })
 
 
 def load_run(run_id: str) -> Run | None:

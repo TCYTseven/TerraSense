@@ -119,3 +119,76 @@ CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain
 CREATE INDEX IF NOT EXISTS hazards_mountain_idx ON hazards (mountain_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS alerts_hazard_idx ON alerts (hazard_id);
 CREATE INDEX IF NOT EXISTS mountain_satellite_images_status_idx ON mountain_satellite_images (download_status);
+
+-- Step 33: the run history log. One row per finished or failed analysis run, written by
+-- app/previous_runs.py after the run stores its result. Deliberately wide and denormalized:
+-- the columns are what the /history page sorts and filters on, and the jsonb columns keep the
+-- whole run verbatim so nothing an agent or a model said is ever lost. Not a foreign key on
+-- analysis_runs, so `python -m app.schema --reset` never takes the history with it.
+CREATE TABLE IF NOT EXISTS previous_runs (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  run_id        uuid NOT NULL UNIQUE,
+  mountain_id   uuid,
+  mountain_slug text NOT NULL,
+  mountain_name text,
+  lat           double precision,
+  lon           double precision,
+  elevation_m   integer,
+
+  -- What kind of hazard the run was about. hazard_type is the pipeline's own label
+  -- ('landslide' or 'debris_flow'); hazard_class is the coarse tag the history page groups by.
+  -- 'avalanche' is accepted so a snow hazard has somewhere to land, but no agent emits it yet.
+  hazard_class  text NOT NULL DEFAULT 'unknown'
+                CHECK (hazard_class IN ('landslide', 'avalanche', 'debris_flow', 'unknown')),
+  hazard_type   text,
+  hazard_id     uuid,
+  -- True when the run's weather was snow-dominated, which is the signal an avalanche tag
+  -- would be built on once a snow hazard type exists.
+  snow_driven   boolean NOT NULL DEFAULT false,
+
+  status        text NOT NULL,
+  phase         text,
+  message       text,
+  error         text,
+  failed_agent  text,
+  started_at    timestamptz NOT NULL,
+  finished_at   timestamptz,
+  elapsed_s     double precision,
+
+  -- The call the run made.
+  severity           text,
+  confidence         double precision,
+  needs_review       boolean,
+  recommended_action text,
+  posture            text,
+  priority           text,
+  headline           text,
+  summary            text,
+
+  -- The ML model's side of the run.
+  model_method            text,
+  model_is_stand_in       boolean,
+  model_note              text,
+  model_max_probability   double precision,
+  model_mean_probability  double precision,
+  model_share_at_high     double precision,
+  model_output            jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  -- The LLM agents' side: every agent's event and full trace, their verdicts, which
+  -- provider/model answered, and the token usage summed over the run.
+  agent_outputs   jsonb NOT NULL DEFAULT '{}'::jsonb,
+  agent_verdicts  jsonb NOT NULL DEFAULT '{}'::jsonb,
+  llm_calls       jsonb NOT NULL DEFAULT '[]'::jsonb,
+  llm_usage       jsonb NOT NULL DEFAULT '{}'::jsonb,
+
+  -- Everything else, verbatim, so a later page can show a field this table has no column for.
+  advisory     jsonb,
+  conditions   jsonb,
+  rain         jsonb,
+  run          jsonb NOT NULL,
+  created_at   timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS previous_runs_started_idx ON previous_runs (started_at DESC);
+CREATE INDEX IF NOT EXISTS previous_runs_mountain_idx ON previous_runs (mountain_slug, started_at DESC);
+CREATE INDEX IF NOT EXISTS previous_runs_class_idx ON previous_runs (hazard_class, started_at DESC);

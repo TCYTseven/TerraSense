@@ -1,11 +1,13 @@
 import type {
   Forecast,
+  HistoryPage,
   LandslideRiskPrediction,
   LayerTiles,
   Mountain,
   MountainDetail,
   MountainRiskSummary,
   Run,
+  RunRecordDetail,
   Simulation,
 } from "./types";
 
@@ -180,4 +182,31 @@ export async function getSimulation(simulationId: string, init?: RequestInit): P
 /** The WebSocket URL for a simulation's frames, steps, and callouts. */
 export function simulationStreamUrl(simulationId: string): string {
   return `${API_URL.replace(/^http/, "ws")}/simulations/${encodeURIComponent(simulationId)}/stream`;
+}
+
+/** A page of the run history log (step 33), newest first. */
+export function getHistory(
+  params: { limit?: number; offset?: number; slug?: string; hazardClass?: string; status?: string } = {},
+  init?: RequestInit,
+): Promise<HistoryPage> {
+  const query = new URLSearchParams();
+  if (params.limit != null) query.set("limit", String(params.limit));
+  if (params.offset != null) query.set("offset", String(params.offset));
+  if (params.slug) query.set("slug", params.slug);
+  if (params.hazardClass) query.set("hazard_class", params.hazardClass);
+  if (params.status) query.set("status", params.status);
+  const suffix = query.toString();
+  return getJson<HistoryPage>(`/history${suffix ? `?${suffix}` : ""}`, init);
+}
+
+/** One logged run with every agent trace and the model's output. Null when it is not logged. */
+export async function getHistoryRun(runId: string, init?: RequestInit): Promise<RunRecordDetail | null> {
+  try {
+    return await getJson<RunRecordDetail>(`/history/${encodeURIComponent(runId)}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 }

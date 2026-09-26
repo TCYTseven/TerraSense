@@ -307,6 +307,12 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 
 Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
 
+- **Step 33: the run history log** (Sep 26, backend and frontend). Every analysis run is backed up to a new `previous_runs` table in Tiger, written fail-soft by `backend/app/previous_runs.py` from `_store_run`, so a run is logged whether it finished or failed. The row is deliberately wide: the hazard tag (`landslide`, `debris_flow`, `avalanche`, `unknown`) and a `snow_driven` flag, the call and the ranger posture, the ML side (`model_method`, map max/mean, share at high), the LLM side (every agent's event and full trace, their verdicts, which provider and model answered each one, and the tokens), and the advisory, conditions, rain and whole run kept verbatim as jsonb. `GET /history` and `GET /history/{run_id}` serve it; `/history` in the frontend lists the runs with tag and status filters and expands one into both sides of the run. `previous_runs` has no foreign key into `analysis_runs` and `python -m app.schema --reset` leaves it alone, so the record outlives a reset.
+
+  No agent emits an `avalanche` hazard type yet: `HazardType` in `backend/app/models.py` is still `landslide | debris_flow`. The tag and the column accept it so a snow hazard has somewhere to land, and `snow_driven` records the forecast signal an avalanche tag would be built on, rather than guessing a class the pipeline never produced.
+
+  Checked with `pytest` (the 11 new tests in `backend/tests/test_previous_runs.py`, plus `test_runs_api.py` asserting a real seven-agent run lands in the table), `tsc --noEmit`, `eslint`, and `/history` rendered against the running dev server.
+
 - **Step 35: geographic validation** (Sep 26, ML track, branch `step-35-geographic-validation`). New scripts, all offline. The training and serving paths are unchanged.
   - `geo_validate.py`: leave-one-region-out validation over six regions with a 2 km buffer. Hyperparameters, calibrators and thresholds are picked by inner LORO on training regions only. It compares seven model families and scores Rainier once, after a pre-registered selection.
   - `geo_ablation.py`: feature transfer.
