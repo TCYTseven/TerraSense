@@ -35,7 +35,7 @@ from app.ml.hazard import (
 from app.ml.tiles import render_xyz
 from app.risk import RISK_LEVELS
 from app.trailscan import TrailScore, scan_trails
-from app.weather import HourlyRain
+from app.weather import HourlyRain, summarize as summarize_rain, try_hourly_rain
 
 PROBABILITY_LAYER = "probability"
 LIVE_SLUG = "mount-rainier"
@@ -287,10 +287,18 @@ def main() -> None:
                         help="render the probability tiles, store segment risk, and save a preview hazard")
     args = parser.parse_args()
 
+    rain, rain_error = try_hourly_rain()
     with connect() as conn:
-        assessment = assess(conn, args.slug)
+        assessment = assess(conn, args.slug, rain)
         summary = assessment.map_summary
         print(f"method: {assessment.method}")
+        if rain is not None:
+            rain_summary = summarize_rain(rain)
+            print(f"rain ({rain_summary.source}): past 72h {rain_summary.past_72h_mm:.1f} mm, "
+                  f"next 72h {rain_summary.next_72h_mm:.1f} mm, "
+                  f"past 7d {rain_summary.past_7d_mm:.1f} mm")
+        else:
+            print(f"rain: unavailable ({rain_error or 'no response'})")
         print(f"map: {summary['cells']} cells, mean {summary['mean']}, max {summary['max']}; "
               + ", ".join(f"{level} {summary['share'][level]:.0%}" for level in RISK_LEVELS))
         print(f"{assessment.trail.name}: " + "; ".join(
