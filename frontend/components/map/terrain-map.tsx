@@ -31,6 +31,7 @@ import {
   historyFeatures,
   LAYER,
   mountainStyle,
+  openingBearing,
   openingBounds,
   rasterSource,
   SOURCE,
@@ -54,6 +55,8 @@ const STATUS_TEXT: Record<Exclude<MapStatus, "ready">, string> = {
 
 export interface TerrainMapProps {
   name: string;
+  /** URL slug; used for a stable opening camera bearing per mountain. */
+  slug?: string;
   lon: number;
   lat: number;
   /** Summit elevation. The relief tint turns white toward it. */
@@ -301,6 +304,7 @@ function hasWebGL(): boolean {
  */
 export default function TerrainMap({
   name,
+  slug,
   lon,
   lat,
   elevationM,
@@ -341,16 +345,17 @@ export default function TerrainMap({
     setWorkerUrl(WORKER_URL);
     // Open on the mountain's footprint, sized from its elevation, plus the trail markers near it.
     const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
+    const bearing = openingBearing(lon, lat, slug);
     const instance = new MapLibreMap({
       container: container.current,
       style: mountainStyle({ summitM: elevationM, lon, lat, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
       center: [lon, lat],
       zoom: CAMERA.zoom,
       pitch: CAMERA.pitch,
-      bearing: CAMERA.bearing,
+      bearing,
       maxPitch: CAMERA.maxPitch,
       bounds,
-      fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing: CAMERA.bearing },
+      fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing },
       attributionControl: { compact: true },
     });
     // The opening frame is the widest view that still reads as this mountain.

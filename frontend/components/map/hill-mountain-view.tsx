@@ -27,6 +27,7 @@ export default function HillMountainView({ mountain, probability, susceptibility
       <MountainMap
         key={mountain.slug}
         name={mountain.name}
+        slug={mountain.slug}
         lon={mountain.lon}
         lat={mountain.lat}
         elevationM={mountain.elevation_m}

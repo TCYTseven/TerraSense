@@ -41,6 +41,15 @@ export const CAMERA = {
   padding: { top: 150, bottom: 48, left: 48, right: 48 },
 } as const;
 
+/** Oblique opening bearing: Rainier keeps the designed bearing; others get a stable view from coords. */
+export function openingBearing(lon: number, lat: number, slug?: string): number {
+  if (slug === "mount-rainier") {
+    return CAMERA.bearing;
+  }
+  const normalized = (((lon * 1.7 + lat * 2.3) % 360) + 360) % 360;
+  return normalized - 180;
+}
+
 /** Map-only colors. Risk colors come from lib/theme.ts and mark risk only. */
 export const MAP_COLORS = {
   /** The page behind the map and the sky above it, so the horizon fades into the page. */

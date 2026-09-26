@@ -12,37 +12,17 @@ from psycopg.types.json import Jsonb
 
 from app.config import REPO_ROOT
 from app.db import connect
+from app.mountain_catalog import read_seed_file, upsert_mountains
 
 SEED_DIR = REPO_ROOT / "data" / "seed"
 
 
 def load_mountains(conn: psycopg.Connection) -> int:
     """Upsert every mountain in mountains.json. Returns how many the file holds."""
-    mountains = json.loads((SEED_DIR / "mountains.json").read_text(encoding="utf-8"))
-    for mountain in mountains:
-        # The seed risk is a placeholder until the mountain's first real analysis.
-        conn.execute(
-            """
-            INSERT INTO mountains
-              (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live)
-            VALUES
-              (%(name)s, %(slug)s, %(lat)s, %(lon)s, %(elevation_m)s, %(region)s,
-               %(current_risk_level)s, %(is_live)s)
-            ON CONFLICT (slug) DO UPDATE SET
-              name = EXCLUDED.name,
-              lat = EXCLUDED.lat,
-              lon = EXCLUDED.lon,
-              elevation_m = EXCLUDED.elevation_m,
-              region = EXCLUDED.region,
-              is_live = EXCLUDED.is_live,
-              current_risk_level = CASE
-                WHEN mountains.last_analyzed_at IS NULL THEN EXCLUDED.current_risk_level
-                ELSE mountains.current_risk_level
-              END
-            """,
-            mountain,
-        )
-    return len(mountains)
+    mountains = read_seed_file()
+    if not mountains:
+        raise SystemExit(f"Missing or empty {SEED_DIR / 'mountains.json'}. Run: python -m app.mountain_catalog --write-seed")
+    return upsert_mountains(conn, mountains)
 
 
 def load_trails(conn: psycopg.Connection) -> int:
