@@ -18,9 +18,14 @@ export function playheadTime(playhead: Playhead, now: number): number {
 }
 
 const NEVER = 65535;
-/** Largest canvas side. The field is upsampled up to UPSAMPLE times, then capped here. */
-const MAX_CANVAS_PX = 1024;
-const UPSAMPLE = 8;
+/**
+ * Largest canvas side. The field is upsampled up to UPSAMPLE times, then capped here. The
+ * map's linear resampling smooths what is left, so more pixels only cost frame time.
+ */
+const MAX_CANVAS_PX = 512;
+const UPSAMPLE = 3;
+/** Pixels below this cover are never drawn. */
+const MIN_COVER = 0.35;
 const OPACITY = 0.85;
 /** The pale rim the polygon edge line used to draw. */
 const RIM: RGB = [236, 230, 220];
@@ -73,6 +78,11 @@ export class RunoutPainter {
   private readonly depth: Float32Array;
   private readonly base: Uint8ClampedArray;
   private readonly soft: number;
+  /** Drawable pixels, earliest arrival first. */
+  private readonly order: Int32Array;
+  /** order[0..settled) are painted in their final colors and are not touched again. */
+  private settled = 0;
+  private lastT = Number.NEGATIVE_INFINITY;
 
   constructor(field: RunoutField, durationS: number) {
     const { width, height } = field;
@@ -137,40 +147,66 @@ export class RunoutPainter {
         this.base[p * 3 + 2] = b;
       }
     }
+
+    const drawable: number[] = [];
+    for (let p = 0; p < w * h; p += 1) {
+      if (this.cover[p] >= MIN_COVER && Number.isFinite(this.arrival[p])) {
+        drawable.push(p);
+      }
+    }
+    drawable.sort((a, b) => this.arrival[a] - this.arrival[b]);
+    this.order = Int32Array.from(drawable);
   }
 
-  /** Draws the flow as it stands `t` simulated seconds after release. */
+  /**
+   * Draws the flow as it stands `t` simulated seconds after release. Only pixels the front
+   * has reached and that are still changing are painted, so a frame costs the front, not
+   * the whole footprint.
+   */
   draw(t: number): void {
     const out = this.image.data;
-    const n = this.arrival.length;
-    const soft = this.soft;
-    for (let p = 0; p < n; p += 1) {
-      const age = t - this.arrival[p];
-      const cover = this.cover[p];
-      const o = p * 4;
-      if (!(age > 0) || cover < 0.35) {
-        out[o + 3] = 0;
-        continue;
-      }
-      // Anti-aliased outline at cover 0.5, and a front that eases in rather than popping.
-      const edge = smoothstep(0.4, 0.6, cover);
-      const front = smoothstep(0, soft, age);
-      const snout = (1 - smoothstep(0, soft * 2.5, age)) * 0.45;
-      const rim = (1 - smoothstep(0.5, 0.68, cover)) * 0.4;
-      let r = this.base[p * 3];
-      let g = this.base[p * 3 + 1];
-      let b = this.base[p * 3 + 2];
-      r += (SNOUT[0] - r) * snout;
-      g += (SNOUT[1] - g) * snout;
-      b += (SNOUT[2] - b) * snout;
-      r += (RIM[0] - r) * rim;
-      g += (RIM[1] - g) * rim;
-      b += (RIM[2] - b) * rim;
-      out[o] = r;
-      out[o + 1] = g;
-      out[o + 2] = b;
-      out[o + 3] = 255 * OPACITY * edge * front;
+    if (t < this.lastT) {
+      out.fill(0);
+      this.settled = 0;
+    }
+    this.lastT = t;
+    const fresh = this.soft * 2.5;
+    let i = this.settled;
+    while (i < this.order.length && this.arrival[this.order[i]] <= t - fresh) {
+      this.paint(this.order[i], Number.POSITIVE_INFINITY);
+      i += 1;
+    }
+    this.settled = i;
+    while (i < this.order.length && this.arrival[this.order[i]] < t) {
+      const p = this.order[i];
+      this.paint(p, t - this.arrival[p]);
+      i += 1;
     }
     this.ctx.putImageData(this.image, 0, 0);
+  }
+
+  private paint(p: number, age: number): void {
+    const out = this.image.data;
+    const soft = this.soft;
+    const cover = this.cover[p];
+    // Anti-aliased outline at cover 0.5, and a front that eases in rather than popping.
+    const edge = smoothstep(0.4, 0.6, cover);
+    const front = smoothstep(0, soft, age);
+    const snout = (1 - smoothstep(0, soft * 2.5, age)) * 0.45;
+    const rim = (1 - smoothstep(0.5, 0.68, cover)) * 0.4;
+    let r = this.base[p * 3];
+    let g = this.base[p * 3 + 1];
+    let b = this.base[p * 3 + 2];
+    r += (SNOUT[0] - r) * snout;
+    g += (SNOUT[1] - g) * snout;
+    b += (SNOUT[2] - b) * snout;
+    r += (RIM[0] - r) * rim;
+    g += (RIM[1] - g) * rim;
+    b += (RIM[2] - b) * rim;
+    const o = p * 4;
+    out[o] = r;
+    out[o + 1] = g;
+    out[o + 2] = b;
+    out[o + 3] = 255 * OPACITY * edge * front;
   }
 }

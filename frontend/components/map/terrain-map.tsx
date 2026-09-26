@@ -109,6 +109,8 @@ export interface TerrainMapProps {
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
 /** Steep enough to look up the slope at the runout's front on the 3D terrain. */
 const FRONT_PITCH = 60;
+/** The runout redraws this often while it plays: smooth to the eye, light on the terrain drape. */
+const FLOW_REDRAW_MS = 50;
 const EMPTY_FLOW: FlowFeatureCollection = { type: "FeatureCollection", features: [] };
 
 /** A small label pinned to the summit. MapLibre lifts it onto the 3D terrain. */
@@ -513,7 +515,9 @@ export default function TerrainMap({
       type: "canvas",
       canvas: painter.canvas,
       coordinates: flowField.corners,
-      animate: true,
+      // Uploaded only after a redraw (see push), not every map frame: re-draping a canvas
+      // on the 3D terrain each frame is what makes playback lag.
+      animate: false,
     });
     map.addLayer(
       {
@@ -525,21 +529,25 @@ export default function TerrainMap({
       LAYER.otherTrails,
     );
     const source = map.getSource<CanvasSource>(SOURCE.flowField);
-    let frame = 0;
-    let settled = false;
-    const step = () => {
-      const t = playheadTime(playhead, performance.now());
-      painter.draw(t);
-      if (t >= playhead.durationS) {
-        if (settled) {
-          // The final picture has been uploaded once; stop re-uploading the canvas.
-          source?.pause();
-          return;
-        }
-        settled = true;
-      }
-      frame = window.requestAnimationFrame(step);
+    const push = () => {
+      source?.play();
+      map.once("render", () => source?.pause());
     };
+    let frame = 0;
+    let drawnAt = Number.NEGATIVE_INFINITY;
+    const step = (now: number) => {
+      const t = playheadTime(playhead, now);
+      const done = t >= playhead.durationS;
+      if (done || now - drawnAt >= FLOW_REDRAW_MS) {
+        drawnAt = now;
+        painter.draw(t);
+        push();
+      }
+      if (!done) {
+        frame = window.requestAnimationFrame(step);
+      }
+    };
+    push();
     frame = window.requestAnimationFrame(step);
     return () => {
       window.cancelAnimationFrame(frame);
