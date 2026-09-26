@@ -499,7 +499,7 @@ export default function TerrainMap({
   }, [map, flow]);
 
   // The runout field: a canvas draped on the terrain, redrawn every animation frame from
-  // the playhead so the front sweeps down continuously. Linear resampling keeps it soft.
+  // the playhead so the front sweeps down continuously. Nearest resampling keeps the cells as facets.
   useEffect(() => {
     if (!map || !flowField || !playhead) {
       return;
@@ -524,7 +524,7 @@ export default function TerrainMap({
         id: LAYER.flowField,
         type: "raster",
         source: SOURCE.flowField,
-        paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 1 },
+        paint: { "raster-resampling": "nearest", "raster-fade-duration": 0, "raster-opacity": 1 },
       },
       LAYER.otherTrails,
     );
