@@ -19,10 +19,6 @@ Conn = Annotated[psycopg.Connection[DictRow], Depends(get_conn)]
 CLOSE_NOT_FOUND = 4404
 
 
-class SimulateRequest(BaseModel):
-    pressure_point_id: str | None = None
-
-
 class SimulationStarted(BaseModel):
     simulation_id: str
 
@@ -66,18 +62,15 @@ def pressure_points(slug: str, conn: Conn) -> list[dict]:
 
 
 @router.post("/mountains/{slug}/simulate", response_model=SimulationStarted)
-async def simulate(slug: str, conn: Conn, body: SimulateRequest | None = None) -> SimulationStarted:
-    """Start a runout from the worst route, or from the requested pressure point."""
+async def simulate(slug: str, conn: Conn) -> SimulationStarted:
+    """Start a runout down the one route most likely to fail. It takes no inputs."""
     mountain, trails = _trails(conn, slug)
     if mountain is None:
         raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
     if not trails:
         raise HTTPException(status_code=409, detail=NOTHING_TO_SIMULATE)
-    point_id = None if body is None else body.pressure_point_id
     try:
-        state = registry.start(slug, trails, point_id)
-    except KeyError:
-        raise HTTPException(status_code=404, detail=f"No pressure point {point_id!r}") from None
+        state = registry.start(slug, trails)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return SimulationStarted(simulation_id=state.id)

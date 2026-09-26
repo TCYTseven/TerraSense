@@ -1,6 +1,6 @@
 """In-process runout simulations (step 28). Nothing is written to Postgres.
 
-A simulation traces frames from the worst pressure point (or a requested one), then
+A simulation traces frames down the one route most likely to fail, then
 attaches template callouts. The snapshot goes out before the callouts, so the map
 can start while the notes are still being written. Templates are the path when no
 provider is configured; both audiences are always present.
@@ -12,7 +12,7 @@ import asyncio
 import uuid
 from dataclasses import dataclass, field
 
-from app.ml.pressure import rank_pressure_points
+from app.ml.pressure import worst_route
 from app.ml.runout import trace_runout
 
 NOTHING_TO_SIMULATE = "Nothing reaches Moderate today, so there's nothing to simulate."
@@ -63,13 +63,11 @@ class SimulationRegistry:
     def get(self, simulation_id: str) -> SimulationState | None:
         return self._items.get(simulation_id)
 
-    def start(self, slug: str, trails: list[dict], pressure_point_id: str | None) -> SimulationState:
-        points = rank_pressure_points(trails)
-        if not points:
-            raise ValueError(NOTHING_TO_SIMULATE)
-        point = next((item for item in points if item["id"] == pressure_point_id), None) if pressure_point_id else points[0]
+    def start(self, slug: str, trails: list[dict]) -> SimulationState:
+        """Only the route most likely to fail is ever simulated."""
+        point = worst_route(trails)
         if point is None:
-            raise KeyError(pressure_point_id or "")
+            raise ValueError(NOTHING_TO_SIMULATE)
         state = SimulationState(id=str(uuid.uuid4()), slug=slug, pressure_point=point)
         self._items[state.id] = state
         state.task = asyncio.create_task(self._run(state, point, trails))
@@ -78,6 +76,10 @@ class SimulationRegistry:
     async def _run(self, state: SimulationState, point: dict, trails: list[dict]) -> None:
         try:
             traced = await asyncio.to_thread(trace_runout, point, trails)
+            # The flow releases at the route's highest point, so the pin and the camera go there.
+            release = traced["release"]
+            point = {**point, "lon": release["lon"], "lat": release["lat"], "elevation_m": release["elevation_m"]}
+            state.pressure_point = point
             state.method = traced["method"]
             state.source = traced["source"]
             state.duration_s = traced["duration_s"]

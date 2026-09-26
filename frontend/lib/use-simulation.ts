@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getSimulation, simulationStreamUrl, startSimulation } from "./api";
-import type { Simulation, SimulationCallout } from "./types";
+import type { FlowFeatureCollection, Position, Simulation, SimulationCallout } from "./types";
 
 const FRAME_MS = 500;
 
@@ -13,6 +13,10 @@ export interface ReleaseCamera {
   lat: number;
   zoom: number;
   nonce: number;
+  /** The whole final footprint, [west, south, east, north]. The camera fits it when set. */
+  bounds?: [number, number, number, number];
+  /** Faces uphill from the flow's toe to the release, so the front comes toward the viewer. */
+  bearing?: number;
 }
 
 export interface SimulationPlayback {
@@ -33,6 +37,39 @@ const FAILED = "The simulation didn't run. The pressure points still show.";
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Frames the final footprint, looking uphill from where the flow stops toward the release. */
+function frontCamera(sim: Simulation, lon: number, lat: number): ReleaseCamera {
+  const camera: ReleaseCamera = { lon, lat, zoom: 13.2, nonce: Date.now() };
+  const last = sim.frames[sim.frames.length - 1]?.geojson;
+  const stop = sim.steps.find((step) => step.kind === "stop");
+  const bounds = last ? footprintBounds(last) : null;
+  if (!bounds || !stop) {
+    return camera;
+  }
+  return { ...camera, bounds, bearing: bearingDeg([stop.lon, stop.lat], [lon, lat]) };
+}
+
+function footprintBounds(flow: FlowFeatureCollection): [number, number, number, number] | null {
+  const points: Position[] = flow.features.flatMap((feature) =>
+    feature.geometry.type === "Polygon" ? feature.geometry.coordinates.flat() : feature.geometry.coordinates.flat(2),
+  );
+  if (points.length === 0) {
+    return null;
+  }
+  const lons = points.map((point) => point[0]);
+  const lats = points.map((point) => point[1]);
+  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+}
+
+/** Compass bearing from a to b, in degrees. */
+function bearingDeg(a: Position, b: Position): number {
+  const rad = Math.PI / 180;
+  const [lon1, lat1, lon2, lat2] = [a[0] * rad, a[1] * rad, b[0] * rad, b[1] * rad];
+  const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);
+  return (Math.atan2(y, x) / rad + 360) % 360;
 }
 
 /**
@@ -100,7 +137,7 @@ export function useSimulation(slug: string): SimulationPlayback {
             remember(sim);
             const point = sim.pressure_point;
             if (point) {
-              setCamera({ lon: point.lon, lat: point.lat, zoom: 13.2, nonce: Date.now() });
+              setCamera(frontCamera(sim, point.lon, point.lat));
             }
             play(sim, 0);
           },

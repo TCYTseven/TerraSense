@@ -192,6 +192,10 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 - Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
 - Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
 
+**Sep 26, 2026, later.** The runout is now 2D on terrain: `backend/app/ml/flow_routing.py` spreads it over a 26 m grid from the Terrarium tiles (Holmgren, exponent 1.1), strictly downhill, with margins that widen downhill, and each frame is nested polygons shaded by depth inside the footprint. `source` is `dem`, and a frame geometry may be a MultiPolygon. The camera fits the final footprint facing uphill so the front comes toward the viewer. The trail band below is the fallback when no tile can be read.
+
+**Sep 26, 2026.** Without the 30 m grid, the trail runout releases at the route's highest point on the z13 Terrarium tiles (`backend/app/ml/elevation.py`) and walks the line only while each next sample is no higher, so the flow never goes uphill. `trace_runout` adds `release` (lon, lat, elevation), and the simulation's pressure point moves there, so the camera flies to the top. The API shape is unchanged.
+
 **Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically. Without `data/processed/features.tif` the path is the trail corridor and the method line says so. The Holmgren read stays unwired until that grid is in the checkout.
 
 ## 28. Expose simulate, the stream, and the callouts
@@ -202,7 +206,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Build.**
 
-- `POST /mountains/{slug}/simulate` with `{ pressure_point_id }` returns `{ simulation_id }`. 409 for a static mountain, 404 for an unknown point. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
+- `POST /mountains/{slug}/simulate` takes no inputs and returns `{ simulation_id }`. It always runs on the one route most likely to fail (Sep 26, 2026: the highest probability-raster value along the route, else the steepest route). 409 for a static mountain. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
 - `WS /simulations/{id}/stream` sends one message with the frames and steps, then each callout, then a final message. `GET /simulations/{id}` returns the same, finished or not.
 - Callouts: one model call through the existing router, strong tier. It reads the steps and the pressure point and returns two to four `{ step_id, audience: rangers | public, text }`, at least one of each. The schema is closed, like the agents'.
 - Code checks every trail, mile, and time in the text against the steps, and enforces the word limits in the design addendum's Copy. On a failed check it runs one repair round, then the fallback provider, then templates. The trace records which.

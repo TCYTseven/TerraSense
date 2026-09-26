@@ -156,11 +156,11 @@ export function runStreamUrl(runId: string): string {
   return `${API_URL.replace(/^http/, "ws")}/runs/${encodeURIComponent(runId)}/stream`;
 }
 
-/** Start an illustrative runout. The API picks the worst route when no point is named. */
-export function startSimulation(slug: string, pressurePointId?: string, init?: RequestInit): Promise<{ simulation_id: string }> {
+/** Start an illustrative runout. The API always runs it down the one route most likely to fail. */
+export function startSimulation(slug: string, init?: RequestInit): Promise<{ simulation_id: string }> {
   return postJson(`/mountains/${encodeURIComponent(slug)}/simulate`, {
     ...init,
-    body: JSON.stringify(pressurePointId ? { pressure_point_id: pressurePointId } : {}),
+    body: JSON.stringify({}),
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
 }
