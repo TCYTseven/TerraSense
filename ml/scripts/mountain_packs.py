@@ -13,12 +13,14 @@ Two rules keep the packs honest (context: the Rainier scripts' contracts):
 - Rainier keeps its original file paths, so steps 10-19 and their docs do not move.
   Every other pack lives under a packs/<slug>/ folder next to the Rainier file.
 
-Print the registry from the repo root:
-  python ml/scripts/mountain_packs.py
+Print the registry from the repo root, or write the index the API reads:
+  python ml/scripts/mountain_packs.py [--write-index]
 """
 
 from __future__ import annotations
 
+import argparse
+import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -220,7 +222,39 @@ def paths(slug: str) -> PackPaths:
     )
 
 
+INDEX_PATH = SEED_DIR / "packs" / "index.json"
+
+
+def write_index() -> None:
+    """data/seed/packs/index.json: the shared facts the API needs, one row per pack.
+
+    backend/app/packs.py reads this instead of importing the registry, so the two
+    processes copy one committed file rather than re-deriving anything.
+    """
+    rows = {
+        slug: {
+            "name": pack.name,
+            "peak_lat": pack.peak_lat,
+            "peak_lon": pack.peak_lon,
+            "peak_elevation_m": pack.peak_elevation_m,
+            "bbox": list(pack.bbox),
+            "utm_crs": pack.utm_crs,
+            "hero_trail": pack.hero.trail if pack.hero else None,
+        }
+        for slug, pack in sorted(PACKS.items())
+    }
+    INDEX_PATH.parent.mkdir(parents=True, exist_ok=True)
+    INDEX_PATH.write_text(json.dumps(rows, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"wrote {INDEX_PATH.relative_to(REPO_ROOT)}: {len(rows)} packs")
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Print the pack registry, or write the API's index.")
+    parser.add_argument("--write-index", action="store_true", help="write data/seed/packs/index.json")
+    args = parser.parse_args()
+    if args.write_index:
+        write_index()
+        return
     for pack in PACKS.values():
         west, south, east, north = pack.bbox
         width_km = (east - west) * EARTH_KM_PER_DEG * math.cos(math.radians(pack.peak_lat))

@@ -464,12 +464,18 @@ def stage_landslides(force: bool, glc_source: str, pack: mp.Pack, paths: mp.Pack
             csv_path = Path(glc_source)
         features = glc_features(csv_path, pack.bbox)
     except (OSError, RuntimeError, ValueError) as exc:
-        if not rainier or urlparse(glc_source).scheme not in ("http", "https") or glc_source != GLC_CSV_URL:
-            raise
-        print(f"  NASA GLC unavailable ({type(exc).__name__}); using {WASLID_SOURCE_NAME}", file=sys.stderr)
+        if urlparse(glc_source).scheme not in ("http", "https") or glc_source != GLC_CSV_URL:
+            raise  # an explicit CSV or URL was requested; failing loudly beats a silent shrug
         if csv_path == GLC_CSV_PATH:
             csv_path.unlink(missing_ok=True)  # never retain a partial/HTML response as a future cache
-        return stage_waslid(force=True, pack=pack, paths=paths)
+        if rainier:
+            print(f"  NASA GLC unavailable ({type(exc).__name__}); using {WASLID_SOURCE_NAME}", file=sys.stderr)
+            return stage_waslid(force=True, pack=pack, paths=paths)
+        # Rainier's fallback inventory is Washington's; no equivalent exists for the packs, and
+        # the card can honestly say the record is empty. --glc-csv PATH fills it later.
+        print(f"  NASA GLC unavailable ({type(exc).__name__}); {pack.slug}'s historical record "
+              "starts empty. Rerun with --glc-csv PATH to fill it.", file=sys.stderr)
+        return write_landslides([], paths.landslides, pack.bbox)
     if rainier:
         usable = usable_training_features(features)
         if len({(feature["geometry"]["coordinates"][0], feature["geometry"]["coordinates"][1])
