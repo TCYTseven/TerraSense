@@ -1,2 +1,3 @@
 # ML/data checks. Install after ml/requirements.txt.
 pytest>=8
+matplotlib>=3.9  # optional: geo_validate.py writes its plots only when this is installed
