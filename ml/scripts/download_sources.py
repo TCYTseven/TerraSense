@@ -50,9 +50,13 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
 SEED_DIR = REPO_ROOT / "data" / "seed"
 
-# NASA Global Landslide Catalog, full CSV export of data.nasa.gov dataset dd9e-wu2v.
+# NASA COOLR / Global Landslide Catalog, current static CSV export. The former Socrata
+# dataset id (dd9e-wu2v) now returns 404 even though older NASA links still advertise it.
 # One cached download serves every pack; each pack filters it to its own bbox.
-GLC_CSV_URL = "https://data.nasa.gov/api/views/dd9e-wu2v/rows.csv?accessType=DOWNLOAD"
+GLC_CSV_URL = (
+    "https://data.nasa.gov/docs/legacy/Global_Landslide_Catalog_Export/"
+    "Global_Landslide_Catalog_Export_rows.csv"
+)
 # Washington Geological Survey's official Landslide Compilation layer. It is a polygon
 # inventory, so the fallback uses an interior representative point as a conservative label.
 WASLID_QUERY_URL = (
@@ -60,7 +64,7 @@ WASLID_QUERY_URL = (
 )
 WASLID_LAYER_URL = WASLID_QUERY_URL.removesuffix("/query")
 
-GLC_CSV_PATH = RAW_DIR / "nasa_glc_export.csv"
+GLC_CSV_PATH = RAW_DIR / "coolr" / "global_landslide_catalog_export.csv"
 
 DEM_ATTRIBUTION = (
     "© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under "
