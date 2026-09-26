@@ -17,6 +17,7 @@ from app.ml.hazard import point_terrain
 from app.ml.model_b import RAINFALL_THRESHOLD_72H_MM
 from app.ml.probability import ProbabilityMap
 from app.ml.probability import summarize as summarize_map
+from app.hills import hill_bbox, hill_probability_path, hill_stack_path, is_hill
 from app.risk import HIGH_THRESHOLD, risk_level
 from app.packs import RAINIER_SLUG, probability_path
 from app.packs import get as get_pack
@@ -36,8 +37,25 @@ def saved_map(path: Path) -> tuple[ProbabilityMap, datetime] | None:
     return grid, datetime.fromtimestamp(path.stat().st_mtime, UTC)
 
 
+def _mean_slope(path: Path) -> float | None:
+    """Mean slope in degrees from a feature stack's slope band, or None when that band is missing."""
+    if not path.is_file():
+        return None
+    with rasterio.open(path) as src:
+        names = list(src.descriptions)
+        if "slope" not in names:
+            return None
+        band = src.read(names.index("slope") + 1)
+    valid = band[np.isfinite(band)]
+    if valid.size == 0:
+        return None
+    return round(float(valid.mean()), 1)
+
+
 def risk_summary(conn: psycopg.Connection, slug: str, path: Path | None = None) -> dict | None:
     """Overall score, mean slope, and the top trails on the saved map. None before the first save."""
+    if path is None and is_hill(slug):
+        path = hill_probability_path(slug)
     loaded = saved_map(path or probability_path(slug))
     if loaded is None:
         return None
@@ -64,10 +82,22 @@ def risk_summary(conn: psycopg.Connection, slug: str, path: Path | None = None) 
             "factor": None if terrain is None else terrain.factor,
         })
 
-    worst = max((s.max_probability for s in scores), default=0.0)
     area = summarize_map(grid.values)
     valid = grid.values[np.isfinite(grid.values)]
+    if scores:
+        worst = max(s.max_probability for s in scores)
+    elif is_hill(slug) and valid.size:
+        # No trails: the score is the worst cell on this hill's own map.
+        worst = float(np.nanmax(valid))
+    else:
+        worst = 0.0
+    if box_mean_slope is None and is_hill(slug):
+        box_mean_slope = _mean_slope(hill_stack_path(slug))
     pack = get_pack(slug)
+    box = list(pack.bbox) if pack else None
+    if box is None:
+        hill_box = hill_bbox(slug)
+        box = list(hill_box) if hill_box else None
     return {
         "method": grid.method,
         "scored_at": scored_at,
@@ -79,7 +109,7 @@ def risk_summary(conn: psycopg.Connection, slug: str, path: Path | None = None) 
             "area_mean": area["mean"],
         },
         "mean_slope_deg": box_mean_slope,
-        "bbox": list(pack.bbox) if pack else None,
+        "bbox": box,
         "threshold_72h_mm": round(RAINFALL_THRESHOLD_72H_MM, 1),
         "trails": trails,
     }

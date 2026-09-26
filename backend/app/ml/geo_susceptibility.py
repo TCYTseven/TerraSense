@@ -28,7 +28,7 @@ from rasterio.warp import transform as warp_transform
 from rasterio.windows import Window
 
 from app.config import REPO_ROOT
-from app.hills import hill_stack_path, is_hill
+from app.hills import hill_model_input, hill_stack_path, is_hill
 from app.risk import RiskLevel, risk_level
 
 MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility_lgbm.txt"
@@ -222,8 +222,12 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
                    for p in (MODEL_PATH, CALIBRATION_PATH, STACK_PATH) if not p.is_file()]
         return _unavailable(f"model artifacts missing: {', '.join(missing)}")
     key = (slug, round(lat, 4), round(lon, 4))
+    cache_stamp: Any = stamp
+    if is_hill(slug):
+        stack_path = hill_stack_path(slug)
+        cache_stamp = (stamp, stack_path.stat().st_mtime_ns if stack_path.is_file() else 0)
     cached = _prediction_cache.get(key)
-    if cached is not None and cached.get("_stamp") == stamp:
+    if cached is not None and cached.get("_stamp") == cache_stamp:
         return {k: v for k, v in cached.items() if k != "_stamp"}
     loaded = _load()
     if loaded is None:
@@ -237,7 +241,7 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
             return _unavailable(
                 "hill terrain window is not built; a placeholder sample is not this hill's ground"
             )
-        input_source, note = HILL_INPUT, (
+        input_source, note = hill_model_input(slug), (
             "Scored on this hill's own DEM and land-cover window. "
             "Washington validation scores are not this hill's accuracy."
         )
@@ -266,10 +270,10 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
         "drivers": _drivers(booster, features, values),
         "model_card": {
             "trained": metrics.get("trained"),
-            "auc": metrics.get("auc"),
-            "note": metrics.get("note"),
+            "auc": None if is_hill(slug) else metrics.get("auc"),
+            "note": note if is_hill(slug) else metrics.get("note"),
             "probability_meaning": metrics.get("probability_meaning"),
         },
     }
-    _prediction_cache[key] = {**result, "_stamp": stamp}
+    _prediction_cache[key] = {**result, "_stamp": cache_stamp}
     return result

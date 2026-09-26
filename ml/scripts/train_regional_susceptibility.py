@@ -367,8 +367,8 @@ def external_test(fitted: dict, external: pd.DataFrame, features: list[str]) -> 
 
 # --- map and trails ----------------------------------------------------------------------------
 
-def predict_map(fitted: dict, features: list[str]) -> tuple[np.ndarray, dict]:
-    with rasterio.open(RAINIER_STACK_PATH) as src:
+def predict_map(fitted: dict, features: list[str], stack_path: Path = RAINIER_STACK_PATH) -> tuple[np.ndarray, dict]:
+    with rasterio.open(stack_path) as src:
         stack = src.read()
         names = list(src.descriptions)
     band = {name: stack[names.index(name)] for name in names}
@@ -439,15 +439,16 @@ def atomic_write_text(path: Path, text: str) -> None:
     partial.replace(path)
 
 
-def write_map(path: Path, values: np.ndarray, template: Path) -> None:
+def write_map(path: Path, values: np.ndarray, template: Path, method: str = "lightgbm") -> None:
     with rasterio.open(template) as src:
         profile = dict(src.profile)
     profile.update(count=1, dtype="float32", nodata=np.nan, compress="deflate", predictor=3)
+    path.parent.mkdir(parents=True, exist_ok=True)
     partial = path.with_name(path.name + ".part")
     with rasterio.open(partial, "w", **profile) as dst:
         dst.write(values, 1)
         dst.set_band_description(1, "susceptibility")
-        dst.update_tags(METHOD="lightgbm", SOURCE="ml/scripts/train_regional_susceptibility.py",
+        dst.update_tags(METHOD=method, SOURCE="ml/scripts/train_regional_susceptibility.py",
                         CALIBRATION="isotonic, case-control 1:3")
     partial.replace(path)
 

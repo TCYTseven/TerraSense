@@ -150,14 +150,15 @@ def build_stack(
     *,
     dem_path: Path = REGION_DEM_PATH,
     landcover_path: Path = REGION_LANDCOVER_PATH,
+    grid_crs: str = GRID_CRS,
 ) -> np.ndarray:
     """All FEATURES on the regional grid, shape (len(FEATURES), rows, cols), NaN outside the DEM."""
     stack = np.full((len(FEATURES),) + shape, np.nan, dtype="float32")
     put = lambda name, values: stack.__setitem__(FEATURES.index(name), values)  # noqa: E731
 
-    elevation = resample(dem_path, dst_transform, shape, GRID_CRS, Resampling.bilinear, "float32")
+    elevation = resample(dem_path, dst_transform, shape, grid_crs, Resampling.bilinear, "float32")
     elevation[elevation <= -1000] = np.nan
-    landcover = resample(landcover_path, dst_transform, shape, GRID_CRS, Resampling.mode, "uint8").astype("float32")
+    landcover = resample(landcover_path, dst_transform, shape, grid_crs, Resampling.mode, "uint8").astype("float32")
     landcover[landcover == 0] = np.nan
     put("elevation", elevation)
     put("landcover", landcover)
@@ -176,7 +177,7 @@ def build_stack(
     del profile, plan
 
     sea = (landcover == WATER_CLASS) & (elevation <= SEA_LEVEL_M)
-    accumulation = flow_accumulation(np.where(sea, np.nan, elevation), dst_transform, GRID_CRS)
+    accumulation = flow_accumulation(np.where(sea, np.nan, elevation), dst_transform, grid_crs)
     channels = accumulation * CELL_M**2 >= CHANNEL_AREA_M2
     put("dist_drainage", (distance_transform_edt(~channels) * CELL_M).astype("float32"))
     tan_slope = np.tan(np.radians(np.maximum(slope, 0.1)))
@@ -388,10 +389,10 @@ def build_labels(stack: np.ndarray, dst_transform: Affine) -> tuple[pd.DataFrame
     return table, summary
 
 
-def write_stack(path: Path, stack: np.ndarray, dst_transform: Affine) -> None:
+def write_stack(path: Path, stack: np.ndarray, dst_transform: Affine, crs: str = GRID_CRS) -> None:
     profile = {
         "driver": "GTiff", "width": stack.shape[2], "height": stack.shape[1], "count": len(FEATURES),
-        "dtype": "float32", "crs": GRID_CRS, "transform": dst_transform, "nodata": np.nan,
+        "dtype": "float32", "crs": crs, "transform": dst_transform, "nodata": np.nan,
         "tiled": True, "blockxsize": 256, "blockysize": 256, "compress": "deflate", "predictor": 3,
         "BIGTIFF": "IF_SAFER",
     }

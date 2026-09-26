@@ -19,6 +19,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/`. The API renders the probability layer itself on each run (`backend/app/assessment.py`) |
 | 14 | `scripts/import_trails.py` | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` (the hero trail's mile segments), and the walkable network cache in `data/raw/` |
 | 17 | `backend/app/ml/model_b.py` | Live 72-hour probability from susceptibility plus Open-Meteo rain. `backend/app/ml/probability.py` calls `run(rain)` and reads `.probability`, `.transform`, and `.crs` from the result; until the module exists the heat map is the susceptibility stand-in |
+| 39 | `scripts/build_hill_window.py` | Turtle Mountain's own DEM and WorldCover window, scored with the existing LightGBM and Model B. Does not retrain or replace Rainier's rasters |
 | 19 | `scripts/build_trail_network.py` | `data/seed/trail_network.geojson`: the walkable network around the hero loop, with elevations. `backend/app/bypass.py` routes the bypass on it during each run |
 
 ## Layout

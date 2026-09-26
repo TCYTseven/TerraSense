@@ -42,9 +42,27 @@ def hill_bbox(slug: str) -> tuple[float, float, float, float] | None:
     return None
 
 
+# The heat map's METHOD tag. Washington AUC is not this hill's accuracy.
+HILL_METHOD = "regional LightGBM and Model B"
+
+
+def hill_model_input(slug: str) -> str:
+    """model_input once the hill's own feature window exists."""
+    return f"{slug} feature window"
+
+
 def hill_stack_path(slug: str) -> Path:
     """The hill's own feature stack. Missing until the terrain window is built."""
     return REPO_ROOT / "data" / "processed" / "hills" / slug / "features.tif"
+
+
+def hill_susceptibility_path(slug: str) -> Path:
+    return REPO_ROOT / "ml" / "artifacts" / "hills" / slug / "susceptibility.tif"
+
+
+def hill_probability_path(slug: str) -> Path:
+    """Model B on this hill's window. Rainier's probability.tif is a different file."""
+    return REPO_ROOT / "ml" / "artifacts" / "hills" / slug / "probability.tif"
 
 
 def in_hill_bbox(slug: str, lat: float, lon: float) -> bool:

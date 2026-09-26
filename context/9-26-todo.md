@@ -22,7 +22,7 @@ Open work only. Build notes stay in [implementation-steps.md](implementation-ste
 - [x] **36.** Rename the mountain page off the word hill.
 - [x] **37.** Record hills in the spec. First hill: Turtle Mountain, Crowsnest Pass, Alberta (`turtle-mountain`).
 - [x] **38.** Seed and serve Turtle Mountain (`kind`, `data/seed/hills.json`, `GET /hills/{slug}`).
-- [ ] **39.** Score Turtle Mountain with the existing landslide model on its own terrain window.
+- [x] **39.** Score Turtle Mountain with the existing landslide model on its own terrain window.
 - [ ] **40.** Hill glyph, fly-to, and hill page. Agents stay idle.
 
 ## Before the demo

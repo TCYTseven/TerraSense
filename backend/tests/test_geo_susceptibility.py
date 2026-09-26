@@ -94,7 +94,8 @@ def test_turtle_mountain_refuses_placeholder():
     result = geo.predict_summit("turtle-mountain", 49.57694, -114.41222)
     assert result.get("input_source") != geo.PLACEHOLDER_INPUT
     if result["available"]:
-        assert result["input_source"] == geo.HILL_INPUT
+        assert result["input_source"] == "turtle-mountain feature window"
+        assert result["model_card"]["auc"] is None
     else:
         assert "placeholder" not in result["reason"]
 

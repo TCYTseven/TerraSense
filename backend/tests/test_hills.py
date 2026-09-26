@@ -34,6 +34,9 @@ def test_hills_seed_matches_shared_facts():
 def test_turtle_mountain_is_not_a_placeholder_sample():
     result = predict_summit(TURTLE_SLUG, 49.57694, -114.41222)
     assert result.get("input_source") != PLACEHOLDER_INPUT
+    if result.get("available"):
+        assert result["input_source"] == "turtle-mountain feature window"
+        assert result["model_card"]["auc"] is None
 
 
 def test_hill_is_not_in_the_mountain_catalog():

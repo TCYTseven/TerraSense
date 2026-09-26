@@ -28,6 +28,7 @@ from rasterio.windows import Window
 from rasterio.warp import transform as warp_transform
 
 from app.config import REPO_ROOT
+from app.hills import hill_probability_path, hill_susceptibility_path, hills, in_hill_bbox
 from app.ml import probability as probability_seam
 from app.ml.probability import ProbabilityMap
 from app.ml.risk_contract import (
@@ -367,8 +368,11 @@ def _probability_map(rain: HourlyRain) -> ProbabilityMap:
     return grid
 
 
-def _pixel_susceptibility(x: float, y: float) -> float | None:
-    with rasterio.open(probability_seam.SUSCEPTIBILITY_PATH) as dataset:
+def _pixel_susceptibility(x: float, y: float, path: Path | None = None) -> float | None:
+    raster = path or probability_seam.SUSCEPTIBILITY_PATH
+    if not raster.is_file():
+        return None
+    with rasterio.open(raster) as dataset:
         row, col = dataset.index(x, y)
         if not (0 <= row < dataset.height and 0 <= col < dataset.width):
             return None
@@ -400,6 +404,9 @@ def _model_b_estimate(
     longitude: float,
     rain: HourlyRain,
     grid: ProbabilityMap | None = None,
+    *,
+    susceptibility_path: Path | None = None,
+    attach_validation: bool = True,
 ) -> tuple[dict[str, Any] | None, float | None, list[str]]:
     """The heat map's value at the point, its 1 km cell, and why: (estimate, headline, reasons)."""
     try:
@@ -429,7 +436,7 @@ def _model_b_estimate(
             "max": round(float(finite.max()), 4),
             "share_high": round(float(np.mean(finite >= HIGH_THRESHOLD)), 4),
         }
-    susceptibility = None if grid.is_stand_in else _pixel_susceptibility(x, y)
+    susceptibility = None if grid.is_stand_in else _pixel_susceptibility(x, y, susceptibility_path)
     terms = probability_seam.explain(susceptibility, rain) if susceptibility is not None else None
     estimate = {
         "method": grid.method,
@@ -445,9 +452,96 @@ def _model_b_estimate(
                 "past_72h_mm", "next_72h_mm", "past_7d_mm", "threshold_72h_mm", "threshold_7d_mm")},
         },
         "drivers": [] if terms is None else _estimate_drivers(terms, susceptibility),
-        "validation": None if grid.is_stand_in else probability_seam.validation(),
+        "validation": None if grid.is_stand_in or not attach_validation else probability_seam.validation(),
     }
     return estimate, pixel, []
+
+
+def _hill_covering(latitude: float, longitude: float) -> str | None:
+    """The seeded hill whose shared box contains this point, if any."""
+    for row in hills():
+        if in_hill_bbox(row["slug"], latitude, longitude):
+            return row["slug"]
+    return None
+
+
+def _load_hill_probability(slug: str) -> ProbabilityMap:
+    """The saved hill probability raster. Raises if the window has not been scored."""
+    path = hill_probability_path(slug)
+    with rasterio.open(path) as src:
+        masked = src.read(1, masked=True)
+        values = np.asarray(masked.filled(np.nan), dtype="float32")
+        method = src.tags().get("METHOD") or "regional LightGBM and Model B"
+        return ProbabilityMap(values, src.transform, src.crs.to_string() if src.crs else "", method)
+
+
+def _pixel_on_grid(grid: ProbabilityMap, latitude: float, longitude: float) -> float | None:
+    x, y = warp_transform("EPSG:4326", grid.crs, [longitude], [latitude])
+    x, y = float(x[0]), float(y[0])
+    height, width = grid.values.shape
+    row, col = rowcol(grid.transform, x, y)
+    if not (0 <= row < height and 0 <= col < width and np.isfinite(grid.values[row, col])):
+        return None
+    return float(grid.values[row, col])
+
+
+def _predict_hill_click(
+    prediction: RiskPrediction,
+    slug: str,
+    latitude: float,
+    longitude: float,
+    rain_override: HourlyRain | None,
+    probability_override: ProbabilityMap | None,
+) -> RiskPrediction:
+    """Keep the classifier fail-closed and fill probability from this hill's raster.
+
+    Washington validation stays off this answer. Rain is fetched at the click, not at Rainier.
+    """
+    rain = rain_override
+    if rain is None:
+        rain, _error = try_hourly_rain(latitude, longitude)
+    try:
+        grid = probability_override or _load_hill_probability(slug)
+    except (OSError, ValueError, RasterioError):
+        return prediction
+    if rain is None:
+        pixel = _pixel_on_grid(grid, latitude, longitude)
+        if pixel is None:
+            return prediction
+        estimate = {
+            "method": grid.method,
+            "calibrated": False,
+            "unit": "30 m pixel",
+            "pixel_probability": round(pixel, 4),
+            "susceptibility": None,
+            "cell": None,
+            "rain": None,
+            "drivers": [],
+            "validation": None,
+        }
+        return replace(
+            prediction,
+            probability=round(min(1.0, max(0.0, pixel)), 4),
+            probability_source="model_b_estimate",
+            risk_level=risk_level(pixel),
+            estimate=estimate,
+        )
+    estimate, headline, reasons = _model_b_estimate(
+        latitude, longitude, rain, grid,
+        susceptibility_path=hill_susceptibility_path(slug),
+        attach_validation=False,
+    )
+    if estimate is not None:
+        estimate["validation"] = None
+    probability = None if headline is None else round(min(1.0, max(0.0, headline)), 4)
+    return replace(
+        prediction,
+        probability=probability,
+        probability_source=None if probability is None else "model_b_estimate",
+        risk_level=None if probability is None else risk_level(probability),
+        estimate=estimate,
+        reason_codes=list(dict.fromkeys([*prediction.reason_codes, *reasons])),
+    )
 
 
 def predict_location(
@@ -460,6 +554,11 @@ def predict_location(
 ) -> RiskPrediction:
     """The classifier's fail-closed state, plus the probability to show and where it came from."""
     prediction, rain = _classify(latitude, longitude, timestamp, rain_override)
+    hill_slug = _hill_covering(latitude, longitude)
+    if hill_slug is not None and "OUT_OF_DISTRIBUTION" in prediction.reason_codes:
+        return _predict_hill_click(
+            prediction, hill_slug, latitude, longitude, rain_override, probability_override,
+        )
     if rain is None:
         return prediction
     estimate, headline, reasons = _model_b_estimate(latitude, longitude, rain, probability_override)
