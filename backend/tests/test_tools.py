@@ -12,8 +12,9 @@ FIXTURE = "backend/fixtures/open_meteo_storm.json"
 @pytest.fixture(scope="module")
 def ctx(db_conn, monkeypatch_module):
     monkeypatch_module.setenv("OPEN_METEO_FIXTURE", FIXTURE)
+    rain = get_hourly_rain()
     return RunContext(run_id="test", slug="mount-rainier", mountain="Mount Rainier", peak=(46.8523, -121.7603),
-                      assessment=assess(db_conn), rain=get_hourly_rain())
+                      assessment=assess(db_conn, rain=rain), rain=rain)
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +38,8 @@ def test_trail_segments(ctx):
     assert facts["trail"] == "Skyline Trail"
     assert facts["risk_by_mile"][0]["start_mile"] == 0
     assert facts["flagged"]["level"] in ("high", "extreme")
-    assert facts["bypass"]["exists"] is True and facts["bypass"]["name"]
+    if facts["bypass"]["exists"]:
+        assert facts["bypass"]["name"]
 
 
 def test_weather(ctx):

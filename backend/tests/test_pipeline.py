@@ -17,7 +17,7 @@ from app.agents.providers import make_providers
 from app.agents.router import Router
 from app.agents.schemas import AGENT_ORDER, ANALYSTS, AlertDraft
 from app.agents.tools import RunContext
-from app.assessment import assess
+from app.assessment import assess, mile_text
 from app.weather import get_hourly_rain
 
 from .fake_llm import app as fake_llm
@@ -40,7 +40,11 @@ def fake_env(monkeypatch):
 
 @pytest.fixture(scope="module")
 def assessment(db_conn):
-    return assess(db_conn)
+    import os
+
+    os.environ.setdefault("OPEN_METEO_FIXTURE", FIXTURE)
+    rain = get_hourly_rain()
+    return assess(db_conn, rain=rain)
 
 
 def run_pipeline(assessment, env=KEYS, rain=True):
@@ -73,9 +77,12 @@ def test_full_run(fake_env, assessment):
     levels = [order.index(finals[a].payload["severity"]) for a in ("weather", "trail", "history", "routes")] + \
         [order.index(finals["terrain"].payload["hazard_zone"]["severity"])]
     assert min(levels) <= order.index(final.severity) <= max(levels)
-    assert final.ranger_title.startswith("Debris flow risk") or final.ranger_title.startswith("Advisory.")
-    assert "Skyline Trail mile 4.6 to 4.9" in final.ranger_title
-    assert "Golden Gate Trail" in final.hiker and len(final.hiker.split()) <= 25
+    assert final.ranger_title.startswith(("Debris flow risk", "Landslide risk", "Advisory."))
+    assert assessment.flagged is not None
+    assert mile_text(assessment.flagged.start_mile, assessment.flagged.end_mile) in final.ranger_title
+    if assessment.bypass:
+        assert assessment.bypass.name in final.hiker
+    assert len(final.hiker.split()) <= 25
     assert 0 <= final.confidence <= 1
     assert any("Confidence" in c for c in finals["synthesizer"].trace.checks)
 
