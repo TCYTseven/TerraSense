@@ -112,13 +112,13 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** Model A has one row per pixel and a stable label.
 
-**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI).
+**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI). The current run writes a 1,188-row labeled table from 33 usable inventory points: 297 positives and 891 spatially excluded negatives across 14 regions.
 
 **Left.**
 
-- Rerun the script once step 10's points exist. It then writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives at about 1:3 from ground more than 500 m away, `label`, and `region` (7.5 km blocks).
+- It writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives at about 1:3 from ground more than 500 m away, `label`, and `region` (7.5 km blocks). The feature and label contract has adversarial unit coverage for region isolation, accuracy filtering, binary labels, and duplicate pixel prevention.
 
-**Done when.** The table has the seven features, a 0/1 label, and a region column, and the script prints the row count.
+**Done when.** The table has the seven features, a 0/1 label, and a region column, the script prints the row count, and the feature/label contract tests pass.
 
 ## 12. Train the susceptibility model
 
