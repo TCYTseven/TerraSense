@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
 import SimulateButton from "@/components/pipeline/simulate-button";
@@ -16,6 +16,7 @@ import { useSimulation } from "@/lib/use-simulation";
 import type { LayerTiles, MountainDetail, MountainRiskSummary } from "@/lib/types";
 import HillHeader from "./hill-header";
 import OverallRisk from "./overall-risk";
+import PanelTabs, { type PanelTab, tabId, tabPanelId } from "./panel-tabs";
 import PreventativeMeasures from "./preventative-measures";
 import SimulationUnsupportedDialog from "./simulation-unsupported-dialog";
 import TrailList from "./trail-list";
@@ -35,13 +36,15 @@ export interface HillCardProps {
 }
 
 /**
- * The hill detail card: the 3D mountain on the left, one scrollable stats panel on the right
- * with the Analyze button pinned under it. "View" on a trail row flies the camera to its marker.
+ * The hill detail card: the 3D mountain on the left, the stats panel on the right. The header and
+ * overall risk stay at the top; under them two tabs, Prevention (Simulate pinned under it) and
+ * Response (Analyze pinned under it). "View" on a trail row flies the camera to its marker.
  */
 export default function HillCard({ mountain, probability, susceptibility, riskSummary }: HillCardProps) {
   const [summary, setSummary] = useState(riskSummary);
   const hill = useMemo(() => buildHillView(mountain, summary), [mountain, summary]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
+  const [tab, setTab] = useState<PanelTab>("prevention");
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
   const finished = pipeline.state.orchestrator === "done";
@@ -73,6 +76,8 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
 
   function view(letter: TrailLetter) {
     setFocus({ letter, nonce: Date.now() });
+    // A trail picked on the map shows its row.
+    setTab("prevention");
   }
 
   function handleSimulate() {
@@ -110,13 +115,19 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
       </section>
 
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:w-[45%] md:flex-none md:border-l md:border-t-0">
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div className="shrink-0">
           <HillHeader hill={hill} />
           <OverallRisk hill={hill} />
+        </div>
+        <PanelTabs active={tab} onChange={setTab} />
+        <TabPanel tab="prevention" active={tab}>
           {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
           {live && hill.trails.length > 0 && (
             <TrailList trails={hill.trails} selected={selected} onView={view} />
           )}
+          {!live && <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>}
+        </TabPanel>
+        <TabPanel tab="response" active={tab}>
           <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
             <h2 id="agents-heading" className="text-sm text-muted-foreground">
               Agents
@@ -131,17 +142,21 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
           {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
             <PreventativeMeasures items={hill.preventative} />
           )}
-        </div>
+        </TabPanel>
         <footer className="shrink-0 border-t border-border bg-card px-5 py-4">
-          <div className="flex gap-2">
-            <SimulateButton
-              phase={simulationSupported ? simulation.phase : "idle"}
-              onSimulate={handleSimulate}
-              onReplay={handleSimulate}
-            />
-            <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} className="flex-1" />
-          </div>
-          {simulationSupported && simulation.error && (
+          {/* Each tab pins its own action. */}
+          {tab === "prevention" ? (
+            <div className="flex">
+              <SimulateButton
+                phase={simulationSupported ? simulation.phase : "idle"}
+                onSimulate={handleSimulate}
+                onReplay={handleSimulate}
+              />
+            </div>
+          ) : (
+            <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} />
+          )}
+          {tab === "prevention" && simulationSupported && simulation.error && (
             <p className="mt-2 text-sm text-foreground">{simulation.error}</p>
           )}
         </footer>
@@ -152,5 +167,20 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
         />
       </aside>
     </main>
+  );
+}
+
+/** One tab's section. Every tab stays mounted, so its scroll, fetches, and open traces survive a switch. */
+function TabPanel({ tab, active, children }: { tab: PanelTab; active: PanelTab; children: ReactNode }) {
+  return (
+    <div
+      role="tabpanel"
+      id={tabPanelId(tab)}
+      aria-labelledby={tabId(tab)}
+      hidden={tab !== active}
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain [&>section:first-child]:border-t-0"
+    >
+      {children}
+    </div>
   );
 }

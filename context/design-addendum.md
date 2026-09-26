@@ -306,7 +306,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 
 ### Layout
 
-- **Wide, 768 px and up.** Two columns at full viewport height: the map about 55%, the panel about 45%, with a 1 px left border on the panel. The panel scrolls inside itself. **Analyze now** sits in a footer pinned to the panel bottom, outside the scroll area. No other sidebar, drawer, or panel opens.
+- **Wide, 768 px and up.** Two columns at full viewport height: the map about 55%, the panel about 45%, with a 1 px left border on the panel. The header and overall risk stay at the top. Under them a tab list, **Prevention** and **Response** (Sep 26, 2026), opens on Prevention. Each tab scrolls inside itself. A footer pinned to the panel bottom, outside the scroll area, holds the open tab's action: **Simulate** on Prevention, **Analyze now** on Response. No other sidebar, drawer, or panel opens.
 - **Narrow, below 768 px.** Map on top at 55% of the viewport height, panel below, and the page scrolls. The footer is not pinned.
 - 20 px side padding. A 1 px border separates sections, with 16 px above and below each.
 
@@ -314,11 +314,16 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 
 1. **Header.** "Back to the globe", then the mountain name at panel-title size. Below it, one line of stats in the mono face: elevation (ft), mean slope (°), area (km²). Region in muted text.
 2. **Overall risk.** The score as a large mono number (two decimals), then the level dot and word in the level color. When the numbers are illustrative, one meta line says so.
-3. **Top 5 at-risk trails.** One row per trail, riskiest first: a letter badge (A to E), the name, the level dot and the mono score, and a **View** text button in the accent. The badge is a small circle in the trail's level color with the letter in background-dark text, the same as its map marker. The last trail viewed is marked as selected.
-4. **Preventative measures.** Three to five bullets, one line each where they fit.
-5. **Agents.** See [Agent pipeline](#agent-pipeline).
-6. **Footer.** **Simulate**, when the mountain has routes, and **Analyze now**, when it is live. See [Panel actions](#panel-actions). On Sep 26, 2026 **Simulate** moved here from the globe panel: it plays on this map.
-
+3. **Tabs.** Sep 26, 2026. **Prevention** and **Response**, 44 px tall, sans at meta size, 500. The open tab has text in the text color and a 2 px accent bottom border; the other is muted. Switching is instant, and arrow keys move between tabs. A 1 px border above and below the tab list. Both tabs stay mounted, so each keeps its scroll, its open trace, and its data.
+4. **Prevention tab.**
+   - **Landslide risk, next 72 hours**, for the spot last clicked on the map.
+   - **Top 5 at-risk trails.** One row per trail, riskiest first: a letter badge (A to E), the name, the level dot and the mono score, and a **View** text button in the accent. The badge is a small circle in the trail's level color with the letter in background-dark text, the same as its map marker. The last trail viewed is marked as selected. **View**, or a click on a trail on the map, opens this tab.
+   - **Footer:** **Simulate**, when the mountain has routes. See [Panel actions](#panel-actions). On Sep 26, 2026 **Simulate** moved here from the globe panel: it plays on this map.
+5. **Response tab.**
+   - **Agents.** See [Agent pipeline](#agent-pipeline).
+   - **Reactive Measures**, after a run.
+   - **Preventative measures**, after a run. Three to five bullets, one line each where they fit.
+   - **Footer:** **Analyze now**, when the mountain is live.
 ### High and Extreme
 
 **[confirm]** When the level is High or Extreme, the overall risk section gets a 3 px left border in the level color and a background of the level color at 8%. Nothing moves (UX.md rule 10). Low and Moderate get neither.
@@ -345,7 +350,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 Status never uses a risk color. The running card gets a background of the text color at 4% and the work pulse (see [Motion](#motion)).
 
 - **Trace.** A click on a card expands a container directly beneath it with the agent's full reasoning trace as a numbered list, growing while the agent runs. One trace is open at a time; a second click closes it. Traces use no risk colors.
-- **Before the first run.** One muted line: "Press Analyze now to run the agents."
+- **Before the first run.** The Orchestrator and all five cards show, idle and empty: hollow circles, "idle", and "Waiting". The Orchestrator line reads "Press Analyze now to run the agents." A card still opens to "No reasoning yet. It appears here once the agent runs." Nothing is added or removed when **Analyze now** is pressed; the cards fill in place.
 - **Reactive Measures.** After the Mass Alert Writer finishes, its own panel section below the Agents section, and the loudest thing on the panel after the overall score. The title is at 20 px, 600. It takes the overall level's High/Extreme treatment, because the measures answer that level. A summary line reads "Response to ‹level› risk · N now, N actions · N public drafts". **Measures cluster by timing, not by kind of work** (team decision, Sep 26, 2026: when something has to happen is what a ranger acts on first). The clusters, soonest first: Now, Within 1 hour, Within 6 hours, Within 24 hours. Each cluster header shows its count, and Now's header is heavier (weight, never color). Each measure is a card: the trail badge when it concerns one, a meta label naming its kind of work (Closures and access, Evacuation and sweeps, Search and rescue readiness, Field monitoring, Agency coordination, Public notice), the title at 16 px 600, and the detail at 14 px. Every public notice carries "Draft, not sent" (UX.md rule 11 applies here too). The orchestrator's done line points to the section.
 
 ### Actions

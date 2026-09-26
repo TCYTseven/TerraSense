@@ -52,20 +52,17 @@ function orchestratorLine(state: PipelineState): React.ReactNode {
     const running = agents.filter((a) => a.status === "running").map((a) => PIPELINE_LABELS[a.id]);
     return running.length > 0 ? `${list(running)} running.` : "Dispatching agents…";
   }
-  return "Idle.";
+  return "Press Analyze now to run the agents.";
 }
 
 /**
  * The orchestrator and its five agents. Terrain, Weather, and Trails branch off the rail together,
- * then the Synthesizer and the Alerter. A card opens its reasoning trace beneath it, one
- * at a time. Reactive Measures follow once the orchestrator finishes.
+ * then the Synthesizer and the Alerter. The cards are there before any run, idle and empty, and
+ * fill in as the run streams. A card opens its reasoning trace beneath it, one at a time.
+ * Reactive Measures follow once the orchestrator finishes.
  */
 export default function AgentPipeline({ state }: { state: PipelineState }) {
   const [expanded, setExpanded] = useState<PipelineAgentId | null>(null);
-
-  if (state.orchestrator === "idle") {
-    return <p className="text-base text-muted-foreground">Press Analyze now to run the agents.</p>;
-  }
 
   const failed = state.orchestrator === "error";
 
