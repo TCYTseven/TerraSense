@@ -154,10 +154,13 @@ PACKS = {
              peak_lat=45.374, peak_lon=-121.696, peak_elevation_m=3429,
              bbox=bbox_around(45.374, -121.696, 15)),
         # North America, East Coast: the Presidential Range paths (Tuckerman Ravine,
-        # Crawford Path, the Appalachian Trail) all start inside 15 km.
+        # Crawford Path, the Appalachian Trail) all start inside 15 km. The longest
+        # named line in the box is the valley Presidential Rail Trail, so the hero is
+        # pinned to the summit approach like Everest's Base Camp Trek.
         Pack(slug="mount-washington", name="Mount Washington",
              peak_lat=44.271, peak_lon=-71.304, peak_elevation_m=1917,
-             bbox=bbox_around(44.271, -71.304, 15)),
+             bbox=bbox_around(44.271, -71.304, 15),
+             hero=Hero(trail="Tuckerman Ravine Trail", parts=("Tuckerman Ravine Trail",))),
         # South America: the Normal Route walks in through the Horcones valley, 18 km south.
         Pack(slug="aconcagua", name="Aconcagua",
              peak_lat=-32.653, peak_lon=-70.011, peak_elevation_m=6961,

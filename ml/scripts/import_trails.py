@@ -33,6 +33,7 @@ import itertools
 import json
 import math
 import os
+import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
@@ -88,6 +89,8 @@ MIN_TRAIL_M = 200       # drop names whose line is shorter: campground labels su
 # OSM maps summit climbs (Disappointment Cleaver, Emmons Glacier, Camp Muir, Observation Rock)
 # as footways named "... Route". They cross glaciers, not hiking trails, so the seed leaves them out.
 CLIMBING_ROUTE_SUFFIX = " Route"
+# Valley multi-use paths beat real summit trails on length; skip them for the default hero.
+VALLEY_PATH_RE = re.compile(r"(?i)\brail\s*trail\b|\bgreenway\b|\bmulti-?use path\b")
 
 SEGMENT_MILES = 0.1  # one segment per tenth of a mile, so alerts can say "miles 1.2 to 2.1"
 METERS_PER_MILE = 1609.344
@@ -476,6 +479,13 @@ def keep_in_seed(trail: dict) -> str | None:
     return None
 
 
+def auto_hero_candidates(trails: list[dict]) -> list[dict]:
+    """Trails eligible for the default hero, preferring foot paths over valley rail trails."""
+    candidates = [t for t in trails if keep_in_seed(t) is None]
+    hiking = [t for t in candidates if not VALLEY_PATH_RE.search(t["name"])]
+    return hiking or candidates
+
+
 # --- Stage 4: the hero trail and its mile segments --------------------------------------------
 
 
@@ -523,7 +533,7 @@ def hero_line(trails: list[dict], dem: Dem) -> tuple[str, object, object, tuple[
         line, _ = uphill(by_name[PACK.hero.trail]["line"], dem)
         raw = to_utm(line)
         return PACK.hero.trail, raw, shapely.simplify(raw, SIMPLIFY_M), (PACK.hero.trail,)
-    candidates = [t for t in trails if keep_in_seed(t) is None]
+    candidates = auto_hero_candidates(trails)
     if not candidates:
         return None
     best = max(candidates, key=lambda t: to_utm(t["line"]).length)
@@ -566,8 +576,9 @@ def hero_features(trails: list[dict], dem: Dem) -> tuple[dict | None, list[dict]
         note = ("The hero trail, named by the pack. Mile 0 is the lower trailhead. "
                 "Mile markers in trail_segments.geojson.")
     else:
-        note = ("The hero trail: the longest named trail in the box. Mile 0 is the lower trailhead. "
-                "Mile markers in trail_segments.geojson.")
+        note = ("The hero trail: the longest named hiking trail in the box (valley rail trails "
+                "and greenways are skipped). Mile 0 is the lower trailhead. Mile markers in "
+                "trail_segments.geojson.")
     trail = {
         "type": "Feature",
         "properties": {
