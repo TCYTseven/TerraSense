@@ -19,11 +19,14 @@ export function playheadTime(playhead: Playhead, now: number): number {
 
 const NEVER = 65535;
 /**
- * Largest canvas side. The field is upsampled up to UPSAMPLE times, then capped here. The
- * map's linear resampling smooths what is left, so more pixels only cost frame time.
+ * Largest canvas side. The field is upsampled up to UPSAMPLE times, then capped here.
+ * At 1 each canvas pixel is one model cell (about 26 m), which the map draws with nearest
+ * resampling: a faceted, low-poly look that still shows how the flow spreads.
  */
 const MAX_CANVAS_PX = 512;
-const UPSAMPLE = 3;
+const UPSAMPLE = 1;
+/** Flat color steps from the dark core to the pale edge, instead of a smooth gradient. */
+const TONES = 6;
 /** Pixels below this cover are never drawn. */
 const MIN_COVER = 0.35;
 const OPACITY = 0.85;
@@ -43,7 +46,8 @@ function hexRgb(hex: string): RGB {
 const RAMP = FLOW_COLORS.map(hexRgb);
 
 function rampColor(depth: number): RGB {
-  const pos = (1 - Math.min(1, Math.max(0, depth))) * (RAMP.length - 1);
+  const stepped = Math.round(Math.min(1, Math.max(0, depth)) * (TONES - 1)) / (TONES - 1);
+  const pos = (1 - stepped) * (RAMP.length - 1);
   const i = Math.min(RAMP.length - 2, Math.floor(pos));
   const f = pos - i;
   const a = RAMP[i];
