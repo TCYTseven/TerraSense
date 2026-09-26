@@ -110,12 +110,12 @@ function Earth({
 /**
  * Thin atmospheric rim that stays fixed while the surface turns.
  */
-function Atmosphere() {
+function Atmosphere({ glowColor }: { glowColor: string }) {
   const material = useMemo(
     () =>
       new ShaderMaterial({
         uniforms: {
-          glowColor: { value: new Color(THEME.foreground) },
+          glowColor: { value: new Color(glowColor) },
         },
         vertexShader: ATMOSPHERE_VERTEX_SHADER,
         fragmentShader: ATMOSPHERE_FRAGMENT_SHADER,
@@ -124,7 +124,7 @@ function Atmosphere() {
         transparent: true,
         depthWrite: false,
       }),
-    [],
+    [glowColor],
   );
 
   useEffect(() => {
@@ -153,12 +153,17 @@ export default function SpinningGlobe({
   onSelect,
   onArrive,
   onReady,
+  sceneBackground = THEME.background,
+  atmosphereColor = THEME.foreground,
 }: {
   mountains: Mountain[];
   flyTarget: Mountain | null;
   onSelect: (mountain: Mountain) => void;
   onArrive: (mountain: Mountain) => void;
   onReady: () => void;
+  /** Canvas clear color; home passes HOME_THEME. */
+  sceneBackground?: string;
+  atmosphereColor?: string;
 }) {
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const earthRef = useRef<Mesh>(null);
@@ -170,7 +175,7 @@ export default function SpinningGlobe({
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
-      <color attach="background" args={[THEME.background]} />
+      <color attach="background" args={[sceneBackground]} />
       <ambientLight intensity={0.22} />
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
@@ -189,7 +194,7 @@ export default function SpinningGlobe({
         </Earth>
       </Suspense>
       <CameraFlight target={flyTarget} earth={earthRef} onArrive={onArrive} />
-      <Atmosphere />
+      <Atmosphere glowColor={atmosphereColor} />
       <OrbitControls
         enabled={!flying}
         enablePan={false}

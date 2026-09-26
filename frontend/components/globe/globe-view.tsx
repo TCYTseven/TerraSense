@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
+import { HOME_THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
 import MountainSearch from "./mountain-search";
@@ -79,6 +80,8 @@ export default function GlobeView() {
         onSelect={flyTo}
         onArrive={arrive}
         onReady={handleGlobeReady}
+        sceneBackground={HOME_THEME.muted}
+        atmosphereColor={HOME_THEME.atmosphere}
       />
       <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] lg:top-5">
         <MountainSearch

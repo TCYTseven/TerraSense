@@ -16,6 +16,17 @@ export const THEME = {
   primary: "#7FDDE6",
 } as const;
 
+/** Home / globe screen only. Mountain pages keep the dark dispatch theme in :root. */
+export const HOME_THEME = {
+  background: "#F5F2EB",
+  muted: "#EBE6DD",
+  card: "#FFFFFF",
+  foreground: "#1A1814",
+  mutedForeground: "#6B6359",
+  primary: "#2BA8B5",
+  atmosphere: "#7FDDE6",
+} as const;
+
 /** Risk colors. They mark risk and nothing else. */
 export const RISK_COLORS = {
   low: "#22C55E",

@@ -135,11 +135,11 @@ export default function MountainSearch({
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
           onKeyDown={handleKeyDown}
-          className="h-11 w-full rounded-lg border border-border bg-popover/85 pl-10 pr-4 text-sm text-foreground shadow-lg shadow-black/30 backdrop-blur-sm placeholder:text-muted-foreground disabled:opacity-60"
+          className="h-11 w-full rounded-lg border border-border bg-popover/85 pl-10 pr-4 text-sm text-foreground shadow-lg shadow-foreground/10 backdrop-blur-sm placeholder:text-muted-foreground disabled:opacity-60"
         />
       </div>
       {showList && (
-        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-xl shadow-black/40 backdrop-blur-sm">
+        <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-xl shadow-foreground/10 backdrop-blur-sm">
           {matches.length > 0 ? (
             <ul id={listId} role="listbox" aria-label="Mountains" className="py-1">
               {matches.map((mountain, index) => (

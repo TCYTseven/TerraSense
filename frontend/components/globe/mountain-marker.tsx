@@ -174,7 +174,7 @@ export default function MountainMarker({
 /** Hover card: name, elevation, region, risk, and last refresh. */
 function MarkerCard({ mountain }: { mountain: Mountain }) {
   return (
-    <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-border bg-popover/95 px-3.5 py-3 shadow-xl shadow-black/40 backdrop-blur-sm">
+    <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-border bg-popover/95 px-3.5 py-3 shadow-xl shadow-foreground/10 backdrop-blur-sm">
       <div className="flex items-baseline justify-between gap-3">
         <p className="text-sm font-medium text-foreground">{mountain.name}</p>
         <p className="font-mono text-xs text-muted-foreground">{formatElevation(mountain.elevation_m)}</p>
