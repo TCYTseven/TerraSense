@@ -323,6 +323,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 
 - **Markers.** One per top-five trail at its region's center, matching the panel badge, with a 1 px ring so it reads on the relief. Each marker is a button labelled "Trail A, <name>, risk 0.74".
 - **Tooltip.** Hover or keyboard focus opens a popup with no close button: the trail name, the mono score with its level word, the slope, and the primary risk factor. It closes when the pointer leaves.
+- **Zoom limit.** The map can zoom out one level past its opening frame (`CAMERA.zoomOutRoom`) and no further, so the mountain always fills the view.
 - **View.** Flies the camera to the trail's region in 1.5 s (UX.md rule 10's fly-to), pitched for the 3D view, and opens the tooltip on arrival. The marker takes a 2 px accent ring while it is selected. Reduced motion jumps instead.
 
 ### Agent pipeline
@@ -414,6 +415,7 @@ UX.md rule 10 is the complete list. This section sets the values.
 | Motion | Value | When |
 |---|---|---|
 | Idle globe spin | About one turn every 2 minutes (`controls().autoRotateSpeed = 0.5`) | Always on the globe. Pauses on marker hover or drag, and resumes after 3 s idle |
+| Idle mountain orbit | 1.2° per second, about one turn every 5 minutes (`CAMERA.orbitDegPerSec`) | The mountain page map while idle. Pauses while the pointer is over the map, stops on drag, zoom, or keys and resumes after 8 s, and stays off once **View** has focused a trail. Off under reduced motion |
 | Fly-to | 1.5 s total, in the sequence below | Marker click or search |
 | Heat map fade | `raster-opacity` from 0 to 1 over 600 ms (`raster-opacity-transition`) | When the probability layer first shows, and when new tiles arrive after a finished run |
 | Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent cards, the current simulation step, "Writing callouts…", and skeleton bars only |

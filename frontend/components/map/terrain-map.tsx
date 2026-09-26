@@ -36,6 +36,7 @@ import {
   SOURCE,
   trailFeatures,
 } from "./map-style";
+import { useIdleOrbit } from "./use-idle-orbit";
 import { useTrailMarkers } from "./use-trail-markers";
 
 // Copied from node_modules by scripts/copy-maplibre-worker.mjs on npm install.
@@ -354,6 +355,8 @@ export default function TerrainMap({
       }),
       attributionControl: { compact: true },
     });
+    // The opening frame is the widest view that still reads as this mountain.
+    instance.setMinZoom(instance.getZoom() - CAMERA.zoomOutRoom);
     instance.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
     instance.addControl(new ScaleControl({ unit: "imperial" }), "bottom-right");
     new Marker({ element: summitLabel(name), anchor: "bottom", offset: [0, -4] }).setLngLat([lon, lat]).addTo(instance);
@@ -587,6 +590,7 @@ export default function TerrainMap({
   }, [map, isLive]);
 
   useTrailMarkers(map, trailMarkers, focus);
+  useIdleOrbit(map, Boolean(focus));
 
   function toggle(id: string) {
     if (id === LAYER.susceptibility) {

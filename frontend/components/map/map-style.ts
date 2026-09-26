@@ -33,6 +33,11 @@ export const CAMERA = {
   pitch: 55,
   bearing: -14,
   maxPitch: 70,
+  /** How far below the opening zoom the user may zoom out: one level, about twice the view. */
+  zoomOutRoom: 1,
+  /** The idle orbit: a full turn in about five minutes, resuming after 8 s without input. */
+  orbitDegPerSec: 1.2,
+  orbitResumeMs: 8000,
   // Extra room at the top: the exaggerated summit rises above where its base sits on screen.
   padding: { top: 150, bottom: 48, left: 48, right: 48 },
 } as const;

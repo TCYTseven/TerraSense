@@ -31,7 +31,7 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 7. **Weather is text in the Weather agent's trace.** The mountain page has no rain section. Weather is never a map layer.
 8. **Static mountains do not pretend to analyze.** Hide **Analyze now**, the pressure points, and **Simulate** when `is_live` is false.
 9. **A running analysis is visible.** An Orchestrator node and five agent cards, each idle, running, done, or error. The running card moves. A failure says the run failed and leaves the last good hazard on the map.
-10. **Motion is short.** Idle globe spin. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
+10. **Motion is short.** Idle globe spin. A slow idle orbit of the mountain on the mountain page, which stops for the user. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
 11. **A simulation says what it is.** It is an illustrative runout from today's worst slope, not a forecast of timing. Every public message it shows is a draft that was not sent.
 
 ## The screens
@@ -65,7 +65,7 @@ Static mountains open the same panel with terrain only, their fixed level, and o
 
 ### Mountain page (hill detail card, rebuilt Sep 25, 2026)
 
-Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor.
+Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor. While nobody is using it, the camera slowly orbits the mountain. It can't zoom out more than one level past the opening view.
 
 **Right, about 45%:** one panel that scrolls, top to bottom:
 
