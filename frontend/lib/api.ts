@@ -179,7 +179,7 @@ export async function getRiskSummary(slug: string, init?: RequestInit): Promise<
   }
 }
 
-/** Classify rainfall-triggered landslide risk for the next 72 hours at a 1 km cell. */
+/** Classify rainfall-triggered landslide risk for the next week at a 1 km cell. */
 export function getLandslideRisk(
   latitude: number,
   longitude: number,

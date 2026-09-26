@@ -31,7 +31,7 @@ PEAK_LAT, PEAK_LON = 46.8523, -121.7603
 TRAIL_ZONE_ELEVATION_M = 1650
 
 PAST_DAYS = 7  # antecedent moisture needs a week
-FORECAST_DAYS = 4  # today plus three, so the next 72 hours are always covered
+FORECAST_DAYS = 7  # a full week ahead for the landslide forecast window
 CACHE_SECONDS = 300  # a demo retry within five minutes reuses the last response
 TIMEOUT_SECONDS = 10
 

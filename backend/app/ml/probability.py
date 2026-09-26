@@ -1,4 +1,4 @@
-"""The 72-hour probability map that the heat map, the hazard zone, and the agents read (step 18).
+"""The one-week probability map that the heat map, the hazard zone, and the agents read (step 18).
 
 Model B (app/ml/model_b.py, step 17) makes it from susceptibility and rain. The ML track is
 rebuilding Model B, so this module is the one seam between it and everything downstream:
@@ -83,7 +83,7 @@ def _stand_in(path: Path = SUSCEPTIBILITY_PATH) -> ProbabilityMap:
 
 
 def score(rain: HourlyRain | None = None, susceptibility: Path | None = None) -> ProbabilityMap:
-    """The current 72-hour probability map: Model B when it exists, else the stand-in.
+    """The current one-week probability map: Model B when it exists, else the stand-in.
 
     `susceptibility` points at one pack's raster (step 32); None keeps Rainier's.
     """

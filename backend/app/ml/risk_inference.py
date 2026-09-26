@@ -415,7 +415,7 @@ def _estimate_drivers(terms: dict[str, float], susceptibility: float) -> list[di
     rows = [
         ("terrain", "Terrain susceptibility",
          f"{susceptibility:.2f} calibrated relative susceptibility (relief, roughness, drainage, land cover)"),
-        ("forecast_rain", "Forecast rain, next 72 h",
+        ("forecast_rain", "Forecast rain, next week",
          f"{terms['next_72h_mm']:.1f} mm against a {terms['threshold_72h_mm']:.1f} mm trigger threshold"),
         ("antecedent_moisture", "Rain in the past 7 days",
          f"{terms['past_7d_mm']:.1f} mm against a {terms['threshold_7d_mm']:.1f} mm wet-ground reference"),

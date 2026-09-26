@@ -1,4 +1,4 @@
-"""The mountain page's numbers, read from the saved 72-hour map (step 31).
+"""The mountain page's numbers, read from the saved one-week map (step 31).
 
 The heat map tiles are rendered from each mountain's saved map (`app.packs.probability_path`),
 which `Analyze now` and `python -m app.assessment --save` write. Before a pack has a weather

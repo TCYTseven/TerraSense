@@ -1,7 +1,7 @@
 /**
  * The mountain page's view model: what the mountain page renders, independent of where the
  * numbers come from. `lib/mountain-view-build.ts` fills it from the mountain and the risk summary, which
- * scores every trail on the saved 72-hour map.
+ * scores every trail on the saved one-week map.
  */
 
 import type { LineString, Position, RiskLevel } from "./types";
@@ -30,7 +30,7 @@ export interface TrailRisk {
   geom: LineString | null;
   /** Mapped length from the API, when known. */
   lengthKm: number | null;
-  /** True when score and level come from the saved 72-hour risk map. */
+  /** True when score and level come from the saved one-week risk map. */
   fromRiskMap: boolean;
 }
 

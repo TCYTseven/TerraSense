@@ -205,7 +205,7 @@ class RunRegistry:
                     None,
                 )
                 return
-            await self._phase(state, "scoring", "Scoring the next 72 hours of rain against the terrain.")
+            await self._phase(state, "scoring", "Scoring the next week of rain against the terrain.")
             rain, rain_error = await asyncio.to_thread(try_hourly_rain, *state.peak)
             if rain is not None:
                 state.rain = _rain_totals(rain)

@@ -43,7 +43,7 @@ function preventative(summary: MountainRiskSummary, trails: TrailRisk[]): string
     .filter(Boolean)
     .join(" ");
   items.push(
-    `Walk ${worst.name} at its worst point${where ? ` (${where})` : ""} after any 72-hour rain above ${summary.threshold_72h_mm} mm.`,
+    `Walk ${worst.name} at its worst point${where ? ` (${where})` : ""} after any week-scale rain above ${summary.threshold_72h_mm} mm.`,
   );
   const severe = trails.filter((t) => t.level === "high" || t.level === "extreme");
   items.push(
@@ -60,7 +60,7 @@ function preventative(summary: MountainRiskSummary, trails: TrailRisk[]): string
 
 /**
  * The mountain page's view model from the mountain and the risk summary. Every score, slope, and
- * factor comes from the saved 72-hour map the heat layer shows. Before the first save there is
+ * factor comes from the saved one-week map the heat layer shows. Before the first save there is
  * no summary, so the card shows no scores rather than made-up ones.
  */
 export function buildMountainView(mountain: MountainDetail, summary: MountainRiskSummary | null): MountainView {

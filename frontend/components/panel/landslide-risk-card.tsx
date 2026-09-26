@@ -115,7 +115,7 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="cell-risk-heading" className="text-sm text-muted-foreground">
-          Landslide risk · next 72 hours
+          Landslide risk · next week
         </h2>
         {loading && settled && <span className="text-xs text-muted-foreground">Checking…</span>}
       </div>

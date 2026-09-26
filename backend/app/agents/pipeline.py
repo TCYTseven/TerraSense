@@ -411,7 +411,7 @@ class Pipeline:
         if zone is not None:
             tools.append(("get_historical_events", {"lat": zone.centroid[1], "lon": zone.centroid[0], "radius_km": 5.0}))
         run, _ = await self._call("terrain", signals=Signals(zone_peak=zone.max_probability if zone else None),
-                                  running="Reading the hazard zone on the 72-hour map.", tools=tools, context={})
+                                  running="Reading the hazard zone on the one-week map.", tools=tools, context={})
         if run.error:
             return run
         out: TerrainReport = run.output

@@ -188,7 +188,7 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
-/** One trail on the saved 72-hour map: its worst point, and the terrain there. */
+/** One trail on the saved one-week map: its worst point, and the terrain there. */
 export interface TrailRiskScore {
   trail_id: string;
   name: string;

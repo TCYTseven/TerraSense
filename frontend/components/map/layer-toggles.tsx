@@ -7,7 +7,7 @@ export interface LayerToggle {
 }
 
 /**
- * The layer toggles over the lower left of the map. The 72-hour probability heat map is
+ * The layer toggles over the lower left of the map. The one-week probability heat map is
  * the page's default layer and has no toggle.
  */
 export default function LayerToggles({
