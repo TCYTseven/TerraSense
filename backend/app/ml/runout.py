@@ -14,18 +14,21 @@ from __future__ import annotations
 
 import math
 
-from app.ml.elevation import sample_elevations
+from app.ml import flow_routing
+from app.ml.elevation import height_grid, sample_elevations
 from app.ml.pressure import _bearing, _haversine, _line, _move
 
 REACH_ANGLE_DEG = 11  # a common debris-flow minimum travel angle
 MAX_RUNOUT_M = 6000
 FRONT_SPEED_MS = 5  # arrival time = path distance / this
 MAX_FRAMES = 40
-HOLMGREN_EXPONENT = 4
+# The diffuse end of Holmgren's range: flow fans across open slopes instead of
+# collapsing into one gully cell, so the footprint is an area, not a line.
+HOLMGREN_EXPONENT = 1.1
 CHANNEL_M = 100
 SAMPLE_M = 80
 
-METHOD_DEM = "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing."
+METHOD_DEM = "Illustrative runout from a travel-angle model on 26 m terrain. Not a forecast of timing."
 METHOD_TRAIL = "Illustrative runout along the trail's downhill line. Not a forecast of timing."
 METHOD_TRAIL_TERRAIN = "Illustrative runout from the route's highest point, downhill along the trail. Not a forecast of timing."
 
@@ -34,10 +37,121 @@ M_PER_MI = 1609.344
 
 def trace_runout(point: dict, trails: list[dict]) -> dict:
     """Frames and steps for one pressure point. JSON-ready. Never calls a model."""
-    dem = _try_dem(point, trails)
-    if dem is not None:
-        return dem
+    terrain = _over_terrain(point, trails)
+    if terrain is not None:
+        return terrain
     return _along_trail(point, trails)
+
+
+def _over_terrain(point: dict, trails: list[dict]) -> dict | None:
+    """The flow spread over the terrain grid from the top of the source route. None without terrain."""
+    import numpy as np
+
+    trail = _source_trail(point, trails)
+    coords = _line(trail) if trail else []
+    top = _route_top(coords)
+    if top is None:
+        return None
+    lon, lat, top_m = top
+    grid = height_grid(lon, lat, MAX_RUNOUT_M)
+    if grid is None:
+        return None
+    routed = flow_routing.spread(grid, lon, lat, HOLMGREN_EXPONENT, REACH_ANGLE_DEG, MAX_RUNOUT_M)
+    if routed is None:
+        return None
+    share, dist = routed
+    mask, arrive = flow_routing.footprint(grid, share, dist)
+    if mask.sum() < 3:
+        return None
+    heights = grid.heights
+    total = float(arrive[mask].max())
+    level = point.get("level") or "high"
+    release_level = level if level in RAMP else "high"
+
+    frame_count = min(MAX_FRAMES, max(8, int(total / FRONT_SPEED_MS / 15)))
+    frames = []
+    for index in range(frame_count):
+        reach_m = total * (index + 1) / frame_count
+        visible = mask & (arrive <= reach_m + 1e-6)
+        depth = flow_routing.shade_depth(visible, SHADES)
+        deepest = max(1, int(depth.max()))
+        features = []
+        for shade in reversed(range(SHADES)):
+            # The deepest cells are the dark core and the edge is the palest band. Each band
+            # is every cell at least that far in, so the bands nest.
+            need = math.ceil((SHADES - 1 - shade) * deepest / (SHADES - 1))
+            geometry = flow_routing.polygons(grid, visible & (depth >= need))
+            if geometry is None:
+                continue
+            features.append(
+                {
+                    "type": "Feature",
+                    "properties": {"level": release_level, "intensity": INTENSITY[release_level], "shade": shade, "rim": shade == SHADES - 1},
+                    "geometry": geometry,
+                }
+            )
+        frames.append({"index": index, "t_s": round(reach_m / FRONT_SPEED_MS, 1), "geojson": {"type": "FeatureCollection", "features": features}})
+
+    # The centerline for the steps: the cell carrying the most flow in each distance band.
+    samples = [(lon, lat, 0.0)] + [sample for sample in _centerline(grid, share, dist, mask, arrive) if sample[2] > 0]
+    stop_row, stop_col = np.unravel_index(np.argmax(np.where(mask, arrive, -1)), mask.shape)
+    stop_lon, stop_lat = grid.lonlat(stop_row + 0.5, stop_col + 0.5)
+    samples.append((stop_lon, stop_lat, total))
+    drop_m = top_m - float(heights[stop_row, stop_col])
+    steps = _steps(point, trail, trails, samples, drop_m, _covered_miles(trail, grid, mask))
+    return {
+        "method": METHOD_DEM,
+        "source": "dem",
+        "release": {"lon": lon, "lat": lat, "elevation_m": round(top_m, 1)},
+        "duration_s": round(total / FRONT_SPEED_MS, 1),
+        "distance_m": round(total, 1),
+        "drop_m": round(drop_m, 1),
+        "frames": frames,
+        "steps": steps,
+    }
+
+
+def _route_top(coords: list[list[float]]) -> tuple[float, float, float] | None:
+    """The highest point on the route, sampled every SAMPLE_M. None without terrain."""
+    line = _sample(coords, SAMPLE_M, limit_m=math.inf) if len(coords) >= 2 else []
+    if not line:
+        return None
+    heights = sample_elevations([(lon, lat) for lon, lat, _ in line])
+    if heights is None:
+        return None
+    index = max(range(len(line)), key=lambda i: heights[i])
+    return line[index][0], line[index][1], heights[index]
+
+
+def _centerline(grid, share, dist, mask, arrive) -> list[tuple[float, float, float]]:
+    import numpy as np
+
+    routed = mask & (share >= flow_routing.MIN_SHARE)
+    bands = (np.where(routed, arrive, -SAMPLE_M) // SAMPLE_M).astype(int)
+    out = []
+    for band in range(int(bands.max()) + 1):
+        cells = np.nonzero(bands == band)
+        if not len(cells[0]):
+            continue
+        best = int(np.argmax(share[cells]))
+        r, c = cells[0][best], cells[1][best]
+        lon, lat = grid.lonlat(r + 0.5, c + 0.5)
+        out.append((lon, lat, float(arrive[r, c])))
+    return out
+
+
+def _covered_miles(trail: dict | None, grid, mask) -> tuple[float, float] | None:
+    """The source route's mile range inside the footprint, in the line's own mileage. None if it misses."""
+    coords = _line(trail) if trail else []
+    if len(coords) < 2:
+        return None
+    rows, cols = mask.shape
+    hit = []
+    for lon, lat, along in _sample(coords, 20, limit_m=math.inf):
+        r, c = grid.cell_of(lon, lat)
+        if 0 <= r < rows and 0 <= c < cols and mask[r, c]:
+            hit.append(along / M_PER_MI)
+    return (min(hit), max(hit)) if hit else None
 
 
 def _along_trail(point: dict, trails: list[dict]) -> dict:
@@ -210,12 +324,13 @@ def _steps(
     trails: list[dict],
     samples: list[tuple[float, float, float]],
     drop_m: float,
-    miles: tuple[float, float],
+    miles: tuple[float, float] | None,
 ) -> list[dict]:
+    """miles is the source route's range the flow covers; None leaves out the step for it."""
     release = samples[0]
     stop = samples[-1]
     name = (trail or {}).get("name") or point.get("trail_name") or "the trail"
-    lower, upper = miles
+    lower, upper = miles or (0.0, 0.0)
     steps = [
         _step("release", "release", "Slope releases", 0, release, 0, 0, None, None, None, point.get("level")),
         _step(
@@ -245,6 +360,8 @@ def _steps(
             point.get("level") or "high",
         ),
     ]
+    if miles is None:
+        steps.pop()
     for extra in _crossed(trail, trails, samples)[:3]:
         steps.append(extra)
     steps.append(

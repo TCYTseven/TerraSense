@@ -21,6 +21,11 @@ export interface Polygon {
   coordinates: Position[][];
 }
 
+export interface MultiPolygon {
+  type: "MultiPolygon";
+  coordinates: Position[][][];
+}
+
 export interface Mountain {
   id: string;
   name: string;
@@ -588,7 +593,8 @@ export interface FlowFeatureCollection {
     type: "Feature";
     /** shade 0 is the dark core, higher is wider and paler. rim marks the outermost band. */
     properties: { level: RiskLevel; intensity: number; shade: number; rim: boolean };
-    geometry: Polygon;
+    /** Polygon along a trail; on terrain the flow can split around a rib, so MultiPolygon too. */
+    geometry: Polygon | MultiPolygon;
   }>;
 }
 

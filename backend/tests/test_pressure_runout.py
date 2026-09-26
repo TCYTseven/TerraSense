@@ -35,6 +35,7 @@ GENTLE = {
 def no_terrain(monkeypatch):
     """No tile reads in tests. A test that wants terrain patches its own heights."""
     monkeypatch.setattr(runout, "sample_elevations", lambda points: None)
+    monkeypatch.setattr(runout, "height_grid", lambda lon, lat, radius: None)
 
 
 def test_rank_puts_the_steeper_trail_first():
