@@ -60,6 +60,8 @@ def _raster(blocks: list) -> dict:
 
 
 def _agent(properties: dict) -> str:
+    if "coverage_note" in properties:
+        return "location"
     if "place" in properties:
         return "terrain"
     if "modifier" in properties:
@@ -268,6 +270,44 @@ def synthesizer(blocks: list) -> tuple[dict, str]:
     return answer, f"Levels {levels}; taking the highest within range and scaling the response to {posture}."
 
 
+def location_synthesis(blocks: list) -> tuple[dict, str]:
+    """A summit with no trail catalog. The route lists stay empty; this object has none."""
+    weather_report = _find(blocks, "modifier") or {}
+    terrain_report = _find(blocks, "cell_state") or _find(blocks, "hazard_zone") or {}
+    severity = weather_report.get("severity") or terrain_report.get("severity") or "moderate"
+    if severity not in ("low", "moderate", "high", "extreme"):
+        severity = "moderate"
+    return {
+        "severity": severity,
+        "recommended_action": "monitor",
+        "summary": "No trails are mapped. Monitor the summit weather.",
+        "coverage_note": "No trails are mapped for this mountain.",
+        "response": {
+            "posture": "watch" if severity == "moderate" else "advisory" if severity == "high" else "all_clear" if severity == "low" else "warning",
+            "priority": "elevated" if severity in ("high", "extreme") else "routine",
+            "headline": "No trails mapped. Watch the weather at the summit.",
+            "channels": ["website_banner", "ranger_radio"] if severity in ("high", "extreme") else ["newsletter", "website_banner"],
+            "actions": [
+                "Watch the weather at the summit.",
+                "Do not name a closure until a trail is mapped.",
+            ],
+            "staffing": "No one needs to move until a route is mapped.",
+            "timeline": "Look again after the next rain.",
+            "escalate_if": "A mapped road or trail below the summit shows fresh debris.",
+        },
+        "analysis": (
+            "This summit has no mapped trails, so the call uses its location, the cell classifier, and the rain. "
+            "The classifier is uncertain outside its training area, which is not the same as a safe slope. "
+            "The weather report is the only measured change since the catalog color. "
+            "Rangers should monitor and confirm on site rather than close a route that is not on the map."
+        ),
+        "reasoning": [
+            "No trail catalog, so no route is named.",
+            f"Weather severity is {severity}, and the action stays monitor.",
+        ],
+    }, "No trails to assign, so the call stays a weather watch."
+
+
 def writer(blocks: list, repair: bool) -> tuple[dict, str]:
     final = (_find(blocks, "ranger_title") or {})
     hazard, bypass = final.get("hazard", {}), final.get("bypass")
@@ -306,8 +346,10 @@ def _answer(properties: dict, user: str) -> tuple[str, dict, str]:
     if agent == "writer":
         answer, thought = writer(blocks, repair="Your last answer" in user)
     else:
-        answer, thought = {"terrain": terrain, "weather": weather, "trail": trail, "history": history,
-                           "routes": routes, "synthesizer": synthesizer}[agent](blocks)
+        answer, thought = {
+            "terrain": terrain, "weather": weather, "trail": trail, "history": history,
+            "routes": routes, "synthesizer": synthesizer, "location": location_synthesis,
+        }[agent](blocks)
     return agent, answer, thought
 
 

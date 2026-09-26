@@ -65,6 +65,8 @@ class RunState:
     mountain_id: str
     mountain_name: str
     peak: tuple[float, float]
+    elevation_m: int | None = None
+    seed_level: str | None = None
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     started: float = field(default_factory=time.perf_counter)
     status: str = "running"
@@ -135,8 +137,11 @@ class RunRegistry:
         running = self.active_run(slug)
         if running is not None and running.status == "running":
             return running, False
-        state = RunState(id=str(uuid.uuid4()), slug=slug, mountain_id=str(mountain["id"]),
-                         mountain_name=mountain["name"], peak=(mountain["lat"], mountain["lon"]))
+        state = RunState(
+            id=str(uuid.uuid4()), slug=slug, mountain_id=str(mountain["id"]),
+            mountain_name=mountain["name"], peak=(mountain["lat"], mountain["lon"]),
+            elevation_m=mountain.get("elevation_m"), seed_level=mountain.get("current_risk_level"),
+        )
         self.runs[state.id] = state
         self.active[slug] = state.id
         state.task = asyncio.create_task(self._execute(state), name=f"run-{state.id}")
@@ -174,6 +179,9 @@ class RunRegistry:
     async def _execute(self, state: RunState) -> None:
         try:
             await asyncio.to_thread(_insert_run, state)
+            if not await asyncio.to_thread(_has_mile_segments, state.slug):
+                await self._execute_location(state)
+                return
             if not setup_ready_for_analyze():
                 await self._fail(
                     state,
@@ -185,7 +193,7 @@ class RunRegistry:
                 )
                 return
             await self._phase(state, "scoring", "Scoring the next 72 hours of rain against the terrain.")
-            rain, rain_error = await asyncio.to_thread(try_hourly_rain)
+            rain, rain_error = await asyncio.to_thread(try_hourly_rain, *state.peak)
             if rain is not None:
                 state.rain = _rain_totals(rain)
             assessment = await asyncio.to_thread(_assess, state.slug, rain)
@@ -225,6 +233,38 @@ class RunRegistry:
         finally:
             if self.active.get(state.slug) == state.id:
                 del self.active[state.slug]
+
+    async def _execute_location(self, state: RunState) -> None:
+        """Agents for a summit with no trail geometry: location, the cell classifier, and weather."""
+        from app.agents.location_pipeline import LocationPipeline
+
+        try:
+            await self._phase(state, "scoring", "Reading weather and the risk model at this summit.")
+            rain, rain_error = await asyncio.to_thread(try_hourly_rain, state.peak[0], state.peak[1])
+            if rain is not None:
+                state.rain = _rain_totals(rain)
+            state.method = "location cell classification"
+            await self._phase(state, "agents", "Agents are reading this summit's location, risk, and weather.")
+            router, providers = self._llm()
+            ctx = RunContext(
+                run_id=state.id, slug=state.slug, mountain=state.mountain_name, peak=state.peak,
+                assessment=None, rain=rain, rain_error=rain_error, started=state.started,
+                elevation_m=state.elevation_m, seed_level=state.seed_level,
+            )
+            result = await LocationPipeline(ctx, router, providers, lambda event: self._on_event(state, event)).run()
+            if result.status != "done":
+                step = STEP_NAMES.get(result.failed_agent, "agent")
+                await self._fail(state, f"Run failed at the {step} step.", result.error, result.failed_agent)
+                return
+            await self._phase(state, "saving", "Saving this summit's risk level.")
+            await asyncio.to_thread(_save_level, state, result.final.severity)
+            state.severity, state.needs_review = result.final.severity, result.final.needs_review
+            state.advisory = result.final.advisory
+            await self._finish(state, result.final)
+            _log_agent_latencies(state, result)
+        except Exception as exc:
+            logger.exception("location run %s failed", state.id)
+            await self._fail(state, "Run failed before the agents finished.", f"{type(exc).__name__}: {exc}", None)
 
     async def _finish(self, state: RunState, final: Final) -> None:
         state.status, state.phase, state.finished_at = "done", "finished", datetime.now(UTC)
@@ -269,6 +309,32 @@ def _insert_run(state: RunState) -> None:
         conn.execute(
             "INSERT INTO analysis_runs (id, mountain_id, status, started_at) VALUES (%s, %s, 'running', %s)",
             (state.id, state.mountain_id, state.started_at),
+        )
+
+
+def _has_mile_segments(slug: str) -> bool:
+    """True when this mountain has a trail cut into mile segments, which is what the Rainier pipeline scores."""
+    with get_pool().connection() as conn:
+        row = conn.execute(
+            """
+            SELECT 1
+            FROM trail_segments s
+            JOIN trails t ON t.id = s.trail_id
+            JOIN mountains m ON m.id = t.mountain_id
+            WHERE m.slug = %s
+            LIMIT 1
+            """,
+            (slug,),
+        ).fetchone()
+    return row is not None
+
+
+def _save_level(state: RunState, severity: str) -> None:
+    """Record the run's level on the mountain. A location run has no tiles or hazard polygon to save."""
+    with get_pool().connection() as conn:
+        conn.execute(
+            "UPDATE mountains SET current_risk_level = %s, last_analyzed_at = now() WHERE id = %s",
+            (severity, state.mountain_id),
         )
 
 

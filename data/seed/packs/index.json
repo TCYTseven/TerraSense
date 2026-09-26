@@ -1,0 +1,114 @@
+{
+  "aconcagua": {
+    "name": "Aconcagua",
+    "peak_lat": -32.653,
+    "peak_lon": -70.011,
+    "peak_elevation_m": 6961,
+    "bbox": [
+      -70.225,
+      -32.833,
+      -69.797,
+      -32.473
+    ],
+    "utm_crs": "EPSG:32719",
+    "hero_trail": null
+  },
+  "aoraki-mount-cook": {
+    "name": "Aoraki / Mount Cook",
+    "peak_lat": -43.595,
+    "peak_lon": 170.142,
+    "peak_elevation_m": 3724,
+    "bbox": [
+      169.955,
+      -43.73,
+      170.329,
+      -43.46
+    ],
+    "utm_crs": "EPSG:32759",
+    "hero_trail": null
+  },
+  "kilimanjaro": {
+    "name": "Kilimanjaro",
+    "peak_lat": -3.067,
+    "peak_lon": 37.356,
+    "peak_elevation_m": 5895,
+    "bbox": [
+      37.194,
+      -3.229,
+      37.518,
+      -2.905
+    ],
+    "utm_crs": "EPSG:32737",
+    "hero_trail": null
+  },
+  "matterhorn": {
+    "name": "Matterhorn",
+    "peak_lat": 45.976,
+    "peak_lon": 7.659,
+    "peak_elevation_m": 4478,
+    "bbox": [
+      7.465,
+      45.841,
+      7.853,
+      46.111
+    ],
+    "utm_crs": "EPSG:32632",
+    "hero_trail": null
+  },
+  "mount-everest": {
+    "name": "Mount Everest",
+    "peak_lat": 27.988,
+    "peak_lon": 86.925,
+    "peak_elevation_m": 8849,
+    "bbox": [
+      86.741,
+      27.826,
+      87.109,
+      28.15
+    ],
+    "utm_crs": "EPSG:32645",
+    "hero_trail": null
+  },
+  "mount-fuji": {
+    "name": "Mount Fuji",
+    "peak_lat": 35.361,
+    "peak_lon": 138.727,
+    "peak_elevation_m": 3776,
+    "bbox": [
+      138.561,
+      35.226,
+      138.893,
+      35.496
+    ],
+    "utm_crs": "EPSG:32654",
+    "hero_trail": null
+  },
+  "mount-hood": {
+    "name": "Mount Hood",
+    "peak_lat": 45.374,
+    "peak_lon": -121.696,
+    "peak_elevation_m": 3429,
+    "bbox": [
+      -121.888,
+      45.239,
+      -121.504,
+      45.509
+    ],
+    "utm_crs": "EPSG:32610",
+    "hero_trail": null
+  },
+  "mount-rainier": {
+    "name": "Mount Rainier",
+    "peak_lat": 46.8523,
+    "peak_lon": -121.7603,
+    "peak_elevation_m": 4392,
+    "bbox": [
+      -121.93,
+      46.76,
+      -121.54,
+      46.96
+    ],
+    "utm_crs": "EPSG:32610",
+    "hero_trail": "Skyline Trail"
+  }
+}

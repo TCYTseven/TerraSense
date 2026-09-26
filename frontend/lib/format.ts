@@ -19,11 +19,8 @@ export function formatUtc(iso: string): string {
   return `${UTC_FORMAT.format(new Date(iso))} UTC`;
 }
 
-/** The last-refresh line for a mountain. Static mountains never refresh. */
+/** The last-refresh line for a mountain. */
 export function refreshLabel(mountain: Pick<Mountain, "is_live" | "last_analyzed_at">): string {
-  if (!mountain.is_live) {
-    return "Static marker, fixed risk";
-  }
   if (!mountain.last_analyzed_at) {
     return "Not analyzed yet";
   }

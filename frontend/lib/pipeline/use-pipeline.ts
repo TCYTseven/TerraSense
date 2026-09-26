@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { HillView, PipelineState } from "../hill";
 import { runLiveAnalysis } from "./live-run";
-import { initialPipelineState, runPipeline } from "./orchestrator";
+import { initialPipelineState } from "./orchestrator";
 
 export interface PipelineControls {
   state: PipelineState;
@@ -14,8 +14,8 @@ export interface PipelineControls {
 }
 
 /**
- * Holds the pipeline's state and runs it on demand. A live mountain calls the API, which
- * uses the Gemini or xAI key in the repo root .env. Anything else stays on the scripted demo.
+ * Holds the pipeline's state and runs it on demand. Every mountain calls the API.
+ * A summit with no trails still runs: the agents use its location, the risk model, and the weather.
  */
 export function usePipeline(hill: HillView): PipelineControls {
   const [state, setState] = useState<PipelineState>(initialPipelineState);
@@ -31,7 +31,7 @@ export function usePipeline(hill: HillView): PipelineControls {
     controller.current = next;
     setState(initialPipelineState());
     setRunning(true);
-    const run = hill.isLive ? runLiveAnalysis(hill.slug, setState, next.signal) : runPipeline(hill, setState, next.signal);
+    const run = runLiveAnalysis(hill.slug, setState, next.signal);
     run.finally(() => {
       if (next.signal.aborted) return;
       busy.current = false;

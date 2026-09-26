@@ -71,7 +71,7 @@ export const PIPELINE_LABELS: Record<PipelineAgentId, string> = {
   weather: "Weather",
   trails: "Trails",
   synthesizer: "Synthesizer",
-  alertWriter: "Mass Alert Writer",
+  alertWriter: "Alerter",
 };
 
 export type PipelineStatus = "idle" | "running" | "done" | "error";
@@ -128,7 +128,7 @@ export interface ReactiveMeasure {
 export interface PipelineState {
   orchestrator: PipelineStatus;
   agents: Record<PipelineAgentId, PipelineAgentState>;
-  /** Null until the Mass Alert Writer finishes. */
+  /** Null until the Alerter finishes. */
   measures: ReactiveMeasure[] | null;
   error: string | null;
 }

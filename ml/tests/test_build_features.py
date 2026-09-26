@@ -14,12 +14,15 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "ml" / "scripts"))
 
 import build_features as features  # noqa: E402
+import mountain_packs as mp  # noqa: E402
+
+GRID_CRS = mp.get(mp.RAINIER_SLUG).utm_crs  # EPSG:32610, the zone the synthetic grids sit in
 
 
 def geojson_point_for_cell(dst_transform: Affine, row: int, col: int) -> list[float]:
     """Return a WGS84 point at a synthetic UTM raster cell center."""
     east, north = xy(dst_transform, row, col, offset="center")
-    lon, lat = transform(features.GRID_CRS, "EPSG:4326", [east], [north])
+    lon, lat = transform(GRID_CRS, "EPSG:4326", [east], [north])
     return [lon[0], lat[0]]
 
 
@@ -59,7 +62,7 @@ def test_landslide_cells_only_accepts_declared_accuracies(tmp_path: Path) -> Non
     inventory = tmp_path / "landslides.geojson"
     write_inventory(inventory, dst_transform, row=10, col=10)
 
-    distance, point_count = features.landslide_cells(inventory, dst_transform, (40, 40))
+    distance, point_count = features.landslide_cells(inventory, dst_transform, (40, 40), GRID_CRS)
 
     assert point_count == 1
     assert distance[10, 10] == 0
@@ -72,7 +75,7 @@ def test_build_table_has_binary_labels_and_exclusion_zone(tmp_path: Path) -> Non
     write_inventory(inventory, dst_transform, row=20, col=20)
     stack = np.ones((len(features.FEATURES), 40, 40), dtype="float32")
 
-    table = features.build_table(stack, dst_transform, inventory)
+    table = features.build_table(stack, dst_transform, inventory, GRID_CRS)
 
     assert list(table.columns) == features.FEATURES + ["label", "region", "row", "col"]
     assert set(table["label"]) == {0, 1}

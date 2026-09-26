@@ -56,8 +56,13 @@ def _model_b():
         return None
 
 
-def _from_model_b(model_b, rain: HourlyRain | None) -> ProbabilityMap:
-    result = model_b.run(rain)
+def _from_model_b(model_b, rain: HourlyRain | None, susceptibility: Path | None) -> ProbabilityMap:
+    # Rainier keeps the pinned seam, model_b.run(rain); only a pack's raster adds the
+    # path keyword (main's model_b takes it; a rebuilt module must keep it for packs).
+    if susceptibility is None or susceptibility == SUSCEPTIBILITY_PATH:
+        result = model_b.run(rain)
+    else:
+        result = model_b.run(rain, path=susceptibility)
     values = np.asarray(result.probability, dtype="float32")
     return ProbabilityMap(values, result.transform, str(result.crs), MODEL_B_METHOD)
 
@@ -74,13 +79,16 @@ def _stand_in(path: Path = SUSCEPTIBILITY_PATH) -> ProbabilityMap:
         return ProbabilityMap(values, src.transform, src.crs.to_string(), STAND_IN_METHOD)
 
 
-def score(rain: HourlyRain | None = None) -> ProbabilityMap:
-    """The current 72-hour probability map: Model B when it exists, else the stand-in."""
+def score(rain: HourlyRain | None = None, susceptibility: Path | None = None) -> ProbabilityMap:
+    """The current 72-hour probability map: Model B when it exists, else the stand-in.
+
+    `susceptibility` points at one pack's raster (step 32); None keeps Rainier's.
+    """
     model_b = _model_b()
     if model_b is not None:
-        return _from_model_b(model_b, rain)
+        return _from_model_b(model_b, rain, susceptibility)
     logger.info("app/ml/model_b.py is not in the tree: the probability map is the susceptibility stand-in")
-    return _stand_in()
+    return _stand_in(susceptibility or SUSCEPTIBILITY_PATH)
 
 
 def explain(susceptibility: float, rain: HourlyRain | None) -> dict[str, float] | None:

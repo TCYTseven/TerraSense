@@ -4,18 +4,51 @@ Mountains upsert by slug, and static mountains no longer in the file are
 removed. Trails upsert by (mountain, name), and a mountain's trails that are
 no longer in the file are removed. Trail segments (the hero trail's mile
 markers) upsert by (trail, seq) the same way. Re-running is safe.
+
+Step 32: the pack folders under data/seed/packs/<slug>/ load with the same
+rules, and a pack whose susceptibility raster is on this machine is marked
+live, which opens its map layers and Analyze now.
 """
 
 import json
+import sys
+from pathlib import Path
 
 import psycopg
 from psycopg.types.json import Jsonb
 
+from app import packs
 from app.config import REPO_ROOT
 from app.db import connect
 from app.mountain_catalog import read_seed_file, upsert_mountains
 
 SEED_DIR = REPO_ROOT / "data" / "seed"
+
+
+def seed_files(name: str) -> list[Path]:
+    """The main seed file plus each pack's copy of it, packs in slug order."""
+    return [SEED_DIR / name, *sorted((SEED_DIR / "packs").glob(f"*/{name}"))]
+
+
+def read_features(name: str, known_slugs: set[str]) -> list[dict]:
+    """Features from the main file and every pack file of this name.
+
+    The main file stays strict: an unknown mountain there is a broken seed. A pack file
+    whose mountain is missing from the active catalog (SEED_MODE decides the catalog) is
+    skipped with a warning instead, so one absent slug never blocks the whole seed.
+    """
+    features: list[dict] = []
+    for path in seed_files(name):
+        if not path.exists():
+            continue
+        rows = json.loads(path.read_text(encoding="utf-8"))["features"]
+        pack_slug = path.parent.name if path.parent != SEED_DIR else None
+        if pack_slug is not None and rows and pack_slug not in known_slugs:
+            print(f"skipping {path.relative_to(REPO_ROOT)}: no mountain {pack_slug!r} in the active catalog",
+                  file=sys.stderr)
+            continue
+        features.extend(rows)
+    return features
 
 
 def load_mountains(conn: psycopg.Connection) -> int:
@@ -41,16 +74,16 @@ def load_mountains(conn: psycopg.Connection) -> int:
 
 
 def load_trails(conn: psycopg.Connection) -> int:
-    """Upsert every trail in trails.geojson. Returns how many the file holds.
+    """Upsert every trail in trails.geojson and the pack files. Returns how many they hold.
 
-    The file is the whole truth for trails: a mountain keeps only the trails it lists.
+    The files are the whole truth for trails: a mountain keeps only the trails they list.
     """
-    collection = json.loads((SEED_DIR / "trails.geojson").read_text(encoding="utf-8"))
     names_by_mountain: dict[str, list[str]] = {
         slug: [] for (slug,) in conn.execute("SELECT slug FROM mountains").fetchall()
     }
+    features = read_features("trails.geojson", set(names_by_mountain))
 
-    for feature in collection["features"]:
+    for feature in features:
         props, geometry = feature["properties"], feature["geometry"]
         if geometry["type"] != "LineString" or len(geometry["coordinates"]) < 2:
             raise SystemExit(f"trail {props['name']!r} needs a LineString with two or more points")
@@ -88,17 +121,17 @@ def load_trails(conn: psycopg.Connection) -> int:
             """,
             (slug, names),
         )
-    return len(collection["features"])
+    return len(features)
 
 
 def load_trail_segments(conn: psycopg.Connection) -> int:
     """Upsert the mile-marked segments in trail_segments.geojson. Returns how many the file holds.
 
     A segment keeps its risk while its line and miles are unchanged; otherwise the risk
-    clears until the next refresh scores it. Trails the file does not list lose their segments.
+    clears until the next refresh scores it. Trails the files do not list lose their segments.
     """
-    path = SEED_DIR / "trail_segments.geojson"
-    features = json.loads(path.read_text(encoding="utf-8"))["features"] if path.exists() else []
+    known = {slug for (slug,) in conn.execute("SELECT slug FROM mountains").fetchall()}
+    features = read_features("trail_segments.geojson", known)
 
     by_trail: dict[tuple[str, str], list[dict]] = {}
     for feature in features:
@@ -148,11 +181,26 @@ def load_trail_segments(conn: psycopg.Connection) -> int:
     return len(features)
 
 
+def mark_packs_live(conn: psycopg.Connection) -> list[str]:
+    """Mark every servable pack live: its map layers and Analyze now open up.
+
+    A pack in the index whose susceptibility raster is missing on this machine stays
+    static, so the API never promises a heat map it cannot serve.
+    """
+    live = packs.servable_slugs()
+    if live:
+        conn.execute("UPDATE mountains SET is_live = true WHERE slug = ANY(%s::text[])", (live,))
+    return live
+
+
 def main() -> None:
     with connect() as conn:
         load_mountains(conn)
+        live = mark_packs_live(conn)
         load_trails(conn)
         load_trail_segments(conn)
+        if live:
+            print(f"live packs: {', '.join(live)}")
         rows = conn.execute(
             """
             SELECT m.slug, m.is_live, m.current_risk_level,

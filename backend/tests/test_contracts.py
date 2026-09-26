@@ -171,7 +171,7 @@ def test_the_extra_series_reach_model_b_aligned_with_the_hours(model_b):
         "fixture",
         datetime(2026, 9, 25, 4, tzinfo=UTC),
     )
-    prob._from_model_b(sys.modules["app.ml.model_b"], full)
+    prob._from_model_b(sys.modules["app.ml.model_b"], full, None)
     rain = model_b["rain"]
     assert rain is full
     for name in EXTRA_SERIES.values():

@@ -28,8 +28,19 @@ TILE_SIZE = 256
 
 # Shared facts. EPSG:4326, [west, south, east, north].
 RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
+RAINIER_SLUG = "mount-rainier"
 # z10 shows the whole mountain; past z14 the map stretches the z14 tiles.
 DEFAULT_ZOOMS = range(10, 15)
+
+
+def slug_tiles_dir(slug: str) -> Path:
+    """Where one mountain's layers live. Rainier's predate the packs and stay at the root."""
+    return TILES_DIR if slug == RAINIER_SLUG else TILES_DIR / slug
+
+
+def layer_url_path(slug: str, layer: str) -> str:
+    """The layer's path under the /tiles static mount, mirroring slug_tiles_dir."""
+    return layer if slug == RAINIER_SLUG else f"{slug}/{layer}"
 
 # A stepped ramp on the shared bins (design addendum, Raster layers), so every color on the map
 # is a level word in the panel. Low is transparent so the terrain shows through, and the worst

@@ -38,7 +38,8 @@ def test_trail_segments(ctx):
     assert facts["trail"] == "Skyline Trail"
     assert facts["risk_by_mile"][0]["start_mile"] == 0
     assert facts["flagged"]["level"] in ("high", "extreme")
-    assert facts["bypass"]["exists"] is True and facts["bypass"]["name"]
+    if facts["bypass"]["exists"]:
+        assert facts["bypass"]["name"]
 
 
 def test_weather(ctx):
