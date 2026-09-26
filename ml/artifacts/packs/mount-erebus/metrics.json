@@ -16,11 +16,11 @@
     98
   ],
   "note": "The Mount Erebus pack scores the knowledge-driven index. Only Rainier's landslide inventory is dense enough to train on, so no model was trained and no AUC exists here.",
-  "created_at": "2026-09-26T12:36:10+00:00",
+  "created_at": "2026-09-26T12:54:43+00:00",
   "map": {
-    "cells": 6137457,
-    "mean": 0.5079,
-    "share_at_or_above_high": 0.5316
+    "cells": 6137736,
+    "mean": 0.2437,
+    "share_at_or_above_high": 0.2486
   },
   "features": [
     "elevation",
