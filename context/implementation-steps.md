@@ -284,7 +284,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
   - Panel about 45%, with stats, the overall score, the top five trails, preventative measures, and an Orchestrator with five agent cards and inline traces.
 
   **Analyze now** runs a scripted client-side orchestrator. Removed: the rain section, the ranger panel, the agent rows, and the reasoning side panel.
-- **Panel and map pass** (PR #7). Larger panel text. Reactive Measures became their own section in six incident-response groups, each measure with a deadline. The map opens framed from the summit elevation, orbits while idle, and limits zoom-out.
+- **Panel and map pass** (PR #7). Larger panel text. Reactive Measures became their own section; on Sep 26 they were re-clustered by timing (now, 1 h, 6 h, 24 h), with the kind of work as a label on each card. The map opens framed from the summit elevation, orbits while idle, and limits zoom-out.
 - **Light home and globe.** A light home theme and an evenly lit Earth. Mountain-logo markers replace the dots, and High and Extreme mountains keep a larger translucent sphere.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
 

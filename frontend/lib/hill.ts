@@ -88,8 +88,8 @@ export interface PipelineAgentState {
 }
 
 /**
- * The response to a slide, split the way an incident is run: who acts, and on what. Listed in
- * the order the panel shows them, most urgent work first.
+ * What kind of work a measure is, the way an incident is run. Shown as a label on each measure;
+ * the panel groups measures by timing, not by category.
  */
 export const MEASURE_CATEGORIES = ["closures", "evacuation", "rescue", "monitoring", "coordination", "public"] as const;
 export type MeasureCategory = (typeof MEASURE_CATEGORIES)[number];
@@ -103,13 +103,24 @@ export const MEASURE_CATEGORY_LABELS: Record<MeasureCategory, string> = {
   public: "Public notice",
 };
 
+/** When a measure has to happen. The panel clusters measures by these, soonest first. */
+export const MEASURE_TIMINGS = ["now", "within-1h", "within-6h", "within-24h"] as const;
+export type MeasureTiming = (typeof MEASURE_TIMINGS)[number];
+
+export const MEASURE_TIMING_LABELS: Record<MeasureTiming, string> = {
+  now: "Now",
+  "within-1h": "Within 1 hour",
+  "within-6h": "Within 6 hours",
+  "within-24h": "Within 24 hours",
+};
+
 /** One thing to do. Public items are drafts; nothing is sent from the app. */
 export interface ReactiveMeasure {
   category: MeasureCategory;
   title: string;
   detail: string;
-  /** When it has to happen, such as "Now" or "Within 1 h". */
-  when: string;
+  /** When it has to happen: the cluster it sits in. */
+  timing: MeasureTiming;
   /** The trail it concerns, when it concerns one. */
   letter: TrailLetter | null;
 }

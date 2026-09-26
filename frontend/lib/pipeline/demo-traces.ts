@@ -4,7 +4,7 @@
  * runner; nothing here is model output.
  */
 
-import { MEASURE_CATEGORIES, MEASURE_CATEGORY_LABELS, type HillView, type PipelineAgentId, type ReactiveMeasure, type TrailRisk } from "../hill";
+import { MEASURE_TIMING_LABELS, MEASURE_TIMINGS, type HillView, type PipelineAgentId, type ReactiveMeasure, type TrailRisk } from "../hill";
 
 export interface ScriptedAgent {
   /** The steps, in order. The runner emits one at a time. */
@@ -111,9 +111,9 @@ function alertWriter(hill: HillView): ScriptedAgent {
   return {
     steps: [
       `Read the final assessment: ${LEVEL_WORDS[hill.risk.level]} at ${pct(hill.risk.score)}.`,
-      ...MEASURE_CATEGORIES.map((category) => {
-        const titles = measures.filter((m) => m.category === category).map((m) => m.title);
-        return titles.length ? `${MEASURE_CATEGORY_LABELS[category]}: ${titles.join("; ")}.` : null;
+      ...MEASURE_TIMINGS.map((timing) => {
+        const titles = measures.filter((m) => m.timing === timing).map((m) => m.title);
+        return titles.length ? `${MEASURE_TIMING_LABELS[timing]}: ${titles.join("; ")}.` : null;
       }).filter((step): step is string => step !== null),
       "Held every public notice as a draft. Nothing is sent until a ranger approves it.",
     ],
@@ -143,14 +143,14 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
         category: "monitoring",
         title: "Check drainages by hand before the next storm",
         detail: `No trails are scored for ${hill.name} yet, so nothing points to one slope.`,
-        when: "Within 24 h",
+        timing: "within-24h",
         letter: null,
       },
       {
         category: "public",
         title: "General slide advisory",
         detail: `Heavy rain raises slide risk on ${hill.name}. Stay off steep ground near creeks.`,
-        when: "Draft",
+        timing: "within-6h",
         letter: null,
       },
     ];
@@ -161,7 +161,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
       category: "closures",
       title: `Close ${a.name}`,
       detail: `${pct(a.score)} ${a.level}, ${a.slopeDeg}° with ${a.primaryFactor.toLowerCase()}. Gate the trailhead and post closure signs through the storm.`,
-      when: "Now",
+      timing: "now",
       letter: a.letter,
     },
   ];
@@ -170,7 +170,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
       category: "closures",
       title: `Restrict ${b.name} to the lower miles`,
       detail: `Hold hikers below the ${b.slopeDeg}° crossings until a patrol clears them.`,
-      when: "Within 1 h",
+      timing: "within-1h",
       letter: b.letter,
     });
   }
@@ -178,21 +178,21 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
     category: "evacuation",
     title: `Sweep the ${severe.length > 1 ? `${severe.length} flagged drainages` : "flagged drainage"}`,
     detail: `Clear backcountry camps and day hikers from ${trailList(severe.slice(0, 3), (t) => t.name)}. Turn people back at the trailheads.`,
-    when: "Now",
+    timing: "now",
     letter: null,
   });
   measures.push({
     category: "evacuation",
     title: "Open a shelter point at the nearest visitor center",
     detail: "Somewhere dry for swept hikers to check in, so rangers can account for everyone on the permit list.",
-    when: "Within 2 h",
+    timing: "within-6h",
     letter: null,
   });
   measures.push({
     category: "rescue",
     title: "Pre-stage a search and rescue team",
     detail: `Stage a team and litter at the ${a.name} trailhead, and confirm a helicopter can fly if the ceiling allows.`,
-    when: "Within 2 h",
+    timing: "within-6h",
     letter: a.letter,
   });
   if (b) {
@@ -200,7 +200,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
       category: "monitoring",
       title: `Post a spotter on ${b.name}`,
       detail: `Watch the crossings for fresh cracks, muddy runoff, or a sudden drop in creek flow, which can come before a debris flow. Report by radio every 30 min.`,
-      when: "Within 1 h",
+      timing: "within-1h",
       letter: b.letter,
     });
   }
@@ -209,7 +209,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
       category: "monitoring",
       title: `Patrol ${c.name} after the heaviest rain`,
       detail: `Walk it at first light and log any new slumps or downed trees at ${c.slopeDeg}°.`,
-      when: "Next morning",
+      timing: "within-24h",
       letter: c.letter,
     });
   }
@@ -217,21 +217,21 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
     category: "coordination",
     title: "Brief county emergency management",
     detail: `Share the flagged trails and the ${pct(hill.risk.score)} ${hill.risk.level} level, and agree who closes the roads below the drainages.`,
-    when: "Within 1 h",
+    timing: "within-1h",
     letter: null,
   });
   measures.push({
     category: "coordination",
     title: "Ask the weather service for rain updates",
     detail: "Request a call if the next 24 h totals rise, and re-run Analyze now when they do.",
-    when: "Within 6 h",
+    timing: "within-6h",
     letter: null,
   });
   measures.push({
     category: "public",
     title: `${a.name} closed`,
     detail: `${a.name} is closed for slide risk during heavy rain. Choose another route and stay out of creek channels.`,
-    when: "Draft",
+    timing: "now",
     letter: a.letter,
   });
   if (c) {
@@ -239,7 +239,7 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
       category: "public",
       title: `Caution on ${c.name}`,
       detail: `Rain on steep ground raises slide risk on ${c.name}. Turn back if you hear rumbling or see muddy water.`,
-      when: "Draft",
+      timing: "within-1h",
       letter: c.letter,
     });
   }
