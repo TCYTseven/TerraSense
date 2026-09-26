@@ -343,7 +343,7 @@ export default function TerrainMap({
     const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
     const instance = new MapLibreMap({
       container: container.current,
-      style: mountainStyle({ summitM: elevationM, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
+      style: mountainStyle({ summitM: elevationM, lon, lat, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
       center: [lon, lat],
       zoom: CAMERA.zoom,
       pitch: CAMERA.pitch,
