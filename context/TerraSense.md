@@ -172,7 +172,7 @@ The page is two columns: the 3D mountain view about 55%, one scrolling stats pan
 - Overall risk: the score as a number, with the level word and color.
 - Top 5 at-risk trails, riskiest first: letter, name, score, and **View**, which flies the camera to the trail's region.
 - Preventative measures: three to five bullets.
-- The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below.
+- The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below as a prominent section: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, and public notice drafts, each with a deadline.
 - Button: **Analyze now**, pinned to the panel bottom.
 
 There is no rain section. Weather is text in the Weather agent's trace, never a map layer. Until the per-trail model and the agent stream are wired into the card, the trail scores, traces, and measures are illustrative and labeled as such; the orchestrator runs client-side.

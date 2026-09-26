@@ -7,11 +7,11 @@ export default function HillHeader({ hill }: { hill: HillView }) {
   const { stats } = hill;
   return (
     <header className="px-5 pb-4 pt-5">
-      <Link href="/" className="text-xs text-primary underline decoration-1 underline-offset-3">
+      <Link href="/" className="text-sm text-primary underline decoration-1 underline-offset-3">
         Back to the globe
       </Link>
       <h1 className="mt-3 text-2xl/7 font-semibold tracking-[-0.01em]">{hill.name}</h1>
-      <p className="mt-1 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+      <p className="mt-1.5 flex flex-wrap gap-x-3 text-base text-muted-foreground">
         <span className="font-mono text-[0.92em] text-foreground">{formatFeet(stats.elevationM)}</span>
         {hill.isLive && (
           <>

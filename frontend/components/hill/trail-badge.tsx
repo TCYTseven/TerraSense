@@ -17,7 +17,7 @@ export default function TrailBadge({ letter, level }: { letter: TrailLetter; lev
   return (
     <span
       aria-hidden
-      className={`inline-flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-[11px] font-semibold leading-none text-background ${BADGE_FILL[level]}`}
+      className={`inline-flex size-6 shrink-0 items-center justify-center rounded-full font-mono text-xs font-semibold leading-none text-background ${BADGE_FILL[level]}`}
     >
       {letter}
     </span>

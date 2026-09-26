@@ -118,6 +118,7 @@ Geist is the create-next-app default, so a Geist screen reads as a starter templ
 | Lead (risk sentence) | 16 / 24 | 400 | Sans |
 | Body (panel rows, hazard values, agent names) | 14 / 20 | 400 | Sans |
 | Meta (labels, hover card, toggles, popups, status lines) | 12 / 16 | 400 | Sans |
+| Hill card panel, raised a step for legibility | Rows, trail names, bullets, agent names: 16 / 24. Labels, secondary lines, status, traces: 14 / 20. Reactive Measures title: 20 / 28 | 400–600 | Sans |
 | Button | 14 / 20 | 500 | Sans |
 | Hiker level | 36 / 40 | 600 | Sans, tracking −0.02em |
 | Hiker sentence | 21 / 30 | 400 | Sans |
@@ -261,7 +262,8 @@ Two to four notes from the AI, one model call routed like the agents (see [Copy]
 - **Terrain.** Exaggeration 1.5 (spec 6.2).
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
-  - *Recorded at step 18:* the map keeps step 15's opening frame, the summit plus the Skyline loop fitted with 150 px of top padding, pitch 55, bearing -14 (about zoom 12.2 at 1440 x 900). The flagged miles move with each run, and every one of them, with any bypass, sits on or inside the loop, so one frame serves every run.
+  - *Recorded at step 18:* the map kept step 15's opening frame, the summit plus the Skyline loop (about zoom 12.2 at 1440 x 900).
+  - *Replaced by the hill card's panel pass:* the map opens on the mountain's footprint, so every mountain gets the same kind of view. Flanks average about 22°, so a mountain's base spreads roughly relief / tan(22°) from the summit. Relief is taken as 85% of the summit elevation, giving a radius of about 2.1 × elevation (`FOOTPRINT_PER_M`), clamped to 3–25 km: about 9 km for Rainier. The frame also takes in the top-five trail markers within twice that radius. Fitted with 150 px of top padding, pitch 55, bearing -14. The user can zoom out one level past it and no further.
 - **Controls.** None beyond the attribution and logo that Mapbox's terms require. No navigation, fullscreen, or geolocate control. Drag, scroll, pinch, and rotate stay on.
 
 ### Raster layers
@@ -342,7 +344,7 @@ Status never uses a risk color. The running card gets a background of the text c
 
 - **Trace.** A click on a card expands a container directly beneath it with the agent's full reasoning trace as a numbered list, growing while the agent runs. One trace is open at a time; a second click closes it. Traces use no risk colors.
 - **Before the first run.** One muted line: "Press Analyze now to run the agents."
-- **Reactive Measures.** After the Mass Alert Writer finishes, a section below the pipeline groups the measures under "Rangers" and "Public notice". Every public notice is labelled "Draft, not sent" (UX.md rule 11 applies here too).
+- **Reactive Measures.** After the Mass Alert Writer finishes, its own panel section below the Agents section, and the loudest thing on the panel after the overall score. The title is at 20 px, 600. It takes the overall level's High/Extreme treatment, because the measures answer that level. A summary line reads "Response to ‹level› risk · N actions, N now · N public drafts". Measures are grouped the way an incident is run, in this order: Closures and access, Evacuation and sweeps, Search and rescue readiness, Field monitoring, Agency coordination, and Public notice. Each measure is a card: the trail badge when it concerns one, the title at 16 px 600, the detail at 14 px, and a deadline chip ("Now" solid in the text color, later deadlines outlined; never a risk or accent color). Every public notice carries "Draft, not sent" (UX.md rule 11 applies here too). The orchestrator's done line points to it.
 
 ### Actions
 

@@ -4,7 +4,7 @@
  * runner; nothing here is model output.
  */
 
-import type { HillView, PipelineAgentId, ReactiveMeasure, TrailRisk } from "../hill";
+import { MEASURE_CATEGORIES, MEASURE_CATEGORY_LABELS, type HillView, type PipelineAgentId, type ReactiveMeasure, type TrailRisk } from "../hill";
 
 export interface ScriptedAgent {
   /** The steps, in order. The runner emits one at a time. */
@@ -106,15 +106,18 @@ function synthesizer(hill: HillView): ScriptedAgent {
 
 function alertWriter(hill: HillView): ScriptedAgent {
   const measures = demoMeasures(hill);
-  const rangers = measures.filter((m) => m.audience === "rangers").length;
-  const publicDrafts = measures.length - rangers;
+  const drafts = measures.filter((m) => m.category === "public").length;
+  const actions = measures.length - drafts;
   return {
     steps: [
       `Read the final assessment: ${LEVEL_WORDS[hill.risk.level]} at ${pct(hill.risk.score)}.`,
-      ...measures.map((m) => `${m.audience === "rangers" ? "Ranger action" : "Public draft"}: ${m.title}.`),
+      ...MEASURE_CATEGORIES.map((category) => {
+        const titles = measures.filter((m) => m.category === category).map((m) => m.title);
+        return titles.length ? `${MEASURE_CATEGORY_LABELS[category]}: ${titles.join("; ")}.` : null;
+      }).filter((step): step is string => step !== null),
       "Held every public notice as a draft. Nothing is sent until a ranger approves it.",
     ],
-    summary: `${rangers} ranger action${rangers === 1 ? "" : "s"}, ${publicDrafts} public draft${publicDrafts === 1 ? "" : "s"}`,
+    summary: `${actions} response action${actions === 1 ? "" : "s"}, ${drafts} public draft${drafts === 1 ? "" : "s"}`,
     durationMs: 1500,
   };
 }
@@ -137,46 +140,106 @@ export function demoMeasures(hill: HillView): ReactiveMeasure[] {
   if (!a) {
     return [
       {
-        audience: "rangers",
-        title: "Review conditions before the next storm",
-        detail: `No trails are scored for ${hill.name} yet. Check drainages by hand.`,
+        category: "monitoring",
+        title: "Check drainages by hand before the next storm",
+        detail: `No trails are scored for ${hill.name} yet, so nothing points to one slope.`,
+        when: "Within 24 h",
         letter: null,
       },
       {
-        audience: "public",
+        category: "public",
         title: "General slide advisory",
         detail: `Heavy rain raises slide risk on ${hill.name}. Stay off steep ground near creeks.`,
+        when: "Draft",
         letter: null,
       },
     ];
   }
+  const severe = hill.trails.filter((t) => t.level === "extreme" || t.level === "high");
   const measures: ReactiveMeasure[] = [
     {
-      audience: "rangers",
+      category: "closures",
       title: `Close ${a.name}`,
-      detail: `${pct(a.score)} ${a.level}, ${a.slopeDeg}° with ${a.primaryFactor.toLowerCase()}. Close it through the storm and post the trailhead.`,
+      detail: `${pct(a.score)} ${a.level}, ${a.slopeDeg}° with ${a.primaryFactor.toLowerCase()}. Gate the trailhead and post closure signs through the storm.`,
+      when: "Now",
       letter: a.letter,
     },
   ];
   if (b) {
     measures.push({
-      audience: "rangers",
-      title: `Send a patrol to ${b.name}`,
-      detail: `Walk the crossings at ${b.slopeDeg}° and report fresh cracks or muddy runoff before 18:00.`,
+      category: "closures",
+      title: `Restrict ${b.name} to the lower miles`,
+      detail: `Hold hikers below the ${b.slopeDeg}° crossings until a patrol clears them.`,
+      when: "Within 1 h",
       letter: b.letter,
     });
   }
   measures.push({
-    audience: "public",
+    category: "evacuation",
+    title: `Sweep the ${severe.length > 1 ? `${severe.length} flagged drainages` : "flagged drainage"}`,
+    detail: `Clear backcountry camps and day hikers from ${trailList(severe.slice(0, 3), (t) => t.name)}. Turn people back at the trailheads.`,
+    when: "Now",
+    letter: null,
+  });
+  measures.push({
+    category: "evacuation",
+    title: "Open a shelter point at the nearest visitor center",
+    detail: "Somewhere dry for swept hikers to check in, so rangers can account for everyone on the permit list.",
+    when: "Within 2 h",
+    letter: null,
+  });
+  measures.push({
+    category: "rescue",
+    title: "Pre-stage a search and rescue team",
+    detail: `Stage a team and litter at the ${a.name} trailhead, and confirm a helicopter can fly if the ceiling allows.`,
+    when: "Within 2 h",
+    letter: a.letter,
+  });
+  if (b) {
+    measures.push({
+      category: "monitoring",
+      title: `Post a spotter on ${b.name}`,
+      detail: `Watch the crossings for fresh cracks, muddy runoff, or a sudden drop in creek flow, which can come before a debris flow. Report by radio every 30 min.`,
+      when: "Within 1 h",
+      letter: b.letter,
+    });
+  }
+  if (c) {
+    measures.push({
+      category: "monitoring",
+      title: `Patrol ${c.name} after the heaviest rain`,
+      detail: `Walk it at first light and log any new slumps or downed trees at ${c.slopeDeg}°.`,
+      when: "Next morning",
+      letter: c.letter,
+    });
+  }
+  measures.push({
+    category: "coordination",
+    title: "Brief county emergency management",
+    detail: `Share the flagged trails and the ${pct(hill.risk.score)} ${hill.risk.level} level, and agree who closes the roads below the drainages.`,
+    when: "Within 1 h",
+    letter: null,
+  });
+  measures.push({
+    category: "coordination",
+    title: "Ask the weather service for rain updates",
+    detail: "Request a call if the next 24 h totals rise, and re-run Analyze now when they do.",
+    when: "Within 6 h",
+    letter: null,
+  });
+  measures.push({
+    category: "public",
     title: `${a.name} closed`,
     detail: `${a.name} is closed for slide risk during heavy rain. Choose another route and stay out of creek channels.`,
+    when: "Draft",
     letter: a.letter,
   });
   if (c) {
     measures.push({
-      audience: "public",
+      category: "public",
       title: `Caution on ${c.name}`,
       detail: `Rain on steep ground raises slide risk on ${c.name}. Turn back if you hear rumbling or see muddy water.`,
+      when: "Draft",
       letter: c.letter,
     });
   }
