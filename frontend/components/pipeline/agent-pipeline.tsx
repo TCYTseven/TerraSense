@@ -37,8 +37,20 @@ function orchestratorLine(state: PipelineState): React.ReactNode {
     );
   }
   if (state.orchestrator === "running") {
+    const parallelRunning = PARALLEL_AGENTS.filter((id) => state.agents[id].status === "running").map(
+      (id) => PIPELINE_LABELS[id],
+    );
+    const parallelDone = PARALLEL_AGENTS.filter((id) => state.agents[id].status === "done").map(
+      (id) => PIPELINE_LABELS[id],
+    );
+    if (parallelRunning.length >= 2) {
+      return `${list(parallelRunning)} running together.`;
+    }
+    if (parallelRunning.length === 1 && parallelDone.length > 0) {
+      return `${parallelRunning[0]} still running; ${list(parallelDone)} finished.`;
+    }
     const running = agents.filter((a) => a.status === "running").map((a) => PIPELINE_LABELS[a.id]);
-    return running.length > 0 ? `Waiting on ${list(running)}.` : "Dispatching agents…";
+    return running.length > 0 ? `${list(running)} running.` : "Dispatching agents…";
   }
   return "Idle.";
 }

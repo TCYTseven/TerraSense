@@ -17,6 +17,7 @@ import type { LayerTiles, MountainDetail, MountainRiskSummary } from "@/lib/type
 import HillHeader from "./hill-header";
 import OverallRisk from "./overall-risk";
 import PreventativeMeasures from "./preventative-measures";
+import SimulationUnsupportedDialog from "./simulation-unsupported-dialog";
 import TrailList from "./trail-list";
 
 // The 3D view needs WebGL and the DOM, so it renders in the browser only.
@@ -60,6 +61,9 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
   const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
   const hasRoutes = mountain.trails.length > 0;
+  /** Runout simulation needs a prepared pack and trail geometry (demo peaks only). */
+  const simulationSupported = live && hasRoutes;
+  const [simulateUnsupportedOpen, setSimulateUnsupportedOpen] = useState(false);
   const flowOn = simulation.phase === "playing" || simulation.phase === "finished";
   const matched = hill.trails.find((trail) => trail.name === simulation.simulation?.pressure_point?.trail_name);
   const selected =
@@ -71,11 +75,23 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
     setFocus({ letter, nonce: Date.now() });
   }
 
+  function handleSimulate() {
+    if (!simulationSupported) {
+      setSimulateUnsupportedOpen(true);
+      return;
+    }
+    if (simulation.phase === "finished") {
+      simulation.replay();
+    } else {
+      simulation.start();
+    }
+  }
+
   return (
-    <main className="flex min-h-dvh animate-fade-in flex-col motion-reduce:animate-none md:h-dvh md:flex-row">
+    <main className="flex h-dvh max-h-dvh animate-fade-in flex-col overflow-hidden motion-reduce:animate-none md:flex-row">
       <section
         aria-label="Mountain view"
-        className="relative h-[55dvh] shrink-0 overflow-hidden bg-muted md:h-auto md:w-[55%]"
+        className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-hidden bg-muted md:h-auto md:max-h-none md:min-h-0 md:w-[55%]"
       >
         <HillMountainView
           key={mountain.slug}
@@ -93,8 +109,8 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
         <SimulationBar phase={simulation.phase} simulation={simulation.simulation} timeS={simulation.timeS} />
       </section>
 
-      <aside className="flex min-h-0 flex-col border-t border-border bg-card md:w-[45%] md:border-l md:border-t-0">
-        <div className="min-h-0 flex-1 md:overflow-y-auto">
+      <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:w-[45%] md:flex-none md:border-l md:border-t-0">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <HillHeader hill={hill} />
           <OverallRisk hill={hill} />
           {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
@@ -116,17 +132,24 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
             <PreventativeMeasures items={hill.preventative} />
           )}
         </div>
-        {(live || hasRoutes) && (
-          <footer className="border-t border-border bg-card px-5 py-4">
-            <div className={hasRoutes && live ? "flex gap-2" : undefined}>
-              {hasRoutes && (
-                <SimulateButton phase={simulation.phase} onSimulate={simulation.start} onReplay={simulation.replay} />
-              )}
-              {live && <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} className={hasRoutes ? "flex-1" : undefined} />}
-            </div>
-            {simulation.error && <p className="mt-2 text-sm text-foreground">{simulation.error}</p>}
-          </footer>
-        )}
+        <footer className="shrink-0 border-t border-border bg-card px-5 py-4">
+          <div className="flex gap-2">
+            <SimulateButton
+              phase={simulationSupported ? simulation.phase : "idle"}
+              onSimulate={handleSimulate}
+              onReplay={handleSimulate}
+            />
+            <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} className="flex-1" />
+          </div>
+          {simulationSupported && simulation.error && (
+            <p className="mt-2 text-sm text-foreground">{simulation.error}</p>
+          )}
+        </footer>
+        <SimulationUnsupportedDialog
+          open={simulateUnsupportedOpen}
+          mountainName={mountain.name}
+          onClose={() => setSimulateUnsupportedOpen(false)}
+        />
       </aside>
     </main>
   );
