@@ -38,6 +38,29 @@ curl 'http://localhost:8000/health?verbose=1'
 ```
 
 **Docs:**  
+**Map layers and Analyze** need `ml/artifacts/susceptibility.tif` and tiles under `backend/tiles/`. From the repo root (Python 3.12+; on macOS, `brew install libomp` if LightGBM fails):
+
+```bash
+python3.12 -m venv ml/.venv
+ml/.venv/bin/python -m pip install -r ml/requirements.lock.txt
+ml/.venv/bin/python ml/scripts/download_sources.py --only dem,landcover,landslides
+ml/.venv/bin/python ml/scripts/build_features.py
+ml/.venv/bin/python ml/scripts/train_susceptibility.py
+ml/.venv/bin/python ml/scripts/render_tiles.py --layer susceptibility
+```
+
+After a live Analyze run has rendered Model B's probability layer, prove the full artifact set:
+
+```bash
+ml/.venv/bin/python ml/scripts/validate_pipeline.py --require-probability
+```
+
+Check API setup: `curl 'http://localhost:8000/health?verbose=1'`
+
+No API keys, or no network to Gemini and xAI? `backend/AGENTS.md` has the offline fake-provider commands.
+
+**3. Where the spec lives.**
+
 - Product: [`context/TerraSense.md`](context/TerraSense.md)
 - Build: [`context/implementation-steps.md`](context/implementation-steps.md)
 - Team: [`context/docs/TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md)
