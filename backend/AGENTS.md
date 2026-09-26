@@ -94,4 +94,4 @@ GEMINI_API_KEY=fake XAI_API_KEY=fake GEMINI_BASE_URL=http://localhost:8090 XAI_B
   python -m app.agents.pipeline --fixture-rain
 ```
 
-`DATABASE_URL` in the root `.env` can point at Neon, Supabase, or a local Postgres 13 or newer (`gen_random_uuid()` is built in from 13).
+Set `DB` to `LOCAL` or `PROD` and the matching `DATABASE_URL_LOCAL` or `DATABASE_URL_PROD` in the root `.env` (Tiger Cloud / TimescaleDB is Postgres-compatible). Legacy single `DATABASE_URL` still works. Postgres 13+ (`gen_random_uuid()` built in).
