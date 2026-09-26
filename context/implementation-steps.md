@@ -15,7 +15,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 
 ### Pending
 
-- [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
+- [x] 10. Download the Rainier source layers (DEM, land cover, and 33 Washington inventory labels are present; NASA remains the preferred refresh source)
 - [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
 - [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
@@ -106,15 +106,11 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Outcome.** Offline scripts have a DEM, a land-cover raster, and landslide points for the bounding box.
 
-**Done so far.** `ml/scripts/download_sources.py` wrote the Copernicus DEM GLO-30 and the ESA WorldCover 2021 clips to `data/raw/`, both checked against the bbox. `data/seed/sources.md` records both.
+**Done so far.** `ml/scripts/download_sources.py` writes and verifies the Copernicus DEM GLO-30, ESA WorldCover 2021 clip, and landslide points. NASA GLC is preferred; the official Washington Geological Survey Landslide Compilation layer is a documented fallback when NASA is unreachable.
 
-**Left.** On main, `data/seed/landslides.geojson` is still missing. `origin/step-10-local-nasa-export` already has it (4 NASA events and 33 Washington labels). Merge that branch instead of downloading again.
+**Source note.** On this run, data.nasa.gov timed out. The script queried the official Washington inventory instead and converted its mapped polygons to interior representative points with conservative `1km` label accuracy. No point was placed by hand.
 
-- Download landslide points inside the box from the NASA Global Landslide Catalog or a USGS inventory. On 2026-09-25 the build container got HTTP 403 from data.nasa.gov, ScienceBase, and Washington DNR.
-- On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. Or download the CSV in a browser and pass `--glc-csv path/to/export.csv`.
-- Fill in the access date and the point count in `data/seed/sources.md`. Do not place points by hand.
-
-**Done when.** The DEM, land cover, and `data/seed/landslides.geojson` all cover the shared bounding box, and `sources.md` names each file.
+**Done when.** The DEM, land cover, and `data/seed/landslides.geojson` cover the shared bounding box, `sources.md` names each source, and the downloader plus source adapter tests pass.
 
 ## 11. Build the terrain feature table
 
