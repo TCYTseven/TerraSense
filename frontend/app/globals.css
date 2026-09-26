@@ -41,6 +41,23 @@
   --destructive: var(--foreground);
 }
 
+/* Globe home only. Values mirror HOME_THEME in lib/theme.ts. */
+.theme-home-light {
+  color-scheme: light;
+  --background: #f5f2eb;
+  --muted: #ebe6dd;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --secondary: #ffffff;
+  --foreground: #1a1814;
+  --muted-foreground: #6b6359;
+  --primary: #2ba8b5;
+  --primary-foreground: #f5f2eb;
+  --border: color-mix(in srgb, var(--foreground) 12%, transparent);
+  --accent: color-mix(in srgb, var(--foreground) 6%, transparent);
+  background: radial-gradient(ellipse at center, var(--muted) 0%, var(--background) 72%);
+}
+
 /* Each --color-* token becomes a Tailwind utility, for example bg-card,
  * text-muted-foreground, border-border, text-primary, and bg-risk-high. */
 @theme inline {
