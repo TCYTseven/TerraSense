@@ -26,6 +26,10 @@ from typing import Protocol
 import httpx
 from pydantic import BaseModel
 
+# Importing this loads the repo root .env. This module is the one that reads the API keys, so it
+# is the one that has to guarantee they are there: without it, a caller that imports only the
+# agents package sees every provider as unconfigured and the router raises "no API key".
+import app.config  # noqa: F401
 from .schemas import ProviderName, Usage
 
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"

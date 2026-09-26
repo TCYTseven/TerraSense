@@ -90,16 +90,26 @@ _cache: dict[str, tuple[float, HourlyRain]] = {}
 def _series(values: list) -> list[float]:
     """One hourly series, keeping its length so its index still lines up with `times`.
 
-    Open-Meteo leaves a gap as null. Carrying the last reading forward beats dropping the hour,
-    which would shift every later value by one and put now_index on the wrong hour.
+    Two things go wrong if this is naive. Dropping a null hour shifts every later value by one
+    and puts now_index on the wrong hour, so gaps are filled rather than removed: forward from
+    the last reading, and backward from the first when the series opens with a gap.
+
+    Filling a gap with 0.0 is worse than not answering. Open-Meteo returns soil moisture as all
+    nulls at Paradise's elevation, and a zero there reads as bone-dry ground on a mountain that
+    just took 61 mm of rain. A series with no readings at all comes back empty, which every
+    reader downstream already treats as "this source did not carry it" and shows as null.
     """
-    out: list[float] = []
-    for value in values:
+    if all(value is None for value in values):
+        return []
+    out: list[float | None] = [None if value is None else float(value) for value in values]
+    last: float | None = None
+    for i, value in enumerate(out):  # forward-fill from the previous reading
         if value is None:
-            out.append(out[-1] if out else 0.0)
+            out[i] = last
         else:
-            out.append(float(value))
-    return out
+            last = value
+    first = next(value for value in out if value is not None)
+    return [first if value is None else value for value in out]  # back-fill a leading gap
 
 
 def _parse(payload: dict, source: str, now: datetime) -> HourlyRain:
