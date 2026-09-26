@@ -287,8 +287,9 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 | Path | Step | Role |
 |---|---|---|
 | `backend/app/ml/model_b.py` | 17 | `run(rain, path)` reads the susceptibility GeoTIFF and returns a `ModelBResult` (`probability`, `transform`, `crs`): the relative 72-hour risk index `sigmoid(logit(s) − TERRAIN_BASE_LOGIT + W0 + W2·rain + W3·moisture)`, one base rate. `rain_signals()` converts 72-hour forecast exceedance and seven-day antecedent rain into bounded signals. `W0`, `W2`, `W3` are the logistic fit on 767 dated landslides (`ml/artifacts/model_b_validation.json`). `contributions(susceptibility, rain)` returns each term at one cell with the rain totals and thresholds. |
-| `backend/app/ml/pressure.py` | 26 | Up to five ranked pressure points from the probability map |
-| `backend/app/ml/runout.py` | 27 | Runout frames and steps from one pressure point, no model call |
+| `backend/app/ml/pressure.py` | 26 | Up to five ranked pressure points from the probability map. `worst_route(trails)`: the one route the simulation runs on, the highest probability-raster value along its line (sampled every 30 m), else the steepest route |
+| `backend/app/ml/runout.py` | 27 | Runout frames and steps down the worst route, no model call. Releases at the route's highest point on the terrain tiles and walks the line only while each next sample is no higher, so the flow never goes uphill. Without tiles, the seed's upper end |
+| `backend/app/ml/elevation.py` | 27 | `sample_elevations(points)`: meters at each lon/lat, bilinear on z13 Terrarium tiles (the map's terrain source). Reads `data/raw/terrarium/`, fetches a missing tile from AWS and keeps it. None if any tile is unavailable |
 | `backend/app/simulations.py` | 28 | In-process simulations keyed by id, and the callouts call through the router |
 | `backend/app/routes/simulations.py` | 26, 28 | `GET /mountains/{slug}/pressure-points`, `POST /mountains/{slug}/simulate`, `GET /simulations/{id}`, `WS /simulations/{id}/stream` |
 

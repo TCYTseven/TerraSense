@@ -2,16 +2,19 @@
 
 No model call. When a 30 m elevation grid is on disk, routing uses Holmgren
 multiple-flow-direction (exponent 4) and stops at REACH_ANGLE_DEG or MAX_RUNOUT_M.
-Without that grid, the flow walks downhill along the source trail — seed lines
-start at the lower end — and widens as it descends. Either way the frames grow
-from the release toward the valley, and arrival time is path distance over
-FRONT_SPEED_MS.
+Without that grid, the flow follows the source route: it releases at the route's
+highest point on the terrain tiles and walks the line only while every next sample
+is no higher than the last, so it never flows uphill. When no terrain tile can be
+read, it falls back to the seed convention (lines start at the lower end). Either
+way the frames grow from the release toward the valley, and arrival time is path
+distance over FRONT_SPEED_MS.
 """
 
 from __future__ import annotations
 
 import math
 
+from app.ml.elevation import sample_elevations
 from app.ml.pressure import _bearing, _haversine, _line, _move
 
 REACH_ANGLE_DEG = 11  # a common debris-flow minimum travel angle
@@ -24,6 +27,7 @@ SAMPLE_M = 80
 
 METHOD_DEM = "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing."
 METHOD_TRAIL = "Illustrative runout along the trail's downhill line. Not a forecast of timing."
+METHOD_TRAIL_TERRAIN = "Illustrative runout from the route's highest point, downhill along the trail. Not a forecast of timing."
 
 M_PER_MI = 1609.344
 
@@ -45,17 +49,28 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
             _move(point["lon"], point["lat"], 180, 400),
         ]
         coords = [list(pair) for pair in coords]
-    # Lower end first in the seed, so reversing walks the failure downhill.
-    downhill = list(reversed(coords))
-    samples = _sample(downhill, SAMPLE_M)
-    if len(samples) < 2:
-        samples = [(downhill[0][0], downhill[0][1], 0.0), (downhill[-1][0], downhill[-1][1], _haversine(tuple(downhill[0]), tuple(downhill[-1])))]
+    trail_len = _haversine_line(coords)
+    downhill = _downhill(coords)
+    if downhill is not None:
+        samples, heights, miles = downhill
+        method = METHOD_TRAIL_TERRAIN
+        drop_m = heights[0] - heights[-1]
+        release = {"lon": samples[0][0], "lat": samples[0][1], "elevation_m": round(heights[0], 1)}
+    else:
+        # No terrain: lower end first in the seed, so reversing walks the failure downhill.
+        reverse = list(reversed(coords))
+        samples = _sample(reverse, SAMPLE_M)
+        if len(samples) < 2:
+            samples = [(reverse[0][0], reverse[0][1], 0.0), (reverse[-1][0], reverse[-1][1], _haversine(tuple(reverse[0]), tuple(reverse[-1])))]
+        gain = float((trail or {}).get("elevation_gain_m") or 0)
+        on_trail = min(samples[-1][2], trail_len or samples[-1][2])
+        drop_m = gain * (on_trail / trail_len) if trail_len else 0.0
+        length_mi = _trail_miles(trail, samples)
+        miles = (max(0.0, length_mi - on_trail / M_PER_MI), length_mi)
+        method = METHOD_TRAIL
+        release = {"lon": samples[0][0], "lat": samples[0][1], "elevation_m": None}
 
     total = samples[-1][2]
-    gain = float((trail or {}).get("elevation_gain_m") or 0)
-    trail_len = _haversine_line(coords) or total
-    on_trail = min(total, trail_len)
-    drop_m = gain * (on_trail / trail_len) if trail_len else 0.0
     duration = total / FRONT_SPEED_MS
     frame_count = min(MAX_FRAMES, max(8, int(duration / 15) or 8))
     frame_count = min(frame_count, max(2, len(samples) - 1))
@@ -76,10 +91,11 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
     # A later frame must not shrink. Force each end index forward.
     frames = _growing(frames, samples, point.get("level") or "high")
 
-    steps = _steps(point, trail, trails, samples, drop_m)
+    steps = _steps(point, trail, trails, samples, drop_m, miles)
     return {
-        "method": METHOD_TRAIL,
+        "method": method,
         "source": "trail",
+        "release": release,
         "duration_s": round(samples[-1][2] / FRONT_SPEED_MS, 1),
         "distance_m": round(samples[-1][2], 1),
         "drop_m": round(drop_m, 1),
@@ -175,13 +191,52 @@ def _band(samples: list[tuple[float, float, float]], width_scale: float, level: 
     }
 
 
-def _steps(point: dict, trail: dict | None, trails: list[dict], samples: list[tuple[float, float, float]], drop_m: float) -> list[dict]:
+def _downhill(coords: list[list[float]]) -> tuple[list[tuple[float, float, float]], list[float], tuple[float, float]] | None:
+    """The route from its highest point, walked only while it keeps going down. None without terrain.
+
+    Samples the whole line, releases at the highest sample, then takes whichever way
+    along the line drops further. The walk stops at the first sample higher than the
+    one before it, so heights never rise from release to stop. Also returns the mile
+    range the flow covers, in the line's own mileage.
+    """
+    line = _sample(coords, SAMPLE_M, limit_m=math.inf)
+    if len(line) < 2:
+        return None
+    heights = sample_elevations([(lon, lat) for lon, lat, _ in line])
+    if heights is None:
+        return None
+    top = max(range(len(line)), key=lambda index: heights[index])
+    best: list[int] = [top]
+    for step in (1, -1):
+        walk = [top]
+        index = top + step
+        while 0 <= index < len(line) and heights[index] <= heights[walk[-1]]:
+            if abs(line[index][2] - line[top][2]) > MAX_RUNOUT_M:
+                break
+            walk.append(index)
+            index += step
+        drop, length = heights[top] - heights[walk[-1]], len(walk)
+        if (drop, length) > (heights[top] - heights[best[-1]], len(best)):
+            best = walk
+    if len(best) < 2:
+        return None
+    samples = [(line[i][0], line[i][1], abs(line[i][2] - line[top][2])) for i in best]
+    miles = sorted((line[best[0]][2] / M_PER_MI, line[best[-1]][2] / M_PER_MI))
+    return samples, [heights[i] for i in best], (miles[0], miles[1])
+
+
+def _steps(
+    point: dict,
+    trail: dict | None,
+    trails: list[dict],
+    samples: list[tuple[float, float, float]],
+    drop_m: float,
+    miles: tuple[float, float],
+) -> list[dict]:
     release = samples[0]
     stop = samples[-1]
     name = (trail or {}).get("name") or point.get("trail_name") or "the trail"
-    length_mi = _trail_miles(trail, samples)
-    upper = length_mi
-    lower = max(0.0, length_mi - (min(stop[2], _haversine_line(_line(trail)) if trail else stop[2]) / M_PER_MI))
+    lower, upper = miles
     steps = [
         _step("release", "release", "Slope releases", 0, release, 0, 0, None, None, None, point.get("level")),
         _step(
@@ -320,7 +375,7 @@ def _source_trail(point: dict, trails: list[dict]) -> dict | None:
     return trails[0] if trails else None
 
 
-def _sample(coords: list[list[float]], step_m: float) -> list[tuple[float, float, float]]:
+def _sample(coords: list[list[float]], step_m: float, limit_m: float = MAX_RUNOUT_M) -> list[tuple[float, float, float]]:
     samples: list[tuple[float, float, float]] = [(coords[0][0], coords[0][1], 0.0)]
     dist_along = 0.0
     carry = 0.0
@@ -341,10 +396,10 @@ def _sample(coords: list[list[float]], step_m: float) -> list[tuple[float, float
                 dist_along += seg - pos
                 carry += seg - pos
                 pos = seg
-        if dist_along > MAX_RUNOUT_M:
+        if dist_along > limit_m:
             break
     last = coords[-1]
-    if _haversine((samples[-1][0], samples[-1][1]), (last[0], last[1])) > 8 and samples[-1][2] < MAX_RUNOUT_M:
+    if _haversine((samples[-1][0], samples[-1][1]), (last[0], last[1])) > 8 and samples[-1][2] < limit_m:
         samples.append((last[0], last[1], samples[-1][2] + _haversine((samples[-1][0], samples[-1][1]), (last[0], last[1]))))
     return samples
 

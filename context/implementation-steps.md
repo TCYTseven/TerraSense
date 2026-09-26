@@ -192,6 +192,8 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 - Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
 - Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
 
+**Sep 26, 2026.** Without the 30 m grid, the trail runout releases at the route's highest point on the z13 Terrarium tiles (`backend/app/ml/elevation.py`) and walks the line only while each next sample is no higher, so the flow never goes uphill. `trace_runout` adds `release` (lon, lat, elevation), and the simulation's pressure point moves there, so the camera flies to the top. The API shape is unchanged.
+
 **Done when.** A Python call on Rainier's first pressure point prints the frame count, the steps with their times, and the runout length in under 3 seconds, and the frames grow monotonically. Without `data/processed/features.tif` the path is the trail corridor and the method line says so. The Holmgren read stays unwired until that grid is in the checkout.
 
 ## 28. Expose simulate, the stream, and the callouts

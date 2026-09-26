@@ -1,8 +1,10 @@
 """Runout ranking and the illustrative corridor, with no database and no raster."""
 
-from app.ml import pressure
+import pytest
+
+from app.ml import pressure, runout
 from app.ml.pressure import rank_pressure_points
-from app.ml.runout import METHOD_TRAIL, trace_runout
+from app.ml.runout import METHOD_TRAIL, METHOD_TRAIL_TERRAIN, trace_runout
 from app.simulations import template_callouts
 
 STEEP = {
@@ -12,6 +14,14 @@ STEEP = {
     "elevation_gain_m": 900,
     "coordinates": [[-121.85, 46.76], [-121.851, 46.77], [-121.852, 46.78], [-121.853, 46.79]],
 }
+# A route that climbs to a crest mid-line, dips, then climbs a lower knob.
+CREST = {
+    "id": "crest",
+    "name": "Crest Trail",
+    "length_km": 2.0,
+    "elevation_gain_m": 300,
+    "coordinates": [[-121.80, 46.80 + i * 0.001] for i in range(20)],
+}
 GENTLE = {
     "id": "skyline",
     "name": "Skyline Trail",
@@ -19,6 +29,12 @@ GENTLE = {
     "elevation_gain_m": 200,
     "coordinates": [[-121.73, 46.79], [-121.732, 46.795], [-121.734, 46.80]],
 }
+
+
+@pytest.fixture(autouse=True)
+def no_terrain(monkeypatch):
+    """No tile reads in tests. A test that wants terrain patches its own heights."""
+    monkeypatch.setattr(runout, "sample_elevations", lambda points: None)
 
 
 def test_rank_puts_the_steeper_trail_first():
@@ -89,3 +105,33 @@ def test_worst_route_follows_the_highest_probability_on_the_line(monkeypatch, tm
     assert point["trail_name"] == "Skyline Trail"
     assert point["peak"] == 0.8
     assert point["level"] == "extreme"
+
+
+def test_runout_releases_at_the_top_and_never_flows_up(monkeypatch):
+    def heights(points):
+        # 1300 m at the south end, up to 1500 m at lat 46.805, down to 1200 m at 46.815, then up again to 1300 m.
+        out = []
+        for _lon, lat in points:
+            north = (lat - 46.80) * 111_000
+            if north <= 555:
+                out.append(1300 + 200 * north / 555)
+            elif north <= 1665:
+                out.append(1500 - 300 * (north - 555) / 1110)
+            else:
+                out.append(1200 + 100 * (north - 1665) / 444)
+        return out
+
+    monkeypatch.setattr(runout, "sample_elevations", heights)
+    point = rank_pressure_points([CREST])[0]
+    traced = trace_runout(point, [CREST])
+    assert traced["method"] == METHOD_TRAIL_TERRAIN
+    assert traced["release"]["elevation_m"] == pytest.approx(1500, abs=15)
+    assert abs(traced["release"]["lat"] - 46.805) < 0.001
+    # It takes the longer drop (north), stops in the dip, and never climbs the knob.
+    assert traced["drop_m"] == pytest.approx(300, abs=15)
+    release = next(step for step in traced["steps"] if step["kind"] == "release")
+    stop = next(step for step in traced["steps"] if step["kind"] == "stop")
+    assert stop["lat"] > release["lat"]
+    assert stop["lat"] < 46.8155
+    walked = heights([(step["lon"], step["lat"]) for step in sorted(traced["steps"], key=lambda step: step["t_s"]) if step["kind"] != "trail"])
+    assert walked == sorted(walked, reverse=True)

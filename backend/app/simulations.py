@@ -76,6 +76,10 @@ class SimulationRegistry:
     async def _run(self, state: SimulationState, point: dict, trails: list[dict]) -> None:
         try:
             traced = await asyncio.to_thread(trace_runout, point, trails)
+            # The flow releases at the route's highest point, so the pin and the camera go there.
+            release = traced["release"]
+            point = {**point, "lon": release["lon"], "lat": release["lat"], "elevation_m": release["elevation_m"]}
+            state.pressure_point = point
             state.method = traced["method"]
             state.source = traced["source"]
             state.duration_s = traced["duration_s"]
