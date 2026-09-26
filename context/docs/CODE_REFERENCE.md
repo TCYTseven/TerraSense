@@ -40,6 +40,8 @@ Basic scaffolding so several coding agents can split the work. Update the matchi
 | `.claude/agents/ml-data-builder.md` | Subagent that builds one ML or data step. |
 | `.claude/agents/step-reviewer.md` | Read-only subagent that checks a finished step against its "Done when". |
 | `context/docs/production-risk.md` | Architecture, data contract, leakage controls, three-state decision policy, reproducible commands, and current external-data limitations for the production 72-hour classifier. |
+| `context/docs/nepal-mountains-build.md` | How to feature Nepal peaks and render Mount Everest like a pack: `build_pack.py`, then `DB=LOCAL` and `DB=PROD` schema + seed. Includes the Claude prompt. |
+| `context/docs/nepal-current-event-plan.md` | Earlier copy-only note. Superseded by `nepal-mountains-build.md`. |
 
 ## Frontend (exists)
 

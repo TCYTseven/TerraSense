@@ -185,6 +185,13 @@ PACKS = {
              peak_lat=27.988, peak_lon=86.925, peak_elevation_m=8849,
              bbox=bbox_around(27.988, 86.925, 18),
              hero=Hero(trail="Everest Base Camp Trek", parts=("Everest Base Camp Trek",))),
+        # Asia, Tibetan Plateau: the Kailash Kora, the 52 km pilgrim circuit, rings the peak
+        # through Darchen, Dirapuk, and Zutulpuk over the Drolma La. A 20 km box holds the
+        # whole loop. The monsoon floods and landslides on the Nepal-Tibet border in
+        # August 2026 cut the approach routes pilgrims use to reach it.
+        Pack(slug="mount-kailash", name="Mount Kailash",
+             peak_lat=31.0672, peak_lon=81.3119, peak_elevation_m=6638,
+             bbox=bbox_around(31.0672, 81.3119, 20)),
         # Oceania: the Hooker Valley Track runs to 14 km south of the summit.
         Pack(slug="aoraki-mount-cook", name="Aoraki / Mount Cook",
              peak_lat=-43.595, peak_lon=170.142, peak_elevation_m=3724,

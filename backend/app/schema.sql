@@ -140,11 +140,6 @@ ALTER TABLE analysis_runs DROP CONSTRAINT IF EXISTS analysis_runs_domain_check;
 ALTER TABLE analysis_runs ADD CONSTRAINT analysis_runs_domain_check
   CHECK (domain IN ('landslide', 'avalanche'));
 
-ALTER TABLE previous_runs ADD COLUMN IF NOT EXISTS domain text NOT NULL DEFAULT 'landslide';
-ALTER TABLE previous_runs DROP CONSTRAINT IF EXISTS previous_runs_domain_check;
-ALTER TABLE previous_runs ADD CONSTRAINT previous_runs_domain_check
-  CHECK (domain IN ('landslide', 'avalanche'));
-
 CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS hazards_mountain_idx ON hazards (mountain_id, created_at DESC);
@@ -222,6 +217,11 @@ CREATE TABLE IF NOT EXISTS previous_runs (
   run          jsonb NOT NULL,
   created_at   timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE previous_runs ADD COLUMN IF NOT EXISTS domain text NOT NULL DEFAULT 'landslide';
+ALTER TABLE previous_runs DROP CONSTRAINT IF EXISTS previous_runs_domain_check;
+ALTER TABLE previous_runs ADD CONSTRAINT previous_runs_domain_check
+  CHECK (domain IN ('landslide', 'avalanche'));
 
 CREATE INDEX IF NOT EXISTS previous_runs_started_idx ON previous_runs (started_at DESC);
 CREATE INDEX IF NOT EXISTS previous_runs_mountain_idx ON previous_runs (mountain_slug, started_at DESC);
