@@ -50,10 +50,10 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | Fly-to split | About 0.9 s on the globe, 0.6 s on the map | [Motion](#motion) | Step 9 |
 | Basemap | Unlabeled satellite, dimmed | [Basemap and camera](#basemap-and-camera) | Step 15 |
 | One raster at a time | Susceptibility hides probability while on | [Raster layers](#raster-layers) | Step 16 |
-| Hazard block placement | Under overall risk, opens with the pin | [Sections](#sections-top-to-bottom) | Step 23 |
 | High and Extreme treatment | 3 px left border and an 8% tint | [High and Extreme](#high-and-extreme) | Step 23 |
 | Static mountains | Hide everything that implies analysis | [Static mountains](#static-mountains) | Step 23 |
-| Reasoning panel | Over the map, beside the ranger panel | [Reasoning panel](#reasoning-panel) | Step 23 |
+| Mountain page split | 55/45, one scrolling panel, Analyze now pinned | [Layout](#layout) | Hill card rebuild |
+| Reasoning | Inline trace under each agent card, one open at a time | [Agent pipeline](#agent-pipeline) | Hill card rebuild |
 | Narrow layout | Stack below 768 px | [Layout](#layout) | Step 25 |
 | Mountain panel size | 60/40 split, `min(1200px, 100vw − 64px)` by `min(760px, 100vh − 128px)` | [Panel frame](#panel-frame) | Step 29 |
 | Globe while the panel is open | Turned to face the mountain at altitude 1.2, spin paused, 60% scrim | [Panel frame](#panel-frame) | Step 29 |
@@ -229,7 +229,7 @@ After **Simulate**, the right column's content swaps in place, at once. The head
 1. **Back to pressure points.**
 2. **Title row.** "Simulating pressure point 1" at body size, 600. Right-aligned on the same line, the simulated clock in mono, such as `T+04:30`.
 3. **Method line.** Meta, muted: "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing." (UX.md rule 11). It never hides.
-4. **Steps.** The label "Steps", then one row per step in order. The rows reuse the [agent row](#agent-rows) glyphs: a hollow circle for steps not reached, the 8 px dot with the work pulse for the current step, a check for steps passed. Each row has a title at body size, then a meta line with the simulated time and the step's values, 12 px apart. A trail step adds the level dot and word of the flow where it crosses. Steps never take a risk-colored glyph or background.
+4. **Steps.** The label "Steps", then one row per step in order. The rows reuse the [agent card](#agent-pipeline) glyphs: a hollow circle for steps not reached, the 8 px dot with the work pulse for the current step, a check for steps passed. Each row has a title at body size, then a meta line with the simulated time and the step's values, 12 px apart. A trail step adds the level dot and word of the flow where it crosses. Steps never take a risk-colored glyph or background.
 5. **Callouts.** The label "Callouts", then each callout as its step is reached. See [Callouts](#callouts).
 6. **Status line.** When playback ends: "Simulation finished. The flow ran 1.4 mi and crossed 2 trails." in the status line style from [States](#states).
 7. **Footer.** **Replay** and **Open ranger view**.
@@ -298,69 +298,63 @@ Probability (the default layer, step 18) and susceptibility (step 16) share one 
 
 ## Panel
 
+The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page). The user's brief for the rebuild overrides the earlier 70/30 layout, the rain section, the agent rows, and the reasoning side panel.
+
 ### Layout
 
-- **Wide, 768 px and up.** Map left, panel right. Panel width `clamp(360px, 30vw, 440px)`, and the map takes the rest (about 70/30, per the spec). The panel is full height with a 1 px left border and scrolls inside itself. **Analyze now** and **Hiker forecast** sit in a footer pinned to the panel bottom, so they stay last in UX.md's order and stay reachable.
-- **Narrow, below 768 px. [confirm]** Map on top at 55% of the viewport height, panel below, and the page scrolls. The footer is not pinned.
+- **Wide, 768 px and up.** Two columns at full viewport height: the map about 55%, the panel about 45%, with a 1 px left border on the panel. The panel scrolls inside itself. **Analyze now** sits in a footer pinned to the panel bottom, outside the scroll area. No other sidebar, drawer, or panel opens.
+- **Narrow, below 768 px.** Map on top at 55% of the viewport height, panel below, and the page scrolls. The footer is not pinned.
 - 20 px side padding. A 1 px border separates sections, with 16 px above and below each.
 
 ### Sections, top to bottom
 
-UX.md sets the order. The hazard block is the one addition, and it shows only while the pin is selected.
-
-1. **Header.** The mountain name at panel-title size. Below it, elevation and region on one line in muted text, 12 px apart, with no separator character.
-2. **Overall risk.** The level dot and word at lead size, 600, in the level color. Then the one sentence at lead size.
-3. **Hazard. [confirm]** Opens under overall risk when the pin is selected: by a click, or when a run finishes. Four rows in the spec's order, each a meta label over a body value: "What it is", "Why it was flagged", "Confidence", "How to avoid it". "What it is" names the trail and the mile range. A second click on the pin, or a click on the empty map, closes it.
-4. **Rain.** The label "Rain", then two rows with words left and values right: "Past 72 hours" and "Next 24 hours". Text only (UX.md rule 7).
-5. **Trails.** The label "Trails", then one row per trail: the name left; the level dot, word, and score right. The flagged trail adds a second line, "Flagged mi 4.2–5.1", whether or not the pin is open. The mile range is never hidden.
-6. **Agents.** The label "Agents", then the five rows in [Agent rows](#agent-rows).
-7. **Status line.** One line under the rows for a finished or failed run. See [States](#states).
-8. **Footer.** The two actions.
+1. **Header.** "Back to the globe", then the mountain name at panel-title size. Below it, one line of stats in the mono face: elevation (ft), mean slope (°), area (km²). Region in muted text.
+2. **Overall risk.** The score as a large mono number (two decimals), then the level dot and word in the level color. When the numbers are illustrative, one meta line says so.
+3. **Top 5 at-risk trails.** One row per trail, riskiest first: a letter badge (A to E), the name, the level dot and the mono score, and a **View** text button in the accent. The badge is a small circle in the trail's level color with the letter in background-dark text, the same as its map marker. The last trail viewed is marked as selected.
+4. **Preventative measures.** Three to five bullets, one line each where they fit.
+5. **Agents.** See [Agent pipeline](#agent-pipeline).
+6. **Footer.** **Analyze now**.
 
 ### High and Extreme
 
-**[confirm]** When the level is High or Extreme, the overall risk section and the hazard block get a 3 px left border in the level color and a background of the level color at 8%. Nothing moves (UX.md rule 10). Low and Moderate get neither.
+**[confirm]** When the level is High or Extreme, the overall risk section gets a 3 px left border in the level color and a background of the level color at 8%. Nothing moves (UX.md rule 10). Low and Moderate get neither.
 
-### Agent rows
+### Trail markers and camera
 
-Five rows in pipeline order: Terrain, Weather, Trail, Synthesizer, Alert Writer. Terrain and Weather run together, so two rows can run at once. Each row is a 16 px status glyph, the agent name at body size, and the latest `AgentEvent.summary` below it: meta size, muted, one line, truncated with an ellipsis, with the full text in the `title` attribute.
+- **Markers.** One per top-five trail at its region's center, matching the panel badge, with a 1 px ring so it reads on the relief. Each marker is a button labelled "Trail A, <name>, risk 0.74".
+- **Tooltip.** Hover or keyboard focus opens a popup with no close button: the trail name, the mono score with its level word, the slope, and the primary risk factor. It closes when the pointer leaves.
+- **View.** Flies the camera to the trail's region in 1.5 s (UX.md rule 10's fly-to), pitched for the 3D view, and opens the tooltip on arrival. The marker takes a 2 px accent ring while it is selected. Reduced motion jumps instead.
 
-| Status | Glyph | Glyph color | Second line |
-|---|---|---|---|
-| `waiting` | Hollow circle (lucide `Circle`) | Muted | Waiting |
-| `running` | 8 px filled dot | Text | The latest summary, or "Running" |
-| `done` | Check (lucide `Check`) | Text | The latest summary |
-| `error` | Cross (lucide `X`) | Text | "Failed:" and the summary |
-| Skipped after an error | Dash (lucide `Minus`) | Muted | Skipped |
+### Agent pipeline
 
-Status never uses a risk color: green for done or red for failed would claim a risk level. The running row gets a background of the text color at 4% and the work pulse (see [Motion](#motion)).
+- **Orchestrator.** One node at the top, with its status. A connector line fans out to Terrain, Weather, and Trails side by side (they run together), then joins into the Synthesizer, then the Mass Alert Writer.
+- **Cards.** Each card shows the agent name, a status glyph and word, and a one-line summary.
 
-Each row also names the model the router picked for it, such as "Gemini 3.8 Flash", at meta size and muted, right-aligned on the name's line. A row is a button: a click opens the [reasoning panel](#reasoning-panel) on that agent. **Reasoning**, a text button at meta size beside the "Agents" label, opens it on Terrain. When **Analyze now** starts a run, the panel scrolls the rows into view at once.
+| Status | Glyph | Glyph color |
+|---|---|---|
+| `idle` | Hollow circle (lucide `Circle`) | Muted |
+| `running` | 8 px filled dot | Text |
+| `done` | Check (lucide `Check`) | Text |
+| `error` | Cross (lucide `X`) | Text |
+
+Status never uses a risk color. The running card gets a background of the text color at 4% and the work pulse (see [Motion](#motion)).
+
+- **Trace.** A click on a card expands a container directly beneath it with the agent's full reasoning trace as a numbered list, growing while the agent runs. One trace is open at a time; a second click closes it. Traces use no risk colors.
+- **Before the first run.** One muted line: "Press Analyze now to run the agents."
+- **Reactive Measures.** After the Mass Alert Writer finishes, a section below the pipeline groups the measures under "Rangers" and "Public notice". Every public notice is labelled "Draft, not sent" (UX.md rule 11 applies here too).
 
 ### Actions
 
-- **Analyze now.** Primary. Accent fill, dark background text, 40 px tall, full width, 6 px radius, Button type role. While a run is in progress it reads "Analyzing…", drops to 40% opacity, and ignores clicks (step 23). Hidden when `is_live` is false (UX.md rule 8).
-- **Hiker forecast.** Secondary. No fill, a 1 px accent border, accent text, the same size, 8 px below. Disabled until the first finished run, with the meta line "Available after the first finished run."
-- **Hover and focus.** Primary hover lowers the fill to 90% opacity. Secondary hover adds an accent background at 10%. Every control shows a 2 px accent focus ring with a 2 px offset on `focus-visible`. Every state change is instant. Accent text never relies on hue alone. Toggles and the secondary button have borders; text buttons and links are underlined (1 px, 3 px offset).
-
-### Reasoning panel
-
-Added at the team's direction on Sep 25, 2026 (UX.md, Reasoning panel). It explains the agents; it adds no control that changes a run.
-
-- **Placement.** Wide: over the right side of the map, flush against the ranger panel, full height, `min(520px, 100%)` wide, panel surface, a 1 px left border, no radius (it docks to the panel). Narrow: it fills the screen. It appears and closes at once. Escape and the close button (X, top right) close it, and it takes focus when it opens.
-- **Header.** "Reasoning" at body size, 600, then one meta line: "A router sends each agent to Gemini Flash or Grok. Pick an agent to see why, what it read, and how it reasoned." and the run's time.
-- **Tabs.** One per agent in pipeline order, each with the row's status glyph. The selected tab takes the toggle treatment: accent text and a 1 px accent border.
-- **Sections, top to bottom,** each a meta label over body text, separated by the 1 px border: Model (label, tier, the model that actually answered, time, tokens), Why this model (the router's sentence, then each rule with its verdict, "→ Gemini", "→ Grok", or "no change", in a bordered meta tag, then the fallback), What it read (each tool call as code, with its facts behind a disclosure), How it reasoned (the provider's thinking summary as a quote with the 2 px muted rule, then the agent's steps as a numbered list), What the code did, Calls (every attempt with its time and error), Answer (the model's JSON and the payload, behind disclosures).
-- **Type.** Tool calls and JSON are code and use the mono face; everything else follows [Type](#type).
-- **Color.** No risk colors: this is about the reasoning, not the level. Status glyphs match the agent rows.
+- **Analyze now.** Primary. Accent fill, dark background text, 40 px tall, full width, 6 px radius, Button type role. While a run is in progress it reads "Analyzing…", drops to 40% opacity, and ignores clicks. Hidden when `is_live` is false (UX.md rule 8).
+- **Hover and focus.** Primary hover lowers the fill to 90% opacity. Every control shows a 2 px accent focus ring with a 2 px offset on `focus-visible`. Every state change is instant. Accent text never relies on hue alone; text buttons and links are underlined (1 px, 3 px offset).
 
 ### Static mountains
 
-**[confirm]** A static mountain hides everything that implies analysis: **Analyze now** (UX.md rule 8), the agent rows, **Hiker forecast**, and the layer toggles. The panel keeps the header, overall risk with the seeded level, and one sentence: "Display marker. Live analysis runs on Mount Rainier only." The map shows terrain only.
+**[confirm]** A static mountain hides everything that implies analysis: **Analyze now** (UX.md rule 8), the trail list, preventative measures, the agent pipeline, and the layer toggles. The panel keeps the header, overall risk with the seeded level, and one sentence: "Display marker. Live analysis runs on Mount Rainier only." The map shows terrain only.
 
 ## Hiker card
 
-The card replaces the panel content in place (UX.md). The map stays, and the surface keeps the panel's dark color (Design Language). It is softer than the panel: 28 px padding, no section borders, no labels, and mono only for the bypass values.
+Not rendered on the rebuilt mountain page (UX.md, Mountain page); kept for when it returns. The card replaces the panel content in place. The map stays, and the surface keeps the panel's dark color (Design Language). It is softer than the panel: 28 px padding, no section borders, no labels, and mono only for the bypass values.
 
 1. **Back.** "Back to ranger view", an accent text button at body size. It restores the panel.
 2. **Trail name.** Lead size, muted.
@@ -399,15 +393,15 @@ UX.md asks for empty, loading, and error states on every view, and step 25 build
 | Simulation | Callouts from templates | As finished | Simulation finished. … Callouts came from templates. The AI didn't answer. |
 | Simulation | Failed | Pressure points restored, heat map at full opacity | The simulation didn't run. The pressure points still show. |
 | Simulation | Stream lost | Frames already loaded keep playing, missing callouts stay out | Lost the connection. Some callouts may be missing. |
-| Mountain | Loading | Map loading; panel header from the globe's data; skeleton bars for risk, rain, and trails | None |
+| Mountain | Loading | Map loading; panel header from the globe's data; skeleton bars for risk and trails | None |
 | Mountain | Unknown slug | Panel only | No mountain at this address. Back to the globe (link) |
 | Mountain | API unreachable | Map without trails, panel header only | Can't load ‹mountain›. Retrying every 5 seconds. |
 | Mountain | Tiles fail | Map without the raster, trails still colored | The heat map didn't load. Trail colors still show segment risk. |
-| Mountain | Live, no hazard yet | Muted risk section, no pin, rows waiting, Hiker forecast disabled | Not analyzed yet. Analyze now scores the next 72 hours. |
-| Run | Running | Rows update, Analyze now disabled | Analyzing… (on the button) |
+| Mountain | Live, no run yet | Agent cards idle, no Reactive Measures | Press Analyze now to run the agents. |
+| Run | Running | Cards update, open trace grows, Analyze now disabled | Analyzing… (on the button) |
 | Run | Finished | Pin selected, panel updated, heat map fades in | Finished in 48 s. |
 | Run | Finished, needs review | As finished, plus the tag | Finished in 48 s. Agents disagree on severity, so this is an advisory. |
-| Run | Failed | Failed row, later rows skipped, last good hazard stays, Analyze now enabled | Run failed at the Weather step. The map still shows the hazard from 14:05. |
+| Run | Failed | Failed card, later cards stay idle, last good hazard stays, Analyze now enabled | Run failed at the Weather step. The map still shows the hazard from 14:05. |
 | Run | Failed, no earlier hazard | As failed, no pin | Run failed at the Weather step. There's no earlier hazard to show. |
 | Run | Stream lost | Treated as failed | Lost the connection to this run. The map still shows the hazard from 14:05. |
 | Hiker card | Loading | Card with skeleton bars | None |
@@ -422,7 +416,7 @@ UX.md rule 10 is the complete list. This section sets the values.
 | Idle globe spin | About one turn every 2 minutes (`controls().autoRotateSpeed = 0.5`) | Always on the globe. Pauses on marker hover or drag, and resumes after 3 s idle |
 | Fly-to | 1.5 s total, in the sequence below | Marker click or search |
 | Heat map fade | `raster-opacity` from 0 to 1 over 600 ms (`raster-opacity-transition`) | When the probability layer first shows, and when new tiles arrive after a finished run |
-| Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent rows, the current simulation step, "Writing callouts…", and skeleton bars only |
+| Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent cards, the current simulation step, "Writing callouts…", and skeleton bars only |
 | Turn to face | The first leg of the fly-to alone: about 0.9 s, ease-in-out, ending at altitude 1.2 | Marker click or search, before the mountain panel opens |
 | Simulation playback | **[confirm]** One frame every 500 ms, at most 40 frames. Each frame replaces the flow at once, with no tween between frames | After **Simulate** and **Replay** |
 
@@ -479,10 +473,11 @@ UX.md's check still holds: run the frontend and walk the demo order. A still scr
 2. `grep -rnE "animate-|transition" frontend/app frontend/components` finds only `animate-work`.
 3. Pitch the map to the horizon. The sky matches the background, with no blue.
 4. Every risk color on the panel and the hiker card has its level word beside it.
-5. A static mountain page shows no **Analyze now**, agent rows, **Hiker forecast**, or toggles.
+5. A static mountain page shows no **Analyze now**, trail list, agent pipeline, or toggles.
 6. Stop the API mid-run. The failure copy shows, the last good hazard stays, and nothing turns red.
 7. Walk the path once with reduced motion on.
 8. Click Rainier on the globe: the panel opens over a paused, dimmed globe. Escape closes it and the spin resumes.
 9. Run **Simulate** to the end. The method line never hides, every public notice says "draft, not sent", and no callout has a button.
 10. Open a static mountain's panel: no pressure points and no **Simulate**.
 11. No component uses a Tailwind gray, slate, zinc, neutral, or stone color class.
+12. On Rainier, **View** on each of A to E flies to its marker, and each marker's tooltip shows score, slope, and primary factor.

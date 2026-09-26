@@ -7,7 +7,7 @@ import type {
   StyleSpecification,
 } from "maplibre-gl";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { Bypass, Hazard, HistoricalEvent, LayerTiles, RiskLevel, Trail } from "@/lib/types";
+import type { Bypass, Hazard, HistoricalEvent, LayerTiles, LineString, RiskLevel, Trail } from "@/lib/types";
 
 /**
  * The mountain map's style: 3D terrain from open elevation tiles under a light shaded relief.
@@ -70,6 +70,7 @@ export const SOURCE = {
   hazard: "hazard",
   bypass: "bypass",
   history: "historical-events",
+  trailRisk: "trail-risk",
 } as const;
 
 export const LAYER = {
@@ -85,6 +86,7 @@ export const LAYER = {
   heroLine: "trail-hero",
   bypass: "bypass-line",
   history: "historical-pins",
+  trailRisk: "trail-risk-line",
 } as const;
 
 /**
@@ -140,6 +142,39 @@ export function bypassFeatures(
       geometry: piece.geom,
       properties: { severity: piece.level },
     })),
+  };
+}
+
+/** The lettered top-five trails that have a line, each carrying its level and letter. */
+export function trailRiskFeatures(
+  trails: { letter: string; level: RiskLevel; geom: LineString | null }[],
+): GeoJSON.FeatureCollection<GeoJSON.LineString, { severity: RiskLevel; letter: string }> {
+  return {
+    type: "FeatureCollection",
+    features: trails.flatMap((trail) =>
+      trail.geom ? [{ type: "Feature" as const, geometry: trail.geom, properties: { severity: trail.level, letter: trail.letter } }] : [],
+    ),
+  };
+}
+
+/**
+ * A lettered trail's line: a thin, half-strength stroke in its level color over the dashed
+ * context line, a little heavier when its letter is selected. Subtle on purpose: the markers
+ * and the heat map carry the finding.
+ */
+export function trailRiskPaint(selected: string | null) {
+  const isSelected: ExpressionSpecification = ["==", ["get", "letter"], selected ?? ""];
+  return {
+    width: [
+      "interpolate",
+      ["linear"],
+      ["zoom"],
+      10,
+      ["case", isSelected, 2.5, 1.5],
+      15,
+      ["case", isSelected, 5, 3],
+    ] as ExpressionSpecification,
+    opacity: ["case", isSelected, 0.9, 0.6] as ExpressionSpecification,
   };
 }
 
