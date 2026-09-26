@@ -21,6 +21,7 @@ from psycopg.types.json import Jsonb
 from app import packs
 from app.config import REPO_ROOT
 from app.db import connect
+from app.hills import HILLS_PATH
 from app.mountain_catalog import read_seed_file, upsert_mountains
 
 SEED_DIR = REPO_ROOT / "data" / "seed"
@@ -72,6 +73,48 @@ def load_mountains(conn: psycopg.Connection) -> int:
         ([m["slug"] for m in mountains],),
     )
     return count
+
+
+def load_hills(conn: psycopg.Connection) -> int:
+    """Upsert data/seed/hills.json. A hill stays live, and a hill the file drops is removed.
+
+    The mountain catalog never lists these slugs. Loading it does not delete a live hill.
+    """
+    if not HILLS_PATH.is_file():
+        return 0
+    hills = json.loads(HILLS_PATH.read_text(encoding="utf-8"))
+    slugs: list[str] = []
+    for hill in hills:
+        if hill.get("kind") != "hill":
+            raise SystemExit(f"{hill.get('slug')!r} in hills.json must have kind 'hill'")
+        conn.execute(
+            """
+            INSERT INTO mountains
+              (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live, kind)
+            VALUES
+              (%(name)s, %(slug)s, %(lat)s, %(lon)s, %(elevation_m)s, %(region)s,
+               %(current_risk_level)s, true, 'hill')
+            ON CONFLICT (slug) DO UPDATE SET
+              name = EXCLUDED.name,
+              lat = EXCLUDED.lat,
+              lon = EXCLUDED.lon,
+              elevation_m = EXCLUDED.elevation_m,
+              region = EXCLUDED.region,
+              is_live = true,
+              kind = 'hill',
+              current_risk_level = CASE
+                WHEN mountains.last_analyzed_at IS NULL THEN EXCLUDED.current_risk_level
+                ELSE mountains.current_risk_level
+              END
+            """,
+            hill,
+        )
+        slugs.append(hill["slug"])
+    conn.execute(
+        "DELETE FROM mountains WHERE kind = 'hill' AND slug <> ALL(%s::text[])",
+        (slugs,),
+    )
+    return len(hills)
 
 
 def load_trails(conn: psycopg.Connection) -> int:
@@ -249,12 +292,15 @@ def mark_packs_live(conn: psycopg.Connection) -> list[str]:
 def main() -> None:
     with connect() as conn:
         load_mountains(conn)
+        hill_count = load_hills(conn)
         live = mark_packs_live(conn)
         load_trails(conn)
         load_trail_segments(conn)
         images = load_satellite_images(conn)
         if live:
             print(f"live packs: {', '.join(live)}")
+        if hill_count:
+            print(f"hills: {hill_count}")
         rows = conn.execute(
             """
             SELECT m.slug, m.is_live, m.current_risk_level,

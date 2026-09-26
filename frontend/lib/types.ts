@@ -8,6 +8,9 @@ export type RiskLevel = (typeof RISK_LEVELS)[number];
 
 export type HazardType = "landslide" | "debris_flow";
 
+/** A catalog peak, or a hill scored by the existing landslide model. */
+export type PlaceKind = "mountain" | "hill";
+
 /** A GeoJSON position: [longitude, latitude]. */
 export type Position = [number, number];
 
@@ -37,6 +40,8 @@ export interface Mountain {
   current_risk_level: RiskLevel;
   last_analyzed_at: string | null;
   is_live: boolean;
+  /** "mountain" for the catalog and Rainier. "hill" for sites such as Turtle Mountain. */
+  kind: PlaceKind;
   /**
    * The regional LightGBM model's live answer at the summit, so the UI shows the model's
    * prediction rather than the seeded catalog color. model_input is "regional_feature_stack"

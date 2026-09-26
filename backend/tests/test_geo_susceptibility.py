@@ -15,7 +15,7 @@ from app.ml import geo_susceptibility as geo
 from app.risk import BIN_EDGES
 
 pytestmark = pytest.mark.skipif(
-    geo._artifacts_stamp() is None,
+    geo._artifacts_stamp() is None or not geo.STACK_PATH.is_file(),
     reason="model artifacts not built (susceptibility_lgbm.txt, calibration, regional stack)",
 )
 
@@ -87,6 +87,16 @@ def test_polar_summit_uses_placeholder_not_projection_error():
     assert result["available"] is True
     assert result["input_source"] == geo.PLACEHOLDER_INPUT
     assert 0.0 <= result["probability"] <= 1.0
+
+
+def test_turtle_mountain_refuses_placeholder():
+    """The hill is outside the Washington stack, so a slug-seeded sample is not its ground."""
+    result = geo.predict_summit("turtle-mountain", 49.57694, -114.41222)
+    assert result.get("input_source") != geo.PLACEHOLDER_INPUT
+    if result["available"]:
+        assert result["input_source"] == geo.HILL_INPUT
+    else:
+        assert "placeholder" not in result["reason"]
 
 
 def test_missing_artifacts_fail_soft(monkeypatch, tmp_path):

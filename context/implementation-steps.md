@@ -30,7 +30,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 35. Validate the landslide models across regions (leave-one-region-out terrain ROC-AUC 0.77 against 0.82 spatial CV; combined index 0.86 on dated events outside Rainier; see [docs/geographic_validation.md](docs/geographic_validation.md))
 - [x] 36. Rename the mountain page off the word hill
 - [x] 37. Record hills in the spec (Turtle Mountain, Crowsnest Pass: slug, peak, elevation, and bbox in the shared facts; the existing landslide model scores hills)
-- [ ] 38. Seed and serve Turtle Mountain
+- [x] 38. Seed and serve Turtle Mountain
 - [ ] 39. Score Turtle Mountain with the existing landslide model
 - [ ] 40. Draw the hill glyph and open the hill page
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)

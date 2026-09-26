@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 
 from app.risk import RiskLevel
 
+PlaceKind = Literal["mountain", "hill"]
+
 HazardType = Literal["landslide", "debris_flow"]
 
 # A GeoJSON geometry object, stored as-is in jsonb: {"type": ..., "coordinates": ...}
@@ -25,6 +27,7 @@ class Mountain(BaseModel):
     current_risk_level: RiskLevel
     last_analyzed_at: datetime | None
     is_live: bool
+    kind: PlaceKind = "mountain"
     # The regional LightGBM model's live answer at the summit, so the UI shows the model's
     # prediction rather than the seeded catalog color. model_input says what ground it scored:
     # "regional_feature_stack" (the summit's own pixel) or "placeholder_terrain_sample" (a

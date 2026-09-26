@@ -1,0 +1,13 @@
+[
+  {
+    "name": "Turtle Mountain",
+    "slug": "turtle-mountain",
+    "lat": 49.57694,
+    "lon": -114.41222,
+    "elevation_m": 2210,
+    "region": "Crowsnest Pass, Alberta, Canada",
+    "current_risk_level": "low",
+    "is_live": true,
+    "kind": "hill"
+  }
+]

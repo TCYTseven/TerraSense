@@ -4,6 +4,7 @@
 -- Apply from backend/ with:  python -m app.schema
 -- Recreate from scratch:     python -m app.schema --reset
 -- Every statement is IF NOT EXISTS, so applying twice is safe.
+-- `kind` is also added below for databases created before hills existed.
 
 CREATE TABLE IF NOT EXISTS mountains (
   id                 uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -16,7 +17,9 @@ CREATE TABLE IF NOT EXISTS mountains (
   current_risk_level text NOT NULL DEFAULT 'low'
                      CHECK (current_risk_level IN ('low', 'moderate', 'high', 'extreme')),
   last_analyzed_at   timestamptz,
-  is_live            boolean NOT NULL DEFAULT false
+  is_live            boolean NOT NULL DEFAULT false,
+  kind               text NOT NULL DEFAULT 'mountain'
+                     CONSTRAINT mountains_kind_check CHECK (kind IN ('mountain', 'hill'))
 );
 
 CREATE TABLE IF NOT EXISTS mountain_satellite_images (
@@ -113,6 +116,8 @@ ALTER TABLE hazards ADD COLUMN IF NOT EXISTS trail_id uuid REFERENCES trails (id
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS start_mile double precision;
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS end_mile double precision;
 ALTER TABLE hazards ADD COLUMN IF NOT EXISTS bypass jsonb;
+ALTER TABLE mountains ADD COLUMN IF NOT EXISTS kind text NOT NULL DEFAULT 'mountain'
+  CHECK (kind IN ('mountain', 'hill'));
 
 CREATE INDEX IF NOT EXISTS trails_mountain_idx ON trails (mountain_id);
 CREATE INDEX IF NOT EXISTS analysis_runs_mountain_idx ON analysis_runs (mountain_id, started_at DESC);

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import math
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -27,6 +28,7 @@ from rasterio.warp import transform as warp_transform
 from rasterio.windows import Window
 
 from app.config import REPO_ROOT
+from app.hills import hill_stack_path, is_hill
 from app.risk import RiskLevel, risk_level
 
 MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility_lgbm.txt"
@@ -37,6 +39,7 @@ METRICS_PATH = REPO_ROOT / "ml" / "artifacts" / "metrics.json"
 METHOD = "regional terrain susceptibility (LightGBM)"
 REAL_INPUT = "regional_feature_stack"
 PLACEHOLDER_INPUT = "placeholder_terrain_sample"
+HILL_INPUT = "hill_feature_window"
 PLACEHOLDER_NOTE = (
     "STAND-IN INPUT: this mountain has no satellite terrain window of its own yet, so the "
     "model scored a real terrain sample from the training stack, chosen deterministically "
@@ -60,9 +63,12 @@ _prediction_cache: dict[tuple[str, float, float], dict] = {}
 
 
 def _artifacts_stamp() -> float | None:
-    paths = (MODEL_PATH, CALIBRATION_PATH, STACK_PATH)
+    """The booster and its calibration. The Rainier stack is optional: a hill has its own window."""
+    paths = [MODEL_PATH, CALIBRATION_PATH]
     if not all(path.is_file() for path in paths):
         return None
+    if STACK_PATH.is_file():
+        paths.append(STACK_PATH)
     return max(path.stat().st_mtime for path in paths)
 
 
@@ -94,9 +100,14 @@ def _load() -> tuple[Any, list[str], np.ndarray, np.ndarray, dict] | None:
     return _model_cache[1:]
 
 
-def _stack_features(lat: float, lon: float, features: list[str]) -> dict[str, float] | None:
+def _stack_features(
+    lat: float, lon: float, features: list[str], path: Path | None = None
+) -> dict[str, float] | None:
     """The 16 band values at this point, or None outside the stack or on a nodata pixel."""
-    with rasterio.open(STACK_PATH) as src:
+    stack_path = path or STACK_PATH
+    if not stack_path.is_file():
+        return None
+    with rasterio.open(stack_path) as src:
         try:
             x, y = warp_transform("EPSG:4326", src.crs, [lon], [lat])
             row, col = src.index(x[0], y[0])
@@ -125,6 +136,8 @@ def _stack_features(lat: float, lon: float, features: list[str]) -> dict[str, fl
 def _placeholder_pool(features: list[str]) -> np.ndarray | None:
     """Valid feature rows subsampled from the stack, for the slug-seeded stand-in."""
     global _pool_cache
+    if not STACK_PATH.is_file():
+        return None
     stamp = STACK_PATH.stat().st_mtime
     if _pool_cache and _pool_cache[0] == stamp:
         return _pool_cache[1]
@@ -217,14 +230,26 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
         return _unavailable("model artifacts could not be loaded")
     booster, features, x_thresholds, y_thresholds, metrics = loaded
 
-    values = _stack_features(lat, lon, features)
-    if values is not None:
-        input_source, note = REAL_INPUT, "Scored on this point's own satellite-derived terrain."
-    else:
-        values = _placeholder_features(slug, features)
+    if is_hill(slug):
+        # A hill outside the Washington stack must not inherit a slug-seeded stand-in.
+        values = _stack_features(lat, lon, features, hill_stack_path(slug))
         if values is None:
-            return _unavailable("no terrain features: the feature stack has no valid pixels")
-        input_source, note = PLACEHOLDER_INPUT, PLACEHOLDER_NOTE
+            return _unavailable(
+                "hill terrain window is not built; a placeholder sample is not this hill's ground"
+            )
+        input_source, note = HILL_INPUT, (
+            "Scored on this hill's own DEM and land-cover window. "
+            "Washington validation scores are not this hill's accuracy."
+        )
+    else:
+        values = _stack_features(lat, lon, features)
+        if values is not None:
+            input_source, note = REAL_INPUT, "Scored on this point's own satellite-derived terrain."
+        else:
+            values = _placeholder_features(slug, features)
+            if values is None:
+                return _unavailable("no terrain features: the feature stack has no valid pixels")
+            input_source, note = PLACEHOLDER_INPUT, PLACEHOLDER_NOTE
 
     raw, probability = _predict(booster, features, values, x_thresholds, y_thresholds)
     level: RiskLevel = risk_level(probability)

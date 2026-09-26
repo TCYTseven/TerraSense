@@ -15,7 +15,7 @@ from app.db import close_pool
 from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
-from app.routes import forecast, mountains, risk, runs, simulations, synthetic_tiles
+from app.routes import forecast, hills, mountains, risk, runs, simulations, synthetic_tiles
 
 # The Next.js dev server, plus any deployed origins from CORS_ORIGINS.
 # Browsers treat localhost and 127.0.0.1 as different origins.
@@ -52,6 +52,7 @@ app.add_middleware(
 )
 
 app.include_router(mountains.router)
+app.include_router(hills.router)
 app.include_router(simulations.router)
 app.include_router(runs.router)
 app.include_router(forecast.router)
@@ -76,6 +77,7 @@ def root() -> dict[str, str]:
         "health": "/health",
         "docs": "/docs",
         "mountains": "/mountains",
+        "hills": "/hills",
     }
 
 
