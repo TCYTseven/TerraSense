@@ -70,16 +70,10 @@ export function formatLatLon(lat: number, lon: number): string {
 // --- Panel values (design addendum, Units and numbers). US units; the API stays metric. -----
 
 const FEET_PER_METER = 3.28084;
-const MM_PER_INCH = 25.4;
 
 /** 4392 m → "14,410 ft": feet, nearest 10. */
 export function formatFeet(meters: number): string {
   return `${(Math.round((meters * FEET_PER_METER) / 10) * 10).toLocaleString("en-US")} ft`;
-}
-
-/** 83.2 mm → "3.28 in". */
-export function formatInches(mm: number): string {
-  return `${(mm / MM_PER_INCH).toFixed(2)} in`;
 }
 
 /** 0.957 → "0.96": probability, confidence, and score, two decimals and no percent. */

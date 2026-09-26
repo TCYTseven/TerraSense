@@ -164,17 +164,18 @@ Four fields, always in this order:
 3. Confidence.
 4. How to avoid it.
 
-**Side panel**
+**Hill detail card** (rebuilt Sep 25, 2026)
 
-- Mountain name, elevation, region.
-- Overall risk and one plain-language sentence.
-- Rain: the past 72 hours and the next 24 hours, as text.
-- Trails with a risk score, and the flagged mile range.
-- The five agent rows, with **Reasoning**.
-- Button: **Analyze now**.
-- Button: **Hiker forecast**.
+The page is two columns: the 3D mountain view about 55%, one scrolling stats panel about 45%. Each of the top five trails gets a letter marker (A to E) on its region; hovering one shows its risk score, slope, and primary risk factor. The panel, top to bottom:
 
-Weather stays in the panel as text. It is not a map layer.
+- Mountain name and one line of stats: elevation, mean slope, area.
+- Overall risk: the score as a number, with the level word and color.
+- Top 5 at-risk trails, riskiest first: letter, name, score, and **View**, which flies the camera to the trail's region.
+- Preventative measures: three to five bullets.
+- The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below.
+- Button: **Analyze now**, pinned to the panel bottom.
+
+There is no rain section. Weather is text in the Weather agent's trace, never a map layer. Until the per-trail model and the agent stream are wired into the card, the trail scores, traces, and measures are illustrative and labeled as such; the orchestrator runs client-side.
 
 ### 6.3 Landslide Model
 
@@ -215,13 +216,13 @@ Five LLM calls with separate prompts.
 | Risk Synthesizer | Combines the three reports into one severity and one confidence | Final level, confidence, `needs_review` if the reports disagree |
 | Alert Writer | Writes the ranger alert and the hiker card | Two short texts |
 
-Run Terrain and Weather in parallel, then Trail, then Synthesizer, then Alert Writer. Stream each result to the UI.
+Run Terrain and Weather in parallel, then Trail, then Synthesizer, then Alert Writer. Stream each result to the UI. The hill card's client-side orchestrator shows Terrain, Weather, and Trails running together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). The backend still runs Trail after Terrain because Trail reads the Terrain report; aligning the two is follow-up work for when the card is wired to the stream.
 
 Consensus rule: if severity ratings differ by two or more levels, set `needs_review` and phrase the alert as an advisory.
 
 ### 6.5 Ranger Alert
 
-The alert stays in the app. When a run finishes, the hazard pin opens and the panel shows the four fields: what it is, why it was flagged, confidence, and how to avoid it. The reasoning panel holds the Alert Writer's ranger title and paragraph and the Synthesizer's recommended action (monitor or close).
+The alert stays in the app. When a run finishes, the hazard pin opens and the panel shows the four fields: what it is, why it was flagged, confidence, and how to avoid it. The Mass Alert Writer card's trace holds the ranger title and paragraph and the Synthesizer's recommended action (monitor or close).
 
 Discord was dropped on Sep 25, 2026 (team decision). There is no ranger account, no inbox, and no acknowledge button.
 
@@ -237,7 +238,7 @@ The Alert Writer produces the sentence. The bypass values come from the API, nev
 
 ### 6.7 Reasoning Panel
 
-Added Sep 25, 2026 (team decision). **Reasoning**, or a click on an agent row, opens a panel over the map beside the ranger panel. For each agent it shows the model the router picked and why (rule by rule), the tool calls and the facts they returned, the provider's thinking summary and the agent's steps, what the code changed afterwards, every call with its time and error, and the raw answer. It updates live during a run. It explains a run and never changes one.
+Added Sep 25, 2026 (team decision); folded into the hill detail card the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
 
 ### 6.8 Mountain Panel and Simulation
 
@@ -709,6 +710,7 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
+| Sep 25, 2026 | The mountain page is rebuilt as the hill detail card (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
 
 ---
 

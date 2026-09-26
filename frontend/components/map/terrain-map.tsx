@@ -17,6 +17,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
+import type { CameraFocus, TrailRisk } from "@/lib/hill";
 import type { Bypass, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
@@ -35,6 +36,7 @@ import {
   SOURCE,
   trailFeatures,
 } from "./map-style";
+import { useTrailMarkers } from "./use-trail-markers";
 
 // Copied from node_modules by scripts/copy-maplibre-worker.mjs on npm install.
 const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
@@ -73,7 +75,13 @@ export interface TerrainMapProps {
   historicalEvents: HistoricalEvent[];
   /** The hiker card's bypass: drawn dashed while the card is open, null otherwise. */
   bypass?: Bypass | null;
+  /** The lettered top-five trails (A to E): a marker and a hover tooltip each. */
+  trailMarkers?: TrailRisk[];
+  /** The latest request to fly to a lettered trail. A new nonce flies again. */
+  focus?: CameraFocus | null;
 }
+
+const NO_TRAIL_MARKERS: TrailRisk[] = [];
 
 /** A small label pinned to the summit. MapLibre lifts it onto the 3D terrain. */
 function summitLabel(name: string): HTMLElement {
@@ -305,6 +313,8 @@ export default function TerrainMap({
   onMapClick,
   historicalEvents,
   bypass = null,
+  trailMarkers = NO_TRAIL_MARKERS,
+  focus = null,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -575,6 +585,8 @@ export default function TerrainMap({
       map.off("mouseleave", LAYER.history, reset);
     };
   }, [map, isLive]);
+
+  useTrailMarkers(map, trailMarkers, focus);
 
   function toggle(id: string) {
     if (id === LAYER.susceptibility) {
