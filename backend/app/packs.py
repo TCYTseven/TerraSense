@@ -23,6 +23,7 @@ INDEX_PATH = REPO_ROOT / "data" / "seed" / "packs" / "index.json"
 RAINIER_SLUG = "mount-rainier"
 
 ARTIFACTS_DIR = REPO_ROOT / "ml" / "artifacts"
+PROCESSED_DIR = REPO_ROOT / "data" / "processed"
 SEED_DIR = REPO_ROOT / "data" / "seed"
 
 
@@ -84,6 +85,11 @@ def probability_path(slug: str, domain: HazardDomain = DEFAULT_DOMAIN) -> Path:
 def metrics_path(slug: str, domain: HazardDomain = DEFAULT_DOMAIN) -> Path:
     name = spec(domain).metrics_file
     return _pack_file(slug, ARTIFACTS_DIR / name, name, ARTIFACTS_DIR)
+
+
+def features_path(slug: str) -> Path:
+    """The seven-band terrain stack used to explain trail scores for this pack."""
+    return _pack_file(slug, PROCESSED_DIR / "features.tif", "features.tif", PROCESSED_DIR)
 
 
 def network_path(slug: str) -> Path:

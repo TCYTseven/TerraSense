@@ -102,6 +102,15 @@ PATHS = mp.paths(PACK.slug)
 TO_UTM = Transformer.from_crs("EPSG:4326", PACK.utm_crs, always_xy=True)
 TO_LONLAT = Transformer.from_crs(PACK.utm_crs, "EPSG:4326", always_xy=True)
 
+# English display labels for OSM names that are otherwise opaque to the demo audience.
+DISPLAY_NAMES = {
+    "mount-kailash": {
+        "内转-因揭陀线": "Mount Kailash Inner Kora",
+        "空行母密道": "Dakini Secret Path",
+        "冈仁波齐转山": "Mount Kailash Kora",
+    },
+}
+
 
 def configure(slug: str) -> None:
     """Point the module at one pack: its bbox, paths, and UTM zone."""
@@ -110,6 +119,11 @@ def configure(slug: str) -> None:
     PATHS = mp.paths(slug)
     TO_UTM = Transformer.from_crs("EPSG:4326", PACK.utm_crs, always_xy=True)
     TO_LONLAT = Transformer.from_crs(PACK.utm_crs, "EPSG:4326", always_xy=True)
+
+
+def display_name(name: str) -> str:
+    """Return the audience-facing trail name while keeping raw OSM names for matching."""
+    return DISPLAY_NAMES.get(PACK.slug, {}).get(name, name)
 
 
 def rel(path: Path) -> str:
@@ -447,7 +461,7 @@ def seed_feature(trail: dict, dem: Dem) -> dict:
     coords = coords[np.r_[True, np.any(np.diff(coords, axis=0) != 0, axis=1)]]  # drop repeats after rounding
     props = {
         "mountain_slug": PACK.slug,
-        "name": trail["name"],
+        "name": display_name(trail["name"]),
         "length_km": round(line_utm.length / 1000, 2),
         "elevation_gain_m": round(climb_m(profile)),
         "source": SOURCE,
@@ -568,6 +582,7 @@ def hero_features(trails: list[dict], dem: Dem) -> tuple[dict | None, list[dict]
     if selection is None:
         return None, []
     name, _, line, parts = selection
+    shown_name = display_name(name)
     profile = dem.profile(line)
     if PACK.hero and PACK.hero.closed:
         note = (f"The NPS loop: OpenStreetMap's {' and '.join(parts)}, joined. Starts at the Paradise "
@@ -583,7 +598,7 @@ def hero_features(trails: list[dict], dem: Dem) -> tuple[dict | None, list[dict]
         "type": "Feature",
         "properties": {
             "mountain_slug": PACK.slug,
-            "name": name,
+            "name": shown_name,
             "length_km": round(line.length / 1000, 2),
             "elevation_gain_m": round(climb_m(profile)),
             "source": SOURCE,
@@ -593,7 +608,7 @@ def hero_features(trails: list[dict], dem: Dem) -> tuple[dict | None, list[dict]
     }
     segments = [{
         "type": "Feature",
-        "properties": {"mountain_slug": PACK.slug, "trail": name, "seq": seq,
+        "properties": {"mountain_slug": PACK.slug, "trail": shown_name, "seq": seq,
                        "start_mile": round(start, 2), "end_mile": round(end, 2)},
         "geometry": {"type": "LineString", "coordinates": lonlat_coords(piece)},
     } for seq, (start, end, piece) in enumerate(mile_segments(line))]

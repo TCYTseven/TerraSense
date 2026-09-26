@@ -15,12 +15,13 @@
     2,
     98
   ],
+  "index_gamma": 2.4,
   "note": "The Mount Kailash pack scores the knowledge-driven index. Only Rainier's landslide inventory is dense enough to train on, so no model was trained and no AUC exists here.",
-  "created_at": "2026-09-26T20:49:15+00:00",
+  "created_at": "2026-09-26T21:13:24+00:00",
   "map": {
     "cells": 1778366,
-    "mean": 0.4684,
-    "share_at_or_above_high": 0.4827
+    "mean": 0.2557,
+    "share_at_or_above_high": 0.2318
   },
   "features": [
     "elevation",
