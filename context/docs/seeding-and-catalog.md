@@ -1,6 +1,6 @@
 # Mountain and trail data: seeding vs API calls
 
-Status as of Friday, Sep 25, 2026. This is how the globe gets peaks and how Rainier gets trails—what is committed, what runs at deploy, and what never runs on page load.
+Status as of Saturday, Sep 26, 2026. This is how the globe gets peaks and how Rainier gets trails—what is committed, what runs at deploy, and what never runs on page load.
 
 ## TL;DR
 
@@ -46,11 +46,11 @@ python -m app.seed
 
 | Source | Command flag | Speed / reliability (observed) |
 |--------|--------------|--------------------------------|
-| **Overpass (OSM peaks)** | `--source overpass` (**default**) | **~2–8 minutes** (four latitude bands, 1 s pause between bands). Depends on public Overpass load. Use **`out body`** so nodes include lat/lon (`out tags` previously produced almost empty seeds). |
+| **Overpass (OSM peaks)** | `--source overpass` (**default**) | **~5–20 minutes**: **120 tiles** (10 latitude bands × 12 longitude slices of 30°) fetched by 4 parallel workers, each request starting on a different mirror (~1 in-flight query per public mirror), up to 3 attempts per tile rotating through the 4 mirrors, per-tile counts logged; a tile that times out splits in half along its longer axis and the halves retry (up to 5 splits). Whole-band (360° of longitude) queries **timed out on the dense northern bands**, which is how an earlier seed ended up all Antarctica/Patagonia with one NH peak. Use **`out body`** so nodes include lat/lon (`out tags` previously produced almost empty seeds). |
 | **Wikidata** | `--source wikidata` or `auto` | Often **HTTP 429** (≈1 request/minute during outages). Fine for occasional manual runs, not for automation. |
 | **Wrapper** | `python ml/scripts/fetch_mountains_wikidata.py` | Calls the same module as above. |
 
-Filter (Overpass path): named `natural=peak` with `ele` tag, **elevation ≥ 1800 m**, **10 latitude bands** (Overpass query each band), then **~100 highest peaks per band** so the globe is not only Antarctica/Patagonia. Always merge **`mount-rainier`** as live.
+Filter (Overpass path): named `natural=peak` with an `ele` tag, **elevation ≥ 1800 m** (filtered server-side with `if:number(t["ele"])>=1800`; 1800 m keeps the Alps, US Rockies, and the Japanese Alps in without flooding the file with foothills; `[timeout:45]` so a too-dense tile fails fast and splits instead of burning 90 s per probe). Selection: after `dedupe_nearby` (2-decimal lat/lon), `space_out` keeps only the **highest peak per 1° neighborhood** (~110 km) so a ridge line never renders as one stack of pins; then **every occupied latitude band gets an even share** of the ~1000 slots (a band with fewer peaks donates its leftover to the fuller bands), and **each band's quota round-robins across its 30° longitude slices** highest-first — so the Rockies, the Alps, the Himalaya, and Japan all land pins instead of whichever single range is tallest. `--write-seed` **refuses to overwrite** the committed file when fewer than 500 rows come back (mass tile failure). Always merge **`mount-rainier`** as live (peaks within 1° of it are dropped so nothing stacks on its pin). The fetch also caches the raw rows in `data/raw/overpass_peaks_raw.json` (gitignored) — re-tune selection without re-fetching via `--write-seed --source cache`.
 
 After write + seed, commit **`data/seed/mountains.json`** so deploys and teammates never need Overpass.
 
@@ -109,7 +109,9 @@ Produced offline by **`ml/scripts/import_trails.py`** and **`ml/scripts/build_tr
 | Symptom | Likely cause | Fix |
 |---------|--------------|-----|
 | Globe shows **2–3** pins | DB seeded from old **3-row** `mountains.json` | Finish `--write-seed`, `app.seed`, restart API |
+| Pins cluster at the **poles** (Antarctica/Patagonia, ~0 in NH) | Whole-band Overpass queries timed out on the dense northern bands and returned empty | Fixed: **tiled** queries (lat × lon) + even band quotas; re-run `--write-seed` |
 | `--write-seed` wrote **1** peak | Overpass used `out tags` (no coordinates) | Fixed: use **`out body`**; re-run with `--source overpass` |
+| `--write-seed` aborts with “fewer than 500 rows” | Most tiles failed (Overpass overloaded) | Check the per-tile logs, wait, re-run; the committed seed was not touched |
 | Wikidata **429** | Rate limit | Use **`--source overpass`** for bulk seed; ignore Wikidata for hackathon |
 | Click peak, empty trails | Catalog peak, not Rainier | Expected until trail import exists for that mountain |
 | Analyze fails on Fuji | `is_live: false` | Expected; only Rainier runs the pipeline |

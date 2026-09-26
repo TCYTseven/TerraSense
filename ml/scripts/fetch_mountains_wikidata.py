@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write data/seed/mountains.json via backend/app/mountain_catalog.py (Wikidata, else Overpass).
+"""Write data/seed/mountains.json via backend/app/mountain_catalog.py (Overpass by default).
 
 From the repo root:
 
