@@ -22,6 +22,8 @@ from rasterio.warp import transform as warp_transform
 
 from app.bypass import Bypass, find_bypass, load_network
 from app.db import connect
+from app.domains import DEFAULT_DOMAIN, HAZARD_WORDS, HazardDomain, spec
+from app.ml import avalanche as aval
 from app.ml import probability as prob
 from app.ml.hazard import (
     FlaggedRun,
@@ -38,16 +40,25 @@ from app.risk import RISK_LEVELS
 from app.trailscan import TrailScore, scan_trails
 from app.weather import HourlyRain, summarize as summarize_rain, try_hourly_rain
 
-PROBABILITY_LAYER = "probability"
+PROBABILITY_LAYER = "probability"  # the landslide layer's legacy name; see domains.tile_layer
 LIVE_SLUG = "mount-rainier"
 
-HAZARD_WORDS = {"debris_flow": "Debris flow", "landslide": "Landslide"}
+# Plain words for the sentences code writes without a model. Both domains' drivers live here:
+# which subset an agent may cite comes from app/domains.py.
 DRIVER_WORDS = {
     "slope_angle": "steep slopes",
     "drainage_proximity": "ground close to a drainage channel",
     "sparse_vegetation": "thin plant cover",
     "soil_wetness": "ground where water collects",
     "concave_hollow": "concave hollows",
+    "lee_loading": "lee slopes where wind piles snow",
+    "convex_rollover": "convex rollovers where a slab can fracture",
+    "open_slope": "open ground with no trees to anchor the snow",
+    "above_treeline": "start zones above treeline",
+    "new_snow_load": "new snow in the forecast",
+    "wind_slab": "wind stiffening the new snow into a slab",
+    "warming_instability": "a rising freezing level",
+    "rain_on_snow": "rain falling on the snowpack",
 }
 
 
@@ -66,6 +77,7 @@ class HeroTrail:
 @dataclass(frozen=True)
 class Assessment:
     slug: str
+    domain: HazardDomain
     trail: HeroTrail
     probability: prob.ProbabilityMap
     map_summary: dict
@@ -78,10 +90,39 @@ class Assessment:
     trail_scores: list[TrailScore]
     computed_at: datetime
     elapsed_s: float
+    # The weather this map was scored against. An avalanche run names its hazard type from it.
+    weather: HourlyRain | None = None
 
     @property
     def method(self) -> str:
         return self.probability.method
+
+    @property
+    def spec(self):
+        return spec(self.domain)
+
+    @property
+    def type_hint(self) -> str:
+        """The hazard type code would pick, in this domain's vocabulary.
+
+        The landslide zone finder returns "landslide" or "debris_flow" from the terrain under
+        the zone. An avalanche run reads the same zone but names it from what the weather is
+        doing to the snow, which is what separates a wet-snow release from a slab.
+        """
+        if self.zone is None:
+            return self.spec.default_type
+        if self.domain != "avalanche":
+            return self.zone.type_hint
+        return aval.type_hint(aval.snow_signals(self.weather))
+
+    @property
+    def drivers_hint(self) -> tuple[str, ...]:
+        """The drivers code would cite, in this domain's vocabulary."""
+        if self.zone is None:
+            return ()
+        if self.domain != "avalanche":
+            return tuple(self.zone.drivers_hint)
+        return aval.drivers_hint(aval.snow_signals(self.weather), self.zone.terrain)
 
     def flagged_lines(self) -> list[SegmentLine]:
         seqs = set(self.flagged.seqs) if self.flagged else set()
@@ -114,11 +155,21 @@ def hero_trail(conn: psycopg.Connection, slug: str = LIVE_SLUG) -> HeroTrail:
     return HeroTrail(str(first["mountain_id"]), str(first["trail_id"]), first["trail_name"], segments)
 
 
-def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | None = None) -> Assessment:
+def score_map(domain: HazardDomain, rain: HourlyRain | None, slug: str):
+    """One domain's 72-hour map. Both scorers return the same ProbabilityMap on the same grid,
+    which is why nothing downstream of here needs to know the domain."""
+    path = susceptibility_path(slug, domain)
+    if domain == "avalanche":
+        return aval.score(rain, susceptibility=path)
+    return prob.score(rain, susceptibility=path)
+
+
+def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | None = None,
+           domain: HazardDomain = DEFAULT_DOMAIN) -> Assessment:
     """Score the map, the hero trail, and the worst cluster it crosses. Writes nothing."""
     started = time.perf_counter()
     trail = hero_trail(conn, slug)
-    probability = prob.score(rain, susceptibility=susceptibility_path(slug))
+    probability = score_map(domain, rain, slug)
     risks = segment_risks(probability, trail.segments)
     flagged = flagged_run(risks)
     zone = None
@@ -126,7 +177,9 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
         zone = hazard_zone(probability, [s for s in trail.segments if s.seq in flagged.seqs])
     return Assessment(
         slug=slug,
+        domain=domain,
         trail=trail,
+        weather=rain,
         probability=probability,
         map_summary=prob.summarize(probability.values),
         segments=risks,
@@ -147,8 +200,8 @@ def publish(conn: psycopg.Connection, assessment: Assessment) -> dict:
         raise RuntimeError(f"{assessment.slug!r} has no pack facts in data/seed/packs/index.json; "
                            "run python ml/scripts/mountain_packs.py --write-index")
     metadata = render_xyz(
-        prob.write(assessment.probability, probability_path(assessment.slug)),
-        PROBABILITY_LAYER,
+        prob.write(assessment.probability, probability_path(assessment.slug, assessment.domain)),
+        assessment.spec.tile_layer,
         bbox=pack.bbox,
         tiles_dir=slug_tiles_dir(assessment.slug),
     )
@@ -190,10 +243,10 @@ def describe(assessment: Assessment) -> dict:
     flagged, zone = assessment.flagged, assessment.zone
     if flagged is None or zone is None:
         return {"what": None, "why": None, "how_to_avoid": None}
-    hazard = HAZARD_WORDS[zone.type_hint]
+    hazard = HAZARD_WORDS[assessment.type_hint]
     what = f"{hazard} zone crossing the {assessment.trail.name}, {mile_text(flagged.start_mile, flagged.end_mile)}."
-    source = "susceptibility map" if assessment.probability.is_stand_in else "72-hour map"
-    reasons = [DRIVER_WORDS[d] for d in zone.drivers_hint]
+    source = "susceptibility map" if assessment.probability.is_stand_in else assessment.spec.map_name
+    reasons = [DRIVER_WORDS[d] for d in assessment.drivers_hint if d in DRIVER_WORDS]
     why = f"The {source} peaks at {flagged.max_probability:.2f} on these miles"
     why += f", with {_join(reasons)}." if reasons else "."
     bypass = assessment.bypass
@@ -235,12 +288,12 @@ def save_hazard(
     values = (
         assessment.trail.mountain_id,
         run_id,
-        hazard_type or zone.type_hint,
+        hazard_type or assessment.type_hint,
         severity or flagged.level,
         flagged.max_probability,
         confidence,
         Jsonb(zone.polygon),
-        Jsonb(drivers if drivers is not None else list(zone.drivers_hint)),
+        Jsonb(drivers if drivers is not None else list(assessment.drivers_hint)),
         what or text["what"],
         why or text["why"],
         how_to_avoid or text["how_to_avoid"],
@@ -249,14 +302,16 @@ def save_hazard(
         flagged.start_mile,
         flagged.end_mile,
         Jsonb(assessment.bypass.to_json()) if assessment.bypass else None,
+        assessment.domain,
     )
     with conn.cursor(row_factory=dict_row) as cur:
         row = cur.execute(
             """
             INSERT INTO hazards
               (mountain_id, run_id, type, severity, probability, confidence, geom, drivers,
-               what, why, how_to_avoid, needs_review, trail_id, start_mile, end_mile, bypass)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+               what, why, how_to_avoid, needs_review, trail_id, start_mile, end_mile, bypass,
+               domain)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id
             """,
             values,
