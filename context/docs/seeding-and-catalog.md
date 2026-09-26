@@ -6,12 +6,12 @@ Status as of Saturday, Sep 26, 2026. This is how the globe gets peaks and how Ra
 
 | Data | Globe / app source | External API on page load? |
 |------|-------------------|----------------------------|
-| **Mountain pins (catalog)** | `SEED_MODE=mountainstest` loads `data/seed/mountains_test.json` (138). `reseed` loads `data/seed/mountains.json` (648). Both go Postgres → `GET /mountains` | **No** |
+| **Mountain pins (catalog)** | `SEED_MODE=mountainstest` loads `data/seed/mountains_test.json` (138). `reseed` loads `data/seed/mountains.json` (1000). Both go Postgres → `GET /mountains` | **No** |
 | **Trail lines & miles (Rainier)** | `data/seed/trails.geojson`, `trail_segments.geojson`, `trail_network.geojson` → Postgres | **No** |
 | **Weather (analyze)** | Open-Meteo inside a run only | **No** on globe load |
 | **LLM agents** | Gemini / xAI on **Analyze** only | **No** on globe load |
 
-If the globe shows only **two or three** pins, Postgres still has the old three-peak seed. The committed catalogs are the 138-peak test file (default) and the 648-peak dump. Load one with `app.seed`, then restart the API.
+If the globe shows only **two or three** pins, Postgres still has the old three-peak seed. The committed catalogs are the 138-peak test file (default) and the 1000-peak dump. Load one with `app.seed`, then restart the API.
 
 ---
 
@@ -50,7 +50,7 @@ python -m app.seed
 | **Wikidata** | `--source wikidata` or `auto` | Often **HTTP 429** (≈1 request/minute during outages). Fine for occasional manual runs, not for automation. |
 | **Wrapper** | `python ml/scripts/fetch_mountains_wikidata.py` | Calls the same module as above. |
 
-Filter (Overpass path): named `natural=peak` with an `ele` tag, **elevation ≥ 1800 m** (filtered server-side with `if:number(t["ele"])>=1800`; 1800 m keeps the Alps, US Rockies, and the Japanese Alps in without flooding the file with foothills; `[timeout:45]` so a too-dense tile fails fast and splits instead of burning 90 s per probe). Selection: after `dedupe_nearby` (2-decimal lat/lon), `space_out` keeps only the **highest peak per 1° neighborhood** (~110 km) so a ridge line never renders as one stack of pins; then **every occupied latitude band gets an even share** of the ~1000 slots (a band with fewer peaks donates its leftover to the fuller bands), and **each band's quota round-robins across its 30° longitude slices** highest-first — so the Rockies, the Alps, the Himalaya, and Japan all land pins instead of whichever single range is tallest. `--write-seed` **refuses to overwrite** the committed file when fewer than 500 rows come back (mass tile failure). Elevations above **8850 m** are rejected as mistagged OSM data. Always merge **`mount-rainier`** (live) plus the two featured statics **`mount-fuji`** and **`huascaran`** under their famous names — OSM tags those summits by their local point names (Kengamine, Uhuru Peak) — and drop picked peaks within 1° of any merged pin so nothing stacks. The fetch also caches the raw rows in `data/raw/overpass_peaks_raw.json` (gitignored) — re-tune selection without re-fetching via `--write-seed --source cache`.
+Filter (Overpass path): named `natural=peak` with an `ele` tag, **elevation ≥ 1800 m** (filtered server-side with `if:number(t["ele"])>=1800`; 1800 m keeps the Alps, US Rockies, and the Japanese Alps in without flooding the file with foothills; `[timeout:45]` so a too-dense tile fails fast and splits instead of burning 90 s per probe). Selection: after `dedupe_nearby` (2-decimal lat/lon), `space_out` keeps only the **highest peak per 1° neighborhood** (~110 km) so a ridge line never renders as one stack of pins; then **every occupied latitude band gets an even share** of the ~1000 slots (a band with fewer peaks donates its leftover to the fuller bands), and **each band's quota round-robins across its 30° longitude slices** highest-first — so the Rockies, the Alps, the Himalaya, and Japan all land pins instead of whichever single range is tallest. `--write-seed` **refuses to overwrite** the committed file when fewer than 500 rows come back (mass tile failure). Elevations above **8850 m** are rejected as mistagged OSM data. Always merge **`mount-rainier`** (live) plus the two featured statics **`mount-fuji`** and **`huascaran`** under their famous names — OSM tags those summits by their local point names, like Fuji's Kengamine — and drop picked peaks within 1° of any merged pin so nothing stacks. The fetch also caches the raw rows in `data/raw/overpass_peaks_raw.json` (gitignored) — re-tune selection without re-fetching via `--write-seed --source cache`.
 
 After write + seed, commit **`data/seed/mountains.json`** so deploys and teammates never need Overpass.
 
@@ -61,7 +61,7 @@ As of Saturday, Sep 26, 2026:
 | File | Rows | When it loads |
 |---|---|---|
 | `data/seed/mountains_test.json` | 138 | `SEED_MODE=mountainstest` (the default in `.env.example`) |
-| `data/seed/mountains.json` | 648 | `SEED_MODE=reseed` |
+| `data/seed/mountains.json` | 1000 | `SEED_MODE=reseed` |
 
 The globe draws 50 of whichever file was seeded, unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` is `0` or another cap. The written target for the full dump is about 1,000. Re-run `--write-seed` only if the demo needs that set. After a reseed, the API count and the file count should match:
 

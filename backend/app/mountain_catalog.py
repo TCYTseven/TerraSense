@@ -96,8 +96,8 @@ RAINIER: dict[str, Any] = {
 }
 
 # The two static globe markers from data/AGENTS.md, kept under their famous names and
-# display risks. OSM tags these summits by their local point names (Kengamine, Uhuru
-# Peak), so without the merge the catalog would drop or obscure them.
+# display risks. OSM tags these summits by their local point names (Kengamine,
+# Huascaran Sur), so without the merge the catalog would drop or obscure them.
 FEATURED_STATIC: tuple[dict[str, Any], ...] = (
     {
         "name": "Mount Fuji",
