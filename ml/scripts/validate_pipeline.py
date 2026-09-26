@@ -27,6 +27,8 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 BBOX = (-121.93, 46.76, -121.54, 46.96)
 FEATURES = ["elevation", "slope", "aspect", "curvature", "dist_drainage", "landcover", "twi"]
 TABLE_COLUMNS = FEATURES + ["label", "region", "row", "col"]
+SEED_ACCURACIES = {"exact", "1km", "5km", "10km", "50km"}
+TRAINING_ACCURACIES = {"exact", "1km"}
 
 SOURCES = {
     "DEM": REPO_ROOT / "data/raw/rainier_dem_cop30.tif",
@@ -57,16 +59,17 @@ def _check_source(path: Path, name: str, errors: list[str]) -> None:
         errors.append(f"{name} cannot be opened: {type(exc).__name__}: {exc}")
 
 
-def _check_seed(errors: list[str]) -> int:
+def _check_seed(errors: list[str]) -> tuple[int, int]:
     if not LANDSLIDES.is_file():
         errors.append("landslide seed is missing")
-        return 0
+        return 0, 0
     try:
         payload = json.loads(LANDSLIDES.read_text(encoding="utf-8"))
         features = payload["features"]
         if payload.get("type") != "FeatureCollection" or not features:
             errors.append("landslide seed is not a non-empty FeatureCollection")
-            return 0
+            return 0, 0
+        usable = 0
         for feature in features:
             geometry = shape(feature["geometry"])
             if geometry.geom_type != "Point":
@@ -74,12 +77,17 @@ def _check_seed(errors: list[str]) -> int:
             lon, lat = geometry.coords[0]
             if not _inside(lon, lat):
                 errors.append(f"landslide {feature.get('id')} is outside the shared bbox")
-            if feature.get("properties", {}).get("location_accuracy") not in {"exact", "1km"}:
-                errors.append(f"landslide {feature.get('id')} has unusable location accuracy")
-        return len(features)
+            accuracy = feature.get("properties", {}).get("location_accuracy")
+            if accuracy not in SEED_ACCURACIES:
+                errors.append(f"landslide {feature.get('id')} has unknown location accuracy")
+            if accuracy in TRAINING_ACCURACIES:
+                usable += 1
+        if usable < 2:
+            errors.append("landslide seed has fewer than two high-accuracy training points")
+        return len(features), usable
     except (AttributeError, OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
         errors.append(f"landslide seed is invalid: {type(exc).__name__}: {exc}")
-        return 0
+        return 0, 0
 
 
 def _check_grid(errors: list[str]) -> tuple[tuple[int, int], object | None, object | None]:
@@ -176,7 +184,7 @@ def validate(require_probability: bool = False) -> dict[str, int | float | str]:
     errors: list[str] = []
     for name, path in SOURCES.items():
         _check_source(path, name, errors)
-    labels = _check_seed(errors)
+    labels, usable_labels = _check_seed(errors)
     grid_shape, transform, crs = _check_grid(errors)
     rows = _check_table(errors)
 
@@ -210,6 +218,7 @@ def validate(require_probability: bool = False) -> dict[str, int | float | str]:
         raise SystemExit("ML deployment audit failed:\n- " + "\n- ".join(errors))
     return {
         "labels": labels,
+        "usable_labels": usable_labels,
         "feature_rows": rows,
         "susceptibility_cells": susceptibility_cells,
         "susceptibility_tiles": susceptibility_tiles,

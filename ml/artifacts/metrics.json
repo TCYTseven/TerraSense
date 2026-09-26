@@ -1,15 +1,15 @@
 {
   "method": "lightgbm",
   "trained": true,
-  "auc": 0.7317,
-  "precision_at_high": 0.5,
+  "auc": 0.715,
+  "precision_at_high": 0.0,
   "high_threshold": 0.45,
   "test_regions": [
-    12
+    11
   ],
-  "train_rows": 1010,
-  "test_rows": 178,
-  "positives": 297,
+  "train_rows": 1041,
+  "test_rows": 183,
+  "positives": 306,
   "features": [
     "elevation",
     "slope",
@@ -20,12 +20,18 @@
     "twi"
   ],
   "note": "Scores are on held-out spatial blocks. The map comes from a refit on every row. Negatives were sampled 1:3, so read the output as relative susceptibility.",
-  "created_at": "2026-09-26T03:01:02+00:00",
+  "created_at": "2026-09-26T04:05:18+00:00",
   "map": {
     "cells": 735786,
-    "mean": 0.0533,
-    "share_at_or_above_high": 0.0478
+    "mean": 0.0585,
+    "share_at_or_above_high": 0.0525
   },
+  "seed_events": 37,
+  "label_catalogs": [
+    "NASA Global Landslide Catalog",
+    "Washington State Landslide Inventory Database \u2014 Landslide Compilation"
+  ],
+  "usable_seed_events": 34,
   "grid": {
     "crs": "EPSG:32610",
     "width": 1004,

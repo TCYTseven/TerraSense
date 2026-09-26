@@ -1,12 +1,12 @@
 {
   "method": "lightgbm",
   "importance": {
-    "elevation": 0.4217,
-    "slope": 0.1175,
-    "aspect": 0.1668,
-    "curvature": 0.066,
-    "dist_drainage": 0.1161,
-    "landcover": 0.0387,
-    "twi": 0.0731
+    "elevation": 0.4227,
+    "slope": 0.129,
+    "aspect": 0.1613,
+    "curvature": 0.0648,
+    "dist_drainage": 0.1265,
+    "landcover": 0.034,
+    "twi": 0.0618
   }
 }

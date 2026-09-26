@@ -65,8 +65,8 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 - **The hill card is half wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures still come from `frontend/lib/fixtures/hill-demo.ts`, and the card still says those scores are illustrative.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
 - **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
-- **Landslide points.** The NASA Global Landslide Catalog timed out during this build, so the downloader used the documented official Washington Geological Survey inventory fallback and staged 33 clipped representative-point labels. The **Past landslides** toggle is enabled, and the History Analyst can read the record.
-- **LightGBM.** The trained spatial holdout AUC is `0.7317` with precision `0.5000` at the High threshold. Susceptibility uses a LightGBM refit on all 1,188 labeled pixels; the score is reported as relative susceptibility because negatives were sampled 1:3. See `ml/artifacts/metrics.json`.
+- **Landslide points.** The supplied NASA Global Landslide Catalog export contributes 4 Rainier events; because only one is `1km` accurate, the downloader adds 33 documented Washington Geological Survey inventory points as supplemental training labels. The **Past landslides** toggle is enabled, and the History Analyst can read all 37 records.
+- **LightGBM.** The trained spatial holdout AUC is `0.7150` with precision `0.0000` at the High threshold. Susceptibility uses a LightGBM refit on all 1,224 labeled pixels; the score is reported as relative susceptibility because negatives were sampled 1:3. See `ml/artifacts/metrics.json`.
 - **Model B (step 17)** is live. `backend/app/ml/probability.py` calls `backend/app/ml/model_b.py`, which combines the trained susceptibility raster with bounded forecast-rain and antecedent-moisture signals.
 - **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
 - **Mountain panel and simulation** (6.8). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
@@ -365,7 +365,7 @@ Download and clip these before the event. Everything is for Mount Rainier unless
 |---|---|---|---|
 | Elevation | Copernicus DEM GLO-30 | Slope, aspect, curvature, wetness index, bypass climb | Done |
 | Land cover | ESA WorldCover 2021 | Model A feature | Done |
-| Landslide points | NASA Global Landslide Catalog and/or a USGS/state inventory | Model A labels and map pins | Blocked: data.nasa.gov unreachable from the build container |
+| Landslide points | NASA Global Landslide Catalog plus a documented Washington state inventory supplement | Model A labels and map pins | Supplied NASA export used; sparse high-accuracy events are supplemented for spatial training |
 | Precipitation | Open-Meteo, downscaled to Paradise (1,650 m) | Model B, live | Done. `OPEN_METEO_FIXTURE` loads a synthetic storm offline |
 | Trails | OpenStreetMap, via Overture Maps (release 2026-09-23.0) | Trail risk and the bypass | Done: 67 trails, the Skyline loop in 55 segments, a 114-edge network |
 | Basemap | AWS Terrain Tiles (elevation, shaded relief). Mapbox satellite when a token is set | Mountain view | Done |
@@ -662,7 +662,7 @@ TerraSense scores Mount Rainier for landslide risk over the next 72 hours. A cli
 
 ### How we built it
 
-**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover are joined to 33 official Washington Geological Survey inventory-derived labels. A LightGBM susceptibility model trains on 1,188 labeled pixels with a spatial holdout AUC of `0.7317`; the 72-hour map then combines its raster with live rain and antecedent moisture through Model B.
+**Data and ML.** Copernicus 30 m DEM features (slope, concave hollows, drainage proximity, wetness) and ESA WorldCover 2021 land cover are joined to 34 usable labels: one precise NASA event plus 33 official Washington Geological Survey inventory-derived points. A LightGBM susceptibility model trains on 1,224 labeled pixels with a spatial holdout AUC of `0.7150`; the 72-hour map then combines its raster with live rain and antecedent moisture through Model B.
 
 **Agents.** Seven agents with Pydantic outputs: five analysts (Terrain, Weather, Trail, History, Route Scout) in parallel, then the Risk Synthesizer and the Alert Writer, streamed over a WebSocket. A router in code sends each call to Gemini Flash or Grok by task, stakes, and provider health, and falls back to the other on failure. Code checks every answer, sets confidence, and flags needs review when severities differ by two levels. A side panel shows each agent's model, the router's reasons, the facts it read, and its reasoning. The bypass is routed on the OpenStreetMap trail network.
 

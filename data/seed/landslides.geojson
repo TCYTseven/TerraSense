@@ -891,6 +891,106 @@
         "inventory_confidence": "Low-Moderate",
         "source_layer": "Miscellaneous Landslide Mapping"
       }
+    },
+    {
+      "type": "Feature",
+      "id": 7792,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.7468,
+          46.8317
+        ]
+      },
+      "properties": {
+        "id": 7792,
+        "date": "2011-06-24",
+        "title": "Camp Muir and Nisqually Glacier",
+        "category": "rock_fall",
+        "trigger": "unknown",
+        "size": "medium",
+        "setting": "other",
+        "location_accuracy": "5km",
+        "fatalities": 0,
+        "source_name": "AGU Blog",
+        "source_link": "http://blogs.agu.org/landslideblog/2011/06/28/video-of-the-week-debris-avalanche-on-mout-rainier/",
+        "catalog": "NASA Global Landslide Catalog"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 7327,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.8046,
+          46.8212
+        ]
+      },
+      "properties": {
+        "id": 7327,
+        "date": "2015-08-13",
+        "title": "South Tahoma Glacier",
+        "category": "debris_flow",
+        "trigger": "snowfall_snowmelt",
+        "size": "medium",
+        "setting": "other",
+        "location_accuracy": "5km",
+        "fatalities": 0,
+        "source_name": "Enumclaw Courier-Herald",
+        "source_link": "http://www.courierherald.com/news/322062701.html",
+        "catalog": "NASA Global Landslide Catalog"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 7700,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.7714,
+          46.8391
+        ]
+      },
+      "properties": {
+        "id": 7700,
+        "date": "2015-08-19",
+        "title": "Point Success",
+        "category": "rock_fall",
+        "trigger": "unknown",
+        "size": "medium",
+        "setting": "natural_slope",
+        "location_accuracy": "1km",
+        "fatalities": 0,
+        "source_name": "KIRO",
+        "source_link": "http://www.kiro7.com/news/32-magnitude-earthquake-hits-east-eatonville/28759544",
+        "catalog": "NASA Global Landslide Catalog"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 7730,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.8087,
+          46.8184
+        ]
+      },
+      "properties": {
+        "id": 7730,
+        "date": "2015-09-12",
+        "title": "South Tahoma Glacier",
+        "category": "debris_flow",
+        "trigger": "unknown",
+        "size": "medium",
+        "setting": "unknown",
+        "location_accuracy": "5km",
+        "fatalities": 0,
+        "source_name": "Pacific Northwest Seismic Network",
+        "source_link": "https://pnsn.org/blog/2015/08/21/summer-rockfall-time-yet-again",
+        "catalog": "NASA Global Landslide Catalog"
+      }
     }
   ]
 }
