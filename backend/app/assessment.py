@@ -20,7 +20,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from rasterio.warp import transform as warp_transform
 
-from app.bypass import Bypass, find_bypass
+from app.bypass import Bypass, find_bypass, load_network
 from app.db import connect
 from app.ml import probability as prob
 from app.ml.hazard import (
@@ -32,7 +32,8 @@ from app.ml.hazard import (
     hazard_zone,
     segment_risks,
 )
-from app.ml.tiles import render_xyz
+from app.ml.tiles import render_xyz, slug_tiles_dir
+from app.packs import get as get_pack, network_path, probability_path, susceptibility_path
 from app.risk import RISK_LEVELS
 from app.trailscan import TrailScore, scan_trails
 from app.weather import HourlyRain, summarize as summarize_rain, try_hourly_rain
@@ -117,7 +118,7 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
     """Score the map, the hero trail, and the worst cluster it crosses. Writes nothing."""
     started = time.perf_counter()
     trail = hero_trail(conn, slug)
-    probability = prob.score(rain)
+    probability = prob.score(rain, susceptibility=susceptibility_path(slug))
     risks = segment_risks(probability, trail.segments)
     flagged = flagged_run(risks)
     zone = None
@@ -131,7 +132,7 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
         segments=risks,
         flagged=flagged,
         zone=zone,
-        bypass=find_bypass(flagged, probability),
+        bypass=find_bypass(flagged, probability, network=load_network(network_path(slug))),
         trail_scores=scan_trails(conn, slug, probability, trail.trail_id,
                                  zone.polygon if zone is not None else None),
         computed_at=datetime.now(UTC),
@@ -141,7 +142,16 @@ def assess(conn: psycopg.Connection, slug: str = LIVE_SLUG, rain: HourlyRain | N
 
 def publish(conn: psycopg.Connection, assessment: Assessment) -> dict:
     """Render the probability tiles and store each segment's risk. Returns the layer metadata."""
-    metadata = render_xyz(prob.write(assessment.probability), PROBABILITY_LAYER)
+    pack = get_pack(assessment.slug)
+    if pack is None:
+        raise RuntimeError(f"{assessment.slug!r} has no pack facts in data/seed/packs/index.json; "
+                           "run python ml/scripts/mountain_packs.py --write-index")
+    metadata = render_xyz(
+        prob.write(assessment.probability, probability_path(assessment.slug)),
+        PROBABILITY_LAYER,
+        bbox=pack.bbox,
+        tiles_dir=slug_tiles_dir(assessment.slug),
+    )
     with conn.cursor() as cur:
         cur.executemany(
             "UPDATE trail_segments SET risk_level = %s, probability = %s WHERE id = %s",
@@ -287,7 +297,8 @@ def main() -> None:
                         help="render the probability tiles, store segment risk, and save a preview hazard")
     args = parser.parse_args()
 
-    rain, rain_error = try_hourly_rain()
+    pack = get_pack(args.slug)
+    rain, rain_error = try_hourly_rain(pack.peak_lat, pack.peak_lon) if pack else try_hourly_rain()
     with connect() as conn:
         assessment = assess(conn, args.slug, rain)
         summary = assessment.map_summary

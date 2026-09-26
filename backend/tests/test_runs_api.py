@@ -167,9 +167,20 @@ def test_failed_run_keeps_the_last_hazard(api, monkeypatch):
     assert client.get("/mountains/mount-rainier").json()["active_hazard"]["run_id"] == first
 
 
+def test_location_analyze_without_trails(api):
+    """A catalog peak with no trail geometry still runs, and it does not invent routes."""
+    client, _ = api
+    started = client.post("/mountains/huascaran/analyze")
+    assert started.status_code == 202
+    final = follow(client, started.json()["run_id"])[-1]["run"]
+    assert final["status"] == "done", final.get("error")
+    assert final["method"] == "location cell classification"
+    assert final["advisory"]["avoid"] == [] and final["advisory"]["safe"] == []
+    assert "no trails" in final["agents"]["trail"]["summary"].lower()
+
+
 def test_rejects(api):
     client, _ = api
-    assert client.post("/mountains/huascaran/analyze").status_code == 409
     assert client.post("/mountains/nowhere/analyze").status_code == 404
     assert client.get("/runs/not-a-uuid").status_code == 404
     assert client.get(f"/runs/{uuid.uuid4()}").status_code == 404

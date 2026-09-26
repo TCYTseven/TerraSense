@@ -46,6 +46,8 @@ SPACING_DEG = 1.0
 # 1800 m keeps the Alps, US Rockies, and the Japanese Alps in while leaving out foothills
 # that would flood the dense tiles. Overpass filters server-side, so payloads stay small.
 MIN_ELEVATION_M = 1800
+# Nothing on Earth tops Everest (8849 m); a bigger ele tag is mistagged OSM data.
+MAX_ELEVATION_M = 8850
 # Refuse to overwrite the committed seed with the husk of a fetch where most tiles failed.
 MIN_SEED_ROWS = 500
 USER_AGENT = "TerraSense/1.0 (hackathon; mountain catalog)"
@@ -92,6 +94,32 @@ RAINIER: dict[str, Any] = {
     "current_risk_level": "moderate",
     "is_live": True,
 }
+
+# The two static globe markers from data/AGENTS.md, kept under their famous names and
+# display risks. OSM tags these summits by their local point names (Kengamine, Uhuru
+# Peak), so without the merge the catalog would drop or obscure them.
+FEATURED_STATIC: tuple[dict[str, Any], ...] = (
+    {
+        "name": "Mount Fuji",
+        "slug": "mount-fuji",
+        "lat": 35.3606,
+        "lon": 138.7274,
+        "elevation_m": 3776,
+        "region": "Honshu, Japan",
+        "current_risk_level": "low",
+        "is_live": False,
+    },
+    {
+        "name": "Huascarán",
+        "slug": "huascaran",
+        "lat": -9.1219,
+        "lon": -77.6047,
+        "elevation_m": 6768,
+        "region": "Cordillera Blanca, Peru",
+        "current_risk_level": "high",
+        "is_live": False,
+    },
+)
 
 WIKIDATA_SPARQL = """
 SELECT ?mountain ?mountainLabel ?lat ?lon ?ele ?countryLabel WHERE {
@@ -256,6 +284,11 @@ def _overpass_query(query: str) -> dict:
     raise RuntimeError(f"Overpass did not answer: {last_error}") from last_error
 
 
+def _junk_name(name: str) -> bool:
+    """OSM spot heights are sometimes 'named' by their elevation ('2097'). Not a name."""
+    return re.fullmatch(r"[\d\s.,'-]+", name) is not None
+
+
 def _parse_peaks(payload: dict) -> list[dict]:
     rows: list[dict] = []
     for element in payload.get("elements", []):
@@ -266,13 +299,13 @@ def _parse_peaks(payload: dict) -> list[dict]:
         tags = element.get("tags") or {}
         name = tags.get("name:en") or tags.get("name")
         ele_raw = tags.get("ele")
-        if not name or ele_raw is None:
+        if not name or _junk_name(name) or ele_raw is None:
             continue
         try:
             elevation_m = int(float(ele_raw))
         except ValueError:
             continue
-        if elevation_m < MIN_ELEVATION_M:
+        if not (MIN_ELEVATION_M <= elevation_m <= MAX_ELEVATION_M):
             continue
         rows.append(
             {
@@ -508,14 +541,18 @@ def pick_stratified(rows: list[dict], target: int = TARGET_COUNT) -> list[dict]:
 
 
 def build_seed_list(rows: list[dict]) -> list[dict]:
-    picked = pick_stratified(rows)
-    # Rainier is merged in after selection, so give its pin the same breathing room.
+    merged = (RAINIER, *FEATURED_STATIC)
     picked = [
-        r for r in picked
-        if abs(r["lat"] - RAINIER["lat"]) >= SPACING_DEG or abs(r["lon"] - RAINIER["lon"]) >= SPACING_DEG
+        r for r in pick_stratified(rows)
+        # Merged pins arrive after selection, so give each the same breathing room.
+        if all(
+            abs(r["lat"] - m["lat"]) >= SPACING_DEG or abs(r["lon"] - m["lon"]) >= SPACING_DEG
+            for m in merged
+        )
     ]
     by_slug = {m["slug"]: m for m in raw_to_seed_rows(picked)}
-    by_slug[RAINIER["slug"]] = RAINIER
+    for mountain in merged:
+        by_slug[mountain["slug"]] = mountain
     return sorted(by_slug.values(), key=lambda m: (-m["elevation_m"], m["name"]))
 
 
@@ -573,6 +610,11 @@ def write_seed_file(*, source: Literal["wikidata", "overpass", "auto", "cache"] 
         RAW_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
         RAW_CACHE_PATH.write_text(json.dumps(rows), encoding="utf-8")
         log.info("Cached %s raw rows to %s.", len(rows), RAW_CACHE_PATH)
+    # An older cache may predate the elevation cap and name filter; enforce both either way.
+    rows = [
+        r for r in rows
+        if MIN_ELEVATION_M <= r["elevation_m"] <= MAX_ELEVATION_M and not _junk_name(r["name"])
+    ]
     mountains = build_seed_list(rows)
     if len(mountains) < MIN_SEED_ROWS:
         raise SystemExit(

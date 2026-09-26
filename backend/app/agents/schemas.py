@@ -177,6 +177,18 @@ class RangerResponse(AgentOutput):
     escalate_if: str = Field(description="One sentence: the observation that moves this to the next posture.")
 
 
+class LocationSynthesis(AgentOutput):
+    """A decision for a summit that has weather and a cell classification, and no mapped trails."""
+
+    severity: RiskLevel = Field(description="The final level, within the range of the analysts' reports.")
+    recommended_action: Literal["monitor", "close"]
+    summary: str = Field(description="One sentence: the mountain, the weather, and the action. Do not name a trail.")
+    response: RangerResponse
+    analysis: str = Field(description="One paragraph, 3 to 6 sentences, on the location, the classifier, and the weather.")
+    coverage_note: str = Field(description="One sentence stating that no trails are mapped for this mountain.")
+    reasoning: Steps
+
+
 class SynthesisReport(AgentOutput):
     """The one final agent's answer: the call, the routes, and the response."""
 

@@ -12,7 +12,7 @@ only agent that sees all five, and the only one that decides anything.
 
 from .schemas import AgentName
 
-SHARED = """You are one agent in TerraSense, which turns a landslide hazard map of Mount Rainier into a \
+SHARED = """You are one agent in TerraSense, which turns a mountain's landslide hazard map into a \
 ranger alert, a hiker forecast, and a route advisory. Park rangers act on what you write.
 
 The hazard model is your source of truth. get_model_prediction returns its output: a probability \

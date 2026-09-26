@@ -261,7 +261,8 @@ class Pipeline:
 
     async def _call(self, agent: AgentName, *, signals: Signals, running: str, tools: list[tuple[str, dict]],
                     context: dict, check: Callable[[AgentOutput], list[str]] | None = None,
-                    soft_check: bool = False) -> tuple[AgentRun, list[str]]:
+                    soft_check: bool = False, system: str | None = None,
+                    output_model: type[AgentOutput] | None = None) -> tuple[AgentRun, list[str]]:
         """Route, gather facts, ask the model, and validate. Returns the run and any checks still failing."""
         run = AgentRun(agent)
         self.runs[agent] = run
@@ -276,16 +277,17 @@ class Pipeline:
         run.trace = trace
         await self._event(agent, "running", running, trace=trace)
         remaining: list[str] = []
+        model = output_model or AGENT_OUTPUTS[agent]
         try:
             trace.tools = [await asyncio.to_thread(call_tool, self.ctx, name, **args) for name, args in tools]
             request = LLMRequest(
-                system=SYSTEM_PROMPTS[agent],
+                system=system or SYSTEM_PROMPTS[agent],
                 user=self._message(agent, trace, context),
-                schema=llm_schema(AGENT_OUTPUTS[agent]),
+                schema=llm_schema(model),
                 schema_name=f"{agent}_report",
             )
             output, result, remaining = await self._ask(agent, decision.provider, decision.fallback, request,
-                                                        trace, check, soft_check)
+                                                        trace, check, soft_check, output_model=model)
         except (ToolError, AgentFailed) as exc:
             run.error = str(exc)
             self._finish(trace)
@@ -331,9 +333,10 @@ class Pipeline:
         return "\n\n".join(parts)
 
     async def _ask(self, agent: AgentName, first: ProviderName, fallback: list[ProviderName], request: LLMRequest,
-                   trace: AgentTrace, check, soft_check: bool) -> tuple[AgentOutput, LLMResult, list[str]]:
+                   trace: AgentTrace, check, soft_check: bool,
+                   output_model: type[AgentOutput] | None = None) -> tuple[AgentOutput, LLMResult, list[str]]:
         """Two tries per provider, the router's pick first. See the module docstring."""
-        model = AGENT_OUTPUTS[agent]
+        model = output_model or AGENT_OUTPUTS[agent]
         best: tuple[AgentOutput, LLMResult, list[str]] | None = None  # schema-valid, checks failing
         last_error = "no provider was tried"
         for name in [first, *fallback]:
@@ -435,7 +438,7 @@ class Pipeline:
             ratio = max(rain.past_72h_mm, rain.next_72h_mm) / threshold_mm(72)
         lat, lon = self.ctx.peak
         run, _ = await self._call("weather", signals=Signals(rain_ratio=ratio),
-                                  running="Checking past and forecast rain at Paradise.",
+                                  running="Checking past and forecast rain at the trail zone.",
                                   tools=[self._prediction(), ("get_weather", {"lat": lat, "lon": lon})],
                                   context={})
         if run.error:
@@ -975,20 +978,25 @@ class Pipeline:
 # --- CLI ------------------------------------------------------------------------------------
 
 
-async def _main(fixture_rain: bool) -> int:
-    from app.assessment import LIVE_SLUG, assess
+async def _main(fixture_rain: bool, slug: str) -> int:
+    from app import packs
+    from app.assessment import assess
     from app.db import connect
     from app.weather import try_hourly_rain
 
     from .providers import make_providers
 
+    pack = packs.get(slug)
+    if pack is None:
+        raise SystemExit(f"no pack facts for {slug!r} in data/seed/packs/index.json")
     if fixture_rain:
         os.environ["OPEN_METEO_FIXTURE"] = "backend/fixtures/open_meteo_storm.json"
     with connect() as conn:
-        assessment = assess(conn, LIVE_SLUG)
-    rain, rain_error = try_hourly_rain()  # without rain, the Weather Analyst fails and says why
-    ctx = RunContext(run_id=f"cli-{uuid.uuid4().hex[:8]}", slug=LIVE_SLUG, mountain="Mount Rainier",
-                     peak=(46.8523, -121.7603), assessment=assessment, rain=rain, rain_error=rain_error)
+        assessment = assess(conn, slug)
+    # Without rain, the Weather Analyst fails and says why.
+    rain, rain_error = try_hourly_rain(pack.peak_lat, pack.peak_lon)
+    ctx = RunContext(run_id=f"cli-{uuid.uuid4().hex[:8]}", slug=slug, mountain=pack.name,
+                     peak=(pack.peak_lat, pack.peak_lon), assessment=assessment, rain=rain, rain_error=rain_error)
     providers = make_providers()
     router = Router(providers)
 
@@ -1022,10 +1030,12 @@ async def _main(fixture_rain: bool) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the agents once for Mount Rainier and print the advisory.")
+    parser = argparse.ArgumentParser(description="Run the agents once for one mountain and print the advisory.")
+    parser.add_argument("--slug", default="mount-rainier", help="a pack slug from data/seed/packs/index.json")
     parser.add_argument("--fixture-rain", action="store_true",
                         help="read backend/fixtures/open_meteo_storm.json (a synthetic storm) instead of Open-Meteo")
-    raise SystemExit(asyncio.run(_main(parser.parse_args().fixture_rain)))
+    args = parser.parse_args()
+    raise SystemExit(asyncio.run(_main(args.fixture_rain, args.slug)))
 
 
 if __name__ == "__main__":

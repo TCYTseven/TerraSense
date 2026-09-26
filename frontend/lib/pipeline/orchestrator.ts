@@ -1,6 +1,6 @@
 /**
  * The hill card's agent pipeline, framework-free. The orchestrator runs Terrain, Weather, and
- * Trails in parallel, then the Synthesizer, then the Mass Alert Writer. Each agent runs through
+ * Trails in parallel, then the Synthesizer, then the Alerter. Each agent runs through
  * an `AgentSource`; the scripted one below simulates them. A real adapter over the backend's run
  * stream (`lib/run-stream.ts`) can implement `AgentSource` without touching the components.
  */
@@ -28,7 +28,7 @@ export type AgentRunner = (
 
 export interface AgentSource {
   runAgent: AgentRunner;
-  /** The measures, read once the Mass Alert Writer finishes. */
+  /** The measures, read once the Alerter finishes. */
   measures: (hill: HillView) => ReactiveMeasure[] | Promise<ReactiveMeasure[]>;
 }
 

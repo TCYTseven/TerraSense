@@ -43,7 +43,7 @@ forecast, static inputs, or in-domain evidence must not become a negative predic
 - Keep the API thin. Run state lives in the API process, keyed by `run_id`. No Redis, no PostGIS, no auth, no object storage.
 - Geometry is GeoJSON stored in `jsonb` columns.
 - Response shapes are a contract with `frontend/lib/types.ts`. Change both in the same commit.
-- Only `mount-rainier` is live. Reject analyze when `is_live` is false.
+- `mount-rainier` is always live. A step 32 pack goes live when `python -m app.seed` finds its susceptibility raster; every other summit is a static marker whose analyze falls back to the location run.
 - Read settings from the root `.env`. Never log `DATABASE_URL`, `GEMINI_API_KEY`, or `XAI_API_KEY`.
 - CORS allows the local Next.js origins. Add a deployed frontend with `CORS_ORIGINS`, not by editing code.
 - A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
