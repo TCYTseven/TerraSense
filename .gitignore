@@ -14,11 +14,12 @@ ml/artifacts/*.tif
 !ml/artifacts/susceptibility.tif
 ml/artifacts/packs/*/*.tif
 ml/artifacts/hills/
-# Event-time production classifier (timestamped data); promote via deployment store, not git.
-ml/artifacts/landslide_risk_lgbm.txt
-ml/artifacts/risk_model.json
-ml/artifacts/risk_calibration.json
+# Event-time production classifier artifacts are versioned when generated. Keep the
+# backtest report and raw variant directories out of Git unless explicitly promoted.
 ml/artifacts/risk_backtest_report.json
+# The selected avalanche deployment files live at ml/artifacts/avalanche/. Alternate
+# training runs remain in ignored subdirectories such as nwac_gefs_transferable_v2/.
+ml/artifacts/avalanche/*/
 
 # Rendered map tiles. Recreate with ml/scripts/render_tiles.py.
 backend/tiles/

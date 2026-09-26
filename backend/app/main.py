@@ -16,6 +16,7 @@ from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
 from app.routes import (
+    avalanche,
     forecast,
     hills,
     history,
@@ -67,6 +68,7 @@ app.include_router(runs.router)
 app.include_router(forecast.router)
 app.include_router(risk.router)
 app.include_router(history.router)
+app.include_router(avalanche.router)
 app.include_router(synthetic_tiles.router)
 # Map tiles rendered by ml/scripts/render_tiles.py. The folder may not exist until then.
 app.mount("/tiles", StaticFiles(directory=TILES_DIR, check_dir=False), name="tiles")

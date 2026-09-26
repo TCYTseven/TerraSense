@@ -25,7 +25,8 @@ def _raster(path, values):
 
 
 def _rain(past_7d_mm=0.0, next_72h_mm=0.0):
-    values = [past_7d_mm / 168.0] * 168 + [next_72h_mm / 72.0] * 72
+    forecast_hours = model_b.FORECAST_WINDOW_HOURS
+    values = [past_7d_mm / 168.0] * 168 + [next_72h_mm / forecast_hours] * forecast_hours
     start = datetime(2026, 9, 18, tzinfo=UTC)
     times = [start + timedelta(hours=i) for i in range(len(values))]
     return HourlyRain(times, values, 168, "fixture", start)

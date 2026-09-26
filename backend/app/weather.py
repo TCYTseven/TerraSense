@@ -31,7 +31,7 @@ PEAK_LAT, PEAK_LON = 46.8523, -121.7603
 TRAIL_ZONE_ELEVATION_M = 1650
 
 PAST_DAYS = 7  # antecedent moisture needs a week
-FORECAST_DAYS = 4  # today plus three, so the next 72 hours are always covered
+FORECAST_DAYS = 7  # a full week ahead for the landslide forecast window
 CACHE_SECONDS = 300  # a demo retry within five minutes reuses the last response
 TIMEOUT_SECONDS = 10
 
@@ -41,7 +41,12 @@ TIMEOUT_SECONDS = 10
 EXTRA_SERIES = {
     "temperature_2m": "temperature_c",
     "snowfall": "snowfall_cm",
+    "snow_depth": "snow_depth_m",
     "wind_speed_10m": "wind_kmh",
+    "wind_gusts_10m": "wind_gust_kmh",
+    "wind_direction_10m": "wind_direction_deg",
+    "relative_humidity_2m": "relative_humidity_pct",
+    "shortwave_radiation": "shortwave_radiation_w_m2",
     "soil_moisture_0_to_7cm": "soil_moisture",
     "freezing_level_height": "freezing_level_m",
 }
@@ -59,7 +64,13 @@ class HourlyRain:
     # Optional: present from Open-Meteo, absent from a fixture saved with precipitation only.
     temperature_c: list[float] = field(default_factory=list)
     snowfall_cm: list[float] = field(default_factory=list)
+    snow_depth_m: list[float] = field(default_factory=list)
+    snow_water_equivalent_mm: list[float] = field(default_factory=list)
     wind_kmh: list[float] = field(default_factory=list)
+    wind_gust_kmh: list[float] = field(default_factory=list)
+    wind_direction_deg: list[float] = field(default_factory=list)
+    relative_humidity_pct: list[float] = field(default_factory=list)
+    shortwave_radiation_w_m2: list[float] = field(default_factory=list)
     soil_moisture: list[float] = field(default_factory=list)
     freezing_level_m: list[float] = field(default_factory=list)
 

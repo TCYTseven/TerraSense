@@ -1,16 +1,14 @@
-"""The agents' tools. Each returns precomputed facts for one run. None calls a model, scans a
-raster, or draws trail geometry: the step 18 assessment, the step 19 bypass, and the route scan
-already did that work, and the Open-Meteo response is fetched once per run.
+"""The agents' tools. Each returns precomputed facts for one run. None calls an LLM, scans a
+raster, or draws trail geometry: the assessment, bypass, route scan, and production classifier
+already did that work, and the weather response is fetched once per run.
 
 An agent's code calls its tools before its model call and hands the results to the model as
 JSON. Every call is recorded as a ToolCall, which the reasoning panel shows.
 
-get_model_prediction is the one every agent calls first. It carries the ML model's output, which
-is the run's source of truth: the agents read the map, they do not second-guess it. What they
-add is everything the model never saw. The model's inputs are satellite terrain and land cover,
-the rain series, and the hour of the year; it has no trail network, no closure history, no
-catalog of past slides, and no idea where hikers actually walk. The analysts supply that, and
-the Risk Synthesizer turns it into a decision.
+get_model_prediction is the one every agent calls first. It carries the cached production
+classifier result, which is the run's decision source when calibrated artifacts are available.
+The legacy map is retained for spatial visualization and route ranking only. The agents add
+everything the classifier never saw: trails, closures, history, and operational context.
 """
 
 import json
@@ -25,7 +23,8 @@ from app.bypass import junctions_near, load_network
 from app.config import REPO_ROOT
 from app.history import historical_events
 from app.ml.geo_susceptibility import predict_summit
-from app.ml.risk_inference import predict_location
+from app.ml.risk_contract import production_decision_eligible
+from app.ml.risk_inference import predict_location, unavailable_prediction
 from app.risk import HIGH_THRESHOLD
 from app.trailscan import most_exposed, safest
 from app.trailscan import summarize as summarize_network
@@ -78,6 +77,8 @@ class RunContext:
     assessment: Assessment | None
     rain: HourlyRain | None
     rain_error: str | None = None
+    # Computed once by the run coordinator and reused by every tool call.
+    production_prediction: dict | None = None
     elevation_m: int | None = None
     seed_level: str | None = None
     started: float = field(default_factory=time.perf_counter)
@@ -209,18 +210,35 @@ def get_weather(ctx: RunContext, lat: float, lon: float) -> dict:
     return facts
 
 
-def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
-    """The ML model's output: the run's source of truth, with what it saw and what it could not see.
+def _production_prediction(ctx: RunContext) -> dict:
+    """Return the run's one classifier result without fetching weather again."""
+    if ctx.production_prediction is not None:
+        return ctx.production_prediction
+    if ctx.rain is None:
+        return unavailable_prediction(
+            ctx.peak[0], ctx.peak[1],
+            ["FORECAST_UNAVAILABLE", "WEATHER_FEED_UNAVAILABLE"],
+        ).to_dict()
+    # CLI/tests may construct a context directly. Production runs pass an already-computed
+    # result through RunContext so this fallback is never a second network request.
+    return predict_location(
+        ctx.peak[0], ctx.peak[1], rain_override=ctx.rain,
+        probability_override=ctx.assessment.probability if ctx.assessment else None,
+    ).to_dict()
 
-    Every agent calls this first. The numbers here are the answer the map already gives. An agent
-    never argues with them; it says what they mean for the part of the problem the model is blind
-    to, which the blind_spots list names.
+
+def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
+    """The ML model's output and decision contract for every analyst.
+
+    Every agent calls this first. A calibrated classifier result is authoritative when eligible;
+    the legacy map is context only and must never be presented as a calibrated chance.
     """
     a = ctx.assessment
     card = _model_card(ctx.slug)
     facts = {
-        "role": "SOURCE OF TRUTH. These numbers are the model's answer. Do not recompute or "
-                "contradict them; explain what they mean.",
+        "role": "PRODUCTION CLASSIFIER SOURCE OF TRUTH when decision_eligible is true. Do not "
+                "recompute or contradict the calibrated result. The legacy map is visualization "
+                "and route-ranking context only.",
         "mountain": ctx.mountain,
         "method": a.method,
         "is_stand_in": a.probability.is_stand_in,
@@ -247,25 +265,13 @@ def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
         },
         "trail_network": summarize_network(a.trail_scores),
     }
-    # The legacy map remains the agent source of truth for the current HackGT trail workflow.
-    # Carry the stricter classifier alongside it so every agent can see whether a production-grade
-    # calibrated answer is actually available; this never turns an unavailable classifier into a
-    # negative risk finding.
-    # The point estimate is left out: at the summit it is one pixel of the map above, and an agent
-    # would quote it as the mountain's chance.
-    if ctx.rain is not None:
-        classification = predict_location(
-            ctx.peak[0], ctx.peak[1], rain_override=ctx.rain, probability_override=a.probability
-        ).to_dict()
-        for key in ("probability", "probability_source", "risk_level", "estimate"):
-            classification.pop(key)
-        facts["production_72h_classification"] = classification
-    else:
-        facts["production_72h_classification"] = {
-            "state": "UNCERTAIN",
-            "calibrated_probability": None,
-            "reason_codes": ["FORECAST_UNAVAILABLE", "WEATHER_FEED_UNAVAILABLE"],
-        }
+    classification = _production_prediction(ctx)
+    facts["production_72h_classification"] = classification
+    facts["decision_contract"] = {
+        "decision_eligible": production_decision_eligible(classification),
+        "source": "calibrated_classifier" if production_decision_eligible(classification) else None,
+        "legacy_map_visualization_only": True,
+    }
     if a.zone is not None:
         facts["hazard_zone"] = {
             "id": "hz_001",
@@ -345,15 +351,15 @@ def _km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def get_location_facts(ctx: RunContext, mountain: str) -> dict:
-    """Summit location, the regional model's prediction, and the cell classifier.
+    """Summit location, the production classifier, and regional terrain context.
 
-    Used when the mountain has no trail geometry. model_prediction is the regional LightGBM
-    susceptibility model scored live at this summit; on a mountain without its own terrain
-    window it says input_source "placeholder_terrain_sample" and must be read as a stand-in.
-    The stricter cell classifier covers the Rainier training domain and returns UNCERTAIN
-    outside it. That is a coverage gap, not a finding of safety.
+    Used when the mountain has no trail geometry. cell_classification is the one cached production
+    result and is authoritative only when its decision contract is eligible. model_prediction is
+    regional LightGBM terrain context; on a mountain without its own terrain window it says
+    input_source "placeholder_terrain_sample" and must be read as a stand-in. UNCERTAIN is a
+    coverage/data gap, not a finding of safety.
     """
-    prediction = predict_location(ctx.peak[0], ctx.peak[1], rain_override=ctx.rain).to_dict()
+    prediction = _production_prediction(ctx)
     geo = predict_summit(ctx.slug, ctx.peak[0], ctx.peak[1])
     return {
         "mountain": ctx.mountain,
@@ -370,6 +376,10 @@ def get_location_facts(ctx: RunContext, mountain: str) -> dict:
             **geo,
         },
         "cell_classification": prediction,
+        "decision_contract": {
+            "decision_eligible": production_decision_eligible(prediction),
+            "legacy_map_visualization_only": True,
+        },
         "note": (
             "No trail lines and no baked terrain raster are stored for this mountain. "
             "Judge the summit from the model prediction, its input_source, the classification, "

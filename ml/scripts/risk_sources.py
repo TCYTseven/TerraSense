@@ -38,6 +38,7 @@ class SourceSpec:
 SOURCE_SPECS: dict[str, SourceSpec] = {
     "coolr": SourceSpec("NASA COOLR / Global Landslide Catalog", "labels", "https://gpm.nasa.gov/landslides", ("GeoJSON", "CSV"), False, True, "Filter to dated rainfall-related events; preserve event confidence and geometry."),
     "usgs_inventories_v3": SourceSpec("USGS Landslide Inventories Across the United States v3", "labels", "https://www.usgs.gov/programs/landslide-hazards/landslide-inventories-across-united-states", ("GeoJSON", "Shapefile", "Geodatabase"), False, True, "Use Date_Min/Date_Max only when uncertainty is within the configured label window."),
+    "wgs_recent_landslides": SourceSpec("Washington Geological Survey Recent Landslides", "labels_audit", "https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/1", ("GeoJSON",), False, False, "Dated observation records without a reliable rainfall-trigger field; preserve as external audit labels only."),
     "copernicus_dem": SourceSpec("Copernicus DEM GLO-30", "static", "https://dataspace.copernicus.eu/", ("COG GeoTIFF",), False, True, "Aggregate source pixels into the configured prediction cell."),
     "soilgrids": SourceSpec("ISRIC SoilGrids 2.0", "static", "https://soilgrids.org/", ("Cloud Optimized GeoTIFF",), False, True, "Retain depth bands and uncertainty layers."),
     "worldcover": SourceSpec("ESA WorldCover 2021 v200", "static", "https://esa-worldcover.org/en/data-access", ("COG GeoTIFF",), False, True, "Aggregate class fractions, not a single arbitrary mode."),

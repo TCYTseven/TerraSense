@@ -1,0 +1,562 @@
+{
+  "model_version": "avalanche-lgbm-v2-transferable",
+  "prediction_target": "avalanche occurrence in a 1 km cell during next 24 hours",
+  "feature_names": [
+    "elevation_mean",
+    "slope_mean",
+    "slope_max",
+    "aspect_sin_mean",
+    "aspect_cos_mean",
+    "forest_fraction",
+    "snow_ice_fraction",
+    "snow_depth_m",
+    "snow_depth_change_24h",
+    "snow_depth_change_72h",
+    "new_snow_24h_cm",
+    "new_snow_72h_cm",
+    "snowpack_settlement_proxy",
+    "snow_surface_temp_c",
+    "rain_on_snow_72h",
+    "temp_min_24h",
+    "temp_max_24h",
+    "temperature_change_24h",
+    "wind_speed_max_24h_kmh",
+    "wind_gust_max_24h_kmh",
+    "wind_loading_proxy_24h",
+    "forecast_snowfall_0_24h",
+    "forecast_snowfall_0_72h",
+    "forecast_rain_0_24h",
+    "forecast_rain_0_72h",
+    "forecast_temp_min",
+    "forecast_temp_max",
+    "forecast_wind_max_kmh",
+    "forecast_wind_loading_proxy",
+    "forecast_rain_on_snow_72h",
+    "forecast_snowfall_ensemble_p90",
+    "forecast_snowfall_ensemble_spread"
+  ],
+  "feature_contract": [
+    "elevation_mean",
+    "elevation_std",
+    "slope_mean",
+    "slope_max",
+    "slope_p90",
+    "slope_28_45_fraction",
+    "slope_30_45_fraction",
+    "slope_gt_45_fraction",
+    "aspect_sin_mean",
+    "aspect_cos_mean",
+    "northness_mean",
+    "eastness_mean",
+    "profile_curvature_mean",
+    "plan_curvature_mean",
+    "roughness_mean",
+    "terrain_ruggedness_mean",
+    "local_relief_100m",
+    "local_relief_500m",
+    "local_relief_1km",
+    "terrain_trap_fraction",
+    "starting_zone_fraction",
+    "runout_terrain_fraction",
+    "flow_accumulation_mean",
+    "dist_drainage_mean",
+    "forest_fraction",
+    "snow_ice_fraction",
+    "snow_depth_m",
+    "snow_depth_change_24h",
+    "snow_depth_change_72h",
+    "snow_depth_change_7d",
+    "snow_cover_fraction",
+    "snow_cover_change_1d",
+    "snow_cover_change_3d",
+    "snow_cover_change_7d",
+    "swe_mm",
+    "swe_change_24h",
+    "swe_change_72h",
+    "new_snow_6h_cm",
+    "new_snow_12h_cm",
+    "new_snow_24h_cm",
+    "new_snow_72h_cm",
+    "new_snow_intensity_6h_cm_h",
+    "snowfall_to_precip_24h",
+    "snowpack_settlement_proxy",
+    "snowmelt_24h",
+    "snowmelt_72h",
+    "solar_melt_proxy_24h",
+    "snow_surface_temp_c",
+    "snowpack_temp_gradient_proxy_c_m",
+    "recent_avalanche_count_7d",
+    "persistent_weak_layer_signal",
+    "snowpack_stability_observation",
+    "rain_on_snow_24h",
+    "rain_on_snow_72h",
+    "freeze_thaw_cycles_7d",
+    "freeze_thaw_cycles_30d",
+    "temp_min_24h",
+    "temp_max_24h",
+    "temperature_change_24h",
+    "wind_speed_now_kmh",
+    "wind_speed_max_24h_kmh",
+    "wind_gust_max_24h_kmh",
+    "wind_direction_mode_deg",
+    "wind_direction_spread_deg",
+    "wind_loading_proxy_24h",
+    "wind_aspect_alignment_24h",
+    "published_danger_rating_numeric",
+    "forecast_snowfall_0_6h",
+    "forecast_snowfall_0_12h",
+    "forecast_snowfall_0_24h",
+    "forecast_snowfall_0_48h",
+    "forecast_snowfall_0_72h",
+    "forecast_max_snowfall_1h",
+    "forecast_max_snowfall_3h",
+    "forecast_max_snowfall_6h",
+    "forecast_rain_0_6h",
+    "forecast_rain_0_12h",
+    "forecast_rain_0_24h",
+    "forecast_rain_0_48h",
+    "forecast_rain_0_72h",
+    "forecast_temp_min",
+    "forecast_temp_max",
+    "forecast_wind_max_kmh",
+    "forecast_gust_max_kmh",
+    "forecast_wind_loading_proxy",
+    "forecast_wind_aspect_alignment",
+    "forecast_solar_melt_proxy",
+    "forecast_rain_on_snow_72h",
+    "forecast_freezing_level_min_m",
+    "forecast_freezing_level_max_m",
+    "forecast_snowfall_ensemble_mean",
+    "forecast_snowfall_ensemble_p90",
+    "forecast_snowfall_ensemble_p95",
+    "forecast_snowfall_ensemble_spread",
+    "forecast_exceedance_probability",
+    "dem_available",
+    "static_snow_terrain_available",
+    "snowpack_available",
+    "snowpack_age_hours",
+    "forecast_available",
+    "forecast_age_hours",
+    "weather_station_available",
+    "feature_missing_fraction",
+    "event_observation_coverage",
+    "terrain_resolution_m",
+    "weather_resolution_km"
+  ],
+  "feature_profile": "transferable",
+  "feature_groups": {
+    "static_terrain": [
+      "elevation_mean",
+      "elevation_std",
+      "slope_mean",
+      "slope_max",
+      "slope_p90",
+      "slope_28_45_fraction",
+      "slope_30_45_fraction",
+      "slope_gt_45_fraction",
+      "aspect_sin_mean",
+      "aspect_cos_mean",
+      "northness_mean",
+      "eastness_mean",
+      "profile_curvature_mean",
+      "plan_curvature_mean",
+      "roughness_mean",
+      "terrain_ruggedness_mean",
+      "local_relief_100m",
+      "local_relief_500m",
+      "local_relief_1km",
+      "terrain_trap_fraction",
+      "starting_zone_fraction",
+      "runout_terrain_fraction",
+      "flow_accumulation_mean",
+      "dist_drainage_mean",
+      "forest_fraction",
+      "snow_ice_fraction"
+    ],
+    "snowpack_weather": [
+      "snow_depth_m",
+      "snow_depth_change_24h",
+      "snow_depth_change_72h",
+      "snow_depth_change_7d",
+      "snow_cover_fraction",
+      "snow_cover_change_1d",
+      "snow_cover_change_3d",
+      "snow_cover_change_7d",
+      "swe_mm",
+      "swe_change_24h",
+      "swe_change_72h",
+      "new_snow_6h_cm",
+      "new_snow_12h_cm",
+      "new_snow_24h_cm",
+      "new_snow_72h_cm",
+      "new_snow_intensity_6h_cm_h",
+      "snowfall_to_precip_24h",
+      "snowpack_settlement_proxy",
+      "snowmelt_24h",
+      "snowmelt_72h",
+      "solar_melt_proxy_24h",
+      "snow_surface_temp_c",
+      "snowpack_temp_gradient_proxy_c_m",
+      "recent_avalanche_count_7d",
+      "persistent_weak_layer_signal",
+      "snowpack_stability_observation",
+      "rain_on_snow_24h",
+      "rain_on_snow_72h",
+      "freeze_thaw_cycles_7d",
+      "freeze_thaw_cycles_30d",
+      "temp_min_24h",
+      "temp_max_24h",
+      "temperature_change_24h",
+      "wind_speed_now_kmh",
+      "wind_speed_max_24h_kmh",
+      "wind_gust_max_24h_kmh",
+      "wind_direction_mode_deg",
+      "wind_direction_spread_deg",
+      "wind_loading_proxy_24h",
+      "wind_aspect_alignment_24h",
+      "published_danger_rating_numeric"
+    ],
+    "forecast": [
+      "forecast_snowfall_0_6h",
+      "forecast_snowfall_0_12h",
+      "forecast_snowfall_0_24h",
+      "forecast_snowfall_0_48h",
+      "forecast_snowfall_0_72h",
+      "forecast_max_snowfall_1h",
+      "forecast_max_snowfall_3h",
+      "forecast_max_snowfall_6h",
+      "forecast_rain_0_6h",
+      "forecast_rain_0_12h",
+      "forecast_rain_0_24h",
+      "forecast_rain_0_48h",
+      "forecast_rain_0_72h",
+      "forecast_temp_min",
+      "forecast_temp_max",
+      "forecast_wind_max_kmh",
+      "forecast_gust_max_kmh",
+      "forecast_wind_loading_proxy",
+      "forecast_wind_aspect_alignment",
+      "forecast_solar_melt_proxy",
+      "forecast_rain_on_snow_72h",
+      "forecast_freezing_level_min_m",
+      "forecast_freezing_level_max_m",
+      "forecast_snowfall_ensemble_mean",
+      "forecast_snowfall_ensemble_p90",
+      "forecast_snowfall_ensemble_p95",
+      "forecast_snowfall_ensemble_spread",
+      "forecast_exceedance_probability"
+    ],
+    "quality": [
+      "dem_available",
+      "static_snow_terrain_available",
+      "snowpack_available",
+      "snowpack_age_hours",
+      "forecast_available",
+      "forecast_age_hours",
+      "weather_station_available",
+      "feature_missing_fraction",
+      "event_observation_coverage",
+      "terrain_resolution_m",
+      "weather_resolution_km"
+    ]
+  },
+  "split": {
+    "strategy": "explicit-temporal-calibration",
+    "train_end_year": 2024,
+    "calibration_year": 2025,
+    "fit_years": [
+      2023,
+      2024,
+      2025
+    ],
+    "held_out_years": [
+      2026
+    ]
+  },
+  "train": {
+    "rows": 90,
+    "positives": 37,
+    "prevalence": 0.411111,
+    "pr_auc": 0.99066,
+    "pr_lift": 2.409714,
+    "roc_auc": 0.992861,
+    "brier_score": 0.053291,
+    "ece": 0.137594
+  },
+  "validation": {
+    "rows": 39,
+    "positives": 14,
+    "prevalence": 0.358974,
+    "pr_auc": 0.684462,
+    "pr_lift": 1.906716,
+    "roc_auc": 0.665714,
+    "brier_score": 0.199659,
+    "ece": 0.069375,
+    "threshold": 0.586471,
+    "precision": 0.857143,
+    "recall": 0.428571,
+    "f1": 0.571429,
+    "confusion_matrix": [
+      [
+        24,
+        1
+      ],
+      [
+        8,
+        6
+      ]
+    ]
+  },
+  "prevalence_pr_baseline": 0.358974358974359,
+  "threshold_selection": {
+    "target_precision": 0.85,
+    "threshold": 0.5864708917351515,
+    "val_precision": 0.8571428571428571,
+    "val_recall": 0.42857142857142855,
+    "reachable": true
+  },
+  "calibration": {
+    "method": "platt",
+    "fitted_on": 39,
+    "regularization_C": 10.0,
+    "coef": 2.188045799220378,
+    "intercept": -1.3533758977925214
+  },
+  "hyperparameters": {
+    "n_estimators": 200,
+    "learning_rate": 0.03,
+    "num_leaves": 15,
+    "max_depth": 3,
+    "min_child_samples": 20,
+    "subsample": 0.9,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.9,
+    "scale_pos_weight": 1.4324324324324325,
+    "n_jobs": 1,
+    "random_state": 41,
+    "verbosity": -1
+  },
+  "training_date": "2026-09-26T21:22:09+00:00",
+  "training_years": [
+    2023,
+    2024,
+    2025
+  ],
+  "held_out_years": [
+    2026
+  ],
+  "label_quality": {
+    "field_observation_no_avalanche": 78,
+    "published": 33,
+    "verified": 18
+  },
+  "feature_distributions": {
+    "elevation_mean": {
+      "p01": 1212.8526034306033,
+      "p99": 3860.037637740162,
+      "median": 1875.274722432959
+    },
+    "slope_mean": {
+      "p01": 15.22854198579727,
+      "p99": 35.673733665868895,
+      "median": 21.670904787009302
+    },
+    "slope_max": {
+      "p01": 42.49470901489258,
+      "p99": 65.25368194580078,
+      "median": 46.55624771118164
+    },
+    "aspect_sin_mean": {
+      "p01": -0.6617588624338541,
+      "p99": 0.7097857166685516,
+      "median": 0.01282261013683436
+    },
+    "aspect_cos_mean": {
+      "p01": -0.883103669483953,
+      "p99": 0.5747175869737476,
+      "median": -0.4675553609377853
+    },
+    "forest_fraction": {
+      "p01": 0.0,
+      "p99": 0.9759358288770054,
+      "median": 0.13957759412304868
+    },
+    "snow_ice_fraction": {
+      "p01": 0.0,
+      "p99": 0.9906763133060711,
+      "median": 0.09001782531194295
+    },
+    "snow_depth_m": {
+      "p01": 0.0828,
+      "p99": 33.33,
+      "median": 1.65
+    },
+    "snow_depth_change_24h": {
+      "p01": -0.832,
+      "p99": 30.6884,
+      "median": 0.01
+    },
+    "snow_depth_change_72h": {
+      "p01": -33.203,
+      "p99": 32.294695999999995,
+      "median": 0.03
+    },
+    "new_snow_24h_cm": {
+      "p01": 0.0,
+      "p99": 33.2444,
+      "median": 4.41
+    },
+    "new_snow_72h_cm": {
+      "p01": 0.0,
+      "p99": 86.26239999999999,
+      "median": 22.68
+    },
+    "snowpack_settlement_proxy": {
+      "p01": 0.0,
+      "p99": 0.832,
+      "median": 0.0
+    },
+    "snow_surface_temp_c": {
+      "p01": -25.516000000000002,
+      "p99": -0.8,
+      "median": -17.8
+    },
+    "rain_on_snow_72h": {
+      "p01": 0.0,
+      "p99": 138.25599999999997,
+      "median": 35.1
+    },
+    "temp_min_24h": {
+      "p01": -37.928,
+      "p99": -10.7,
+      "median": -20.7
+    },
+    "temp_max_24h": {
+      "p01": -25.22,
+      "p99": -0.6,
+      "median": -16.5
+    },
+    "temperature_change_24h": {
+      "p01": -7.608,
+      "p99": 14.863999999999994,
+      "median": 0.3
+    },
+    "wind_speed_max_24h_kmh": {
+      "p01": 4.295999999999999,
+      "p99": 23.395999999999997,
+      "median": 9.8
+    },
+    "wind_gust_max_24h_kmh": {
+      "p01": 33.296,
+      "p99": 141.8,
+      "median": 80.6
+    },
+    "wind_loading_proxy_24h": {
+      "p01": 0.0,
+      "p99": 508.7373199999999,
+      "median": 53.298
+    },
+    "forecast_snowfall_0_24h": {
+      "p01": 0.0,
+      "p99": 5.3519999999999985,
+      "median": 0.1
+    },
+    "forecast_snowfall_0_72h": {
+      "p01": 0.0,
+      "p99": 10.675999999999997,
+      "median": 0.6
+    },
+    "forecast_rain_0_24h": {
+      "p01": 0.0,
+      "p99": 68.89599999999999,
+      "median": 3.9
+    },
+    "forecast_rain_0_72h": {
+      "p01": 0.0,
+      "p99": 122.3,
+      "median": 22.4
+    },
+    "forecast_temp_min": {
+      "p01": -17.45,
+      "p99": 5.15,
+      "median": -3.18
+    },
+    "forecast_temp_max": {
+      "p01": -5.4643999999999995,
+      "p99": 23.2948,
+      "median": 2.31
+    },
+    "forecast_wind_max_kmh": {
+      "p01": 8.349626800000001,
+      "p99": 26.500343039999997,
+      "median": 12.565444
+    },
+    "forecast_wind_loading_proxy": {
+      "p01": 0.0,
+      "p99": 271.5905937599998,
+      "median": 6.779854
+    },
+    "forecast_rain_on_snow_72h": {
+      "p01": 0.0,
+      "p99": 122.3,
+      "median": 22.4
+    },
+    "forecast_snowfall_ensemble_p90": {
+      "p01": 0.0,
+      "p99": 16.770108374903106,
+      "median": 2.252717605957313
+    },
+    "forecast_snowfall_ensemble_spread": {
+      "p01": 0.0,
+      "p99": 5.980842996844022,
+      "median": 1.216552506059644
+    }
+  },
+  "feature_missing_rates": {
+    "elevation_mean": 0.0,
+    "slope_mean": 0.0,
+    "slope_max": 0.0,
+    "aspect_sin_mean": 0.0,
+    "aspect_cos_mean": 0.0,
+    "forest_fraction": 0.0,
+    "snow_ice_fraction": 0.0,
+    "snow_depth_m": 0.0,
+    "snow_depth_change_24h": 0.0,
+    "snow_depth_change_72h": 0.0,
+    "new_snow_24h_cm": 0.0,
+    "new_snow_72h_cm": 0.0,
+    "snowpack_settlement_proxy": 0.0,
+    "snow_surface_temp_c": 0.0,
+    "rain_on_snow_72h": 0.0,
+    "temp_min_24h": 0.0,
+    "temp_max_24h": 0.0,
+    "temperature_change_24h": 0.0,
+    "wind_speed_max_24h_kmh": 0.0,
+    "wind_gust_max_24h_kmh": 0.0,
+    "wind_loading_proxy_24h": 0.0,
+    "forecast_snowfall_0_24h": 0.0,
+    "forecast_snowfall_0_72h": 0.0,
+    "forecast_rain_0_24h": 0.0,
+    "forecast_rain_0_72h": 0.0,
+    "forecast_temp_min": 0.0,
+    "forecast_temp_max": 0.0,
+    "forecast_wind_max_kmh": 0.0,
+    "forecast_wind_loading_proxy": 0.0,
+    "forecast_rain_on_snow_72h": 0.0,
+    "forecast_snowfall_ensemble_p90": 0.0,
+    "forecast_snowfall_ensemble_spread": 0.0
+  },
+  "ood_threshold": 0.35,
+  "abstention_band": 0.05,
+  "selected_threshold": 0.5864708917351515,
+  "negative_label_policy": {
+    "allow_unknown_absence": false,
+    "min_coverage_for_observed_no_event": 0.8,
+    "excluded_unknown_absence_count": 0
+  },
+  "limitations": [
+    "avalanche occurrence catalogs are incomplete and are not proof of no avalanche",
+    "calibrated probabilities are valid only within the represented climate, terrain, and reporting domain",
+    "persistent weak-layer and field observation variables remain optional until a source supplies them"
+  ]
+}

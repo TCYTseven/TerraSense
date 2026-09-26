@@ -1,4 +1,4 @@
-"""Model B: turn terrain susceptibility and rain into a 72-hour landslide risk index.
+"""Model B: turn terrain susceptibility and rain into a one-week landslide risk index.
 
 This is the live trigger layer on top of the offline susceptibility raster. It is deliberately
 small and vectorized so a new Open-Meteo response can be scored in milliseconds after the
@@ -36,7 +36,7 @@ W1 = 1.0  # Terrain enters as the log-odds of calibrated susceptibility, unscale
 # Log-odds of the 1:3 sampling rate the susceptibility is calibrated at (base rate 0.25).
 TERRAIN_BASE_LOGIT = float(np.log(0.25 / 0.75))
 W0 = -1.32  # Rain odds on a day at both reference thresholds, 95% CI -1.51 to -1.18.
-W2 = 0.92  # Forecast rain over the 72-hour threshold, 95% CI 0.74-1.10 (hand-set 2.0).
+W2 = 0.92  # Forecast rain over the one-week threshold, 95% CI 0.74-1.10 (hand-set 2.0).
 W3 = 0.76  # Past-week rain over the 7-day threshold, 95% CI 0.59-0.93 (hand-set 1.6).
 
 # Keeps logit() finite at susceptibility 0 or 1.
@@ -45,9 +45,12 @@ SUSCEPTIBILITY_CLIP = 1e-3
 # Guzzetti et al. (2008) reference: I = 2.20 * D^-0.44 mm/h, converted to a D-hour total.
 GUZZETTI_A = 2.20
 GUZZETTI_B = -0.44
-RAINFALL_WINDOW_HOURS = 72
+FORECAST_WINDOW_HOURS = 168  # Open-Meteo forecast summed for the next week
+PAST_REPORT_HOURS = 72  # Agent-facing past total (unchanged in tools)
 MOISTURE_WINDOW_HOURS = 168
-RAINFALL_THRESHOLD_72H_MM = GUZZETTI_A * RAINFALL_WINDOW_HOURS**GUZZETTI_B * RAINFALL_WINDOW_HOURS
+# Kept for API field names; value is the Guzzetti total for FORECAST_WINDOW_HOURS.
+RAINFALL_WINDOW_HOURS = FORECAST_WINDOW_HOURS
+RAINFALL_THRESHOLD_72H_MM = GUZZETTI_A * FORECAST_WINDOW_HOURS**GUZZETTI_B * FORECAST_WINDOW_HOURS
 MOISTURE_THRESHOLD_7D_MM = GUZZETTI_A * MOISTURE_WINDOW_HOURS**GUZZETTI_B * MOISTURE_WINDOW_HOURS
 
 
@@ -87,14 +90,14 @@ def rain_signals(rain: HourlyRain | None) -> RainSignals:
     if rain is None:
         return RainSignals(0.0, 0.0, 0.0, -1.0, -1.0)
 
-    past_72h = rain.total(-RAINFALL_WINDOW_HOURS, 0)
-    next_72h = rain.total(0, RAINFALL_WINDOW_HOURS)
+    past_72h = rain.total(-PAST_REPORT_HOURS, 0)
+    next_72h = rain.total(0, FORECAST_WINDOW_HOURS)
     past_7d = rain.total(-MOISTURE_WINDOW_HOURS, 0)
     return RainSignals(
         past_72h_mm=past_72h,
         next_72h_mm=next_72h,
         past_7d_mm=past_7d,
-        rainfall_exceedance=_bounded_signed_ratio(next_72h, RAINFALL_THRESHOLD_72H_MM),
+        rainfall_exceedance=_bounded_signed_ratio(next_72h, RAINFALL_THRESHOLD_72H_MM),  # next-week total
         moisture_index=_bounded_signed_ratio(past_7d, MOISTURE_THRESHOLD_7D_MM),
     )
 
@@ -145,7 +148,7 @@ def _read_susceptibility(path: Path) -> tuple[np.ndarray, Affine, str]:
 
 
 def run(rain: HourlyRain | None = None, path: Path | None = None) -> ModelBResult:
-    """Return the 72-hour landslide risk index map for the current rain response.
+    """Return the one-week landslide risk index map for the current rain response.
 
     The three inputs are terrain log-odds, forecast rainfall exceedance, and
     antecedent moisture. Invalid or nodata susceptibility cells stay NaN so the tile renderer

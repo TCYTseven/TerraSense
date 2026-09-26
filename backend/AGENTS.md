@@ -44,7 +44,14 @@ value at the clicked 30 m pixel, scored by the same Model B as the heat layer on
 its 1 km cell, the logit terms behind it, and the held-out skill from the ML artifacts. It is a
 relative risk index, not an absolute chance. The estimate never changes `state`. No rain, no
 terrain, a blank pixel, or a point outside the box gives `probability: null`, never a dry-day number.
-The agents' classification fact leaves the point estimate out.
+The agents receive the full production prediction once per run. The shared
+`production_decision_eligible` gate allows only a calibrated classifier result to drive severity or
+closure; the Model B estimate remains map visualization and route-ranking context only. Missing
+classifier artifacts therefore produce an advisory/UNCERTAIN run rather than a false negative.
+
+`POST /api/v1/avalanche-risk` is a separate 24-hour classifier seam. It uses its own snowpack and
+terrain feature contract and fails closed until a calibrated avalanche artifact and operational
+GFS/GEFS forecast are available. It must not reuse landslide thresholds or danger terminology.
 
 ## Rules
 
@@ -57,7 +64,7 @@ The agents' classification fact leaves the point estimate out.
 - A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
 - Tools that agents call return precomputed facts. They do not scan rasters or invent trail geometry.
 - Every model call goes through the router in `app/agents/router.py`, which picks Gemini Flash or Grok and records why. Do not call a provider directly.
-- The ML model's output is the run's source of truth. Every agent calls `get_model_prediction` first and explains those numbers; none of them recomputes or argues with them. What an agent adds is what the model never saw: the trail network, the landslide record, the conditions, and what a ranger should do.
+- The calibrated classifier is the run's decision source when eligible. The coordinator computes it once and places it in `RunContext`; every agent calls `get_model_prediction` first and reads the same serialized result. The legacy map remains visualization/ranking context only. Agents add what the classifier never saw: the trail network, landslide record, conditions, and operational guidance.
 - The five analysts run in one `asyncio.gather`. Nothing in an analyst may read another analyst's payload: that would put the fan-out back in series. Only the Risk Synthesizer sees all five.
 - `tests/test_contracts.py` pins the three seams other people build against: what Model B must return, the JSON schema each agent's output is sent to the providers as, and the JSON-nativeness of every payload that leaves the process. A numpy scalar or a datetime in a tool result is a 500 on the stream, not a rounding difference, so it is caught there.
 - The Risk Synthesizer is the only agent that decides anything, and code checks its answer in `app/agents/advisory.py`. A route it names must be on the shortlist the code built from the scored catalog, and its ranger posture cannot outrun the severity the run reached. Clamps are recorded as checks, never silent.

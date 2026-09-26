@@ -44,10 +44,11 @@ def assessment(db_conn):
     return assess(db_conn, rain=storm_rain())
 
 
-def run_pipeline(assessment, env=KEYS, rain=True):
+def run_pipeline(assessment, env=KEYS, rain=True, production_prediction=None):
     rain_data = get_hourly_rain() if rain else None
     ctx = RunContext(run_id="test", slug="mount-rainier", mountain="Mount Rainier", peak=(46.8523, -121.7603),
-                     assessment=assessment, rain=rain_data, rain_error=None if rain else "Open-Meteo timed out")
+                     assessment=assessment, rain=rain_data, rain_error=None if rain else "Open-Meteo timed out",
+                     production_prediction=production_prediction)
     providers = make_providers(env, httpx.ASGITransport(app=fake_llm))
     events = []
 
@@ -102,7 +103,7 @@ def test_every_agent_reads_the_model_prediction(fake_env, assessment):
     for agent in ANALYSTS:
         trace = next(e for e in events if e.agent == agent and e.status == "done").trace
         assert trace.tools[0].name == "get_model_prediction", agent
-        assert trace.tools[0].result["role"].startswith("SOURCE OF TRUTH")
+        assert "SOURCE OF TRUTH" in trace.tools[0].result["role"]
 
 
 def test_the_advisory_is_grounded_in_the_catalog(fake_env, assessment):
@@ -132,6 +133,25 @@ def test_the_advisory_is_grounded_in_the_catalog(fake_env, assessment):
     assert 2 <= len(response.actions) <= 5
     assert advisory.analysis and advisory.model.method == assessment.method
     assert set(advisory.agents) == set(AGENT_ORDER)
+
+
+def test_calibrated_classifier_controls_final_severity_and_action(fake_env, assessment):
+    production = {
+        "state": "NOT_HIGH_RISK",
+        "probability": 0.18,
+        "probability_source": "calibrated_classifier",
+        "calibrated_probability": 0.18,
+        "high_risk_threshold": 0.81,
+        "risk_level": "low",
+        "reason_codes": [],
+    }
+    result, _ = run_pipeline(assessment, production_prediction=production)
+
+    assert result.status == "done", result.error
+    assert result.final.severity == "low"
+    assert result.final.recommended_action == "monitor"
+    assert result.final.advisory.model.classifier_decision_eligible is True
+    assert result.final.advisory.model.classifier_probability == 0.18
 
 
 def test_an_invented_route_is_rejected_and_replaced(fake_env, assessment, monkeypatch):

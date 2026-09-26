@@ -260,7 +260,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as the mountain page.
 
-**Done so far (Sep 26).** On a live mountain, **Analyze now** calls `POST /mountains/{slug}/analyze` and follows the run socket (`frontend/lib/pipeline/live-run.ts`, used by `usePipeline`). The seven API agents fold onto the five cards: Trail, History, and Route Scout share the Trails row. Reactive Measures come from the run advisory. Static mountains still use the scripted source in `frontend/lib/pipeline/orchestrator.ts`.
+**Done so far (Sep 26).** On a live mountain, **Analyze now** calls `POST /mountains/{slug}/analyze` and follows the run socket (`frontend/lib/pipeline/live-run.ts`, used by `usePipeline`). The seven API agents fold onto the five cards: Trail, History, and Route Scout share the Trails row. Reactive Measures and the production-classifier status come from the run advisory. No client-side scripted result source remains.
 
 **Done (Sep 26, later).** `GET /mountains/{slug}/risk-summary` (`backend/app/risk_summary.py`) scores every trail on `ml/artifacts/probability.tif`, the map the heat layer is rendered from. `buildMountainView()` in `frontend/lib/mountain-view-build.ts` builds the top five, the markers (at each trail's worst point), the overall score (the worst point on any trail), the mean slope, and the preventative bullets from it. The card refetches after a run. The illustrative fixture is gone.
 

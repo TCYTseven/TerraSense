@@ -60,7 +60,6 @@ export default async function HillPage({ params }: PageProps<"/hills/[slug]">) {
       probability={probability}
       susceptibility={susceptibility}
       riskSummary={riskSummary}
-      orchestration={false}
     />
   );
 }

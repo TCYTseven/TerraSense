@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { PIPELINE_LABELS, type PipelineAgentId, type PipelineState } from "@/lib/mountain-view";
-import { PARALLEL_AGENTS, SEQUENTIAL_AGENTS } from "@/lib/pipeline/orchestrator";
+import { PARALLEL_AGENTS, SEQUENTIAL_AGENTS } from "@/lib/pipeline/state";
 import AgentCard from "./agent-card";
 import StatusGlyph, { STATUS_WORDS } from "./status-glyph";
 
@@ -55,6 +55,18 @@ function orchestratorLine(state: PipelineState): React.ReactNode {
   return "Press Analyze now to run the agents.";
 }
 
+function modelLine(state: PipelineState): string | null {
+  const model = state.model;
+  if (!model) return null;
+  if (model.decisionEligible && model.state) {
+    const probability = model.probability == null ? "n/a" : `${Math.round(model.probability * 100)}%`;
+    const threshold = model.threshold == null ? "n/a" : `${Math.round(model.threshold * 100)}%`;
+    return `Production classifier: ${model.state.replaceAll("_", " ")} at ${probability} (high-risk threshold ${threshold}).`;
+  }
+  const reasons = model.reasonCodes.length ? ` ${model.reasonCodes.join(", ")}.` : "";
+  return `Production classifier: UNCERTAIN; legacy map is visualization-only.${reasons}`;
+}
+
 /**
  * The orchestrator and its five agents. Terrain, Weather, and Trails branch off the rail together,
  * then the Synthesizer and the Alerter. The cards are there before any run, idle and empty, and
@@ -82,6 +94,7 @@ export default function AgentPipeline({ state }: { state: PipelineState }) {
             <span className="shrink-0 text-sm text-muted-foreground">{STATUS_WORDS[state.orchestrator]}</span>
           </span>
           <span className="block text-sm text-muted-foreground">{orchestratorLine(state)}</span>
+          {modelLine(state) && <span className="mt-1 block text-sm text-muted-foreground">{modelLine(state)}</span>}
         </span>
       </div>
 

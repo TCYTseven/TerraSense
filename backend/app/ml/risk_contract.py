@@ -7,7 +7,8 @@ quietly drift apart.
 
 from __future__ import annotations
 
-from typing import Final, Literal
+from collections.abc import Mapping
+from typing import Any, Final, Literal
 
 PredictionState = Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"]
 
@@ -19,8 +20,28 @@ DEFAULT_SUSCEPTIBLE_NEGATIVE_FRACTION: Final = 0.30
 DEFAULT_MIN_DATA_QUALITY: Final = 0.80
 DEFAULT_OOD_THRESHOLD: Final = 0.35
 DEFAULT_ABSTENTION_BAND: Final = 0.05
+# API headline floor only; calibrated_probability and state decisions remain exact.
+DEFAULT_MIN_REPORTED_PROBABILITY: Final = 0.10
 
 PREDICTION_STATES: Final = ("HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN")
+
+
+def production_decision_eligible(prediction: Mapping[str, Any] | None) -> bool:
+    """Return whether a prediction may drive a production risk decision.
+
+    The legacy map can still provide a useful visual ranking, but it is not a calibrated
+    next-72-hour classifier. Keeping this gate in the shared contract prevents an API route,
+    agent, or frontend from accidentally treating that fallback as a real classification.
+    """
+    if not prediction:
+        return False
+    return bool(
+        prediction.get("probability_source") == "calibrated_classifier"
+        and prediction.get("state") in {"HIGH_RISK", "NOT_HIGH_RISK"}
+        and prediction.get("calibrated_probability") is not None
+        and prediction.get("high_risk_threshold") is not None
+        and prediction.get("risk_level") in {"low", "moderate", "high", "extreme"}
+    )
 
 # Static groups. These names are deliberately aggregate-safe: the prediction unit is a 1 km
 # cell, even when the source raster is 30 m.

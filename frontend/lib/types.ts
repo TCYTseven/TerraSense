@@ -188,7 +188,7 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
-/** One trail on the saved 72-hour map: its worst point, and the terrain there. */
+/** One trail on the saved one-week map: its worst point, and the terrain there. */
 export interface TrailRiskScore {
   trail_id: string;
   name: string;
@@ -282,6 +282,8 @@ export interface LandslideRiskPrediction {
   state: LandslideRiskState;
   probability: number | null;
   probability_source: RiskProbabilitySource | null;
+  probability_floor_applied: boolean;
+  probability_floor: number;
   risk_level: RiskLevel | null;
   estimate: RiskEstimate | null;
   calibrated_probability: number | null;
@@ -291,6 +293,25 @@ export interface LandslideRiskPrediction {
   ood_score: number | null;
   reason_codes: string[];
   drivers: { feature: string; value: number | null; importance: number; direction: "model risk driver" }[];
+  data_sources: Record<string, unknown>;
+  model: Record<string, unknown>;
+}
+
+export interface AvalancheRiskPrediction {
+  location: { latitude: number; longitude: number };
+  prediction_window: { start: string; end: string };
+  state: LandslideRiskState;
+  probability: number | null;
+  calibrated_probability: number | null;
+  probability_floor_applied: boolean;
+  probability_floor: number;
+  high_risk_threshold: number | null;
+  confidence: { lower: number | null; upper: number | null };
+  data_quality_score: number;
+  ood_score: number | null;
+  reason_codes: string[];
+  drivers: { feature: string; label: string; value: number | null; importance: number; direction: "model risk driver" }[];
+  snowpack: Record<string, unknown>;
   data_sources: Record<string, unknown>;
   model: Record<string, unknown>;
 }
@@ -420,6 +441,10 @@ export interface Run {
   needs_review: boolean | null;
   /** How the heat map was made, such as "susceptibility stand-in (Model B pending)". */
   method: string | null;
+  model_state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+  model_probability: number | null;
+  model_decision_eligible: boolean | null;
+  model_reason_codes: string[];
   rain: RainTotals | null;
   error: string | null;
   failed_agent: AgentName | null;
@@ -533,6 +558,11 @@ export interface AdvisoryModel {
   map_max: number | null;
   map_mean: number | null;
   share_at_high: number | null;
+  classifier_state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+  classifier_probability: number | null;
+  classifier_threshold: number | null;
+  classifier_decision_eligible: boolean;
+  classifier_reason_codes: string[];
 }
 
 /** One agent's rating, so the panel can show where the agents agreed. */

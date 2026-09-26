@@ -122,7 +122,7 @@ LANDSLIDE = DomainSpec(
     metrics_file="metrics.json",
     tile_layer="probability",
     analyst_label="Terrain Analyst",
-    map_name="72-hour landslide map",
+    map_name="one-week landslide map",
 )
 
 AVALANCHE = DomainSpec(

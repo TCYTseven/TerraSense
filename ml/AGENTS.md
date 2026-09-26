@@ -6,6 +6,9 @@ The production-oriented event-time classifier is a separate path from the legacy
 map. Its default prediction unit is a 1 km cell at a reference timestamp and its target is a
 rainfall-triggered event in the next 72 hours. See `context/docs/production-risk.md`.
 
+The avalanche classifier is a parallel path. Its default prediction unit is a 1 km cell and its
+target is an avalanche occurrence in the next 24 hours. See `context/docs/avalanche-risk.md`.
+
 Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shared facts.
 
 ## Steps this folder owns
@@ -50,6 +53,7 @@ pip install -r ml/requirements.lock.txt  # verified deployment environment
 # Or use the flexible direct requirements during development:
 # pip install -r ml/requirements.txt -r ml/requirements-dev.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
+python ml/scripts/download_wgs_recent_landslides.py  # official Washington dated recent-landslide audit source; no unknown triggers become positives
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 python ml/scripts/build_static_features.py # production path: aggregate static inputs to 1 km cells
 python ml/scripts/train_susceptibility.py  # step 12 (legacy): Rainier-only LightGBM; do not rerun over the regional artifacts
@@ -63,6 +67,17 @@ python ml/scripts/validate_pipeline.py --require-probability  # read-only deploy
 python ml/scripts/build_risk_samples.py --dynamic data/raw/normalized/hourly.parquet --out data/processed/risk_samples.parquet
 python ml/scripts/build_risk_dataset.py --samples data/processed/risk_samples.parquet --out data/processed/landslide_risk.parquet
 python ml/scripts/train_risk_model.py --table data/processed/landslide_risk.parquet
+python ml/scripts/build_avalanche_dataset.py --dynamic data/raw/normalized/avalanche_hourly.parquet --events data/raw/avalanche/occurrences.csv --out data/processed/avalanche_risk.parquet
+python ml/scripts/train_avalanche_model.py --table data/processed/avalanche_risk.parquet --artifacts ml/artifacts/avalanche
+python ml/scripts/download_nwac_avalanche_data.py  # Rainier NWAC labels/field observations + retrospective weather proxy
+python ml/scripts/download_avalanche_regional_catalog.py  # bounded Northwest official observation/field-report audit corpus
+python ml/scripts/download_caic_avalanche_data.py --include-controls  # CAIC positives plus explicit no-avalanche field-report controls
+python ml/scripts/prepare_nwac_avalanche_dataset.py --out data/processed/avalanche_nwac_observed_proxy.parquet
+python ml/scripts/download_noaa_historical_forecasts.py --variables apcp,weasd,tmp2m,ugrd10m,vgrd10m  # official dated GEFS as-of messages via HTTP byte ranges
+python ml/scripts/prepare_nwac_avalanche_dataset.py --forecast data/processed/avalanche_noaa_gefs_all_forecasts.parquet --out data/processed/avalanche_nwac_gefs_all.parquet
+python ml/scripts/train_avalanche_model.py --table data/processed/avalanche_nwac_observed_proxy.parquet --artifacts ml/artifacts/avalanche/nwac_observed_proxy
+python ml/scripts/benchmark_avalanche_models.py --table data/processed/avalanche_nwac_gefs_all.parquet
+python ml/scripts/train_avalanche_model.py --table data/processed/avalanche_nwac_gefs_all.parquet --feature-profile transferable --train-end-year 2024 --calibration-year 2025 --artifacts ml/artifacts/avalanche/nwac_gefs_transferable_v2
 python ml/scripts/event_catalog.py         # Model B check: dated rain-triggered events -> clusters (~4 s)
 python ml/scripts/event_rain.py            # archive weather + case-crossover features (cached; first run ~30 min)
 python ml/scripts/event_validate.py        # metrics, CIs, fitted weights -> artifacts/model_b_validation.json

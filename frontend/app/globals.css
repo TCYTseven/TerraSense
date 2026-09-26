@@ -143,6 +143,13 @@
   display: none;
 }
 
+/* Trail letter markers use transforms; clip so they do not inflate document scrollHeight. */
+.maplibregl-map,
+.maplibregl-canvas-container,
+.maplibregl-marker-container {
+  overflow: hidden !important;
+}
+
 @layer base {
   html {
     color-scheme: dark;

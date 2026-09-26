@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { MountainView, PipelineState } from "../mountain-view";
 import { runLiveAnalysis } from "./live-run";
-import { initialPipelineState } from "./orchestrator";
+import { initialPipelineState } from "./state";
 
 export interface PipelineControls {
   state: PipelineState;

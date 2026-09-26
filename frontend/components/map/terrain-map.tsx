@@ -72,7 +72,7 @@ export interface TerrainMapProps {
   trails: Trail[];
   /** Live mountains get real tiles, history pins, and layer toggles when data exists. */
   isLive: boolean;
-  /** The 72-hour probability tiles: the default layer. Null before the first scoring. */
+  /** The one-week probability tiles: the default layer. Null before the first scoring. */
   probability: LayerTiles | null;
   /** The susceptibility tiles, or null when the layer is not rendered. */
   susceptibility: LayerTiles | null;

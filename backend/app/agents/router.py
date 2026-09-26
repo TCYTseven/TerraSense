@@ -7,7 +7,7 @@ the reasoning panel. It checks, in order:
    extraction in seconds and lets all five run at once. Strong-tier agents (Synthesizer, Alert
    Writer) start on Grok, which reasons more deliberately over conflicting reports.
 2. The task. Ambiguity escalates a fast task to Grok: a zone peak within 0.05 of a bin edge,
-   rain within a third of the 72-hour threshold, a trail with no safe bypass, an empty landslide
+   rain within a third of the one-week threshold, a trail with no safe bypass, an empty landslide
    catalog, or a mountain with too few clear trails to recommend. A clear, low-stakes call brings
    a strong task down to Gemini: analysts that agree at low or moderate, or a routine monitor
    notice.
@@ -55,7 +55,7 @@ TIER_STRONG_FAST: ProviderName = "gemini"
 RUN_BUDGET_S = 20  # demo target: five analysts in parallel, then synthesizer, then writer
 BUDGET_SHARE = 0.7  # past this share of the budget, speed wins
 EDGE_MARGIN = 0.05  # a zone peak this close to a bin edge is a close call
-RAIN_BAND = (0.67, 1.5)  # rain within a third of the 72-hour threshold is a close call
+RAIN_BAND = (0.67, 1.5)  # rain within a third of the one-week threshold is a close call
 FAILURES_TO_REST = 2
 FAILURE_WINDOW_S = 120
 REST_S = 60
@@ -71,7 +71,7 @@ class Signals:
 
     elapsed_s: float = 0.0
     zone_peak: float | None = None  # terrain
-    rain_ratio: float | None = None  # weather: the wetter of past and next 72 hours, over the threshold
+    rain_ratio: float | None = None  # weather: the wetter of past week and next week, over the threshold
     bypass_exists: bool | None = None  # trail
     bypass_level: RiskLevel | None = None
     analog_count: int | None = None  # history: catalog events near the zone
@@ -246,10 +246,10 @@ def _weather(signals: Signals, choice: ProviderName, use_grok: bool) -> RouteRul
     low, high = RAIN_BAND
     if low <= ratio <= high:
         return _grok_or_none(use_grok,
-                             f"Rain is {ratio:.1f}x the 72-hour threshold, near the line, so it is a judgment call.")
+                             f"Rain is {ratio:.1f}x the one-week threshold, near the line, so it is a judgment call.")
     side = "above" if ratio > high else "below"
     return RouteRule(rule="ambiguity", verdict=None,
-                     detail=f"Rain is {ratio:.1f}x the 72-hour threshold, well {side} the line, so the read is clear.")
+                     detail=f"Rain is {ratio:.1f}x the one-week threshold, well {side} the line, so the read is clear.")
 
 
 def _trail(signals: Signals, choice: ProviderName, use_grok: bool) -> RouteRule:

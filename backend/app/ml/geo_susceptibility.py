@@ -239,7 +239,7 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
         values = _stack_features(lat, lon, features, hill_stack_path(slug))
         if values is None:
             return _unavailable(
-                "hill terrain window is not built; a placeholder sample is not this hill's ground"
+                "hill terrain window is not built; this hill has no ground-truth raster"
             )
         input_source, note = hill_model_input(slug), (
             "Scored on this hill's own DEM and land-cover window. "

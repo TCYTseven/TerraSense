@@ -1,7 +1,7 @@
 /**
  * The mountain page's view model: what the mountain page renders, independent of where the
  * numbers come from. `lib/mountain-view-build.ts` fills it from the mountain and the risk summary, which
- * scores every trail on the saved 72-hour map.
+ * scores every trail on the saved one-week map.
  */
 
 import type { LineString, Position, RiskLevel } from "./types";
@@ -28,6 +28,10 @@ export interface TrailRisk {
   zoom: number;
   /** The trail line, when the mountain's trails include it. */
   geom: LineString | null;
+  /** Mapped length from the API, when known. */
+  lengthKm: number | null;
+  /** True when score and level come from the saved one-week risk map. */
+  fromRiskMap: boolean;
 }
 
 /** The header's one line of basic stats. */
@@ -47,7 +51,7 @@ export interface MountainView {
   stats: MountainStats;
   /** The worst point on any mapped trail, 0 to 1, and its level. Null score until scored. */
   risk: { score: number | null; level: RiskLevel };
-  /** Exactly the top five, riskiest first, lettered A to E. Empty for static mountains. */
+  /** Top five by risk when scored; otherwise every mapped route (up to five letters). */
   trails: TrailRisk[];
   /** Three to five short bullets. */
   preventative: string[];
@@ -130,5 +134,13 @@ export interface PipelineState {
   agents: Record<PipelineAgentId, PipelineAgentState>;
   /** Null until the Alerter finishes. */
   measures: ReactiveMeasure[] | null;
+  /** The backend classifier result projected from the finished advisory. */
+  model: {
+    state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+    probability: number | null;
+    threshold: number | null;
+    decisionEligible: boolean;
+    reasonCodes: string[];
+  } | null;
   error: string | null;
 }

@@ -9,6 +9,8 @@ export interface TrailListProps {
   /** The row last viewed, or null. */
   selected: TrailLetter | null;
   onView: (letter: TrailLetter) => void;
+  /** Risk-ranked trails from a saved map, or mapped routes without scores. */
+  variant?: "risk" | "mapped";
 }
 
 // Literal class names so Tailwind generates each one.
@@ -19,12 +21,14 @@ const DOT: Record<TrailRisk["level"], string> = {
   extreme: "bg-risk-extreme",
 };
 
-/** The five most at-risk trails. "View" flies the map to the trail's marker. */
-export default function TrailList({ trails, selected, onView }: TrailListProps) {
+/** Lettered trails. "View" or a map click flies the camera to the route. */
+export default function TrailList({ trails, selected, onView, variant = "risk" }: TrailListProps) {
+  const heading =
+    variant === "mapped" ? "Mapped trails" : `Top ${trails.length} at-risk trails`;
   return (
     <section aria-labelledby="trails-heading" className="border-t border-border py-4">
       <h2 id="trails-heading" className="px-5 text-sm text-muted-foreground">
-        Top {trails.length} at-risk trails
+        {heading}
       </h2>
       <ol className="mt-2">
         {trails.map((trail) => {
@@ -40,19 +44,24 @@ export default function TrailList({ trails, selected, onView }: TrailListProps) 
               <TrailBadge letter={trail.letter} level={trail.level} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{trail.name}</span>
-                {(trail.primaryFactor !== null || trail.slopeDeg !== null) && (
+                {trail.fromRiskMap && (trail.primaryFactor !== null || trail.slopeDeg !== null) && (
                   <span className="block text-sm text-muted-foreground">
                     {trail.primaryFactor}
                     {trail.primaryFactor !== null && trail.slopeDeg !== null && " · "}
                     {trail.slopeDeg !== null && <span className="font-mono">{trail.slopeDeg}°</span>}
                   </span>
                 )}
+                {!trail.fromRiskMap && trail.lengthKm != null && (
+                  <span className="block font-mono text-sm text-muted-foreground">{trail.lengthKm} km</span>
+                )}
               </span>
-              <span className={`flex shrink-0 items-center gap-1.5 ${LEVEL_TEXT[trail.level]}`}>
-                <span aria-hidden className={`size-[0.55em] rounded-full ${DOT[trail.level]}`} />
-                <span className="font-mono text-[0.92em]">{formatScore(trail.score)}</span>
-                <span className="sr-only">{riskLabel(trail.level)}</span>
-              </span>
+              {trail.fromRiskMap && (
+                <span className={`flex shrink-0 items-center gap-1.5 ${LEVEL_TEXT[trail.level]}`}>
+                  <span aria-hidden className={`size-[0.55em] rounded-full ${DOT[trail.level]}`} />
+                  <span className="font-mono text-[0.92em]">{formatScore(trail.score)}</span>
+                  <span className="sr-only">{riskLabel(trail.level)}</span>
+                </span>
+              )}
               <button
                 type="button"
                 onClick={() => onView(trail.letter)}

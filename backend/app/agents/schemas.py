@@ -438,7 +438,7 @@ class AdvisoryConditions(BaseModel):
 
 
 class AdvisoryModel(BaseModel):
-    """The ML prediction the agents treated as their source of truth."""
+    """The map context and the cached production classifier status for one run."""
 
     method: str  # "model b", or the stand-in label while step 17 is out
     is_stand_in: bool
@@ -446,6 +446,11 @@ class AdvisoryModel(BaseModel):
     map_max: float | None
     map_mean: float | None
     share_at_high: float | None
+    classifier_state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"] | None = None
+    classifier_probability: float | None = None
+    classifier_threshold: float | None = None
+    classifier_decision_eligible: bool = False
+    classifier_reason_codes: list[str] = Field(default_factory=list)
 
 
 class AgentVerdict(BaseModel):
@@ -525,6 +530,10 @@ class Run(BaseModel):
     severity: RiskLevel | None
     needs_review: bool | None
     method: str | None  # how the heat map was made, such as the stand-in label
+    model_state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"] | None = None
+    model_probability: float | None = None
+    model_decision_eligible: bool | None = None
+    model_reason_codes: list[str] = Field(default_factory=list)
     rain: RainTotals | None
     error: str | None
     failed_agent: AgentName | None

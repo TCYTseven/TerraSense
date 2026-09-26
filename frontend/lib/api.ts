@@ -1,5 +1,6 @@
 import type {
   Forecast,
+  AvalancheRiskPrediction,
   HistoryPage,
   LandslideRiskPrediction,
   LayerTiles,
@@ -178,7 +179,7 @@ export async function getRiskSummary(slug: string, init?: RequestInit): Promise<
   }
 }
 
-/** Classify rainfall-triggered landslide risk for the next 72 hours at a 1 km cell. */
+/** Classify rainfall-triggered landslide risk for the next week at a 1 km cell. */
 export function getLandslideRisk(
   latitude: number,
   longitude: number,
@@ -186,6 +187,20 @@ export function getLandslideRisk(
   init?: RequestInit,
 ): Promise<LandslideRiskPrediction> {
   return postJson<LandslideRiskPrediction>("/api/v1/landslide-risk", {
+    ...init,
+    body: JSON.stringify({ latitude, longitude, ...(timestamp ? { timestamp } : {}) }),
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+}
+
+/** Classify avalanche occurrence risk for the next 24 hours at a 1 km cell. */
+export function getAvalancheRisk(
+  latitude: number,
+  longitude: number,
+  timestamp?: string,
+  init?: RequestInit,
+): Promise<AvalancheRiskPrediction> {
+  return postJson<AvalancheRiskPrediction>("/api/v1/avalanche-risk", {
     ...init,
     body: JSON.stringify({ latitude, longitude, ...(timestamp ? { timestamp } : {}) }),
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
