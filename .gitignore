@@ -1,0 +1,39 @@
+# Secrets. Copy .env.example to .env and fill it in locally.
+.env
+.env.*
+!.env.example
+
+# Downloads and derived rasters. Recreate them with the scripts in ml/scripts/.
+data/raw/
+data/processed/
+
+# Large model outputs. metrics.json and small artifacts stay in git.
+ml/artifacts/*.tif
+
+# Rendered map tiles. Recreate with ml/scripts/render_tiles.py.
+backend/tiles/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# OS and editors
+.DS_Store
+
+# Claude Code agent worktrees (isolated checkouts). Never commit them.
+.claude/worktrees/
+
+# MapLibre worker copies, written by frontend/scripts/copy-maplibre-worker.mjs on npm install
+frontend/public/maplibre/
+
+# design-sync (Claude Design): staged converter, build output, machine state
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

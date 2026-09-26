@@ -1,0 +1,3 @@
+# Tests for the API and the agents. Install on top of requirements.txt:
+#   pip install -r requirements.txt -r requirements-dev.txt
+pytest>=8
