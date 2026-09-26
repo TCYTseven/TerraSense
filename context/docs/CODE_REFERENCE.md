@@ -48,7 +48,8 @@ Next.js 16.3.6, React 19.2, Tailwind CSS 4, App Router, TypeScript. Package name
 |---|---|
 | `frontend/package.json` | Scripts: `dev`, `build`, `start`, `lint`, `typecheck` (`next typegen && tsc --noEmit`, which works on a fresh clone), `postinstall` (copies the MapLibre worker). Dependencies: Next, React, React DOM, `three`, `@react-three/fiber`, `@react-three/drei`, `maplibre-gl`. |
 | `frontend/app/layout.tsx` | Root layout, full height. Loads Geist (UI) and Geist Mono (numbers) as CSS variables. Sets metadata and a dark `viewport`. |
-| `frontend/app/page.tsx` | Home: the full-screen globe with the TerraSense name at the top left. |
+| `frontend/components/brand-logo.tsx` | Shared mark from `public/terrasenselogo.png` (home header, same file as favicon in root layout metadata). |
+| `frontend/app/page.tsx` | Home: full-screen globe, logo and title at the top left. |
 | `frontend/app/mountains/[slug]/page.tsx` | Mountain page, server-rendered: `GET /mountains/{slug}` and, for live mountains, the probability and susceptibility layers (a failed layer leaves the map without it) and the run to show (the one going now, or the one behind the active hazard). Hands them to `MountainDashboard`. |
 | `frontend/app/mountains/[slug]/loading.tsx` | Plain dark screen while the page loads. Lets the globe prefetch the route. |
 | `frontend/app/mountains/[slug]/error.tsx` | API failure: message, **Try again** (`retry()` refetches), link back to the globe. |

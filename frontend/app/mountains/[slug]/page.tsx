@@ -23,10 +23,13 @@ export async function generateMetadata({
   const { slug } = await params;
   try {
     const mountain = await loadMountain(slug);
-    return { title: mountain ? `${mountain.name} · TerraSense` : "Mountain not found · TerraSense" };
+    if (!mountain) {
+      return { title: "Mountain not found" };
+    }
+    const suffix = mountain.is_live ? "Live hazard map" : "Mountain profile";
+    return { title: `${mountain.name} — ${suffix}` };
   } catch {
-    // The page hits the same error and its error boundary explains it.
-    return { title: "TerraSense" };
+    return { title: "Mountain unavailable" };
   }
 }
 
