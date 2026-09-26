@@ -1,8 +1,9 @@
 """Load data/seed/ into Postgres. From backend/: python -m app.seed
 
-Mountains upsert by slug. Trails upsert by (mountain, name), and a mountain's
-trails that are no longer in the file are removed. Trail segments (the hero
-trail's mile markers) upsert by (trail, seq) the same way. Re-running is safe.
+Mountains upsert by slug, and static mountains no longer in the file are
+removed. Trails upsert by (mountain, name), and a mountain's trails that are
+no longer in the file are removed. Trail segments (the hero trail's mile
+markers) upsert by (trail, seq) the same way. Re-running is safe.
 """
 
 import json
@@ -18,11 +19,21 @@ SEED_DIR = REPO_ROOT / "data" / "seed"
 
 
 def load_mountains(conn: psycopg.Connection) -> int:
-    """Upsert every mountain in mountains.json. Returns how many the file holds."""
+    """Upsert every mountain in mountains.json. Returns how many the file holds.
+
+    The file is the whole truth for the catalog: static mountains it no longer lists
+    are removed (their children cascade), so a reseed replaces an old catalog instead
+    of piling on top of it. Live mountains are never removed.
+    """
     mountains = read_seed_file()
     if not mountains:
         raise SystemExit(f"Missing or empty {SEED_DIR / 'mountains.json'}. Run: python -m app.mountain_catalog --write-seed")
-    return upsert_mountains(conn, mountains)
+    count = upsert_mountains(conn, mountains)
+    conn.execute(
+        "DELETE FROM mountains WHERE is_live = false AND slug <> ALL(%s::text[])",
+        ([m["slug"] for m in mountains],),
+    )
+    return count
 
 
 def load_trails(conn: psycopg.Connection) -> int:

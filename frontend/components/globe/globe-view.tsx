@@ -2,8 +2,9 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
+import { globeMountainLimit, selectGlobeMountains } from "@/lib/globe-display-mountains";
 import { HOME_THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
@@ -20,7 +21,8 @@ type LoadState =
   | { status: "error" };
 
 /**
- * The globe screen: markers from GET /mountains, a centered search, and the fly-in.
+ * The globe screen: spaced markers from GET /mountains (see NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT),
+ * search over the full list, and the fly-in.
  * A marker click or a search pick flies the camera to the mountain, fading to the page
  * background over the last part of the flight, then opens /mountains/[slug].
  * The globe is browser-only because WebGL cannot render during server rendering.
@@ -46,7 +48,12 @@ export default function GlobeView() {
     return () => controller.abort();
   }, [attempt]);
 
-  const mountains = state.status === "ready" ? state.mountains : [];
+  const allMountains = state.status === "ready" ? state.mountains : [];
+  const globeLimit = globeMountainLimit();
+  const globeMountains = useMemo(
+    () => selectGlobeMountains(allMountains, globeLimit),
+    [allMountains, globeLimit],
+  );
 
   function retry() {
     setState({ status: "loading" });
@@ -75,7 +82,7 @@ export default function GlobeView() {
   return (
     <>
       <SpinningGlobe
-        mountains={mountains}
+        mountains={globeMountains}
         flyTarget={flyTarget}
         onSelect={flyTo}
         onArrive={arrive}
@@ -85,7 +92,7 @@ export default function GlobeView() {
       />
       <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] lg:top-5">
         <MountainSearch
-          mountains={mountains}
+          mountains={allMountains}
           emptyMessage={
             state.status === "error" ? "Could not load mountains." : "Mountains are still loading."
           }
