@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Download the Mount Rainier source layers (implementation step 10).
+"""Download one mountain's source layers (implementation steps 10 and 32).
 
-Writes, relative to the repo root:
+For Mount Rainier (the default) this writes, relative to the repo root:
   data/raw/rainier_dem_cop30.tif                 Copernicus DEM GLO-30 clipped to the bbox
   data/raw/rainier_landcover_worldcover2021.tif  ESA WorldCover 2021 v200 clipped to the bbox
   data/seed/landslides.geojson                   NASA GLC or Washington inventory points in the bbox
+
+For any other pack in ml/scripts/mountain_packs.py, the same three layers land under
+data/raw/packs/<slug>/ and data/seed/packs/<slug>/. A bbox that crosses a COG tile edge
+mosaics the tiles it touches. The Washington inventory fallback is Rainier's alone; other
+packs keep whatever NASA GLC holds in their box, including nothing (the record card may
+honestly say the catalog is empty there).
 
 Rasters keep their native CRS (EPSG:4326). Step 11 builds the common 30 m grid.
 Source URLs, licences, and access dates live in data/seed/sources.md.
 
 Run from the repo root:
-  python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force]
+  python ml/scripts/download_sources.py [--mountain SLUG] [--only dem,landcover,landslides] [--force]
 
 The default NASA GLC export is preferred. If its host is unavailable, the script queries the
 official Washington Geological Survey Landslide Compilation ArcGIS layer instead. If an available
@@ -31,32 +37,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
+import mountain_packs as mp
 import numpy as np
 import rasterio
 import requests
 from rasterio.enums import ColorInterp
-from rasterio.windows import Window, from_bounds
+from rasterio.merge import merge
+from rasterio.windows import Window, bounds as window_bounds, from_bounds
 from shapely.geometry import box, shape
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
 SEED_DIR = REPO_ROOT / "data" / "seed"
 
-# Shared facts (context/implementation-steps.md). EPSG:4326, [west, south, east, north].
-RAINIER_BBOX = (-121.93, 46.76, -121.54, 46.96)
-RAINIER_PEAK_LAT, RAINIER_PEAK_LON, RAINIER_PEAK_ELEVATION_M = 46.8523, -121.7603, 4392
-
-# Copernicus DEM GLO-30, 1x1 degree COG tile covering lon -122..-121, lat 46..47.
-DEM_URL = (
-    "https://copernicus-dem-30m.s3.amazonaws.com/"
-    "Copernicus_DSM_COG_10_N46_00_W122_00_DEM/Copernicus_DSM_COG_10_N46_00_W122_00_DEM.tif"
-)
-# ESA WorldCover 2021 v200, 3x3 degree COG tile covering lon -123..-120, lat 45..48.
-LANDCOVER_URL = (
-    "https://esa-worldcover.s3.eu-central-1.amazonaws.com/"
-    "v200/2021/map/ESA_WorldCover_10m_2021_v200_N45W123_Map.tif"
-)
 # NASA Global Landslide Catalog, full CSV export of data.nasa.gov dataset dd9e-wu2v.
+# One cached download serves every pack; each pack filters it to its own bbox.
 GLC_CSV_URL = "https://data.nasa.gov/api/views/dd9e-wu2v/rows.csv?accessType=DOWNLOAD"
 # Washington Geological Survey's official Landslide Compilation layer. It is a polygon
 # inventory, so the fallback uses an interior representative point as a conservative label.
@@ -65,10 +60,7 @@ WASLID_QUERY_URL = (
 )
 WASLID_LAYER_URL = WASLID_QUERY_URL.removesuffix("/query")
 
-DEM_PATH = RAW_DIR / "rainier_dem_cop30.tif"
-LANDCOVER_PATH = RAW_DIR / "rainier_landcover_worldcover2021.tif"
 GLC_CSV_PATH = RAW_DIR / "nasa_glc_export.csv"
-LANDSLIDES_PATH = SEED_DIR / "landslides.geojson"
 
 DEM_ATTRIBUTION = (
     "© DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under "
@@ -118,7 +110,7 @@ def rel(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT))
 
 
-def covers(bounds, bbox=RAINIER_BBOX, tol=1e-9) -> bool:
+def covers(bounds, bbox, tol=1e-9) -> bool:
     """True if raster bounds (left, bottom, right, top) contain bbox (west, south, east, north)."""
     left, bottom, right, top = bounds
     west, south, east, north = bbox
@@ -143,57 +135,77 @@ def gdal_env() -> rasterio.Env:
     return rasterio.Env(**options)
 
 
-def bbox_window(src) -> Window:
-    """Pixel window that covers RAINIER_BBOX, grown outward to whole pixels."""
-    w = from_bounds(*RAINIER_BBOX, transform=src.transform)
+def bbox_window(src, bbox) -> Window:
+    """Pixel window on src's grid that covers bbox, grown outward to whole pixels.
+
+    The window may reach past src's own bounds; it only fixes where the pixels sit.
+    """
+    w = from_bounds(*bbox, transform=src.transform)
     # Round before floor/ceil so float noise on an exact pixel edge adds no pixel.
     col0, row0 = math.floor(round(w.col_off, 6)), math.floor(round(w.row_off, 6))
     col1, row1 = math.ceil(round(w.col_off + w.width, 6)), math.ceil(round(w.row_off + w.height, 6))
     return Window(col0, row0, col1 - col0, row1 - row0)
 
 
-def clip_cog(url: str, out_path: Path, attribution: str, **creation) -> None:
-    """Read the bbox window of a remote COG over HTTP range requests and save it as a GeoTIFF."""
-    with gdal_env(), rasterio.open(f"/vsicurl/{url}") as src:
-        if not covers(src.bounds):
-            raise ValueError(f"{url} bounds {tuple(src.bounds)} do not contain {RAINIER_BBOX}")
-        window = bbox_window(src)
-        data = src.read(1, window=window)
-        profile = dict(src.profile)
-        profile.update(
-            driver="GTiff",
-            width=window.width,
-            height=window.height,
-            transform=src.window_transform(window),
-            tiled=True,
-            blockxsize=256,
-            blockysize=256,
-            compress="deflate",
-            **creation,
-        )
-        out_path.parent.mkdir(parents=True, exist_ok=True)
-        tmp_path = out_path.with_name(out_path.name + ".part")
-        with rasterio.open(tmp_path, "w", **profile) as dst:
-            dst.write(data, 1)
-            dst.update_tags(**src.tags(), SOURCE_URL=url, ATTRIBUTION=attribution)
-            if src.colorinterp[0] == ColorInterp.palette:
-                dst.write_colormap(1, src.colormap(1))
+def clip_cogs(urls: list[str], bbox, out_path: Path, attribution: str, **creation) -> None:
+    """Read the bbox window from one or more remote COG tiles and save it as one GeoTIFF.
+
+    A single covering tile reads its window directly, exactly as step 10 always has. A bbox
+    that crosses tile edges mosaics every tile it touches; each product's tiles share one
+    global grid, so the merged pixels sit where a single-tile read would put them.
+    """
+    with gdal_env():
+        sources = [rasterio.open(f"/vsicurl/{url}") for url in urls]
+        try:
+            first = sources[0]
+            window = bbox_window(first, bbox)
+            if len(sources) == 1:
+                if not covers(first.bounds, bbox):
+                    raise ValueError(f"{urls[0]} bounds {tuple(first.bounds)} do not contain {bbox}")
+                data = first.read(1, window=window)
+                transform = first.window_transform(window)
+            else:
+                snapped = window_bounds(window, first.transform)  # whole pixels on the shared grid
+                mosaic, transform = merge(sources, bounds=snapped, res=first.res, nodata=first.nodata)
+                data = mosaic[0]
+            profile = dict(first.profile)
+            profile.update(
+                driver="GTiff",
+                width=data.shape[1],
+                height=data.shape[0],
+                transform=transform,
+                tiled=True,
+                blockxsize=256,
+                blockysize=256,
+                compress="deflate",
+                **creation,
+            )
+            out_path.parent.mkdir(parents=True, exist_ok=True)
+            tmp_path = out_path.with_name(out_path.name + ".part")
+            with rasterio.open(tmp_path, "w", **profile) as dst:
+                dst.write(data, 1)
+                dst.update_tags(**first.tags(), SOURCE_URL=", ".join(urls), ATTRIBUTION=attribution)
+                if first.colorinterp[0] == ColorInterp.palette:
+                    dst.write_colormap(1, first.colormap(1))
+        finally:
+            for src in sources:
+                src.close()
     tmp_path.replace(out_path)  # only a finished file counts as done
 
 
-def dem_summary(ds) -> str:
-    """Elevation range, and where the highest pixel sits next to the shared summit fact."""
+def dem_summary(ds, pack: mp.Pack) -> str:
+    """Elevation range, and where the highest pixel sits next to the pack's summit fact."""
     z = ds.read(1, masked=True)
     row, col = np.unravel_index(np.ma.argmax(z), z.shape)
     lon, lat = ds.xy(row, col)
     return (
         f"elevation min {z.min():.1f} m, max {z.max():.1f} m at ({lat:.4f}, {lon:.4f}), "
-        f"{z.max() - RAINIER_PEAK_ELEVATION_M:+.1f} m vs shared peak {RAINIER_PEAK_ELEVATION_M} m "
-        f"at ({RAINIER_PEAK_LAT}, {RAINIER_PEAK_LON})"
+        f"{z.max() - pack.peak_elevation_m:+.1f} m vs shared peak {pack.peak_elevation_m} m "
+        f"at ({pack.peak_lat}, {pack.peak_lon})"
     )
 
 
-def landcover_summary(ds) -> str:
+def landcover_summary(ds, pack: mp.Pack) -> str:
     """Class histogram with WorldCover class names."""
     values, counts = np.unique(ds.read(1), return_counts=True)
     lines = ["classes (code, name, share of pixels):"]
@@ -203,7 +215,7 @@ def landcover_summary(ds) -> str:
     return "\n".join(lines)
 
 
-def verify_raster(path: Path, summarize) -> None:
+def verify_raster(path: Path, summarize, pack: mp.Pack) -> None:
     """Print CRS, size, pixel size, bounds, nodata and a value summary. Fail if the bbox is not covered."""
     with rasterio.open(path) as ds:
         b = ds.bounds
@@ -214,31 +226,32 @@ def verify_raster(path: Path, summarize) -> None:
             f"pixel {ds.res[0]:.8f} x {ds.res[1]:.8f} deg (~{px_m[0]:.1f} x {px_m[1]:.1f} m), "
             f"bounds ({b.left:.6f}, {b.bottom:.6f}, {b.right:.6f}, {b.top:.6f}), nodata {ds.nodata}"
         )
-        print(f"  {summarize(ds)}")
-        if not covers(b):
-            raise AssertionError(f"{rel(path)} bounds {tuple(b)} do not cover the bbox {RAINIER_BBOX}")
-        print(f"  bounds cover bbox {list(RAINIER_BBOX)}: OK")
+        print(f"  {summarize(ds, pack)}")
+        if not covers(b, pack.bbox):
+            raise AssertionError(f"{rel(path)} bounds {tuple(b)} do not cover the bbox {pack.bbox}")
+        print(f"  bounds cover bbox {list(pack.bbox)}: OK")
 
 
-def fetch_raster(url: str, path: Path, attribution: str, summarize, force: bool, **creation) -> None:
-    """Clip url into path unless it already exists (or force), then verify the file."""
+def fetch_raster(urls: list[str], path: Path, attribution: str, summarize, pack: mp.Pack,
+                 force: bool, **creation) -> None:
+    """Clip urls into path unless it already exists (or force), then verify the file."""
     if path.exists() and not force:
         print(f"  {rel(path)} exists, skipping download (use --force to refresh)")
     else:
-        print(f"  reading bbox window from {url}")
-        clip_cog(url, path, attribution, **creation)
+        print(f"  reading bbox window from {len(urls)} tile(s): {', '.join(urls)}")
+        clip_cogs(urls, pack.bbox, path, attribution, **creation)
         print(f"  wrote {rel(path)} ({path.stat().st_size / 1e6:.1f} MB)")
-    verify_raster(path, summarize)
+    verify_raster(path, summarize, pack)
 
 
-def stage_dem(force: bool) -> None:
+def stage_dem(force: bool, pack: mp.Pack, paths: mp.PackPaths) -> None:
     """Copernicus DEM GLO-30: float32 metres above the EGM2008 geoid, 1 arcsec, EPSG:4326."""
-    fetch_raster(DEM_URL, DEM_PATH, DEM_ATTRIBUTION, dem_summary, force, predictor=3)
+    fetch_raster(pack.dem_urls, paths.dem, DEM_ATTRIBUTION, dem_summary, pack, force, predictor=3)
 
 
-def stage_landcover(force: bool) -> None:
+def stage_landcover(force: bool, pack: mp.Pack, paths: mp.PackPaths) -> None:
     """ESA WorldCover 2021 v200: uint8 class codes, 0.3 arcsec (~10 m), EPSG:4326, nodata 0."""
-    fetch_raster(LANDCOVER_URL, LANDCOVER_PATH, LANDCOVER_ATTRIBUTION, landcover_summary, force)
+    fetch_raster(pack.landcover_urls, paths.landcover, LANDCOVER_ATTRIBUTION, landcover_summary, pack, force)
 
 
 def download(url: str, path: Path) -> None:
@@ -284,9 +297,9 @@ def as_int(value: str | None) -> int | str | None:
         return value
 
 
-def glc_features(csv_path: Path) -> list[dict]:
-    """GeoJSON Point features for NASA GLC events inside RAINIER_BBOX, oldest first."""
-    west, south, east, north = RAINIER_BBOX
+def glc_features(csv_path: Path, bbox) -> list[dict]:
+    """GeoJSON Point features for NASA GLC events inside bbox, oldest first."""
+    west, south, east, north = bbox
     features = []
     with open(csv_path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
@@ -344,13 +357,13 @@ def _arcgis_date(value) -> str | None:
     return iso_date(str(value))
 
 
-def waslid_features(payload: dict) -> list[dict]:
+def waslid_features(payload: dict, bbox) -> list[dict]:
     """Convert WGS polygon features into representative point labels inside the Rainier bbox."""
     if payload.get("type") != "FeatureCollection":
         message = payload.get("error", {}).get("message", "not a GeoJSON FeatureCollection")
         raise ValueError(f"WASLID query did not return GeoJSON: {message}")
 
-    west, south, east, north = RAINIER_BBOX
+    west, south, east, north = bbox
     clip = box(west, south, east, north)
     features = []
     for feature in payload.get("features", []):
@@ -393,11 +406,11 @@ def waslid_features(payload: dict) -> list[dict]:
     return sorted(features, key=lambda feature: feature["properties"]["date"] or "")
 
 
-def fetch_waslid(url: str = WASLID_QUERY_URL) -> dict:
+def fetch_waslid(bbox, url: str = WASLID_QUERY_URL) -> dict:
     """Query the official Washington inventory for polygons intersecting the shared bbox."""
     params = {
         "where": "1=1",
-        "geometry": ",".join(str(value) for value in RAINIER_BBOX),
+        "geometry": ",".join(str(value) for value in bbox),
         "geometryType": "esriGeometryEnvelope",
         "inSR": "4326",
         "spatialRel": "esriSpatialRelIntersects",
@@ -414,25 +427,31 @@ def fetch_waslid(url: str = WASLID_QUERY_URL) -> dict:
         raise RuntimeError(f"cannot query Washington landslide inventory: {type(exc).__name__}: {exc}") from exc
 
 
-def stage_waslid(force: bool) -> None:
+def write_landslides(features: list[dict], path: Path, bbox) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    collection = {"type": "FeatureCollection", "features": features}
+    path.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"  wrote {len(features)} landslide points inside {list(bbox)} to {rel(path)}")
+
+
+def stage_waslid(force: bool, pack: mp.Pack, paths: mp.PackPaths) -> None:
     """Use the official Washington inventory when the NASA export is unreachable."""
-    if LANDSLIDES_PATH.exists() and not force:
-        print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
+    if paths.landslides.exists() and not force:
+        print(f"  {rel(paths.landslides)} exists, skipping (use --force to refresh)")
         return
-    features = waslid_features(fetch_waslid())
+    features = waslid_features(fetch_waslid(pack.bbox), pack.bbox)
     if not features:
         raise RuntimeError("Washington landslide inventory returned no features in the Rainier bbox")
-    SEED_DIR.mkdir(parents=True, exist_ok=True)
-    collection = {"type": "FeatureCollection", "features": features}
-    LANDSLIDES_PATH.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"  wrote {len(features)} Washington landslide points inside {list(RAINIER_BBOX)} to {rel(LANDSLIDES_PATH)}")
+    write_landslides(features, paths.landslides, pack.bbox)
 
 
-def stage_landslides(force: bool, glc_source: str) -> None:
-    """Prefer NASA GLC and supplement sparse high-accuracy labels with the official inventory."""
-    if LANDSLIDES_PATH.exists() and not force:
-        print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
+def stage_landslides(force: bool, glc_source: str, pack: mp.Pack, paths: mp.PackPaths) -> None:
+    """Prefer NASA GLC. Rainier supplements sparse high-accuracy labels with the official
+    Washington inventory; every other pack keeps the GLC points alone, even none."""
+    if paths.landslides.exists() and not force:
+        print(f"  {rel(paths.landslides)} exists, skipping (use --force to refresh)")
         return
+    rainier = pack.slug == mp.RAINIER_SLUG
     csv_path = GLC_CSV_PATH
     try:
         if urlparse(glc_source).scheme in ("http", "https"):
@@ -443,35 +462,37 @@ def stage_landslides(force: bool, glc_source: str) -> None:
             csv_path = GLC_CSV_PATH
         else:
             csv_path = Path(glc_source)
-        features = glc_features(csv_path)
+        features = glc_features(csv_path, pack.bbox)
     except (OSError, RuntimeError, ValueError) as exc:
-        if urlparse(glc_source).scheme not in ("http", "https") or glc_source != GLC_CSV_URL:
+        if not rainier or urlparse(glc_source).scheme not in ("http", "https") or glc_source != GLC_CSV_URL:
             raise
         print(f"  NASA GLC unavailable ({type(exc).__name__}); using {WASLID_SOURCE_NAME}", file=sys.stderr)
         if csv_path == GLC_CSV_PATH:
             csv_path.unlink(missing_ok=True)  # never retain a partial/HTML response as a future cache
-        return stage_waslid(force=True)
-    usable = usable_training_features(features)
-    if len({(feature["geometry"]["coordinates"][0], feature["geometry"]["coordinates"][1])
-            for feature in usable}) < 2:
-        print(
-            f"  NASA GLC supplied {len(features)} in-box events but only {len(usable)} usable "
-            f"high-accuracy point; adding {WASLID_SOURCE_NAME} as a documented supplement",
-            file=sys.stderr,
-        )
-        supplemental = waslid_features(fetch_waslid())
-        if not supplemental:
-            raise RuntimeError("NASA GLC is too sparse for spatial training and the supplemental inventory is empty")
-        features = merge_catalog_features(features, supplemental)
-    SEED_DIR.mkdir(parents=True, exist_ok=True)
-    collection = {"type": "FeatureCollection", "features": features}
-    LANDSLIDES_PATH.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"  wrote {len(features)} landslide points inside {list(RAINIER_BBOX)} to {rel(LANDSLIDES_PATH)}")
+        return stage_waslid(force=True, pack=pack, paths=paths)
+    if rainier:
+        usable = usable_training_features(features)
+        if len({(feature["geometry"]["coordinates"][0], feature["geometry"]["coordinates"][1])
+                for feature in usable}) < 2:
+            print(
+                f"  NASA GLC supplied {len(features)} in-box events but only {len(usable)} usable "
+                f"high-accuracy point; adding {WASLID_SOURCE_NAME} as a documented supplement",
+                file=sys.stderr,
+            )
+            supplemental = waslid_features(fetch_waslid(pack.bbox), pack.bbox)
+            if not supplemental:
+                raise RuntimeError("NASA GLC is too sparse for spatial training and the supplemental inventory is empty")
+            features = merge_catalog_features(features, supplemental)
+    elif not features:
+        print(f"  NASA GLC holds no events inside {list(pack.bbox)}; the historical record stays empty")
+    write_landslides(features, paths.landslides, pack.bbox)
 
 
 def main() -> int:
     """Run the selected stages. A failed stage is reported and does not stop the others."""
-    parser = argparse.ArgumentParser(description="Download the Mount Rainier DEM, land cover, and landslide points.")
+    parser = argparse.ArgumentParser(description="Download one mountain's DEM, land cover, and landslide points.")
+    parser.add_argument("--mountain", default=mp.RAINIER_SLUG,
+                        help=f"pack slug from mountain_packs.py (default: {mp.RAINIER_SLUG})")
     parser.add_argument("--only", default=",".join(STAGES), help="comma-separated stages (default: all three)")
     parser.add_argument("--force", action="store_true", help="download again even if an output exists")
     parser.add_argument(
@@ -481,15 +502,16 @@ def main() -> int:
         help="NASA GLC export CSV to read, as a URL or local file; default URL falls back to the official Washington inventory",
     )
     args = parser.parse_args()
+    pack, paths = mp.get(args.mountain), mp.paths(args.mountain)
     selected = [name.strip() for name in args.only.split(",") if name.strip()]
     unknown = sorted(set(selected) - set(STAGES))
     if unknown:
         parser.error(f"unknown stage(s) {unknown}; choose from {list(STAGES)}")
 
     runners = {
-        "dem": lambda: stage_dem(args.force),
-        "landcover": lambda: stage_landcover(args.force),
-        "landslides": lambda: stage_landslides(args.force, args.glc_csv),
+        "dem": lambda: stage_dem(args.force, pack, paths),
+        "landcover": lambda: stage_landcover(args.force, pack, paths),
+        "landslides": lambda: stage_landslides(args.force, args.glc_csv, pack, paths),
     }
     failed = []
     for name in STAGES:
