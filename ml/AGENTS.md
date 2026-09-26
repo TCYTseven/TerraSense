@@ -38,11 +38,14 @@ Run from the repo root:
 
 ```bash
 python3.12 -m venv ml/.venv && source ml/.venv/bin/activate
-pip install -r ml/requirements.txt -r ml/requirements-dev.txt
+pip install -r ml/requirements.lock.txt  # verified deployment environment
+# Or use the flexible direct requirements during development:
+# pip install -r ml/requirements.txt -r ml/requirements-dev.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
 python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
+python ml/scripts/validate_pipeline.py --require-probability  # read-only deployment audit
 python ml/scripts/import_trails.py         # step 14: OpenStreetMap trails via Overture, the hero trail's segments
 python ml/scripts/build_trail_network.py  # step 19: the network the bypass routes on (needs step 14's cache and the DEM)
 ```
