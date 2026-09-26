@@ -2,6 +2,7 @@
 
 import { type KeyboardEvent, useId, useMemo, useState } from "react";
 import RiskBadge from "@/components/risk-badge";
+import { orderMountainsForBrowse } from "@/lib/globe-display-mountains";
 import type { Mountain } from "@/lib/types";
 
 /** Lowercase, accents stripped, and "mt" or "mt." expanded, so "mt rainier" and "huascaran" match. */
@@ -18,7 +19,7 @@ function normalize(text: string): string {
 export function matchMountains(mountains: Mountain[], query: string): Mountain[] {
   const needle = normalize(query);
   if (!needle) {
-    return mountains;
+    return orderMountainsForBrowse(mountains);
   }
   return mountains
     .map((mountain) => {
@@ -141,7 +142,12 @@ export default function MountainSearch({
       {showList && (
         <div className="mt-2 overflow-hidden rounded-lg border border-border bg-popover/95 shadow-xl shadow-foreground/10 backdrop-blur-sm">
           {matches.length > 0 ? (
-            <ul id={listId} role="listbox" aria-label="Mountains" className="py-1">
+            <ul
+              id={listId}
+              role="listbox"
+              aria-label="Mountains"
+              className="max-h-[min(50vh,20rem)] overflow-y-auto overscroll-contain py-1"
+            >
               {matches.map((mountain, index) => (
                 <li
                   key={mountain.slug}

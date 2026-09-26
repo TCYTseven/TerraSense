@@ -16,8 +16,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TerraSense",
-  description: "Landslide hazard intelligence for hikers and park rangers.",
+  title: {
+    default: "TerraSense — Landslide hazard intelligence",
+    template: "%s | TerraSense",
+  },
+  description:
+    "Explore mountains worldwide. Landslide hazard intelligence for hikers and park rangers, live on Mount Rainier.",
+  icons: {
+    icon: [{ url: "/terrasenselogo.png", type: "image/png" }],
+    apple: "/terrasenselogo.png",
+  },
+  openGraph: {
+    title: "TerraSense",
+    description: "Landslide hazard intelligence for hikers and park rangers.",
+    images: [{ url: "/terrasenselogo.png", width: 512, height: 512, alt: "TerraSense" }],
+  },
 };
 
 export const viewport: Viewport = {
