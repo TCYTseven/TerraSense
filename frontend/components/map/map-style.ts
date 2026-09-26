@@ -45,8 +45,13 @@ export const CAMERA = {
 export const MAP_COLORS = {
   /** The page behind the map and the sky above it, so the horizon fades into the page. */
   paper: "#F4F6F8",
-  /** Elevation tint, valley floor to summit: cool gray rising to white snow. */
-  tint: ["#D5DDE5", "#DFE5EB", "#ECF0F4", "#F8FAFB", "#FFFFFF"],
+  /**
+   * Elevation tint: the ground around the mountain stays white, and the mountain itself, from its
+   * base up to the summit, is gray, so the mountain reads at a glance.
+   */
+  tint: ["#FFFFFF", "#FFFFFF", "#AEB7C1", "#96A0AC", "#85909C"],
+  /** The wash that fades everything outside the mountain's footprint back to white. */
+  surround: "#FFFFFF",
   /** Slopes turned away from the light. */
   shadow: "#334155",
   /** Slopes facing the light. */
@@ -61,14 +66,28 @@ export const MAP_COLORS = {
   casing: "#FFFFFF",
 } as const;
 
-// Where each tint color starts, as a share of the summit's height.
-const TINT_STOPS = [0, 0.25, 0.45, 0.6, 0.8];
+// Where each tint color starts, as a share of the summit's height. White through the valleys,
+// foothills, and neighboring ridges (up to about 42% of the summit), then gray from the
+// mountain's upper flanks to the top.
+const TINT_STOPS = [0, 0.42, 0.5, 0.7, 1];
+
+/**
+ * The surround wash outside the footprint, as [inner radius, outer radius] in footprint radii
+ * and its opacity. Four rings feather the edge so no hard circle shows on the ground.
+ */
+const SURROUND_RINGS = [
+  [1.1, 1.25, 0.2],
+  [1.25, 1.4, 0.4],
+  [1.4, 1.6, 0.6],
+  [1.6, 12, 0.8],
+] as const;
 
 export const SOURCE = {
   terrain: "terrain-dem",
   relief: "relief-dem",
   satellite: "satellite",
   trails: "trails",
+  surround: "surround",
   susceptibility: "susceptibility",
   probability: "probability",
   hazard: "hazard",
@@ -81,6 +100,7 @@ export const LAYER = {
   background: "background",
   satellite: "satellite",
   tint: "elevation-tint",
+  surround: "surround-wash",
   hillshade: "hillshade",
   susceptibility: "susceptibility",
   probability: "probability",
@@ -277,6 +297,39 @@ export const FOOTPRINT_KM = { min: 3, max: 25 } as const;
 
 const KM_PER_DEG = 111.32;
 
+/** The mountain's footprint radius in km, from its summit elevation (see FOOTPRINT_PER_M). */
+export function footprintRadiusKm(elevationM: number): number {
+  return Math.min(FOOTPRINT_KM.max, Math.max(FOOTPRINT_KM.min, (FOOTPRINT_PER_M * elevationM) / 1000));
+}
+
+/** A closed ring of `steps` points at `radiusKm` around a point, in [lon, lat]. */
+function circle(lon: number, lat: number, radiusKm: number, steps = 96): Position[] {
+  const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
+  const ring: Position[] = [];
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * 2 * Math.PI;
+    ring.push([lon + (radiusKm * Math.cos(a)) / kmPerDegLon, lat + (radiusKm * Math.sin(a)) / KM_PER_DEG]);
+  }
+  return ring;
+}
+
+/** The feathered rings outside the footprint, each a donut polygon with its wash opacity. */
+function surroundFeatures(lon: number, lat: number, elevationM: number): GeoJSON.FeatureCollection {
+  const r = footprintRadiusKm(elevationM);
+  return {
+    type: "FeatureCollection",
+    features: SURROUND_RINGS.map(([inner, outer, opacity]) => ({
+      type: "Feature",
+      properties: { opacity },
+      geometry: {
+        type: "Polygon",
+        // Outer ring, then the hole (reversed so it winds the other way).
+        coordinates: [circle(lon, lat, r * outer), circle(lon, lat, r * inner).reverse()],
+      },
+    })),
+  };
+}
+
 /**
  * The opening frame for any mountain: a circle around the summit sized by its elevation (see
  * FOOTPRINT_PER_M), stretched to take in the points of interest (the trail markers) that sit
@@ -288,7 +341,7 @@ export function openingBounds(
   elevationM: number,
   points: Position[] = [],
 ): [number, number, number, number] {
-  const radiusKm = Math.min(FOOTPRINT_KM.max, Math.max(FOOTPRINT_KM.min, (FOOTPRINT_PER_M * elevationM) / 1000));
+  const radiusKm = footprintRadiusKm(elevationM);
   const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
   const dLat = radiusKm / KM_PER_DEG;
   const dLon = radiusKm / kmPerDegLon;
@@ -331,7 +384,17 @@ function elevationTint(summitM: number): ExpressionSpecification {
   return ["interpolate", ["linear"], ["elevation"], ...stops] as ExpressionSpecification;
 }
 
-export function mountainStyle({ summitM, mapboxToken }: { summitM: number; mapboxToken?: string }): StyleSpecification {
+export function mountainStyle({
+  summitM,
+  lon,
+  lat,
+  mapboxToken,
+}: {
+  summitM: number;
+  lon: number;
+  lat: number;
+  mapboxToken?: string;
+}): StyleSpecification {
   const satellite = Boolean(mapboxToken);
   const sources: StyleSpecification["sources"] = {
     [SOURCE.terrain]: demSource(),
@@ -343,6 +406,7 @@ export function mountainStyle({ summitM, mapboxToken }: { summitM: number; mapbo
       data: { type: "FeatureCollection", features: [] },
       attribution: TRAIL_ATTRIBUTION,
     },
+    [SOURCE.surround]: { type: "geojson", data: surroundFeatures(lon, lat, summitM) },
   };
   if (satellite) {
     sources[SOURCE.satellite] = {
@@ -373,6 +437,15 @@ export function mountainStyle({ summitM, mapboxToken }: { summitM: number; mapbo
           "hillshade-highlight-color": MAP_COLORS.highlight,
           "hillshade-accent-color": MAP_COLORS.accent,
         },
+      },
+      // Neighboring ridges can be as high as the mountain's flanks, so the ground outside its
+      // footprint fades back to white, over the hillshade, so only a faint relief shows there.
+      {
+        id: LAYER.surround,
+        type: "fill",
+        source: SOURCE.surround,
+        layout: { visibility: satellite ? "none" : "visible" },
+        paint: { "fill-color": MAP_COLORS.surround, "fill-opacity": ["get", "opacity"], "fill-antialias": false },
       },
       {
         id: LAYER.otherTrails,

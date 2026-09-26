@@ -1,15 +1,15 @@
 # Implementation steps
 
-Thirty steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8).
+Thirty-one steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8), and step 31 the same night, to wire the rebuilt hill card to the backend.
 
 This file has two parts:
 
 - [Part 1: Pending](#part-1-pending) is the work that is left, with the full build notes for each step.
 - [Part 2: Done](#part-2-done) records what each finished step shipped and how it was checked.
 
-Status as of Friday, Sep 25, 2026. Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
+Status as of late Friday, Sep 25, 2026. Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
 
-Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, five agents, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
+Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, seven agents (five analysts, a Risk Synthesizer, an Alert Writer), the hill detail card, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
 
@@ -25,6 +25,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 28. Expose simulate, the stream, and the callouts
 - [ ] 29. Open the mountain panel over the globe
 - [ ] 30. Play the simulation in the panel
+- [ ] 31. Wire the hill card to the run stream and the advisory (the card runs on illustrative data and a scripted orchestrator today)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -44,11 +45,11 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 18. Draw the heat map, hazard polygon, and trail risk (until step 17's Model B lands, the heat map is the susceptibility map, labeled as a stand-in; `backend/app/ml/probability.py` switches to Model B when the module exists)
 - [x] 19. Add one bypass around the worst segment (routed on the OpenStreetMap network per run; where no trail runs around the flagged miles, the answer is to turn back)
 - [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
-- [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet)
+- [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet. Since grown to seven agents: five analysts in parallel, then the Risk Synthesizer and the Alert Writer)
 - [x] 22. Expose analyze, run status, and the live stream
-- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel)
+- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel. Replaced on the page by the hill detail card; see [Since the numbered steps](#since-the-numbered-steps))
 - [x] 24. ~~Post the ranger alert to Discord~~ (dropped by the team on Sep 25, 2026. The ranger reads the alert in the app)
-- [x] 25. Show the hiker card and rehearse the demo (walked in Chromium against the fake LLM APIs. Rehearse once more with real Gemini and xAI keys)
+- [x] 25. Show the hiker card and rehearse the demo (walked in Chromium against the fake LLM APIs. Rehearse once more with real Gemini and xAI keys. The card is not rendered on the rebuilt page for now)
 
 ## Shared facts
 
@@ -88,7 +89,8 @@ Drop work in this order. The demo still holds.
 2. The two static globe markers (step 5's extra mountains, and their markers in step 8).
 3. The susceptibility toggle (step 16). Keep the 72-hour heat map.
 4. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
-5. The Synthesizer as its own model call (step 21). Let Alert Writer merge the three reports.
+5. The Synthesizer as its own model call (step 21). Let the Alert Writer merge the five reports.
+6. Step 31's live wiring. The hill card still demos on its illustrative data, labeled as such.
 
 Keep the globe, the heat map, and the agent stream.
 
@@ -242,6 +244,19 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Done when.** On Rainier, **Simulate** plays to the end in about 20 seconds, the flow reaches the trail step at the same moment its mark appears, at least one ranger callout and one public draft show, and a person who has not seen the app can follow it.
 
+## 31. Wire the hill card to the run stream and the advisory
+
+Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as the hill detail card.
+
+Today the card runs on `buildHillView()` in `frontend/lib/fixtures/hill-demo.ts` (illustrative trail scores) and the scripted source in `frontend/lib/pipeline/orchestrator.ts`. The backend already has what the card needs.
+
+- **Trails.** Build `HillView.trails` from the scored catalog: the Route Scout's exposed trails, or `trailscan` scores served with the mountain. Put each marker at the trail's worst point. The slope and primary factor come from the terrain stats.
+- **Agents.** Write an `AgentSource` over `followRun()` in `lib/run-stream.ts`, and pass it to `runPipeline`. Decide with the team how History and Route Scout appear: two more cards, or folded into Terrain and Trails. Update `PIPELINE_AGENTS`, `lib/types.ts`, and the docs together.
+- **Measures.** Map the advisory (`GET /runs/{id}/advisory`: routes to avoid, safe routes, ranger response, alerts) onto `ReactiveMeasure` categories. Public text stays a draft.
+- **Honesty.** Drop the "Illustrative scores" line only for numbers that came from a run.
+
+**Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
+
 ## Before the demo
 
 Follow-up to steps 4 and 25. Not a numbered step.
@@ -250,13 +265,30 @@ Follow-up to steps 4 and 25. Not a numbered step.
 - Set `GEMINI_API_KEY` and `XAI_API_KEY`. Run `python -m app.agents.pipeline` once, then one **Analyze now** from the browser.
 - Rehearse the demo script in `TerraSense.md` three times. Keep one finished run on screen as a fallback.
 
-**Done when.** A live run with real keys has finished twice, and a person who has not seen the app can follow the demo script to the hiker card.
+**Done when.** A live run with real keys has finished twice, and a person who has not seen the app can follow the demo script to the Reactive Measures.
 
 ---
 
 # Part 2: Done
 
 What each finished step shipped and how it was checked. File-level detail is in [docs/CODE_REFERENCE.md](docs/CODE_REFERENCE.md). Where a step's original plan changed, the change is noted.
+
+## Since the numbered steps
+
+Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
+
+- **Seven-agent pipeline and the advisory** (backend). The five analysts run in parallel: Terrain, Weather, Trail, History, and Route Scout. The Risk Synthesizer then decides the severity, the action, three routes to avoid, three safe routes, and the ranger response. `advisory.py` checks its answer. Then the Alert Writer runs. `trailscan.py` scores every mapped trail. The run ends in an `Advisory` (`GET /runs/{id}/advisory`, `GET /mountains/{slug}/advisory`). Open-Meteo also feeds conditions (temperature, freeze-thaw, snowfall, wind, soil moisture, freezing level).
+- **Contract audit** (PR #6). Tests pin the Model B seam, the provider schemas, and JSON-native payloads. Fixed fabricated soil-moisture zeros and the providers' `.env` loading. 204 pytest tests pass.
+- **Hill detail card** (PR #5). The mountain page is two columns:
+  - Map about 55%, with lettered markers A–E, tooltips, and **View** fly-to.
+  - Panel about 45%, with stats, the overall score, the top five trails, preventative measures, and an Orchestrator with five agent cards and inline traces.
+
+  **Analyze now** runs a scripted client-side orchestrator. Removed: the rain section, the ranger panel, the agent rows, and the reasoning side panel.
+- **Panel and map pass** (PR #7). Larger panel text. Reactive Measures became their own section in six incident-response groups, each measure with a deadline. The map opens framed from the summit elevation, orbits while idle, and limits zoom-out.
+- **Light home and globe.** A light home theme and an evenly lit Earth. Mountain-logo markers replace the dots, and High and Extreme mountains keep a larger translucent sphere.
+- **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
+
+Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
 
 ## 1. Lay out the repo and environment
 
@@ -360,6 +392,8 @@ What each finished step shipped and how it was checked. File-level detail is in 
 
 ## 21. Run the five-agent pipeline
 
+**Changed later.** The pipeline now runs seven agents. See [Since the numbered steps](#since-the-numbered-steps).
+
 **Shipped.** `backend/app/agents/pipeline.py`: Terrain and Weather together, then Trail, Synthesizer, Writer. Retries, repair rounds, fallback provider, code-set confidence (0.40, 0.35, 0.25), `needs_review`, and copy checks with plain templates as the last resort.
 
 **Done when.** `python -m app.agents.pipeline` prints five JSON objects, a final severity, and both texts. Checked against `backend/tests/fake_llm.py`. No live provider call has run yet.
@@ -372,6 +406,8 @@ What each finished step shipped and how it was checked. File-level detail is in 
 
 ## 23. Show the agent stream and the hazard panel
 
+**Changed later.** The hill detail card replaced the ranger panel, the agent rows, and the reasoning panel. `lib/run-stream.ts` is kept for step 31.
+
 **Shipped.** `frontend/components/mountain/mountain-dashboard.tsx`, `frontend/components/panel/` (ranger panel, hazard block, agent rows, level word), and `frontend/lib/run-stream.ts`, which reconnects twice before calling a run lost. Also the reasoning panel (team decision, Sep 25, 2026).
 
 **Done when.** One click on Rainier streams all five rows and opens a pin whose four fields match the saved hazard.
@@ -381,6 +417,8 @@ What each finished step shipped and how it was checked. File-level detail is in 
 Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and the mountain page has no `?hazard=` deep link. The ranger reads the alert in the app. The `alerts` table stays in the schema, unused.
 
 ## 25. Show the hiker card and rehearse the demo
+
+**Changed later.** The hiker card and the hazard block are not rendered on the hill detail card. Their components and `GET /forecast` are kept.
 
 **Shipped.** `GET /forecast` (`backend/app/routes/forecast.py`) and `frontend/components/panel/hiker-card.tsx`, with the bypass drawn dashed on the map. Empty, loading, and error states for the globe, the mountain, and the run.
 

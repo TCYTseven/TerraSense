@@ -261,6 +261,7 @@ Two to four notes from the AI, one model call routed like the agents (see [Copy]
 - **Style. [confirm]** `mapbox://styles/mapbox/satellite-v9`: imagery without labels. The panel names the trails, and map labels would compete with trail color.
 - **Dimmed imagery. [confirm]** On the satellite layer, `raster-saturation` −0.35 and `raster-brightness-max` 0.8. Risk colors become the most saturated things on screen, and the map sits closer to the dark UI.
 - **Terrain.** Exaggeration 1.5 (spec 6.2).
+- **Gray mountain on white. (Sep 25, 2026)** The relief tint is white up to 42% of the summit's height and gray from 50% to the top, so the mountain proper reads at a glance. A feathered white wash over the hillshade (four rings, 1.1× to 1.6× the footprint radius) fades everything outside the mountain's footprint back to white, so neighboring ridges stay quiet. It is off under the satellite style. The heat map draws above it.
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
   - *Recorded at step 18:* the map kept step 15's opening frame, the summit plus the Skyline loop (about zoom 12.2 at 1440 x 900).
