@@ -74,8 +74,8 @@ def _stand_in(path: Path = SUSCEPTIBILITY_PATH) -> ProbabilityMap:
     if not path.exists():
         raise FileNotFoundError(
             f"{path.relative_to(REPO_ROOT)} is missing (susceptibility GeoTIFF). "
-            "From repo root: python ml/scripts/download_sources.py --only dem,landcover && "
-            "python ml/scripts/build_features.py && python ml/scripts/train_susceptibility.py"
+            "From repo root: python ml/scripts/build_regional_features.py --rainier-stack-only && "
+            "python ml/scripts/apply_susceptibility_map.py"
         )
     with rasterio.open(path) as src:
         values = src.read(1).astype("float32")

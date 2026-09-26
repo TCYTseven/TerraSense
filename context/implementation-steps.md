@@ -130,7 +130,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
 
-**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,224-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. Superseded on Sep 26 by the regional model (`ml/scripts/train_regional_susceptibility.py`, spatial-block AUC 0.82); the Rainier-only run below is kept in `ml/artifacts/legacy_rainier_only/`. That run had AUC `0.7150`, precision at High `0.0000`, 1,041 train rows, 183 test rows, and 306 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
+**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,224-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. Superseded on Sep 26 by the regional model (`ml/scripts/train_regional_susceptibility.py`, spatial-block AUC 0.82); the Rainier-only artifact tree was removed after the regional publish. That run had AUC `0.7150`, precision at High `0.0000`, 1,041 train rows, 183 test rows, and 306 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
 
 **Left.**
 

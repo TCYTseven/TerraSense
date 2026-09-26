@@ -842,14 +842,5 @@
       0.6667
     ],
     "elevation_gain_share": 0.2439
-  },
-  "legacy_backup": {
-    "dir": "ml/artifacts/legacy_rainier_only",
-    "copied_this_run": [
-      "metrics.json",
-      "susceptibility.tif",
-      "susceptibility_lgbm.txt",
-      "feature_importance.json"
-    ]
   }
 }

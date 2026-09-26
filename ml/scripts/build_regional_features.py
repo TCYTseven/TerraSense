@@ -42,6 +42,8 @@ from mountain_packs import RAINIER_BBOX  # noqa: E402
 from download_region import DOWNLOAD_BBOX, REGION_BBOX, REGION_DEM_PATH, REGION_LANDCOVER_PATH  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+RAINIER_DEM_PATH = REPO_ROOT / "data" / "raw" / "rainier_dem_cop30.tif"
+RAINIER_LANDCOVER_PATH = REPO_ROOT / "data" / "raw" / "rainier_landcover_worldcover2021.tif"
 GRID_CRS = "EPSG:32610"  # Rainier's UTM zone, the grid the live app scores on
 USGS_DIR = REPO_ROOT / "data" / "raw" / "usgs_v3" / "US_Landslide_v3_csv"
 USGS_FILES = {"poly": USGS_DIR / "us_ls_v3_poly.csv", "point": USGS_DIR / "us_ls_v3_point.csv"}
@@ -142,14 +144,20 @@ def window_cells(radius_m: float) -> int:
     return 2 * int(round(radius_m / CELL_M)) + 1
 
 
-def build_stack(dst_transform: Affine, shape: tuple[int, int]) -> np.ndarray:
+def build_stack(
+    dst_transform: Affine,
+    shape: tuple[int, int],
+    *,
+    dem_path: Path = REGION_DEM_PATH,
+    landcover_path: Path = REGION_LANDCOVER_PATH,
+) -> np.ndarray:
     """All FEATURES on the regional grid, shape (len(FEATURES), rows, cols), NaN outside the DEM."""
     stack = np.full((len(FEATURES),) + shape, np.nan, dtype="float32")
     put = lambda name, values: stack.__setitem__(FEATURES.index(name), values)  # noqa: E731
 
-    elevation = resample(REGION_DEM_PATH, dst_transform, shape, GRID_CRS, Resampling.bilinear, "float32")
+    elevation = resample(dem_path, dst_transform, shape, GRID_CRS, Resampling.bilinear, "float32")
     elevation[elevation <= -1000] = np.nan
-    landcover = resample(REGION_LANDCOVER_PATH, dst_transform, shape, GRID_CRS, Resampling.mode, "uint8").astype("float32")
+    landcover = resample(landcover_path, dst_transform, shape, GRID_CRS, Resampling.mode, "uint8").astype("float32")
     landcover[landcover == 0] = np.nan
     put("elevation", elevation)
     put("landcover", landcover)
@@ -400,8 +408,25 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Build regional features and landslide labels.")
     parser.add_argument("--write-stack", action="store_true",
                         help=f"also write the whole regional stack to {rel(REGION_STACK_PATH)} (~1 GB)")
+    parser.add_argument(
+        "--rainier-stack-only",
+        action="store_true",
+        help=f"build only {rel(RAINIER_STACK_PATH)} from the Rainier step-10 rasters (no regional download)",
+    )
     args = parser.parse_args()
     PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+
+    if args.rainier_stack_only:
+        for path in (RAINIER_DEM_PATH, RAINIER_LANDCOVER_PATH):
+            if not path.is_file():
+                raise SystemExit(f"{rel(path)} is missing (run ml/scripts/download_sources.py for Rainier)")
+        dst_transform, width, height = utm_grid(RAINIER_BBOX, GRID_CRS)
+        print(f"Rainier-only stack {width} x {height} at {CELL_M} m, {GRID_CRS}")
+        stack = build_stack(dst_transform, (height, width), dem_path=RAINIER_DEM_PATH,
+                            landcover_path=RAINIER_LANDCOVER_PATH)
+        write_stack(RAINIER_STACK_PATH, stack, dst_transform)
+        print(f"wrote {rel(RAINIER_STACK_PATH)} ({RAINIER_STACK_PATH.stat().st_size / 1e6:.1f} MB)")
+        return
 
     dst_transform, width, height = snapped_grid(DOWNLOAD_BBOX)
     print(f"regional grid {width} x {height} cells at {CELL_M} m, {GRID_CRS}, origin ({dst_transform.c}, {dst_transform.f})")

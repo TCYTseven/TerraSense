@@ -14,7 +14,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 |---|---|---|
 | 10 | `scripts/download_sources.py` | DEM and land cover in `data/raw/`, `data/seed/landslides.geojson`. Record each download in `data/seed/sources.md` by hand |
 | 11 | `scripts/build_features.py` | `data/processed/features.parquet` |
-| 12 | `scripts/train_susceptibility.py` | Legacy Rainier-only model, `artifacts/metrics.json`, feature importance, susceptibility GeoTIFF. Superseded by the regional model below; its last outputs are in `artifacts/legacy_rainier_only/` |
+| 12 | `scripts/train_susceptibility.py` | Legacy Rainier-only path (seven features). Superseded by `train_regional_susceptibility.py`; do not rerun on Rainier over the regional artifacts. |
 | 12 (regional) | `scripts/download_region.py`, `scripts/build_regional_features.py`, `scripts/train_regional_susceptibility.py` | Regional DEM and land cover in `data/raw/`; regional labels and the Rainier-window stack in `data/processed/`; the calibrated model, `susceptibility_calibration.json`, `metrics.json`, feature importance, and `susceptibility.tif` on the legacy Rainier grid |
 | 13, 18 | `scripts/render_tiles.py` | XYZ PNGs in `backend/tiles/`. The API renders the probability layer itself on each run (`backend/app/assessment.py`) |
 | 14 | `scripts/import_trails.py` | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` (the hero trail's mile segments), and the walkable network cache in `data/raw/` |

@@ -134,8 +134,8 @@ def _read_susceptibility(path: Path) -> tuple[np.ndarray, Affine, str]:
             display_path = path
         raise FileNotFoundError(
             f"{display_path} is missing (susceptibility GeoTIFF). "
-            "From repo root: python ml/scripts/download_sources.py --only dem,landcover && "
-            "python ml/scripts/build_features.py && python ml/scripts/train_susceptibility.py"
+            "From repo root: python ml/scripts/build_regional_features.py --rainier-stack-only && "
+            "python ml/scripts/apply_susceptibility_map.py"
         )
     with rasterio.open(path) as src:
         masked = src.read(1, masked=True).astype("float32")

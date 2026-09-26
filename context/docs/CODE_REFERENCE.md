@@ -20,7 +20,7 @@ context/docs/      Team brief, handoff, UX, seeding, this file.
 AGENTS.md          Agent guide: folder owners, team rules, shared facts.
 README.md          Pitch, the three commands, folder owners.
 .env.example       Every environment variable, with a comment. CORS_ORIGINS, OPEN_METEO_FIXTURE, and the LLM tuning knobs are optional.
-.gitignore         Ignores .env, data/raw/, data/processed/, ml/artifacts/*.tif (and legacy_rainier_only/*.tif), backend/tiles/, frontend/public/maplibre/, virtualenvs.
+.gitignore         Ignores .env, data/raw/, data/processed/, most `ml/artifacts/*.tif` (exception: `susceptibility.tif`), pack GeoTIFFs, backend/tiles/, frontend/public/maplibre/, virtualenvs.
 ```
 
 ## Agent harness
@@ -232,7 +232,6 @@ AgentEvent     { run_id, agent, status, summary, payload, trace: AgentTrace | nu
 | `ml/tests/test_combined_validate.py` | Step 35. Constants equal `backend/app/ml/model_b.py`, the live formula, case records prefer precise sources, the 2 x 2 assembly (rain shared within a weather cell, terrain fixed at one place), fitted combinations never train on held-out water years, concordance by control kind, and weather-cell candidates. |
 | `ml/tests/test_geo_validation.py` | Step 35. Metric math (lift, confusion, ECE equals the trainer's, thresholds against brute force, calibrators), region assignment, no region leak through the buffer, calibrators and thresholds fit only on inner validation rows, inner fits never see the outer region, the selection rule, ablation variants and transfer flags, shift statistics and the domain classifier, error tables, output schema, and byte-identical reruns. |
 | `ml/artifacts/susceptibility_calibration.json` | Regional model. Isotonic `x_thresholds`/`y_thresholds` from LightGBM raw score to calibrated probability at the 1:3 sampling ratio. |
-| `ml/artifacts/legacy_rainier_only/` | The Rainier-only step 12 `metrics.json`, `feature_importance.json`, `susceptibility_lgbm.txt`, and (gitignored) `susceptibility.tif`, copied before the regional model replaced them. |
 | `data/raw/region_dem_cop30.tif`, `data/raw/region_landcover_worldcover2021.tif` | Gitignored. Regional GLO-30 (5401 x 4321 px, 57 MB) and WorldCover (18000 x 14400 px, 8 MB) over `DOWNLOAD_BBOX`, EPSG:4326. |
 | `data/processed/regional_labels.parquet`, `data/processed/rainier_regional_features.tif` | Gitignored. Regional labeled pixels (`set` train/external, `label`, `source`, `confidence`, 17 features, `x`, `y`, `row`, `col`, `dist_any_record_m`) and the 17-band stack on the Rainier grid that the map is predicted from. |
 | `ml/tests/test_validate_pipeline.py` | Deployment audit tests: the current full artifact set passes and out-of-range raster values are rejected. |
