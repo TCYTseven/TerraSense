@@ -207,7 +207,9 @@ def synthesizer(blocks: list) -> tuple[dict, str]:
     severity = max(levels, key=LEVELS.index) if levels else "moderate"
     review = bool(computed.get("needs_review"))
     action = "close" if severity in ("high", "extreme") and not review else "monitor"
-    miles = f"mile {trail_report.get('start_mile', 0):.1f} to {trail_report.get('end_mile', 0):.1f}"
+    # start_mile and end_mile are present but null when no mile of the hero trail reaches high.
+    start, end = trail_report.get("start_mile"), trail_report.get("end_mile")
+    miles = f"mile {start:.1f} to {end:.1f}" if start is not None and end is not None else "no flagged miles"
 
     # The shortlists the code put in the prompt: the only routes that pass its checks.
     avoid_pool = next((a for a in _arrays(blocks) if a and "max_probability" in a[0]), [])[:3]
@@ -269,7 +271,8 @@ def synthesizer(blocks: list) -> tuple[dict, str]:
 def writer(blocks: list, repair: bool) -> tuple[dict, str]:
     final = (_find(blocks, "ranger_title") or {})
     hazard, bypass = final.get("hazard", {}), final.get("bypass")
-    trail_name, miles = hazard.get("trail", "the trail"), hazard.get("miles") or "the flagged miles"
+    trail_name = hazard.get("trail") or "the trail"
+    miles = hazard.get("miles") or "the flagged miles"
     review = final.get("needs_review")
     body = f"{final.get('ranger_title', '')} {'Close' if final.get('recommended_action') == 'close' else 'Monitor'} " \
            f"the {trail_name} from {miles}."

@@ -46,6 +46,7 @@ an evacuation. The Alert Writer then turns that decision into the ranger and hik
 - Every model call goes through the router in `app/agents/router.py`, which picks Gemini Flash or Grok and records why. Do not call a provider directly.
 - The ML model's output is the run's source of truth. Every agent calls `get_model_prediction` first and explains those numbers; none of them recomputes or argues with them. What an agent adds is what the model never saw: the trail network, the landslide record, the conditions, and what a ranger should do.
 - The five analysts run in one `asyncio.gather`. Nothing in an analyst may read another analyst's payload: that would put the fan-out back in series. Only the Risk Synthesizer sees all five.
+- `tests/test_contracts.py` pins the three seams other people build against: what Model B must return, the JSON schema each agent's output is sent to the providers as, and the JSON-nativeness of every payload that leaves the process. A numpy scalar or a datetime in a tool result is a 500 on the stream, not a rounding difference, so it is caught there.
 - The Risk Synthesizer is the only agent that decides anything, and code checks its answer in `app/agents/advisory.py`. A route it names must be on the shortlist the code built from the scored catalog, and its ranger posture cannot outrun the severity the run reached. Clamps are recorded as checks, never silent.
 
 ## Commands
@@ -69,7 +70,7 @@ curl -X POST localhost:8000/mountains/mount-rainier/analyze   # step 22: { run_i
 curl localhost:8000/runs/<run_id>
 curl localhost:8000/runs/<run_id>/advisory        # the run's whole conclusion: 3 routes to avoid, 3 safe, the ranger response
 curl localhost:8000/mountains/mount-rainier/advisory   # the newest one, after any finished run
-python -m pytest                # schemas, router, providers, tools, the guard rails, and the pipeline (fake LLMs; needs DATABASE_URL)
+python -m pytest                # schemas, router, providers, tools, the guard rails, the contracts, and the pipeline (fake LLMs; needs DATABASE_URL)
 python -m app.agents.pipeline   # the agents once, with the advisory printed. Needs GEMINI_API_KEY or XAI_API_KEY
 ```
 
