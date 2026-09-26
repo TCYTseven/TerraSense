@@ -1,5 +1,5 @@
 import { displayRiskLevel } from "./format";
-import { TRAIL_LETTERS, type HillView, type TrailRisk } from "./hill";
+import { TRAIL_LETTERS, type MountainView, type TrailRisk } from "./mountain-view";
 import type { MountainDetail, MountainRiskSummary } from "./types";
 
 const KM_PER_DEG_LAT = 111.2;
@@ -34,11 +34,11 @@ function preventative(summary: MountainRiskSummary, trails: TrailRisk[]): string
 }
 
 /**
- * The hill card's view model from the mountain and the risk summary. Every score, slope, and
+ * The mountain page's view model from the mountain and the risk summary. Every score, slope, and
  * factor comes from the saved 72-hour map the heat layer shows. Before the first save there is
  * no summary, so the card shows no scores rather than made-up ones.
  */
-export function buildHillView(mountain: MountainDetail, summary: MountainRiskSummary | null): HillView {
+export function buildMountainView(mountain: MountainDetail, summary: MountainRiskSummary | null): MountainView {
   const base = { slug: mountain.slug, name: mountain.name, region: mountain.region, isLive: mountain.is_live };
   if (!mountain.is_live || summary === null) {
     // A static mountain shows the model's live summit prediction, not the seeded catalog

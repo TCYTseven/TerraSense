@@ -1,9 +1,9 @@
 import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import { formatScore, formatUtc } from "@/lib/format";
-import type { HillView } from "@/lib/hill";
+import type { MountainView } from "@/lib/mountain-view";
 
 /** The worst point on any mapped trail and its level. Static mountains show their fixed level only. */
-export default function OverallRisk({ hill }: { hill: HillView }) {
+export default function OverallRisk({ hill }: { hill: MountainView }) {
   const { level, score } = hill.risk;
   return (
     <section aria-labelledby="risk-heading" className={`border-t border-border px-5 py-4 ${LEVEL_TREATMENT[level]}`}>

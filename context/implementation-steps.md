@@ -1,6 +1,6 @@
 # Implementation steps
 
-Thirty-one steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8), and step 31 the same night, to wire the rebuilt hill card to the backend.
+Thirty-one steps from an empty checkout to the HackGT demo in [TerraSense.md](TerraSense.md). Steps 26 to 30 were added on Sep 25, 2026 for the mountain panel and simulation (spec 6.8), and step 31 the same night, to wire the rebuilt mountain page to the backend.
 
 This file has two parts:
 
@@ -9,7 +9,7 @@ This file has two parts:
 
 Status as of Saturday, Sep 26, 2026. The open list is [9-26-todo.md](9-26-todo.md). Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
 
-Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, seven agents (five analysts, a Risk Synthesizer, an Alert Writer), the hill detail card, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
+Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, seven agents (five analysts, a Risk Synthesizer, an Alert Writer), the mountain page, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
 ## Checklist
 
@@ -25,7 +25,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 28. Expose simulate, the stream, and the callouts
 - [ ] 29. Open the mountain panel over the globe
 - [x] 30. Play the simulation on the mountain page (Sep 26, 2026: **Simulate** sits beside **Analyze now** for mountains with routes, not in the unbuilt globe panel)
-- [ ] 31. Wire the hill card to the run stream and the advisory (agents, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Left: the fake-LLM check that the five trails match the advisory)
+- [ ] 31. Wire the mountain page to the run stream and the advisory (agents, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Left: the fake-LLM check that the five trails match the advisory)
 - [ ] 32. Build mountain data packs for the demo peaks (Rainier-style DEM, land cover, index, tiles, and trails for 7 more peaks, 1-2 per continent)
 - [x] 35. Validate the landslide models across regions (leave-one-region-out terrain ROC-AUC 0.77 against 0.82 spatial CV; combined index 0.86 on dated events outside Rainier; see [docs/geographic_validation.md](docs/geographic_validation.md))
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
@@ -49,7 +49,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 20. Define agent schemas, tools, and prompts (plus the Gemini Flash and Grok providers and the router that picks between them)
 - [x] 21. Run the five-agent pipeline (checked against a fake of both APIs; no live Gemini or xAI call has run yet. Since grown to seven agents: five analysts in parallel, then the Risk Synthesizer and the Alert Writer)
 - [x] 22. Expose analyze, run status, and the live stream
-- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel. Replaced on the page by the hill detail card; see [Since the numbered steps](#since-the-numbered-steps))
+- [x] 23. Show the agent stream and the hazard panel (plus the reasoning side panel. Replaced on the page by the mountain page; see [Since the numbered steps](#since-the-numbered-steps))
 - [x] 24. ~~Post the ranger alert to Discord~~ (dropped by the team on Sep 25, 2026. The ranger reads the alert in the app)
 - [x] 25. Show the hiker card and rehearse the demo (walked in Chromium against the fake LLM APIs. Rehearse once more with real Gemini and xAI keys. The card is not rendered on the rebuilt page for now)
 
@@ -102,7 +102,7 @@ Keep the globe, the heat map, and the agent stream.
 
 On main, steps 10, 11, 12, 14, and 17 are still open: there is no `data/seed/landslides.geojson`, `metrics.json` says `trained: false`, and `backend/app/ml/model_b.py` is absent, so the heat map stays the susceptibility stand-in.
 
-That work is already on `origin/step-10-local-nasa-export` (landslide points, a 1,224-row labeled table, LightGBM with held-out AUC 0.715, 37 historical pins, and Model B). Merge it. Do not rebuild it. Main is six commits ahead of the branch point, so the merge has to keep the catalog and the live hill-card stream.
+That work is already on `origin/step-10-local-nasa-export` (landslide points, a 1,224-row labeled table, LightGBM with held-out AUC 0.715, 37 historical pins, and Model B). Merge it. Do not rebuild it. Main is six commits ahead of the branch point, so the merge has to keep the catalog and the live mountain-page stream.
 
 ## 10. Download the Rainier source layers
 
@@ -246,17 +246,17 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Done when.** On Rainier, **Simulate** plays to the end with the footprint and the clock advancing together, at least one ranger callout and one public draft show, and a peak with no routes has no **Simulate**.
 
-## 31. Wire the hill card to the run stream and the advisory
+## 31. Wire the mountain page to the run stream and the advisory
 
-Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as the hill detail card.
+Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as the mountain page.
 
 **Done so far (Sep 26).** On a live mountain, **Analyze now** calls `POST /mountains/{slug}/analyze` and follows the run socket (`frontend/lib/pipeline/live-run.ts`, used by `usePipeline`). The seven API agents fold onto the five cards: Trail, History, and Route Scout share the Trails row. Reactive Measures come from the run advisory. Static mountains still use the scripted source in `frontend/lib/pipeline/orchestrator.ts`.
 
-**Done (Sep 26, later).** `GET /mountains/{slug}/risk-summary` (`backend/app/risk_summary.py`) scores every trail on `ml/artifacts/probability.tif`, the map the heat layer is rendered from. `buildHillView()` in `frontend/lib/hill-view.ts` builds the top five, the markers (at each trail's worst point), the overall score (the worst point on any trail), the mean slope, and the preventative bullets from it. The card refetches after a run. The illustrative fixture is gone.
+**Done (Sep 26, later).** `GET /mountains/{slug}/risk-summary` (`backend/app/risk_summary.py`) scores every trail on `ml/artifacts/probability.tif`, the map the heat layer is rendered from. `buildMountainView()` in `frontend/lib/mountain-view-build.ts` builds the top five, the markers (at each trail's worst point), the overall score (the worst point on any trail), the mean slope, and the preventative bullets from it. The card refetches after a run. The illustrative fixture is gone.
 
 **Left.** The summary ranks trails without the run's hazard zone, so a trail crossing the zone is not forced first as it is in the advisory. Check the list against the advisory with the fake LLM server.
 
-- **Trails.** Build `HillView.trails` from the scored catalog: the Route Scout's exposed trails, or `trailscan` scores served with the mountain. Put each marker at the trail's worst point. The slope and primary factor come from the terrain stats.
+- **Trails.** Build `MountainView.trails` from the scored catalog: the Route Scout's exposed trails, or `trailscan` scores served with the mountain. Put each marker at the trail's worst point. The slope and primary factor come from the terrain stats.
 - **Honesty.** Drop the "Illustrative scores" line only for numbers that came from a run.
 
 **Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
@@ -291,7 +291,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 
 - **Seven-agent pipeline and the advisory** (backend). The five analysts run in parallel: Terrain, Weather, Trail, History, and Route Scout. The Risk Synthesizer then decides the severity, the action, three routes to avoid, three safe routes, and the ranger response. `advisory.py` checks its answer. Then the Alert Writer runs. `trailscan.py` scores every mapped trail. The run ends in an `Advisory` (`GET /runs/{id}/advisory`, `GET /mountains/{slug}/advisory`). Open-Meteo also feeds conditions (temperature, freeze-thaw, snowfall, wind, soil moisture, freezing level).
 - **Contract audit** (PR #6). Tests pin the Model B seam, the provider schemas, and JSON-native payloads. Fixed fabricated soil-moisture zeros and the providers' `.env` loading. 204 pytest tests pass.
-- **Hill detail card** (PR #5). The mountain page is two columns:
+- **Mountain page** (PR #5). The mountain page is two columns:
   - Map about 55%, with lettered markers A–E, tooltips, and **View** fly-to.
   - Panel about 45%, with stats, the overall score, the top five trails, preventative measures, and an Orchestrator with five agent cards and inline traces.
 
@@ -300,7 +300,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Light home and globe.** A light home theme and an evenly lit Earth. Mountain-logo markers replace the dots, and High and Extreme mountains keep a larger translucent sphere.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
 - **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 1000 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
-- **Live hill-card agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores came from the illustrative fixture until the risk summary replaced it later that day.
+- **Live mountain-page agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores came from the illustrative fixture until the risk summary replaced it later that day.
 - **Production 72-hour classifier (new risk track).** Added a separate `(1 km cell, reference timestamp)` contract for rainfall-triggered landslide probability, direct NASA CSV/GeoJSON event ingestion, cell-aggregated static features, leakage-aware normalized observation/forecast samples, spatiotemporal LightGBM training, held-out calibration and target-precision thresholds, OOD/quality abstention, a backtest CLI, and `POST /api/v1/landslide-risk`. The checked-in API remains fail-closed until real timestamped IMERG/ERA5-Land/forecast inputs and calibrated artifacts are built; no performance numbers are fabricated.
 - **Validated terrain and Model B** (Sep 26, later). Regional susceptibility (`ml/scripts/train_regional_susceptibility.py`): spatial-block ROC-AUC 0.82 (0.78–0.85), 0.60 (0.52–0.67) on Rainier's own slides. Model B's rain weights fitted on 767 dated landslides (`ml/scripts/event_validate.py`): ROC-AUC 0.75 (0.73–0.78). `model_b.py` now uses the fitted weights with terrain as calibrated log-odds; the card calls the value a relative 72-hour risk index and shows these numbers from the artifacts. The synthetic Skyline corridor in the tests is gone: the real storm map flags Skyline miles 4.1 to 5.4, with no bypass. An adversarial audit then found the index counted two base rates; terrain now enters relative to its 1:3 sampling rate.
 - **Point probability and terrain-gated Model B** (Sep 26). `POST /api/v1/landslide-risk` now returns a 0–1 `probability` for every in-domain click, with `probability_source`, the shared `risk_level`, and an `estimate` block. Without a calibrated model it is the Model B value at the clicked pixel on today's rain, explained by its three logit terms. It never changes the classifier's `UNCERTAIN`, and it stays `null` without rain or terrain. The map card leads with that chance. Model B's terrain weight was retuned (`w1` 2.4 to 7.0, center 0.75) because the storm fixture painted 100% of the box Extreme. Now 89% stays Low and the valley slopes carry the risk. The five hazard-path tests that had failed since Model B landed (they scored a dry map) now run on the storm plus a labeled Skyline debris corridor.
@@ -436,7 +436,7 @@ Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome 
 
 ## 23. Show the agent stream and the hazard panel
 
-**Changed later.** The hill detail card replaced the ranger panel, the agent rows, and the reasoning panel. `lib/run-stream.ts` is kept for step 31.
+**Changed later.** The mountain page replaced the ranger panel, the agent rows, and the reasoning panel. `lib/run-stream.ts` is kept for step 31.
 
 **Shipped.** `frontend/components/mountain/mountain-dashboard.tsx`, `frontend/components/panel/` (ranger panel, hazard block, agent rows, level word), and `frontend/lib/run-stream.ts`, which reconnects twice before calling a run lost. Also the reasoning panel (team decision, Sep 25, 2026).
 
@@ -448,7 +448,7 @@ Dropped by the team on Sep 25, 2026. A run posts nothing outside the app, and th
 
 ## 25. Show the hiker card and rehearse the demo
 
-**Changed later.** The hiker card and the hazard block are not rendered on the hill detail card. Their components and `GET /forecast` are kept.
+**Changed later.** The hiker card and the hazard block are not rendered on the mountain page. Their components and `GET /forecast` are kept.
 
 **Shipped.** `GET /forecast` (`backend/app/routes/forecast.py`) and `frontend/components/panel/hiker-card.tsx`, with the bypass drawn dashed on the map. Empty, loading, and error states for the globe, the mountain, and the run.
 

@@ -1,4 +1,4 @@
-import TrailBadge from "@/components/hill/trail-badge";
+import TrailBadge from "@/components/mountain/trail-badge";
 import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import {
   MEASURE_CATEGORY_LABELS,
@@ -7,7 +7,7 @@ import {
   type MeasureTiming,
   type ReactiveMeasure,
   type TrailRisk,
-} from "@/lib/hill";
+} from "@/lib/mountain-view";
 import type { RiskLevel } from "@/lib/types";
 
 function Measure({ measure, level }: { measure: ReactiveMeasure; level: RiskLevel | undefined }) {

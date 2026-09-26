@@ -1,5 +1,5 @@
 import { CheckIcon, CircleIcon, XIcon } from "@/components/icons";
-import type { PipelineStatus } from "@/lib/hill";
+import type { PipelineStatus } from "@/lib/mountain-view";
 
 export const STATUS_WORDS: Record<PipelineStatus, string> = {
   idle: "idle",

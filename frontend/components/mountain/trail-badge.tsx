@@ -1,4 +1,4 @@
-import type { TrailLetter } from "@/lib/hill";
+import type { TrailLetter } from "@/lib/mountain-view";
 import type { RiskLevel } from "@/lib/types";
 
 // Literal class names so Tailwind generates each one. Risk colors mark risk only.

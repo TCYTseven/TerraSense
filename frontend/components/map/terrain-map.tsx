@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
 import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
-import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
+import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import type { ReleaseCamera } from "@/lib/use-simulation";
 import type { Bypass, FlowFeatureCollection, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import { buildSyntheticHeatOverlay } from "@/lib/synthetic-heatmap";

@@ -197,7 +197,7 @@ export interface TrailRiskScore {
   factor: string | null;
 }
 
-/** GET /mountains/{slug}/risk-summary: the hill card's numbers, from the map the heat layer shows. */
+/** GET /mountains/{slug}/risk-summary: the mountain page's numbers, from the map the heat layer shows. */
 export interface MountainRiskSummary {
   method: string;
   scored_at: string;

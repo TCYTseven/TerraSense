@@ -52,8 +52,8 @@ Lines tagged **[confirm]** are defaults. Confirm or change each one, then delete
 | One raster at a time | Susceptibility hides probability while on | [Raster layers](#raster-layers) | Step 16 |
 | High and Extreme treatment | 3 px left border and an 8% tint | [High and Extreme](#high-and-extreme) | Step 23 |
 | Static mountains | Hide everything that implies analysis | [Static mountains](#static-mountains) | Step 23 |
-| Mountain page split | 55/45, one scrolling panel, Analyze now pinned | [Layout](#layout) | Hill card rebuild |
-| Reasoning | Inline trace under each agent card, one open at a time | [Agent pipeline](#agent-pipeline) | Hill card rebuild |
+| Mountain page split | 55/45, one scrolling panel, Analyze now pinned | [Layout](#layout) | Mountain page rebuild |
+| Reasoning | Inline trace under each agent card, one open at a time | [Agent pipeline](#agent-pipeline) | Mountain page rebuild |
 | Narrow layout | Stack below 768 px | [Layout](#layout) | Step 25 |
 | Mountain panel size | 60/40 split, `min(1200px, 100vw − 64px)` by `min(760px, 100vh − 128px)` | [Panel frame](#panel-frame) | Step 29 |
 | Globe while the panel is open | Turned to face the mountain at altitude 1.2, spin paused, 60% scrim | [Panel frame](#panel-frame) | Step 29 |
@@ -118,7 +118,7 @@ Geist is the create-next-app default, so a Geist screen reads as a starter templ
 | Lead (risk sentence) | 16 / 24 | 400 | Sans |
 | Body (panel rows, hazard values, agent names) | 14 / 20 | 400 | Sans |
 | Meta (labels, hover card, toggles, popups, status lines) | 12 / 16 | 400 | Sans |
-| Hill card panel, raised a step for legibility | Rows, trail names, bullets, agent names: 16 / 24. Labels, secondary lines, status, traces: 14 / 20. Reactive Measures title: 20 / 28 | 400–600 | Sans |
+| Mountain page panel, raised a step for legibility | Rows, trail names, bullets, agent names: 16 / 24. Labels, secondary lines, status, traces: 14 / 20. Reactive Measures title: 20 / 28 | 400–600 | Sans |
 | Button | 14 / 20 | 500 | Sans |
 | Hiker level | 36 / 40 | 600 | Sans, tracking −0.02em |
 | Hiker sentence | 21 / 30 | 400 | Sans |
@@ -265,7 +265,7 @@ Two to four notes from the AI, one model call routed like the agents (see [Copy]
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
   - *Recorded at step 18:* the map kept step 15's opening frame, the summit plus the Skyline loop (about zoom 12.2 at 1440 x 900).
-  - *Replaced by the hill card's panel pass:* the map opens on the mountain's footprint, so every mountain gets the same kind of view. Flanks average about 22°, so a mountain's base spreads roughly relief / tan(22°) from the summit. Relief is taken as 85% of the summit elevation, giving a radius of about 2.1 × elevation (`FOOTPRINT_PER_M`), clamped to 3–25 km: about 9 km for Rainier. The frame also takes in the top-five trail markers within twice that radius. Fitted with 150 px of top padding, pitch 55, bearing -14. The user can zoom out a third of a zoom level past it (about 1.25× the view) and no further.
+  - *Replaced by the mountain page's panel pass:* the map opens on the mountain's footprint, so every mountain gets the same kind of view. Flanks average about 22°, so a mountain's base spreads roughly relief / tan(22°) from the summit. Relief is taken as 85% of the summit elevation, giving a radius of about 2.1 × elevation (`FOOTPRINT_PER_M`), clamped to 3–25 km: about 9 km for Rainier. The frame also takes in the top-five trail markers within twice that radius. Fitted with 150 px of top padding, pitch 55, bearing -14. The user can zoom out a third of a zoom level past it (about 1.25× the view) and no further.
 - **Controls.** None beyond the attribution and logo that Mapbox's terms require. No navigation, fullscreen, or geolocate control. Drag, scroll, pinch, and rotate stay on.
 
 ### Raster layers
@@ -302,7 +302,7 @@ Probability (the default layer, step 18) and susceptibility (step 16) share one 
 
 ## Panel
 
-The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page). The user's brief for the rebuild overrides the earlier 70/30 layout, the rain section, the agent rows, and the reasoning side panel.
+The mountain page's mountain page, rebuilt Sep 25, 2026 (UX.md, Mountain page). The user's brief for the rebuild overrides the earlier 70/30 layout, the rain section, the agent rows, and the reasoning side panel.
 
 ### Layout
 

@@ -7,11 +7,11 @@ import {
   type PipelineAgentState,
   type PipelineState,
   type ReactiveMeasure,
-} from "@/lib/hill";
+} from "@/lib/mountain-view";
 import { ANALYST_NAMES, type Advisory, type AgentEvent, type AgentName, type Run } from "@/lib/types";
 
 /**
- * The hill card shows five rows. The API runs seven agents. Trail, history, and routes
+ * The mountain page shows five rows. The API runs seven agents. Trail, history, and routes
  * share the Trails row so every real model call still appears in the trace.
  */
 const CARD_AGENTS: Record<PipelineAgentId, readonly AgentName[]> = {
@@ -187,7 +187,7 @@ function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
 }
 
 /**
- * Starts POST /mountains/{slug}/analyze and paints the hill-card pipeline from the live
+ * Starts POST /mountains/{slug}/analyze and paints the mountain-page pipeline from the live
  * WebSocket. The API calls Gemini or xAI with the keys in the repo root .env.
  */
 export function runLiveAnalysis(

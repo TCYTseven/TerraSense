@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import HillCard from "@/components/hill/hill-card";
+import MountainCard from "@/components/mountain/mountain-card";
 import { getLayer, getMountain, getRiskSummary } from "@/lib/api";
 import type { LayerTiles, MountainRiskSummary } from "@/lib/types";
 
@@ -43,7 +43,7 @@ export async function generateMetadata({
 }
 
 /**
- * The hill detail card: the 3D mountain view and the stats panel. Live mountains also get the
+ * The mountain page: the 3D mountain view and the stats panel. Live mountains also get the
  * heat map layers, the top five trails, and the agents.
  */
 export default async function MountainPage({ params }: PageProps<"/mountains/[slug]">) {
@@ -58,6 +58,6 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
     : [null, null];
 
   return (
-    <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} riskSummary={riskSummary} />
+    <MountainCard mountain={mountain} probability={probability} susceptibility={susceptibility} riskSummary={riskSummary} />
   );
 }

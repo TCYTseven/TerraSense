@@ -1,6 +1,6 @@
 import { LEVEL_TEXT } from "@/components/panel/level";
 import { formatScore, riskLabel } from "@/lib/format";
-import type { TrailLetter, TrailRisk } from "@/lib/hill";
+import type { TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import TrailBadge from "./trail-badge";
 
 export interface TrailListProps {

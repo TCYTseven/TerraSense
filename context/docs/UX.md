@@ -52,11 +52,11 @@ One panel, centered over the globe, for every mountain. It closes with Escape, i
 
 **Bottom of the right side:** **Open ranger view**, which flies into the mountain page. **Simulate** is not on this panel. As of Sep 26, 2026 it lives on the mountain page, beside **Analyze now**, and only for a mountain that has routes.
 
-**The runout plays on the mountain page, not in this panel.** See [Mountain page](#mountain-page-hill-detail-card-rebuilt-sep-25-2026).
+**The runout plays on the mountain page, not in this panel.** See [Mountain page](#mountain-page-rebuilt-sep-25-2026).
 
 Static mountains open the same panel with terrain only, their fixed level, and one line saying they are display markers. No pressure points. **Simulate** is not offered, because these peaks have no routes.
 
-### Mountain page (hill detail card, rebuilt Sep 25, 2026)
+### Mountain page (rebuilt Sep 25, 2026)
 
 Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor. The opening view frames the whole mountain, sized from its elevation, so any mountain opens the same way. While nobody is using it, the camera slowly orbits the mountain. It can't zoom out more than a third of a zoom level past the opening view. A click on a trail's marker or line on the map does what **View** does: the camera flies there and the trail's row is selected.
 

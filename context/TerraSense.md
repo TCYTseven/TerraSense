@@ -47,7 +47,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 **Works end to end**
 
 - **Globe.** A React Three Fiber Earth on the light home theme, evenly lit so no side goes black. Mountain-logo markers come from the API. The default seed (`SEED_MODE=mountainstest`) is 138 peaks, and the globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Mount Rainier is the only live mountain. High and Extreme mountains sit in a larger translucent sphere. Hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
-- **Hill detail card (the mountain page).** Two columns, rebuilt Sep 25:
+- **Mountain page (the mountain page).** Two columns, rebuilt Sep 25:
   - **Map, about 55%.** MapLibre GL with 3D terrain from AWS Terrain Tiles. The mountain renders gray on white surroundings. The opening frame is sized from the summit elevation, so any mountain opens the same way. The camera slowly orbits while idle, and zooming out stops one level past the opening view. The heat map is the default layer, with a susceptibility toggle. All 67 OpenStreetMap trails are drawn, and the hero trail (the Skyline loop, 5.5 mi) is colored by 0.1-mile segment. Five lettered markers (A–E) sit on the top at-risk trails, each with a hover tooltip (score, slope, primary factor), and **View** flies the camera to them.
   - **Panel, about 45%.** Stats, the overall score, the top five trails, preventative measures, an Orchestrator with five agent cards and inline reasoning traces, **Analyze now**, and a Reactive Measures section clustered by timing (now, within 1 hour, 6 hours, 24 hours).
 - **Assessment.** `backend/app/assessment.py` scores the map, colors the hero trail's 55 segments, flags the worst mile range, draws the hazard zone around it, and routes a bypass on the OpenStreetMap trail network, or says to turn back. `backend/app/trailscan.py` scores every mapped trail against the same map.
@@ -62,7 +62,7 @@ As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md)
 
 **Not done yet**
 
-- **The hill card is nearly wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/risk-summary`, which scores every trail on the saved map the heat layer shows (`backend/app/risk_summary.py`). Left: check with the fake LLM server that the five trails match the advisory after a run.
+- **The mountain page is nearly wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures come from `GET /mountains/{slug}/risk-summary`, which scores every trail on the saved map the heat layer shows (`backend/app/risk_summary.py`). Left: check with the fake LLM server that the five trails match the advisory after a run.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
 - **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
 - **Landslide points.** The supplied NASA Global Landslide Catalog export contributes 4 Rainier events; because only one is `1km` accurate, the downloader adds 33 documented Washington Geological Survey inventory points as supplemental training labels. The **Past landslides** toggle is enabled, and the History Analyst can read all 37 records.
@@ -177,7 +177,7 @@ Four fields, always in this order:
 3. Confidence.
 4. How to avoid it.
 
-**Hill detail card** (rebuilt Sep 25, 2026)
+**Mountain page** (rebuilt Sep 25, 2026)
 
 The page is two columns: the 3D mountain view about 55%, one scrolling stats panel about 45%. Each of the top five trails gets a letter marker (A to E) on its region; hovering one shows its risk score, slope, and primary risk factor. The panel, top to bottom:
 
@@ -235,7 +235,7 @@ Seven LLM calls with separate prompts. Every agent reads the ML model's predicti
 
 The five analysts run in parallel, then the Risk Synthesizer, then the Alert Writer. Each result streams to the UI. Code sets the final confidence (weights: terrain 0.30, weather 0.25, trail 0.20, routes 0.15, history 0.10) and checks the Synthesizer's routes and posture (`advisory.py`).
 
-The hill card shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). On a live mountain those cards follow the API. History and Route Scout fold into the Trails row. Static mountains still use the scripted source.
+The mountain page shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). On a live mountain those cards follow the API. History and Route Scout fold into the Trails row. Static mountains still use the scripted source.
 
 Consensus rule: if severity ratings differ by two or more levels, set `needs_review` and phrase the alert as an advisory.
 
@@ -259,7 +259,7 @@ Not rendered on the rebuilt mountain page for now (UX.md, Mountain page); `GET /
 
 ### 6.7 Reasoning Panel
 
-Added Sep 25, 2026 (team decision); folded into the hill detail card the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
+Added Sep 25, 2026 (team decision); folded into the mountain page the same day. The reasoning now opens inline: a click on an agent card expands its full trace directly beneath it, one card at a time. It updates live during a run. It explains a run and never changes one. The side panel over the map is gone.
 
 ### 6.8 Mountain page runout
 
@@ -613,7 +613,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 - Tighten motion and copy.
 - 60–90 second backup video.
 - Devpost draft with the real AUC and the real data sources.
-- Finish wiring the hill card: traces, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Check the five trails against the advisory after a fake-LLM run.
+- Finish wiring the mountain page: traces, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Check the five trails against the advisory after a fake-LLM run.
 - Rehearse the live demo three times with real keys. Keep a finished run on screen in case the live call fails.
 
 If you are behind, drop in this order:
@@ -723,13 +723,13 @@ Changes to this spec after the build started. Each one is also reflected in the 
 | Sep 25, 2026 | Discord dropped. The ranger alert stays in the app (step 24) |
 | Sep 25, 2026 | Two LLM providers, Gemini Flash and Grok, with a router in code and a reasoning panel |
 | Sep 25, 2026 | Model B pulled for a rebuild. The heat map is the labeled susceptibility stand-in until it lands |
-| Sep 26, 2026 | Terrain retrained regionally (spatial CV AUC 0.82, Rainier-only 0.60) and Model B's rain weights fitted on 767 dated landslides (AUC 0.75). The point value and the heat map are a relative 72-hour index with its held-out skill shown in the card. The hill card's trail scores come from the saved map |
+| Sep 26, 2026 | Terrain retrained regionally (spatial CV AUC 0.82, Rainier-only 0.60) and Model B's rain weights fitted on 767 dated landslides (AUC 0.75). The point value and the heat map are a relative 72-hour index with its held-out skill shown in the card. The mountain page's trail scores come from the saved map |
 | Sep 26, 2026 | Model B's terrain weight retuned (`w1` 2.4 to 7.0, center 0.5 to 0.75) so terrain gates the rain trigger. The landslide-risk endpoint returns a 0–1 `probability` on every in-domain click: the calibrated one when it exists, else the labeled Model B estimate (6.3) |
 | Sep 25, 2026 | Susceptibility is a knowledge-driven index until landslide labels exist |
 | Sep 25, 2026 | A globe click opens a mountain panel with pressure points and a runout simulation with AI callouts (6.8). The old "no simulation mode" rule now means no rain what-if inputs. Avalanches stay out |
 | Sep 25, 2026 | The backend fans out five analysts (Terrain, Weather, Trail, History, Route Scout), then the Risk Synthesizer decides routes and the ranger response, then the Alert Writer. Runs end in an advisory (6.4) |
 | Sep 25, 2026 | The globe goes light and evenly lit, with mountain-logo markers. The mountain map renders the mountain gray on white surroundings, framed from its elevation |
-| Sep 25, 2026 | The mountain page is rebuilt as the hill detail card (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
+| Sep 25, 2026 | The mountain page is rebuilt as the mountain page (6.2): a 55/45 split, top five trails with map markers and **View**, preventative measures, an orchestrator with five agent cards and inline traces, and Reactive Measures. The rain section, the reasoning side panel, and the hiker card leave the page. Trail scores and the run are illustrative until the models land |
 
 ---
 

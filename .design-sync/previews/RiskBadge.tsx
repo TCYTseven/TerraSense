@@ -1,7 +1,7 @@
 import { RiskBadge } from "terrasense-ui";
 
 // RiskBadge is the level with the word "risk" ("High risk"): the globe hover card's line.
-// Inside the hill card panel, use LevelWord (the bare level word) instead.
+// Inside the mountain page panel, use LevelWord (the bare level word) instead.
 // Compositions follow context/design-addendum.md: Risk mapping, Globe (Hover card), Units.
 
 const Value = ({ children }: { children: React.ReactNode }) => (

@@ -165,7 +165,7 @@ class OverallRisk(BaseModel):
 
 
 class MountainRiskSummary(BaseModel):
-    """GET /mountains/{slug}/risk-summary: the hill card's numbers, from the map the tiles show."""
+    """GET /mountains/{slug}/risk-summary: the mountain page's numbers, from the map the tiles show."""
 
     method: str
     scored_at: datetime

@@ -1,4 +1,4 @@
-"""The hill card's numbers, read from the saved 72-hour map (step 31).
+"""The mountain page's numbers, read from the saved 72-hour map (step 31).
 
 The heat map tiles are rendered from each mountain's saved map (`app.packs.probability_path`),
 which `Analyze now` and `python -m app.assessment --save` write. This module scores every trail against that same file,

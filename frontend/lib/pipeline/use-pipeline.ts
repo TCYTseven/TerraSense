@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { HillView, PipelineState } from "../hill";
+import type { MountainView, PipelineState } from "../mountain-view";
 import { runLiveAnalysis } from "./live-run";
 import { initialPipelineState } from "./orchestrator";
 
@@ -17,7 +17,7 @@ export interface PipelineControls {
  * Holds the pipeline's state and runs it on demand. Every mountain calls the API.
  * A summit with no trails still runs: the agents use its location, the risk model, and the weather.
  */
-export function usePipeline(hill: HillView): PipelineControls {
+export function usePipeline(hill: MountainView): PipelineControls {
   const [state, setState] = useState<PipelineState>(initialPipelineState);
   const [running, setRunning] = useState(false);
   const controller = useRef<AbortController | null>(null);

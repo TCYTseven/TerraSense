@@ -1,5 +1,5 @@
 /**
- * The hill card's agent pipeline, framework-free. The orchestrator runs Terrain, Weather, and
+ * The mountain page's agent pipeline, framework-free. The orchestrator runs Terrain, Weather, and
  * Trails in parallel, then the Synthesizer, then the Alerter. Each agent runs through
  * an `AgentSource`; the scripted one below simulates them. A real adapter over the backend's run
  * stream (`lib/run-stream.ts`) can implement `AgentSource` without touching the components.
@@ -7,12 +7,12 @@
 
 import {
   PIPELINE_AGENTS,
-  type HillView,
+  type MountainView,
   type PipelineAgentId,
   type PipelineAgentState,
   type PipelineState,
   type ReactiveMeasure,
-} from "../hill";
+} from "../mountain-view";
 import { demoMeasures, scriptFor } from "./demo-traces";
 
 /** Appends one step to the agent's trace while it runs. */
@@ -21,7 +21,7 @@ export type EmitStep = (step: string) => void;
 /** Runs one agent to completion and resolves with its one-line summary. Throw to fail it. */
 export type AgentRunner = (
   id: PipelineAgentId,
-  hill: HillView,
+  hill: MountainView,
   emitStep: EmitStep,
   signal: AbortSignal,
 ) => Promise<string>;
@@ -29,7 +29,7 @@ export type AgentRunner = (
 export interface AgentSource {
   runAgent: AgentRunner;
   /** The measures, read once the Alerter finishes. */
-  measures: (hill: HillView) => ReactiveMeasure[] | Promise<ReactiveMeasure[]>;
+  measures: (hill: MountainView) => ReactiveMeasure[] | Promise<ReactiveMeasure[]>;
 }
 
 /** The three agents that run together, then the two that run after, in order. */
@@ -107,7 +107,7 @@ export const scriptedSource = createScriptedSource();
  * sends no more updates.
  */
 export async function runPipeline(
-  hill: HillView,
+  hill: MountainView,
   onUpdate: (state: PipelineState) => void,
   signal: AbortSignal,
   source: AgentSource = scriptedSource,

@@ -1,10 +1,10 @@
 /**
- * Scripted agent traces for the hill card, built from the HillView so every step names real
+ * Scripted agent traces for the mountain page, built from the MountainView so every step names real
  * trails, scores, and slopes. Illustrative until the backend's run stream replaces the scripted
  * runner; nothing here is model output.
  */
 
-import { MEASURE_TIMING_LABELS, MEASURE_TIMINGS, type HillView, type PipelineAgentId, type ReactiveMeasure, type TrailRisk } from "../hill";
+import { MEASURE_TIMING_LABELS, MEASURE_TIMINGS, type MountainView, type PipelineAgentId, type ReactiveMeasure, type TrailRisk } from "../mountain-view";
 
 export interface ScriptedAgent {
   /** The steps, in order. The runner emits one at a time. */
@@ -33,7 +33,7 @@ function trailList(trails: TrailRisk[], describe: (t: TrailRisk) => string): str
   return trails.map(describe).join(", ");
 }
 
-function terrain(hill: HillView): ScriptedAgent {
+function terrain(hill: MountainView): ScriptedAgent {
   const { trails, stats } = hill;
   if (trails.length === 0) {
     return {
@@ -57,7 +57,7 @@ function terrain(hill: HillView): ScriptedAgent {
   };
 }
 
-function weather(hill: HillView): ScriptedAgent {
+function weather(hill: MountainView): ScriptedAgent {
   return {
     steps: [
       `Pulled the 72-hour record and forecast for the ${hill.name} box.`,
@@ -71,7 +71,7 @@ function weather(hill: HillView): ScriptedAgent {
   };
 }
 
-function trailsAgent(hill: HillView): ScriptedAgent {
+function trailsAgent(hill: MountainView): ScriptedAgent {
   const { trails } = hill;
   if (trails.length === 0) {
     return {
@@ -95,7 +95,7 @@ function trailsAgent(hill: HillView): ScriptedAgent {
   };
 }
 
-function synthesizer(hill: HillView): ScriptedAgent {
+function synthesizer(hill: MountainView): ScriptedAgent {
   const { trails, risk } = hill;
   const top = trails[0];
   return {
@@ -112,7 +112,7 @@ function synthesizer(hill: HillView): ScriptedAgent {
   };
 }
 
-function alertWriter(hill: HillView): ScriptedAgent {
+function alertWriter(hill: MountainView): ScriptedAgent {
   const measures = demoMeasures(hill);
   const drafts = measures.filter((m) => m.category === "public").length;
   const actions = measures.length - drafts;
@@ -130,7 +130,7 @@ function alertWriter(hill: HillView): ScriptedAgent {
   };
 }
 
-const SCRIPTS: Record<PipelineAgentId, (hill: HillView) => ScriptedAgent> = {
+const SCRIPTS: Record<PipelineAgentId, (hill: MountainView) => ScriptedAgent> = {
   terrain,
   weather,
   trails: trailsAgent,
@@ -138,12 +138,12 @@ const SCRIPTS: Record<PipelineAgentId, (hill: HillView) => ScriptedAgent> = {
   alertWriter,
 };
 
-export function scriptFor(id: PipelineAgentId, hill: HillView): ScriptedAgent {
+export function scriptFor(id: PipelineAgentId, hill: MountainView): ScriptedAgent {
   return SCRIPTS[id](hill);
 }
 
 /** Three to five measures: ranger actions first, then public notices, which are drafts. */
-export function demoMeasures(hill: HillView): ReactiveMeasure[] {
+export function demoMeasures(hill: MountainView): ReactiveMeasure[] {
   const [a, b, c] = hill.trails;
   if (!a) {
     return [

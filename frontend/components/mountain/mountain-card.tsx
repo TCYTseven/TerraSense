@@ -9,12 +9,12 @@ import ReactiveMeasures from "@/components/pipeline/reactive-measures";
 import SimulationBar from "@/components/map/simulation-bar";
 import LandslideRiskCard from "@/components/panel/landslide-risk-card";
 import { getRiskSummary } from "@/lib/api";
-import { buildHillView } from "@/lib/hill-view";
-import type { CameraFocus, TrailLetter } from "@/lib/hill";
+import { buildMountainView } from "@/lib/mountain-view-build";
+import type { CameraFocus, TrailLetter } from "@/lib/mountain-view";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
 import { useSimulation } from "@/lib/use-simulation";
 import type { LayerTiles, MountainDetail, MountainRiskSummary } from "@/lib/types";
-import HillHeader from "./hill-header";
+import MountainHeader from "./mountain-header";
 import OverallRisk from "./overall-risk";
 import PanelTabs, { type PanelTab, tabId, tabPanelId } from "./panel-tabs";
 import PreventativeMeasures from "./preventative-measures";
@@ -22,12 +22,12 @@ import SimulationUnsupportedDialog from "./simulation-unsupported-dialog";
 import TrailList from "./trail-list";
 
 // The 3D view needs WebGL and the DOM, so it renders in the browser only.
-const HillMountainView = dynamic(() => import("@/components/map/hill-mountain-view"), {
+const MountainTerrainView = dynamic(() => import("@/components/map/mountain-terrain-view"), {
   ssr: false,
   loading: () => <div className="absolute inset-0 bg-muted" />,
 });
 
-export interface HillCardProps {
+export interface MountainCardProps {
   mountain: MountainDetail;
   probability: LayerTiles | null;
   susceptibility: LayerTiles | null;
@@ -36,13 +36,13 @@ export interface HillCardProps {
 }
 
 /**
- * The hill detail card: the 3D mountain on the left, the stats panel on the right. The header and
+ * The mountain page: the 3D mountain on the left, the stats panel on the right. The header and
  * overall risk stay at the top; under them two tabs, Prevention (Simulate pinned under it) and
  * Response (Analyze pinned under it). "View" on a trail row flies the camera to its marker.
  */
-export default function HillCard({ mountain, probability, susceptibility, riskSummary }: HillCardProps) {
+export default function MountainCard({ mountain, probability, susceptibility, riskSummary }: MountainCardProps) {
   const [summary, setSummary] = useState(riskSummary);
-  const hill = useMemo(() => buildHillView(mountain, summary), [mountain, summary]);
+  const hill = useMemo(() => buildMountainView(mountain, summary), [mountain, summary]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [tab, setTab] = useState<PanelTab>("prevention");
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
@@ -98,7 +98,7 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
         aria-label="Mountain view"
         className="relative h-[42dvh] max-h-[50dvh] shrink-0 overflow-hidden bg-muted md:h-auto md:max-h-none md:min-h-0 md:w-[55%]"
       >
-        <HillMountainView
+        <MountainTerrainView
           key={mountain.slug}
           mountain={mountain}
           probability={probability}
@@ -116,7 +116,7 @@ export default function HillCard({ mountain, probability, susceptibility, riskSu
 
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:w-[45%] md:flex-none md:border-l md:border-t-0">
         <div className="shrink-0">
-          <HillHeader hill={hill} />
+          <MountainHeader hill={hill} />
           <OverallRisk hill={hill} />
         </div>
         <PanelTabs active={tab} onChange={setTab} />
