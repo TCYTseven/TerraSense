@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import HillCard from "@/components/hill/hill-card";
-import { getLayer, getMountain } from "@/lib/api";
-import type { LayerTiles } from "@/lib/types";
+import { getLayer, getMountain, getRiskSummary } from "@/lib/api";
+import type { LayerTiles, MountainRiskSummary } from "@/lib/types";
 
 // One API call per request, shared by the metadata and the page.
 const loadMountain = cache((slug: string) => getMountain(slug));
@@ -12,6 +12,15 @@ const loadMountain = cache((slug: string) => getMountain(slug));
 async function loadLayer(slug: string, layer: string): Promise<LayerTiles | null> {
   try {
     return await getLayer(slug, layer);
+  } catch {
+    return null;
+  }
+}
+
+/** The trail scores on the saved heat map, or null. A failed read leaves the card unscored. */
+async function loadRiskSummary(slug: string): Promise<MountainRiskSummary | null> {
+  try {
+    return await getRiskSummary(slug);
   } catch {
     return null;
   }
@@ -44,9 +53,11 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
     notFound();
   }
   // Static mountains have no raster layers.
-  const [probability, susceptibility] = mountain.is_live
-    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility")])
-    : [null, null];
+  const [probability, susceptibility, riskSummary] = mountain.is_live
+    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility"), loadRiskSummary(slug)])
+    : [null, null, null];
 
-  return <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} />;
+  return (
+    <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} riskSummary={riskSummary} />
+  );
 }

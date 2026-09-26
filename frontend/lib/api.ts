@@ -1,4 +1,13 @@
-import type { Forecast, LandslideRiskPrediction, LayerTiles, Mountain, MountainDetail, Run, Simulation } from "./types";
+import type {
+  Forecast,
+  LandslideRiskPrediction,
+  LayerTiles,
+  Mountain,
+  MountainDetail,
+  MountainRiskSummary,
+  Run,
+  Simulation,
+} from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -108,6 +117,18 @@ export async function getForecast(mountainId: string, trailId?: string | null, i
   }
   try {
     return await getJson<Forecast>(`/forecast?${query}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The overall score and top trails on the saved heat map. Resolves to null before the first save. */
+export async function getRiskSummary(slug: string, init?: RequestInit): Promise<MountainRiskSummary | null> {
+  try {
+    return await getJson<MountainRiskSummary>(`/mountains/${encodeURIComponent(slug)}/risk-summary`, init);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) {
       return null;

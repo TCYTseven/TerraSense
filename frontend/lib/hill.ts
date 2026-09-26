@@ -1,7 +1,7 @@
 /**
  * The hill detail card's view model: what the mountain page renders, independent of where the
- * numbers come from. `lib/fixtures/hill-demo.ts` fills it from the mountain plus illustrative
- * values until the models land; a real adapter replaces it without touching the components.
+ * numbers come from. `lib/hill-view.ts` fills it from the mountain and the risk summary, which
+ * scores every trail on the saved 72-hour map.
  */
 
 import type { LineString, Position, RiskLevel } from "./types";
@@ -18,10 +18,10 @@ export interface TrailRisk {
   /** 0 to 1. The level follows the shared bins. */
   score: number;
   level: RiskLevel;
-  /** Hillside slope at the riskiest point, in degrees. */
-  slopeDeg: number;
-  /** The driver that contributes most, in plain words ("Steep slopes"). */
-  primaryFactor: string;
+  /** Hillside slope at the riskiest point, in degrees. Null without the terrain stack. */
+  slopeDeg: number | null;
+  /** The leading terrain factor at the riskiest point ("Drainage channel"). Null without the terrain stack. */
+  primaryFactor: string | null;
   /** Where the marker sits and where "View" centers the camera. */
   center: Position;
   /** The camera zoom "View" flies to. */
@@ -33,10 +33,10 @@ export interface TrailRisk {
 /** The header's one line of basic stats. */
 export interface HillStats {
   elevationM: number;
-  /** Mean hillside slope across the mountain's box, in degrees. */
-  meanSlopeDeg: number;
-  /** Area of the mountain's bounding box, in km². */
-  areaKm2: number;
+  /** Mean hillside slope across the mountain's box, in degrees. Null until scored. */
+  meanSlopeDeg: number | null;
+  /** Area of the mountain's bounding box, in km². Null for static mountains. */
+  areaKm2: number | null;
 }
 
 export interface HillView {
@@ -45,14 +45,14 @@ export interface HillView {
   region: string;
   isLive: boolean;
   stats: HillStats;
-  /** The overall score, 0 to 1, and its level. */
-  risk: { score: number; level: RiskLevel };
+  /** The worst point on any mapped trail, 0 to 1, and its level. Null score until scored. */
+  risk: { score: number | null; level: RiskLevel };
   /** Exactly the top five, riskiest first, lettered A to E. Empty for static mountains. */
   trails: TrailRisk[];
   /** Three to five short bullets. */
   preventative: string[];
-  /** True while any number above is illustrative rather than model output. */
-  isDemo: boolean;
+  /** Where the scores came from. Null for static mountains and before the first saved map. */
+  scoring: { scoredAt: string; method: string; trailsScored: number; shareAreaHigh: number } | null;
 }
 
 /** A request to fly the camera to a trail. `nonce` changes on every click, so a repeat click flies again. */

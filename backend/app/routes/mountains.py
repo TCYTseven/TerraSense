@@ -11,7 +11,8 @@ from app.db import get_conn
 from app.history import historical_events
 from app.mountain_catalog import ensure_catalog, sync_catalog
 from app.ml.tiles import layer_url_path, read_metadata, slug_tiles_dir
-from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
+from app.models import Hazard, LayerTiles, Mountain, MountainDetail, MountainRiskSummary, Trail, TrailSegment
+from app.risk_summary import risk_summary
 from app.runs import registry
 
 router = APIRouter(prefix="/mountains", tags=["mountains"])
@@ -108,6 +109,20 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
         historical_events=historical_events(slug),
         active_run_id=running.id if (running := registry.active_run(slug)) and running.status == "running" else None,
     )
+
+
+@router.get("/{slug}/risk-summary")
+def get_risk_summary(slug: str, conn: Conn) -> MountainRiskSummary:
+    """The overall score, mean slope, and top five trails, scored on the map the heat layer shows."""
+    mountain = conn.execute("SELECT is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    if mountain is None:
+        raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
+    if not mountain["is_live"]:
+        raise HTTPException(status_code=404, detail=f"{slug!r} is a static marker and is not scored")
+    summary = risk_summary(conn, slug)
+    if summary is None:
+        raise HTTPException(status_code=404, detail=f"No saved probability map yet. {RENDER_HINT['probability']}")
+    return MountainRiskSummary(**summary)
 
 
 @router.get("/{slug}/layers/{layer}")

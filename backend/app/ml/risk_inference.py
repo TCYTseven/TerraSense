@@ -382,7 +382,7 @@ def _estimate_drivers(terms: dict[str, float], susceptibility: float) -> list[di
 
     rows = [
         ("terrain", "Terrain susceptibility",
-         f"{susceptibility:.2f} on a 0 to 1 scale (slope, drainage, land cover)"),
+         f"{susceptibility:.2f} calibrated relative susceptibility (relief, roughness, drainage, land cover)"),
         ("forecast_rain", "Forecast rain, next 72 h",
          f"{terms['next_72h_mm']:.1f} mm against a {terms['threshold_72h_mm']:.1f} mm trigger threshold"),
         ("antecedent_moisture", "Rain in the past 7 days",
@@ -445,6 +445,7 @@ def _model_b_estimate(
                 "past_72h_mm", "next_72h_mm", "past_7d_mm", "threshold_72h_mm", "threshold_7d_mm")},
         },
         "drivers": [] if terms is None else _estimate_drivers(terms, susceptibility),
+        "validation": None if grid.is_stand_in else probability_seam.validation(),
     }
     return estimate, pixel, []
 

@@ -21,7 +21,7 @@ TerraSense shows landslide risk for Mount Rainier. A Next.js globe opens a MapLi
 
 | Path | State |
 |---|---|
-| `frontend/` | Next.js 16, React 19, Tailwind 4, TypeScript. Light home theme, React Three Fiber globe, search, fly-in, and the hill detail card at `/mountains/[slug]`. MapLibre terrain, heat map, susceptibility toggle, five trail markers. **Analyze now** on a live mountain streams the real run. Trail scores on the card are still illustrative. |
+| `frontend/` | Next.js 16, React 19, Tailwind 4, TypeScript. Light home theme, React Three Fiber globe, search, fly-in, and the hill detail card at `/mountains/[slug]`. MapLibre terrain, heat map, susceptibility toggle, five trail markers. **Analyze now** on a live mountain streams the real run. Trail scores come from the saved heat map. |
 | `backend/` | FastAPI: health, mountains, layers, analyze, the run socket, advisory, forecast. Seven-agent pipeline. Six-table schema and seed. Mountain catalog loader. Verified on a local Postgres 16. No hosted database yet. |
 | `ml/` | Download, feature stack, knowledge-driven susceptibility, tiles, trails, and the bypass network are on main. LightGBM training and Model B are on `origin/step-10-local-nasa-export`. |
 | `data/` | `seed/mountains.json` (648 peaks), `seed/mountains_test.json` (138, the default seed), Rainier trails, segments, and the trail network. `seed/landslides.geojson` is on the NASA-export branch, not on main. |
@@ -44,7 +44,7 @@ Do not reopen these during the hackathon unless the demo is already rehearsed an
 - **The map is MapLibre GL** with AWS Terrain Tiles. A Mapbox token switches the relief to satellite. It is not required.
 - **The bypass is computed in Python** from the OpenStreetMap trail network. The Trail Analyst explains it and does not invent a line.
 - **Analyze now is the product.** There is no scheduled ingest job.
-- **Publish the AUC you measure.** 0.85 is not a gate. The unmerged branch measured 0.715.
+- **Publish the AUC you measure.** 0.85 is not a gate. Terrain: 0.82 regional, 0.60 on Rainier. Rain trigger: 0.75.
 - **Modal is optional.** Use it only if a local Model B run is too slow to demo.
 
 Shared numbers (bbox, peak, risk bins) live in the implementation steps under "Shared facts." Use those figures in code.
@@ -75,7 +75,7 @@ Drop work in this order. The demo still holds.
 3. The susceptibility toggle (step 16). Keep the 72-hour heat map.
 4. A computed bypass (step 19). Keep a named bypass in the hiker sentence.
 5. The Synthesizer as its own model call (step 21). Let the Alert Writer merge the five reports.
-6. Step 31's remaining live wiring. The hill card still demos on illustrative trail scores, labeled as such.
+6. Step 31's last check: the five trails against the advisory after a fake-LLM run.
 
 Keep the globe, the heat map, and the agent stream.
 

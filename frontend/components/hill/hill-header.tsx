@@ -15,12 +15,16 @@ export default function HillHeader({ hill }: { hill: HillView }) {
         <span className="font-mono text-[0.92em] text-foreground">{formatFeet(stats.elevationM)}</span>
         {hill.isLive && (
           <>
-            <span>
-              <span className="font-mono text-[0.92em] text-foreground">{stats.meanSlopeDeg}°</span> mean slope
-            </span>
-            <span>
-              <span className="font-mono text-[0.92em] text-foreground">{stats.areaKm2.toLocaleString("en-US")} km²</span>
-            </span>
+            {stats.meanSlopeDeg !== null && (
+              <span>
+                <span className="font-mono text-[0.92em] text-foreground">{stats.meanSlopeDeg}°</span> mean slope
+              </span>
+            )}
+            {stats.areaKm2 !== null && (
+              <span>
+                <span className="font-mono text-[0.92em] text-foreground">{stats.areaKm2.toLocaleString("en-US")} km²</span>
+              </span>
+            )}
           </>
         )}
         <span>{hill.region}</span>

@@ -130,6 +130,42 @@ class MountainDetail(Mountain):
     active_run_id: str | None
 
 
+class TrailRiskScore(BaseModel):
+    """One trail on the saved 72-hour map: its worst point, and the terrain there."""
+
+    trail_id: str
+    name: str
+    max_probability: float
+    mean_probability: float
+    share_high: float
+    level: RiskLevel
+    worst_point: list[float] | None  # lon, lat
+    slope_deg: float | None
+    factor: str | None
+
+
+class OverallRisk(BaseModel):
+    """The worst point on any mapped trail, and how much of the box is at high or above."""
+
+    score: float
+    level: RiskLevel
+    trails_scored: int
+    share_area_high: float
+    area_mean: float | None
+
+
+class MountainRiskSummary(BaseModel):
+    """GET /mountains/{slug}/risk-summary: the hill card's numbers, from the map the tiles show."""
+
+    method: str
+    scored_at: datetime
+    overall: OverallRisk
+    mean_slope_deg: float | None
+    bbox: list[float] | None  # west, south, east, north
+    threshold_72h_mm: float
+    trails: list[TrailRiskScore]
+
+
 class RiskPredictionRequest(BaseModel):
     """A point in the configurable prediction grid; the default cell is 1 km."""
 
@@ -177,8 +213,24 @@ class RiskEstimateDriver(BaseModel):
     effect: Literal["raises", "lowers", "neutral"]
 
 
+class RiskEstimateValidation(BaseModel):
+    """Held-out ROC-AUC behind the index, each with a 95% interval, from the ML artifacts."""
+
+    terrain_roc_auc: float
+    terrain_roc_auc_ci95: list[float]
+    terrain_positives: int
+    rainier_roc_auc: float
+    rainier_roc_auc_ci95: list[float]
+    rainier_positives: int
+    trigger_roc_auc: float
+    trigger_roc_auc_ci95: list[float]
+    trigger_events: int
+    trigger_storms: int
+    trigger_years: list[int]
+
+
 class RiskEstimate(BaseModel):
-    """How the uncalibrated Model B estimate at this point was made."""
+    """How the uncalibrated Model B risk index at this point was made."""
 
     method: str
     calibrated: Literal[False]
@@ -188,12 +240,13 @@ class RiskEstimate(BaseModel):
     cell: RiskEstimateCell | None
     rain: RiskEstimateRain | None
     drivers: list[RiskEstimateDriver]
+    validation: RiskEstimateValidation | None
 
 
 class LandslideRiskPrediction(BaseModel):
     """Fail-closed, calibrated 72-hour rainfall-triggered landslide prediction.
 
-    `state` belongs to the calibrated classifier alone. `probability` is the chance to show: the
+    `state` belongs to the calibrated classifier alone. `probability` is the number to show: the
     calibrated one when it exists, else the Model B estimate the heat map is drawn from.
     """
 

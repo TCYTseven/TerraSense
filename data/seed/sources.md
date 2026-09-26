@@ -65,3 +65,11 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 - **Licence:** ODbL 1.0, as a derived database of OpenStreetMap. Attribution: "© OpenStreetMap contributors".
 - **Contents:** the Skyline loop cut at its 24 junctions (from the same simplified line as the mile segments), plus the 114 walkable edges within 2.5 km of the loop that connect to it (34 km). Vertices every 30 m or closer carry the DEM elevation, so the bypass can report added climb.
 - **Rerun:** `python ml/scripts/build_trail_network.py` after `import_trails.py`.
+
+## Regional susceptibility and Model B validation (Sep 26)
+
+Gitignored. Recreate with the scripts named here.
+
+- **Regional DEM and land cover:** `data/raw/region_dem_cop30.tif` and `data/raw/region_landcover_worldcover2021.tif`, bbox `[-122.6, 46.4, -121.2, 47.5]` plus a margin. Copernicus DEM GLO-30 COGs from `https://copernicus-dem-30m.s3.amazonaws.com/` and ESA WorldCover 2021 v200 from `https://esa-worldcover.s3.eu-central-1.amazonaws.com/v200/2021/map/`. Fetched 2026-09-26 by `python ml/scripts/download_region.py`.
+- **Landslide labels:** USGS Landslide Inventories across the United States v3 (doi:10.5066/P14AJF8I), Washington Geological Survey records at confidence 3 or higher. Read from `data/raw/usgs_v3/` by `ml/scripts/build_regional_features.py` and `ml/scripts/event_catalog.py`.
+- **Historical rain:** Open-Meteo historical weather API (`https://archive-api.open-meteo.com/v1/archive`, ERA5 reanalysis), daily totals for each dated event cell, 1980–2023. Cached in `data/raw/open_meteo_archive/` (62 MB) by `python ml/scripts/event_rain.py`. Open-Meteo data is CC BY 4.0.

@@ -156,6 +156,20 @@ def _check_raster(path: Path, name: str, shape: tuple[int, int], transform: obje
         return 0
 
 
+def _check_model_stack(path: Path, features: list[str], shape: tuple[int, int], transform: object,
+                       crs: object, errors: list[str]) -> None:
+    """A model trained on its own stack (the regional model): its bands and grid must line up."""
+    if not path.is_file():
+        errors.append(f"model feature stack is missing: {path.relative_to(REPO_ROOT)}")
+        return
+    with rasterio.open(path) as stack:
+        missing = [name for name in features if name not in stack.descriptions]
+        if not features or missing:
+            errors.append(f"model features {missing or features} are not bands of {path.name}")
+        if (stack.height, stack.width) != shape or stack.transform != transform or stack.crs != crs:
+            errors.append(f"{path.name} is not on the feature grid")
+
+
 def _check_tiles(layer: str, method: str, errors: list[str]) -> int:
     directory = REPO_ROOT / "backend/tiles" / layer
     metadata_path = directory / "metadata.json"
@@ -196,7 +210,12 @@ def validate(require_probability: bool = False) -> dict[str, int | float | str]:
             errors.append("metrics.json does not describe a trained LightGBM model")
         if not isinstance(metrics.get("auc"), (int, float)) or not 0 <= metrics["auc"] <= 1:
             errors.append("metrics.json has no bounded AUC")
-        if metrics.get("features") != FEATURES:
+        if metrics.get("feature_stack"):
+            _check_model_stack(REPO_ROOT / metrics["feature_stack"], metrics.get("features") or [],
+                               grid_shape, transform, crs, errors)
+            if not (ARTIFACTS / "susceptibility_calibration.json").is_file():
+                errors.append("regional model has no susceptibility_calibration.json")
+        elif metrics.get("features") != FEATURES:
             errors.append("metrics.json feature list does not match the feature stack")
     except (OSError, json.JSONDecodeError) as exc:
         errors.append(f"metrics.json is invalid: {type(exc).__name__}: {exc}")

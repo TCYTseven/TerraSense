@@ -1,41 +1,855 @@
 {
   "method": "lightgbm",
   "trained": true,
-  "auc": 0.715,
-  "precision_at_high": 0.0,
+  "auc": 0.8186,
+  "precision_at_high": 0.6185,
   "high_threshold": 0.45,
-  "test_regions": [
-    11
-  ],
-  "train_rows": 1041,
-  "test_rows": 183,
-  "positives": 306,
+  "extreme_threshold": 0.7,
   "features": [
-    "elevation",
     "slope",
-    "aspect",
+    "aspect_sin",
+    "aspect_cos",
     "curvature",
+    "profile_curvature",
+    "plan_curvature",
     "dist_drainage",
+    "twi",
     "landcover",
-    "twi"
+    "relief_150",
+    "relief_500",
+    "relief_1000",
+    "tpi_500",
+    "tpi_1000",
+    "roughness_90",
+    "slope_std_150"
   ],
-  "note": "Scores are on held-out spatial blocks. The map comes from a refit on every row. Negatives were sampled 1:3, so read the output as relative susceptibility.",
-  "created_at": "2026-09-26T04:05:18+00:00",
-  "map": {
-    "cells": 735786,
-    "mean": 0.0585,
-    "share_at_or_above_high": 0.0525
+  "feature_stack": "data/processed/rainier_regional_features.tif",
+  "importance": {
+    "relief_150": 0.2424,
+    "roughness_90": 0.2034,
+    "relief_1000": 0.1368,
+    "tpi_1000": 0.1003,
+    "slope_std_150": 0.0582,
+    "plan_curvature": 0.0477,
+    "tpi_500": 0.0445,
+    "relief_500": 0.0418,
+    "curvature": 0.0272,
+    "dist_drainage": 0.0259,
+    "aspect_cos": 0.0178,
+    "slope": 0.0171,
+    "profile_curvature": 0.0133,
+    "aspect_sin": 0.009,
+    "landcover": 0.0087,
+    "twi": 0.006
   },
-  "seed_events": 37,
-  "label_catalogs": [
-    "NASA Global Landslide Catalog",
-    "Washington State Landslide Inventory Database \u2014 Landslide Compilation"
-  ],
-  "usable_seed_events": 34,
+  "note": "Regional model: trained on 29404 pixels from the western Cascades [-122.6, 46.4, -121.2, 47.5], with the Rainier box plus 2000 m never in training. 'auc' is the mean ROC-AUC over 5 spatial block folds (10 km blocks, 2000 m buffer). Probabilities are isotonic-calibrated at the case-control sampling ratio of 1 positive to 3 negatives (base rate 0.25): they are relative susceptibility, not an absolute chance that a given pixel fails. On the Rainier box's own labels (external test, n=372) ROC-AUC is 0.597.",
+  "probability_meaning": "Calibrated share of labeled pixels that are landslides when positives and negatives are sampled 1:3. Conditional on that ratio and on the inventory's mapping practice; not a per-pixel or per-year failure rate.",
+  "created_at": "2026-09-26T08:24:58+00:00",
+  "region": {
+    "bbox": [
+      -122.6,
+      46.4,
+      -121.2,
+      47.5
+    ],
+    "rainier_bbox": [
+      -121.93,
+      46.76,
+      -121.54,
+      46.96
+    ],
+    "rainier_holdout_buffer_m": 2000
+  },
+  "labels": {
+    "inventory": "USGS Landslide Inventories across the United States v3 (doi:10.5066/P14AJF8I)",
+    "training_positives": "WA WGS records, confidence >= 3, marine-shore bluffs and depositional fans excluded, one positive per 90 m block; polygon records are their USGS centroid",
+    "min_confidence": 3,
+    "negatives": "> 500 m from every inventory record (any confidence), inside the mapped footprint (5 km squares with >= 3 WA WGS records), water excluded, 1:3",
+    "train_rows": 29404,
+    "train_positives": 7351,
+    "external_rows": 372,
+    "external_positives": 93
+  },
+  "validation": {
+    "scheme": "GroupKFold-style spatial blocks: 10 km squares, 5 folds balanced by positives, training rows within 2000 m of a test block dropped. Hyperparameters (4-config grid) and the isotonic calibrator come from an inner 4-fold block CV on each outer training set only.",
+    "spatial_cv": {
+      "folds": {
+        "base_rate": {
+          "mean": 0.2502,
+          "ci95": [
+            0.2412,
+            0.2591
+          ],
+          "folds": [
+            0.2456,
+            0.2474,
+            0.2475,
+            0.2629,
+            0.2473
+          ]
+        },
+        "roc_auc": {
+          "mean": 0.8186,
+          "ci95": [
+            0.7831,
+            0.8542
+          ],
+          "folds": [
+            0.8007,
+            0.8472,
+            0.7864,
+            0.8502,
+            0.8086
+          ]
+        },
+        "pr_auc": {
+          "mean": 0.5753,
+          "ci95": [
+            0.4901,
+            0.6605
+          ],
+          "folds": [
+            0.5287,
+            0.5995,
+            0.4865,
+            0.6626,
+            0.5991
+          ]
+        },
+        "brier": {
+          "mean": 0.1419,
+          "ci95": [
+            0.131,
+            0.1527
+          ],
+          "folds": [
+            0.1471,
+            0.1343,
+            0.1539,
+            0.1332,
+            0.141
+          ]
+        },
+        "ece": {
+          "mean": 0.0256,
+          "ci95": [
+            0.0184,
+            0.0329
+          ],
+          "folds": [
+            0.0213,
+            0.0308,
+            0.0324,
+            0.019,
+            0.0247
+          ]
+        },
+        "accuracy_at_high": {
+          "mean": 0.7893,
+          "ci95": [
+            0.7689,
+            0.8097
+          ],
+          "folds": [
+            0.781,
+            0.7975,
+            0.7644,
+            0.8046,
+            0.7989
+          ]
+        },
+        "balanced_accuracy_at_high": {
+          "mean": 0.6601,
+          "ci95": [
+            0.6185,
+            0.7018
+          ],
+          "folds": [
+            0.6468,
+            0.6646,
+            0.6166,
+            0.709,
+            0.6639
+          ]
+        },
+        "precision_at_high": {
+          "mean": 0.6185,
+          "ci95": [
+            0.5502,
+            0.6868
+          ],
+          "folds": [
+            0.5822,
+            0.6462,
+            0.5403,
+            0.6697,
+            0.6543
+          ]
+        },
+        "recall_at_high": {
+          "mean": 0.4024,
+          "ci95": [
+            0.3201,
+            0.4846
+          ],
+          "folds": [
+            0.383,
+            0.4014,
+            0.3238,
+            0.5071,
+            0.3966
+          ]
+        },
+        "f1_at_high": {
+          "mean": 0.4866,
+          "ci95": [
+            0.4091,
+            0.5642
+          ],
+          "folds": [
+            0.462,
+            0.4952,
+            0.4049,
+            0.5772,
+            0.4939
+          ]
+        },
+        "share_flagged_at_high": {
+          "mean": 0.1625,
+          "ci95": [
+            0.1363,
+            0.1887
+          ],
+          "folds": [
+            0.1615,
+            0.1537,
+            0.1483,
+            0.1991,
+            0.1499
+          ]
+        },
+        "accuracy_at_extreme": {
+          "mean": 0.769,
+          "ci95": [
+            0.7571,
+            0.781
+          ],
+          "folds": [
+            0.7651,
+            0.7714,
+            0.7555,
+            0.7714,
+            0.7818
+          ]
+        },
+        "balanced_accuracy_at_extreme": {
+          "mean": 0.5468,
+          "ci95": [
+            0.5192,
+            0.5744
+          ],
+          "folds": [
+            0.5344,
+            0.5493,
+            0.5159,
+            0.5709,
+            0.5634
+          ]
+        },
+        "precision_at_extreme": {
+          "mean": 0.7673,
+          "ci95": [
+            0.5975,
+            0.9371
+          ],
+          "folds": [
+            0.6839,
+            0.7667,
+            0.5865,
+            0.8934,
+            0.9061
+          ]
+        },
+        "recall_at_extreme": {
+          "mean": 0.1023,
+          "ci95": [
+            0.0498,
+            0.1548
+          ],
+          "folds": [
+            0.081,
+            0.1095,
+            0.0415,
+            0.1482,
+            0.1313
+          ]
+        },
+        "f1_at_extreme": {
+          "mean": 0.1795,
+          "ci95": [
+            0.0921,
+            0.2669
+          ],
+          "folds": [
+            0.1448,
+            0.1917,
+            0.0775,
+            0.2542,
+            0.2294
+          ]
+        },
+        "share_flagged_at_extreme": {
+          "mean": 0.0323,
+          "ci95": [
+            0.0202,
+            0.0444
+          ],
+          "folds": [
+            0.0291,
+            0.0353,
+            0.0175,
+            0.0436,
+            0.0358
+          ]
+        }
+      },
+      "pooled_out_of_fold": {
+        "n": 29404,
+        "positives": 7351,
+        "base_rate": 0.25,
+        "roc_auc": 0.8172,
+        "pr_auc": 0.5819,
+        "brier": 0.142,
+        "ece": 0.0115,
+        "accuracy_at_high": 0.7891,
+        "balanced_accuracy_at_high": 0.6602,
+        "precision_at_high": 0.6206,
+        "recall_at_high": 0.4024,
+        "f1_at_high": 0.4882,
+        "share_flagged_at_high": 0.1621,
+        "accuracy_at_extreme": 0.769,
+        "balanced_accuracy_at_extreme": 0.5468,
+        "precision_at_extreme": 0.7958,
+        "recall_at_extreme": 0.1023,
+        "f1_at_extreme": 0.1813,
+        "share_flagged_at_extreme": 0.0321
+      },
+      "pooled_block_bootstrap_ci95": {
+        "reps_used": 1000,
+        "blocks": 120,
+        "base_rate": [
+          0.2173,
+          0.282
+        ],
+        "roc_auc": [
+          0.7876,
+          0.8429
+        ],
+        "pr_auc": [
+          0.5157,
+          0.6484
+        ],
+        "brier": [
+          0.1286,
+          0.1547
+        ],
+        "ece": [
+          0.0087,
+          0.031
+        ],
+        "accuracy_at_high": [
+          0.767,
+          0.8113
+        ],
+        "balanced_accuracy_at_high": [
+          0.6351,
+          0.6879
+        ],
+        "precision_at_high": [
+          0.5596,
+          0.6788
+        ],
+        "recall_at_high": [
+          0.3549,
+          0.456
+        ],
+        "f1_at_high": [
+          0.4365,
+          0.5424
+        ],
+        "share_flagged_at_high": [
+          0.1454,
+          0.1813
+        ],
+        "accuracy_at_extreme": [
+          0.7386,
+          0.7998
+        ],
+        "balanced_accuracy_at_extreme": [
+          0.5277,
+          0.5704
+        ],
+        "precision_at_extreme": [
+          0.7022,
+          0.871
+        ],
+        "recall_at_extreme": [
+          0.064,
+          0.1496
+        ],
+        "f1_at_extreme": [
+          0.1174,
+          0.254
+        ],
+        "share_flagged_at_extreme": [
+          0.0214,
+          0.045
+        ]
+      },
+      "reliability": [
+        {
+          "bin": [
+            0.0,
+            0.1
+          ],
+          "n": 9233,
+          "mean_probability": 0.036,
+          "observed_rate": 0.0311
+        },
+        {
+          "bin": [
+            0.1,
+            0.2
+          ],
+          "n": 5196,
+          "mean_probability": 0.157,
+          "observed_rate": 0.1434
+        },
+        {
+          "bin": [
+            0.2,
+            0.3
+          ],
+          "n": 3961,
+          "mean_probability": 0.2525,
+          "observed_rate": 0.2459
+        },
+        {
+          "bin": [
+            0.3,
+            0.4
+          ],
+          "n": 3890,
+          "mean_probability": 0.3497,
+          "observed_rate": 0.3437
+        },
+        {
+          "bin": [
+            0.4,
+            0.5
+          ],
+          "n": 3426,
+          "mean_probability": 0.4407,
+          "observed_rate": 0.4688
+        },
+        {
+          "bin": [
+            0.5,
+            0.6
+          ],
+          "n": 2017,
+          "mean_probability": 0.5458,
+          "observed_rate": 0.5682
+        },
+        {
+          "bin": [
+            0.6,
+            0.7
+          ],
+          "n": 736,
+          "mean_probability": 0.6614,
+          "observed_rate": 0.6848
+        },
+        {
+          "bin": [
+            0.7,
+            0.8
+          ],
+          "n": 454,
+          "mean_probability": 0.7523,
+          "observed_rate": 0.7445
+        },
+        {
+          "bin": [
+            0.8,
+            0.9
+          ],
+          "n": 457,
+          "mean_probability": 0.8352,
+          "observed_rate": 0.8468
+        },
+        {
+          "bin": [
+            0.9,
+            1.0
+          ],
+          "n": 34,
+          "mean_probability": 0.9405,
+          "observed_rate": 0.7941
+        }
+      ],
+      "diagnostics": [
+        {
+          "fold": 0,
+          "params": {
+            "num_leaves": 7,
+            "min_child_samples": 200
+          },
+          "slope_only_roc_auc": 0.6821,
+          "roc_auc_slope_ge_15": 0.7234,
+          "min_distance_train_to_test_block_m": 2005.0
+        },
+        {
+          "fold": 1,
+          "params": {
+            "num_leaves": 7,
+            "min_child_samples": 200
+          },
+          "slope_only_roc_auc": 0.7447,
+          "roc_auc_slope_ge_15": 0.7376,
+          "min_distance_train_to_test_block_m": 2001.9
+        },
+        {
+          "fold": 2,
+          "params": {
+            "num_leaves": 7,
+            "min_child_samples": 200
+          },
+          "slope_only_roc_auc": 0.6511,
+          "roc_auc_slope_ge_15": 0.7064,
+          "min_distance_train_to_test_block_m": 2002.2
+        },
+        {
+          "fold": 3,
+          "params": {
+            "num_leaves": 7,
+            "min_child_samples": 200
+          },
+          "slope_only_roc_auc": 0.7292,
+          "roc_auc_slope_ge_15": 0.7639,
+          "min_distance_train_to_test_block_m": 2005.0
+        },
+        {
+          "fold": 4,
+          "params": {
+            "num_leaves": 7,
+            "min_child_samples": 200
+          },
+          "slope_only_roc_auc": 0.6815,
+          "roc_auc_slope_ge_15": 0.7432,
+          "min_distance_train_to_test_block_m": 2003.2
+        }
+      ],
+      "pooled_roc_auc_by_positive_confidence": {
+        "3": 0.8196,
+        "8": 0.8147
+      },
+      "pooled_slope_only_roc_auc": 0.6975
+    },
+    "external_rainier": {
+      "metrics": {
+        "n": 372,
+        "positives": 93,
+        "base_rate": 0.25,
+        "roc_auc": 0.5968,
+        "pr_auc": 0.3184,
+        "brier": 0.1894,
+        "ece": 0.0698,
+        "accuracy_at_high": 0.7204,
+        "balanced_accuracy_at_high": 0.5197,
+        "precision_at_high": 0.3333,
+        "recall_at_high": 0.1183,
+        "f1_at_high": 0.1746,
+        "share_flagged_at_high": 0.0887,
+        "accuracy_at_extreme": 0.7473,
+        "balanced_accuracy_at_extreme": 0.4982,
+        "precision_at_extreme": 0.0,
+        "recall_at_extreme": 0.0,
+        "f1_at_extreme": 0.0,
+        "share_flagged_at_extreme": 0.0027
+      },
+      "block_bootstrap_ci95": {
+        "reps_used": 1000,
+        "blocks": 104,
+        "base_rate": [
+          0.1878,
+          0.3188
+        ],
+        "roc_auc": [
+          0.5211,
+          0.6733
+        ],
+        "pr_auc": [
+          0.2403,
+          0.4133
+        ],
+        "brier": [
+          0.1553,
+          0.2261
+        ],
+        "ece": [
+          0.0476,
+          0.1301
+        ],
+        "accuracy_at_high": [
+          0.6556,
+          0.7809
+        ],
+        "balanced_accuracy_at_high": [
+          0.4885,
+          0.553
+        ],
+        "precision_at_high": [
+          0.1818,
+          0.4737
+        ],
+        "recall_at_high": [
+          0.0594,
+          0.1828
+        ],
+        "f1_at_high": [
+          0.0938,
+          0.254
+        ],
+        "share_flagged_at_high": [
+          0.063,
+          0.1162
+        ],
+        "accuracy_at_extreme": [
+          0.6785,
+          0.8094
+        ],
+        "balanced_accuracy_at_extreme": [
+          0.4938,
+          0.5
+        ],
+        "precision_at_extreme": [
+          0.0,
+          0.0
+        ],
+        "recall_at_extreme": [
+          0.0,
+          0.0
+        ],
+        "f1_at_extreme": [
+          0.0,
+          0.0
+        ],
+        "share_flagged_at_extreme": [
+          0.0,
+          0.009
+        ]
+      },
+      "positives_by_source": {
+        "WA WGS": 74,
+        "seed: Washington State Landslide Inventory Database \u2014 Landslide Compilation": 10,
+        "USGS Seismogenic Mass Movements": 7,
+        "West Coast Slow Moving (Yuankun and others, 2021)": 1,
+        "seed: NASA Global Landslide Catalog": 1
+      },
+      "wa_wgs_positives_only": {
+        "n": 353,
+        "positives": 74,
+        "base_rate": 0.2096,
+        "roc_auc": 0.616,
+        "pr_auc": 0.2833,
+        "brier": 0.1674,
+        "ece": 0.0693,
+        "accuracy_at_high": 0.7535,
+        "balanced_accuracy_at_high": 0.5214,
+        "precision_at_high": 0.2903,
+        "recall_at_high": 0.1216,
+        "f1_at_high": 0.1714,
+        "share_flagged_at_high": 0.0878,
+        "accuracy_at_extreme": 0.7875,
+        "balanced_accuracy_at_extreme": 0.4982,
+        "precision_at_extreme": 0.0,
+        "recall_at_extreme": 0.0,
+        "f1_at_extreme": 0.0,
+        "share_flagged_at_extreme": 0.0028
+      },
+      "slope_only_roc_auc": 0.6363
+    }
+  },
+  "calibration": {
+    "method": "isotonic on inner out-of-fold scores (nested)",
+    "ece_cv_mean": 0.0256,
+    "ece_cv_ci95": [
+      0.0184,
+      0.0329
+    ],
+    "ece_external": 0.0698
+  },
+  "hyperparameters": {
+    "base": {
+      "objective": "binary",
+      "n_estimators": 400,
+      "learning_rate": 0.05,
+      "subsample": 0.8,
+      "subsample_freq": 1,
+      "colsample_bytree": 0.8,
+      "reg_lambda": 1.0,
+      "n_jobs": 1,
+      "random_state": 26,
+      "deterministic": true,
+      "force_row_wise": true
+    },
+    "grid": [
+      {
+        "num_leaves": 7,
+        "min_child_samples": 200
+      },
+      {
+        "num_leaves": 15,
+        "min_child_samples": 100
+      },
+      {
+        "num_leaves": 31,
+        "min_child_samples": 50
+      },
+      {
+        "num_leaves": 63,
+        "min_child_samples": 20
+      }
+    ],
+    "final": {
+      "num_leaves": 7,
+      "min_child_samples": 200
+    }
+  },
+  "map": {
+    "cells": 760028,
+    "mean": 0.2105,
+    "share_at_or_above_high": 0.0736,
+    "share_by_level": {
+      "low": 0.5466,
+      "moderate": 0.3798,
+      "high": 0.0725,
+      "extreme": 0.0011
+    }
+  },
+  "trails": {
+    "Westside Road": {
+      "samples_10m": 1443,
+      "mean": 0.3351,
+      "p90": 0.5093,
+      "max": 0.6789,
+      "share_by_level": {
+        "low": 0.1677,
+        "moderate": 0.5994,
+        "high": 0.2328,
+        "extreme": 0.0
+      }
+    },
+    "Wonderland Trail": {
+      "samples_10m": 5512,
+      "mean": 0.2318,
+      "p90": 0.427,
+      "max": 0.7253,
+      "share_by_level": {
+        "low": 0.4407,
+        "moderate": 0.482,
+        "high": 0.0767,
+        "extreme": 0.0005
+      }
+    },
+    "Skyline Trail": {
+      "samples_10m": 889,
+      "mean": 0.1682,
+      "p90": 0.3617,
+      "max": 0.5883,
+      "share_by_level": {
+        "low": 0.6918,
+        "moderate": 0.2632,
+        "high": 0.045,
+        "extreme": 0.0
+      }
+    },
+    "Skyline Trail segments (hero)": {
+      "segments": 55,
+      "max_of_segment_max": 0.5883,
+      "mean_of_segment_max": 0.2382,
+      "segments_by_level": {
+        "low": 26,
+        "moderate": 23,
+        "high": 6,
+        "extreme": 0
+      },
+      "worst_segment_miles": [
+        4.4,
+        4.5
+      ]
+    }
+  },
   "grid": {
     "crs": "EPSG:32610",
     "width": 1004,
     "height": 757,
-    "cell_m": 30
+    "cell_m": 30,
+    "transform": [
+      30.0,
+      0.0,
+      581400.0,
+      0.0,
+      -30.0,
+      5201760.0
+    ]
+  },
+  "elevation_ablation": {
+    "decision": "elevation excluded a priori (mapping-effort and extrapolation risk); reported for audit only",
+    "cv_roc_auc": {
+      "mean": 0.8386,
+      "ci95": [
+        0.8122,
+        0.8649
+      ],
+      "folds": [
+        0.8261,
+        0.8605,
+        0.8199,
+        0.8629,
+        0.8235
+      ]
+    },
+    "cv_pr_auc": {
+      "mean": 0.6183,
+      "ci95": [
+        0.5475,
+        0.6892
+      ],
+      "folds": [
+        0.5668,
+        0.6484,
+        0.5539,
+        0.6897,
+        0.6329
+      ]
+    },
+    "external_roc_auc": 0.5764,
+    "external_pr_auc": 0.3409,
+    "external_roc_auc_ci95": [
+      0.4917,
+      0.6667
+    ],
+    "elevation_gain_share": 0.2439
+  },
+  "legacy_backup": {
+    "dir": "ml/artifacts/legacy_rainier_only",
+    "copied_this_run": [
+      "metrics.json",
+      "susceptibility.tif",
+      "susceptibility_lgbm.txt",
+      "feature_importance.json"
+    ]
   }
 }

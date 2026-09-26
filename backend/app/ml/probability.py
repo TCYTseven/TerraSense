@@ -13,6 +13,7 @@ rebuilding Model B, so this module is the one seam between it and everything dow
 """
 
 import importlib
+import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
@@ -29,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 SUSCEPTIBILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility.tif"
 PROBABILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "probability.tif"
+METRICS_PATH = REPO_ROOT / "ml" / "artifacts" / "metrics.json"
+MODEL_B_VALIDATION_PATH = REPO_ROOT / "ml" / "artifacts" / "model_b_validation.json"
 
 MODEL_B_METHOD = "model b"
 STAND_IN_METHOD = "susceptibility stand-in (Model B pending)"
@@ -97,6 +100,44 @@ def explain(susceptibility: float, rain: HourlyRain | None) -> dict[str, float] 
     if model_b is None or not hasattr(model_b, "contributions"):
         return None
     return model_b.contributions(susceptibility, rain)
+
+
+def _load_json(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def validation() -> dict | None:
+    """The held-out skill behind the index, read from the two ML artifacts, or None if either is missing.
+
+    Terrain: ROC-AUC over 10 km spatial block folds in the western Cascades, and on the Rainier
+    box's own mapped slides (never trained on). Rain trigger: ROC-AUC over water-year folds on
+    dated landslides, with storm-bootstrap 95% intervals.
+    """
+    terrain = _load_json(METRICS_PATH)
+    trigger = _load_json(MODEL_B_VALIDATION_PATH)
+    try:
+        spatial = terrain["validation"]["spatial_cv"]["folds"]["roc_auc"]
+        rainier = terrain["validation"]["external_rainier"]
+        fitted = trigger["primary_year_blocked"]
+        counts = trigger["counts"]
+        return {
+            "terrain_roc_auc": spatial["mean"],
+            "terrain_roc_auc_ci95": spatial["ci95"],
+            "terrain_positives": terrain["labels"]["train_positives"],
+            "rainier_roc_auc": rainier["metrics"]["roc_auc"],
+            "rainier_roc_auc_ci95": rainier["block_bootstrap_ci95"]["roc_auc"],
+            "rainier_positives": rainier["metrics"]["positives"],
+            "trigger_roc_auc": fitted["metrics"]["lr_model_b"]["roc_auc"],
+            "trigger_roc_auc_ci95": fitted["bootstrap"]["ci95"]["lr_model_b"]["roc_auc"],
+            "trigger_events": counts["n_cases"],
+            "trigger_storms": counts["n_storms"],
+            "trigger_years": [int(day[:4]) for day in counts["date_range"]],
+        }
+    except (TypeError, KeyError, IndexError, ValueError):
+        return None
 
 
 def summarize(values: np.ndarray) -> dict:
