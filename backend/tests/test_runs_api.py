@@ -16,6 +16,7 @@ from app import assessment as assessment_module
 from app import db
 from app.agents import pipeline as pipeline_module
 from app.agents.providers import make_providers
+from app.agents.schemas import AGENT_ORDER, ANALYSTS
 from app.config import database_url
 from app.main import app
 from app.ml import probability, tiles
@@ -100,9 +101,9 @@ def test_analyze_streams_and_saves(api):
     assert messages[0]["kind"] == "run"
     agent_events = [m for m in messages if "agent" in m]
     running = [m["agent"] for m in agent_events if m["status"] == "running"]
-    assert set(running[:2]) == {"terrain", "weather"}
+    assert set(running[:5]) == set(ANALYSTS)  # the fan-out reaches the stream as five starts
     done = [m["agent"] for m in agent_events if m["status"] == "done"]
-    assert done[2:] == ["trail", "synthesizer", "writer"]
+    assert done[-2:] == ["synthesizer", "writer"]
     assert all(m["trace"]["route"]["provider"] in ("gemini", "grok") for m in agent_events)
     final = messages[-1]["run"]
     assert final["status"] == "done" and final["phase"] == "finished"
@@ -110,7 +111,7 @@ def test_analyze_streams_and_saves(api):
     assert final["rain"]["source"] == "fixture" and final["rain"]["past_72h_mm"] > 0
 
     run = client.get(f"/runs/{run_id}").json()
-    assert run["status"] == "done" and set(run["agents"]) == {"terrain", "weather", "trail", "synthesizer", "writer"}
+    assert run["status"] == "done" and set(run["agents"]) == set(AGENT_ORDER)
     mountain = client.get("/mountains/mount-rainier").json()
     assert mountain["active_run_id"] is None
     assert mountain["active_hazard"]["run_id"] == run_id and mountain["active_hazard"]["id"] == run["hazard_id"]
@@ -124,12 +125,33 @@ def test_analyze_streams_and_saves(api):
     assert forecast["sentence"] == run["agents"]["writer"]["payload"]["hiker"]
     assert forecast["bypass"]["name"] == "Golden Gate Trail" and forecast["trail_name"] == hero["name"]
 
-    # A new process has no runs in memory: the finished run comes back from its row.
+    # The advisory rides on the run and answers on its own endpoints, in memory and from the row.
+    advisory = run["advisory"]
+    assert advisory is not None and advisory["run_id"] == run_id
+    assert client.get(f"/runs/{run_id}/advisory").json() == advisory
+    assert client.get("/mountains/mount-rainier/advisory").json() == advisory
+    assert len(advisory["avoid"]) == len(advisory["safe"]) == 3
+    trails = {t["name"] for t in client.get("/mountains/mount-rainier").json()["trails"]}
+    assert all(route["trail"] in trails for route in advisory["avoid"] + advisory["safe"])
+    assert advisory["response"]["posture"] in ("all_clear", "watch", "advisory", "warning", "evacuate")
+    assert advisory["severity"] == run["severity"] and advisory["alert"]["hiker"] == forecast["sentence"]
+
+    # A new process has no runs in memory: the finished run, and its advisory, come back from
+    # the row instead.
     fresh = RunRegistry(providers={})
     runs_route.registry = fresh
     stored = client.get(f"/runs/{run_id}").json()
     assert stored["status"] == "done" and stored["agents"]["writer"]["payload"]["hiker"]
     assert follow(client, run_id)[0]["run"]["status"] == "done"
+    assert client.get("/mountains/mount-rainier/advisory").json()["run_id"] == run_id
+
+
+def test_advisory_404s_on_an_unknown_run_or_mountain(api):
+    """No advisory is a 404, not a crash, and a static marker never has one."""
+    client, _ = api
+    assert client.get("/runs/2f1a0c9e-0000-4000-8000-000000000000/advisory").status_code == 404
+    assert client.get("/runs/not-a-uuid/advisory").status_code == 404
+    assert client.get("/mountains/mount-fuji/advisory").status_code == 404
 
 
 def test_failed_run_keeps_the_last_hazard(api, monkeypatch):

@@ -85,6 +85,18 @@ class SegmentRisk:
 
 
 @dataclass(frozen=True)
+class LineExposure:
+    """What one walkable line crosses on the probability map."""
+
+    max_probability: float
+    mean_probability: float
+    share_high: float  # share of the samples at HIGH_THRESHOLD or above
+    samples: int
+    worst_point: tuple[float, float] | None  # lon, lat of the worst sample
+    length_m: float
+
+
+@dataclass(frozen=True)
 class FlaggedRun:
     """The contiguous miles around the worst segment that sit at high or above."""
 
@@ -116,8 +128,13 @@ def _grid_xy(coordinates: list[list[float]], crs: str) -> np.ndarray:
     return np.column_stack([xs, ys])
 
 
-def sample_max(probability: ProbabilityMap, coordinates: list[list[float]]) -> float:
-    """The worst probability along a [lon, lat, ...] line, sampled every SAMPLE_STEP_M. 0 off the grid."""
+def line_exposure(probability: ProbabilityMap, coordinates: list[list[float]]) -> LineExposure:
+    """Every probability the tread crosses, sampled every SAMPLE_STEP_M along a [lon, lat, ...] line.
+
+    sample_max() reads the worst of these. The route catalog (app/trailscan.py) also needs the
+    mean, how much of the walk sits at high or above, and where the worst point is, so a ranger
+    can tell a trail with one bad switchback from one that is exposed end to end.
+    """
     values = probability.values
     line = shapely.LineString(_grid_xy(coordinates, probability.crs))
     count = max(2, math.ceil(line.length / SAMPLE_STEP_M) + 1)
@@ -126,9 +143,24 @@ def sample_max(probability: ProbabilityMap, coordinates: list[list[float]]) -> f
     cols, rows = np.floor(cols).astype(int), np.floor(rows).astype(int)
     inside = (rows >= 0) & (rows < values.shape[0]) & (cols >= 0) & (cols < values.shape[1])
     if not inside.any():
-        return 0.0
-    worst = float(np.nanmax(values[rows[inside], cols[inside]], initial=0.0))
-    return round(min(max(worst, 0.0), 1.0), 3)
+        return LineExposure(0.0, 0.0, 0.0, 0, None, round(float(line.length), 1))
+    sampled = np.nan_to_num(values[rows[inside], cols[inside]], nan=0.0).clip(0.0, 1.0)
+    worst_at = int(np.argmax(sampled))
+    on_line = points[inside][worst_at]
+    (lon,), (lat,) = warp_transform(probability.crs, "EPSG:4326", [float(on_line[0])], [float(on_line[1])])
+    return LineExposure(
+        max_probability=round(float(sampled.max()), 3),
+        mean_probability=round(float(sampled.mean()), 3),
+        share_high=round(float((sampled >= HIGH_THRESHOLD).mean()), 3),
+        samples=int(sampled.size),
+        worst_point=(round(lon, 5), round(lat, 5)),
+        length_m=round(float(line.length), 1),
+    )
+
+
+def sample_max(probability: ProbabilityMap, coordinates: list[list[float]]) -> float:
+    """The worst probability along a [lon, lat, ...] line. 0 off the grid."""
+    return line_exposure(probability, coordinates).max_probability
 
 
 def segment_risks(probability: ProbabilityMap, segments: list[SegmentLine]) -> list[SegmentRisk]:

@@ -13,7 +13,23 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | 5 | `app/seed.py`, loads `data/seed/` |
 | 6 | `GET /mountains`, `GET /mountains/{slug}` |
 | 13, 18 | `GET /mountains/{slug}/layers/{layer}` returns a tile URL template. Tiles live in `tiles/` |
-| 20–22 | Agent schemas, tools, the five-agent pipeline, `POST /analyze`, `GET /runs/{id}`, `WS /runs/{id}/stream` |
+| 20–22 | Agent schemas, tools, the agent pipeline, `POST /analyze`, `GET /runs/{id}`, `WS /runs/{id}/stream`, `GET /runs/{id}/advisory` |
+
+## The pipeline
+
+```
+terrain ─┐
+weather ─┤
+trail   ─┼─▶ synthesizer ─▶ writer
+history ─┤
+routes  ─┘
+```
+
+Five analysts fan out together, so the analyst stage costs the slowest one rather than the sum
+(about 25 s against the real providers, not 90). The Risk Synthesizer is the only agent that sees
+all five and the only one that decides: it returns the final severity and action, three routes to
+keep hikers off, three that are safest today, and the ranger response, from a newsletter line to
+an evacuation. The Alert Writer then turns that decision into the ranger and hiker copy.
 
 `app/ml/model_b.py` (step 17) sits here but belongs to the ML track. Nothing imports it directly: `app/ml/probability.py` is the seam. It calls `model_b.run(rain)` when the module exists and uses the susceptibility map as a labeled stand-in until then, so steps 18 onward run before Model B lands.
 
@@ -28,6 +44,9 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - A database that is down returns 503 `Database unavailable` within 5 s. `/health` never touches the database.
 - Tools that agents call return precomputed facts. They do not scan rasters or invent trail geometry.
 - Every model call goes through the router in `app/agents/router.py`, which picks Gemini Flash or Grok and records why. Do not call a provider directly.
+- The ML model's output is the run's source of truth. Every agent calls `get_model_prediction` first and explains those numbers; none of them recomputes or argues with them. What an agent adds is what the model never saw: the trail network, the landslide record, the conditions, and what a ranger should do.
+- The five analysts run in one `asyncio.gather`. Nothing in an analyst may read another analyst's payload: that would put the fan-out back in series. Only the Risk Synthesizer sees all five.
+- The Risk Synthesizer is the only agent that decides anything, and code checks its answer in `app/agents/advisory.py`. A route it names must be on the shortlist the code built from the scored catalog, and its ranger posture cannot outrun the severity the run reached. Clamps are recorded as checks, never silent.
 
 ## Commands
 
@@ -48,8 +67,10 @@ curl localhost:8000/mountains/mount-rainier
 curl localhost:8000/mountains/mount-rainier/layers/probability
 curl -X POST localhost:8000/mountains/mount-rainier/analyze   # step 22: { run_id }; follow ws://localhost:8000/runs/<run_id>/stream
 curl localhost:8000/runs/<run_id>
-python -m pytest                # schemas, router, providers, tools, and the pipeline (fake LLMs; needs DATABASE_URL)
-python -m app.agents.pipeline   # step 21: the five agents once, printed. Needs GEMINI_API_KEY or XAI_API_KEY
+curl localhost:8000/runs/<run_id>/advisory        # the run's whole conclusion: 3 routes to avoid, 3 safe, the ranger response
+curl localhost:8000/mountains/mount-rainier/advisory   # the newest one, after any finished run
+python -m pytest                # schemas, router, providers, tools, the guard rails, and the pipeline (fake LLMs; needs DATABASE_URL)
+python -m app.agents.pipeline   # the agents once, with the advisory printed. Needs GEMINI_API_KEY or XAI_API_KEY
 ```
 
 No keys, or no network to the providers? Run the fake APIs and point the providers at them. Every answer is labeled `fake-...`:

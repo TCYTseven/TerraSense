@@ -1,4 +1,9 @@
-"""Hourly precipitation for Mount Rainier from Open-Meteo, cached for a few minutes.
+"""Hourly weather for Mount Rainier from Open-Meteo, cached for a few minutes.
+
+Precipitation drives the hazard model. The other series are context the agents read: temperature
+and the freezing level decide whether the next storm falls as rain on bare ground or as snow,
+freeze-thaw cycles loosen rock, soil moisture says how much water the ground can still take, and
+wind is a hiking-conditions fact the ranger response quotes.
 
 The probability map (app/ml/probability.py, and Model B once step 17 lands), the Weather
 Analyst's get_weather tool, and the panel's rain lines all read it. Open-Meteo needs no key.
@@ -9,7 +14,7 @@ Set OPEN_METEO_FIXTURE to a saved response to work offline; the result then says
 import json
 import os
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -31,15 +36,32 @@ CACHE_SECONDS = 300  # a demo retry within five minutes reuses the last response
 TIMEOUT_SECONDS = 10
 
 
+# The extra hourly series, and the field each one lands in. A saved fixture may carry only
+# precipitation, so every one of these is optional everywhere downstream.
+EXTRA_SERIES = {
+    "temperature_2m": "temperature_c",
+    "snowfall": "snowfall_cm",
+    "wind_speed_10m": "wind_kmh",
+    "soil_moisture_0_to_7cm": "soil_moisture",
+    "freezing_level_height": "freezing_level_m",
+}
+
+
 @dataclass(frozen=True)
 class HourlyRain:
-    """Hourly precipitation (mm) with the index of the current hour."""
+    """Hourly precipitation (mm) with the index of the current hour, and the conditions around it."""
 
     times: list[datetime]
     precipitation_mm: list[float]
     now_index: int
     source: str  # "open-meteo" or "fixture"
     fetched_at: datetime
+    # Optional: present from Open-Meteo, absent from a fixture saved with precipitation only.
+    temperature_c: list[float] = field(default_factory=list)
+    snowfall_cm: list[float] = field(default_factory=list)
+    wind_kmh: list[float] = field(default_factory=list)
+    soil_moisture: list[float] = field(default_factory=list)
+    freezing_level_m: list[float] = field(default_factory=list)
 
     def total(self, start_hour: int, end_hour: int) -> float:
         """Sum over [now + start_hour, now + end_hour). Negative hours are the past."""
@@ -47,8 +69,37 @@ class HourlyRain:
         hi = min(len(self.precipitation_mm), self.now_index + end_hour)
         return float(sum(self.precipitation_mm[lo:hi]))
 
+    def window(self, series: list[float], start_hour: int, end_hour: int) -> list[float]:
+        """A slice of any hourly series over [now + start_hour, now + end_hour). Empty when absent."""
+        if not series:
+            return []
+        lo = max(0, self.now_index + start_hour)
+        hi = min(len(series), self.now_index + end_hour)
+        return series[lo:hi]
+
+    def at_now(self, series: list[float]) -> float | None:
+        """The current hour's reading from any series, or None when the series is absent."""
+        if not series:
+            return None
+        return series[min(self.now_index, len(series) - 1)]
+
 
 _cache: dict[str, tuple[float, HourlyRain]] = {}
+
+
+def _series(values: list) -> list[float]:
+    """One hourly series, keeping its length so its index still lines up with `times`.
+
+    Open-Meteo leaves a gap as null. Carrying the last reading forward beats dropping the hour,
+    which would shift every later value by one and put now_index on the wrong hour.
+    """
+    out: list[float] = []
+    for value in values:
+        if value is None:
+            out.append(out[-1] if out else 0.0)
+        else:
+            out.append(float(value))
+    return out
 
 
 def _parse(payload: dict, source: str, now: datetime) -> HourlyRain:
@@ -57,7 +108,9 @@ def _parse(payload: dict, source: str, now: datetime) -> HourlyRain:
     values = [float(v or 0.0) for v in hourly["precipitation"]]
     now_hour = now.replace(minute=0, second=0, microsecond=0)
     now_index = next((i for i, t in enumerate(times) if t >= now_hour), len(times))
-    return HourlyRain(times, values, now_index, source, datetime.now(UTC))
+    extras = {field_name: _series(hourly[key])
+              for key, field_name in EXTRA_SERIES.items() if isinstance(hourly.get(key), list)}
+    return HourlyRain(times, values, now_index, source, datetime.now(UTC), **extras)
 
 
 def _load_fixture(path: Path) -> HourlyRain:
@@ -89,7 +142,7 @@ def get_hourly_rain(lat: float = PEAK_LAT, lon: float = PEAK_LON) -> HourlyRain:
         "latitude": lat,
         "longitude": lon,
         "elevation": TRAIL_ZONE_ELEVATION_M,
-        "hourly": "precipitation",
+        "hourly": ",".join(["precipitation", *EXTRA_SERIES]),
         "past_days": PAST_DAYS,
         "forecast_days": FORECAST_DAYS,
         "timezone": "UTC",
@@ -134,7 +187,11 @@ def as_of(rain: HourlyRain) -> datetime:
 
 @dataclass(frozen=True)
 class RainSummary:
-    """Rain totals around now, in millimeters: what the Weather Analyst and the panel read."""
+    """Rain totals around now, in millimeters, and the conditions the agents quote alongside them.
+
+    The rain fields are required: they drive the hazard. Everything after them is None when the
+    source did not carry that series.
+    """
 
     source: str  # "open-meteo" or "fixture"
     as_of: datetime
@@ -144,11 +201,36 @@ class RainSummary:
     next_24h_mm: float
     next_72h_mm: float
     max_hourly_next_72h_mm: float
+    temp_now_c: float | None = None
+    temp_min_next_72h_c: float | None = None
+    temp_max_next_72h_c: float | None = None
+    freeze_thaw_cycles_next_72h: int | None = None
+    snowfall_next_72h_cm: float | None = None
+    wind_max_next_24h_kmh: float | None = None
+    soil_moisture_now: float | None = None  # m3/m3 in the top 7 cm
+    freezing_level_now_m: float | None = None
+
+
+def freeze_thaw_cycles(temperatures: list[float]) -> int:
+    """How many times the hourly temperature crosses 0 C and back: each cycle loosens rock and soil."""
+    crossings = 0
+    above = None
+    for value in temperatures:
+        now_above = value > 0
+        if above is not None and now_above != above:
+            crossings += 1
+        above = now_above
+    return crossings // 2
+
+
+def _round(value: float | None, places: int = 1) -> float | None:
+    return None if value is None else round(value, places)
 
 
 def summarize(rain: HourlyRain) -> RainSummary:
-    """Totals for the windows the agents and the panel talk about."""
+    """Totals and conditions for the windows the agents and the panel talk about."""
     ahead = window_hours(rain, 0, 72)
+    temps = rain.window(rain.temperature_c, 0, 72)
     return RainSummary(
         source=rain.source,
         as_of=as_of(rain),
@@ -158,4 +240,13 @@ def summarize(rain: HourlyRain) -> RainSummary:
         next_24h_mm=round(rain.total(0, 24), 1),
         next_72h_mm=round(rain.total(0, 72), 1),
         max_hourly_next_72h_mm=round(max(ahead, default=0.0), 1),
+        temp_now_c=_round(rain.at_now(rain.temperature_c)),
+        temp_min_next_72h_c=_round(min(temps) if temps else None),
+        temp_max_next_72h_c=_round(max(temps) if temps else None),
+        freeze_thaw_cycles_next_72h=freeze_thaw_cycles(temps) if temps else None,
+        snowfall_next_72h_cm=_round(sum(rain.window(rain.snowfall_cm, 0, 72)) or 0.0) if rain.snowfall_cm else None,
+        wind_max_next_24h_kmh=_round(max(rain.window(rain.wind_kmh, 0, 24), default=None)
+                                     if rain.wind_kmh else None),
+        soil_moisture_now=_round(rain.at_now(rain.soil_moisture), 3),
+        freezing_level_now_m=_round(rain.at_now(rain.freezing_level_m), 0),
     )

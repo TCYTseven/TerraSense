@@ -15,6 +15,27 @@
   },
   {
     "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "trail",
+    "status": "running",
+    "summary": "Intersecting the zone with Rainier trails.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "history",
+    "status": "running",
+    "summary": "Reading the landslide record near the zone.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "routes",
+    "status": "running",
+    "summary": "Scoring every trail on the mountain, not just the hero trail.",
+    "payload": {}
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
     "agent": "terrain",
     "status": "done",
     "summary": "Debris flow cluster below Mazama Ridge. Severity high, peak probability 0.71.",
@@ -24,7 +45,11 @@
         "type": "debris_flow",
         "severity": "high",
         "max_probability": 0.71,
-        "drivers": ["slope_angle", "drainage_proximity", "recent_rain"],
+        "drivers": [
+          "slope_angle",
+          "drainage_proximity",
+          "recent_rain"
+        ],
         "confidence": 0.84,
         "notes": "Cluster below Mazama Ridge where the loop crosses steep drainages. Sparse vegetation."
       }
@@ -47,13 +72,6 @@
   {
     "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
     "agent": "trail",
-    "status": "running",
-    "summary": "Intersecting the zone with Rainier trails.",
-    "payload": {}
-  },
-  {
-    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
-    "agent": "trail",
     "status": "done",
     "summary": "Skyline Trail miles 1.2 to 2.1 cross the zone. Bypass: Golden Gate Trail.",
     "payload": {
@@ -72,6 +90,51 @@
   },
   {
     "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "history",
+    "status": "done",
+    "summary": "No catalog landslide near the zone. Absence of record, not absence of risk.",
+    "payload": {
+      "precedent": "none",
+      "severity": "high",
+      "confidence": 0.35,
+      "events_within_radius": 0,
+      "search_radius_km": 30.0,
+      "nearest_event": null,
+      "note": "The catalog holds no recorded slide within 30 km, which is an absence of record."
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
+    "agent": "routes",
+    "status": "done",
+    "summary": "67 trails scored. Worst: the North Puyallup Trail. 2 clear the safe ceiling.",
+    "payload": {
+      "severity": "extreme",
+      "confidence": 0.7,
+      "trails_scored": 67,
+      "clear_of_the_safe_ceiling": 2,
+      "safety_is_relative": true,
+      "exposed": [
+        {
+          "trail": "North Puyallup Trail",
+          "level": "extreme",
+          "max_probability": 1.0,
+          "note": "88% of it sits at high or above."
+        }
+      ],
+      "clear": [
+        {
+          "trail": "Rampart Ridge Trail",
+          "level": "low",
+          "max_probability": 0.172,
+          "note": "It peaks at 0.17, in the low band."
+        }
+      ],
+      "note": "56 of 67 trails reach high or above today."
+    }
+  },
+  {
+    "run_id": "3f2b8c1e-5d4a-4c6b-9e0f-7a1d2c3b4e5f",
     "agent": "synthesizer",
     "status": "running",
     "summary": "Combining the terrain, weather, and trail reports.",
@@ -86,7 +149,11 @@
       "severity": "high",
       "confidence": 0.81,
       "needs_review": false,
-      "reports": { "terrain": "high", "weather": "high", "trail": "high" }
+      "reports": {
+        "terrain": "high",
+        "weather": "high",
+        "trail": "high"
+      }
     }
   },
   {

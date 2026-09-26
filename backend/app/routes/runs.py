@@ -17,9 +17,9 @@ from fastapi import (
 from psycopg.rows import DictRow
 from pydantic import BaseModel
 
-from app.agents.schemas import Run, RunUpdate
+from app.agents.schemas import Advisory, Run, RunUpdate
 from app.db import get_conn
-from app.runs import load_run, registry
+from app.runs import latest_advisory, load_run, registry
 
 router = APIRouter(tags=["runs"])
 
@@ -69,6 +69,38 @@ async def get_run(run_id: str) -> Run:
     if run is None:
         raise HTTPException(status_code=404, detail=f"No run {run_id!r}")
     return run
+
+
+@router.get("/runs/{run_id}/advisory", responses={
+    404: {"description": "No such run."},
+    409: {"description": "The run is still going, or it failed before the agents finished."},
+})
+async def get_advisory(run_id: str) -> Advisory:
+    """One run's whole conclusion: the call, three routes to avoid, three safe ones, the response."""
+    run = await get_run(run_id)
+    if run.advisory is None:
+        detail = ("This run is still going. Follow ws://.../runs/{id}/stream and read the advisory off the "
+                  "final update." if run.status == "running" else
+                  f"This run has no advisory: {run.error or 'it failed before the agents finished'}.")
+        raise HTTPException(status_code=409, detail=detail)
+    return run.advisory
+
+
+@router.get("/mountains/{slug}/advisory", tags=["mountains"], responses={
+    404: {"description": "No finished run has produced an advisory for this mountain yet."},
+})
+async def get_latest_advisory(slug: str) -> Advisory:
+    """The newest advisory for a mountain, from memory or from the last finished run's row."""
+    running = registry.active_run(slug)
+    if running is not None and running.advisory is not None:
+        return running.advisory
+    advisory = await asyncio.to_thread(latest_advisory, slug)
+    if advisory is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No advisory for {slug!r} yet. POST /mountains/{slug}/analyze and wait for the run to finish.",
+        )
+    return advisory
 
 
 @router.websocket("/runs/{run_id}/stream")

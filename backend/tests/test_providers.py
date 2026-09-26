@@ -44,7 +44,7 @@ def grok(status, body, seen, **env):
 
 def test_model_labels():
     assert model_label("gemini-3.8-flash") == "Gemini 3.8 Flash"
-    assert model_label("grok-4.7") == "Grok 4.7"
+    assert model_label("grok-4.3") == "Grok 4.3"
 
 
 def test_gemini_request_and_thoughts():
@@ -109,7 +109,7 @@ def test_grok_responses_request_and_reasoning_summary():
     assert seen["headers"]["authorization"] == "Bearer test-key"
     fmt = seen["body"]["text"]["format"]
     assert fmt["type"] == "json_schema" and fmt["strict"] is True and fmt["name"] == "trail_report"
-    assert seen["body"]["reasoning"] == {"effort": "low"}
+    assert seen["body"]["reasoning"] == {"effort": "none"}
     assert seen["body"]["store"] is False
     assert [m["role"] for m in seen["body"]["input"]] == ["system", "user"]
     assert json.loads(result.text) == ANSWER
@@ -128,7 +128,7 @@ def test_grok_chat_completions():
     result = run(grok(200, body, seen, GROK_API="chat"))
     assert seen["url"] == "https://api.x.ai/v1/chat/completions"
     assert seen["body"]["response_format"]["json_schema"]["strict"] is True
-    assert seen["body"]["reasoning_effort"] == "low"
+    assert seen["body"]["reasoning_effort"] == "none"
     assert result.thoughts == ["Checked the miles."]
     assert result.usage.reasoning_tokens == 90
 

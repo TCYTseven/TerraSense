@@ -5,6 +5,8 @@ export const AGENT_LABELS: Record<AgentName, string> = {
   terrain: "Terrain",
   weather: "Weather",
   trail: "Trail",
+  history: "History",
+  routes: "Route Scout",
   synthesizer: "Synthesizer",
   writer: "Alert Writer",
 };
@@ -63,8 +65,9 @@ const STATUS_WORDS: Record<RowStatus, string> = {
 };
 
 /**
- * The five agent rows, in pipeline order. Terrain and Weather run together, so two rows can run
- * at once. The running row pulses. A click opens the reasoning panel on that agent.
+ * The agent rows, in panel order. The first five are analysts and the backend fans them out
+ * together, so all five rows pulse at once before any of them answers. The Synthesizer and the
+ * Alert Writer follow one at a time. A click opens the reasoning panel on that agent.
  */
 export default function AgentRows({ rows, onOpen }: { rows: RowState[]; onOpen: (agent: AgentName) => void }) {
   return (

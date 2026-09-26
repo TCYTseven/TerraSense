@@ -9,10 +9,10 @@ Settings come from the root .env. Never log a key.
   GEMINI_MODEL            default gemini-3.8-flash
   GEMINI_THINKING_LEVEL   low, medium, or high for Gemini 3.x (default low: fast)
   XAI_API_KEY             xAI key
-  GROK_MODEL              default grok-4.7
-  GROK_REASONING_EFFORT   low, medium, high (default low: fast)
+  GROK_MODEL              default grok-4.3 (fast; grok-4.7 is slower)
+  GROK_REASONING_EFFORT   none, low, medium, high (default none: lowest latency)
   GROK_API                responses (default, returns reasoning summaries) or chat
-  LLM_TIMEOUT_S           per call, default 40
+  LLM_TIMEOUT_S           per call, default 25
   GEMINI_BASE_URL, XAI_BASE_URL   for a proxy or a local mock
 """
 
@@ -29,8 +29,8 @@ from pydantic import BaseModel
 from .schemas import ProviderName, Usage
 
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
-DEFAULT_GROK_MODEL = "grok-4.7"
-DEFAULT_TIMEOUT_S = 40.0
+DEFAULT_GROK_MODEL = "grok-4.3"
+DEFAULT_TIMEOUT_S = 25.0
 # Thinking tokens count against Gemini's output limit, so leave room for them and the JSON.
 MAX_OUTPUT_TOKENS = 8192
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
@@ -77,7 +77,7 @@ class Provider(Protocol):
 
 
 def model_label(model: str) -> str:
-    """'gemini-3.8-flash' to 'Gemini 3.8 Flash', 'grok-4.7' to 'Grok 4.7'."""
+    """'gemini-3.8-flash' to 'Gemini 3.8 Flash', 'grok-4.3' to 'Grok 4.3'."""
     words = [w for w in model.replace("_", "-").split("-") if w]
     return " ".join(w if w[0].isdigit() else w.capitalize() for w in words)
 
@@ -254,7 +254,7 @@ class GrokProvider(_HttpProvider):
             timeout=float(env.get("LLM_TIMEOUT_S", "").strip() or DEFAULT_TIMEOUT_S),
             transport=transport,
         )
-        self.effort = env.get("GROK_REASONING_EFFORT", "").strip() or "low"
+        self.effort = env.get("GROK_REASONING_EFFORT", "").strip() or "none"
         self.api = (env.get("GROK_API", "").strip() or "responses").lower()
 
     def body(self, request: LLMRequest) -> dict:
