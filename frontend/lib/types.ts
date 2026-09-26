@@ -220,6 +220,7 @@ export interface RiskEstimateValidation {
   rainier_roc_auc: number;
   rainier_roc_auc_ci95: [number, number];
   rainier_positives: number;
+  rainier_slope_only_roc_auc: number;
   trigger_roc_auc: number;
   trigger_roc_auc_ci95: [number, number];
   trigger_events: number;

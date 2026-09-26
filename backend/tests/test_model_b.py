@@ -73,7 +73,7 @@ def test_rain_at_the_reference_thresholds_scales_terrain_odds_by_the_fitted_base
     monkeypatch.setattr(model_b, "SUSCEPTIBILITY_PATH", path)
     rain = _rain(past_7d_mm=model_b.MOISTURE_THRESHOLD_7D_MM, next_72h_mm=model_b.RAINFALL_THRESHOLD_72H_MM)
 
-    odds = values / (1 - values) * np.exp(model_b.W0)
+    odds = values / (1 - values) * np.exp(model_b.W0 - model_b.TERRAIN_BASE_LOGIT)
     assert np.allclose(model_b.run(rain).probability, odds / (1 + odds), atol=1e-5)
 
 

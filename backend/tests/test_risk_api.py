@@ -89,6 +89,7 @@ def test_without_a_calibrated_model_the_answer_is_the_model_b_estimate(storm) ->
     validation = estimate["validation"]
     assert validation["terrain_roc_auc"] == metrics["spatial_cv"]["folds"]["roc_auc"]["mean"]
     assert validation["rainier_roc_auc"] == metrics["external_rainier"]["metrics"]["roc_auc"]
+    assert validation["rainier_slope_only_roc_auc"] == metrics["external_rainier"]["slope_only_roc_auc"]
     assert validation["trigger_roc_auc"] == events["primary_year_blocked"]["metrics"]["lr_model_b"]["roc_auc"]
     assert validation["trigger_events"] == events["counts"]["n_cases"]
     for name in ("terrain", "rainier", "trigger"):
@@ -110,7 +111,7 @@ def test_a_storm_separates_steep_slopes_from_meadows(storm) -> None:
     meadow = post({"latitude": MEADOW[0], "longitude": MEADOW[1]})
 
     assert meadow["risk_level"] == "low"
-    assert slope["risk_level"] == "high"
+    assert slope["risk_level"] == "extreme"
 
     def effect(payload: dict, factor: str) -> str:
         return next(d["effect"] for d in payload["estimate"]["drivers"] if d["factor"] == factor)
