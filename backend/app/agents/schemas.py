@@ -15,7 +15,8 @@ from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models import HazardType
+from app.domains import AVALANCHE_TYPES, LANDSLIDE_TYPES  # noqa: F401  (documented below)
+from app.models import HazardType  # noqa: F401  (the union, used by the API models)
 from app.risk import RiskLevel
 
 AgentName = Literal["terrain", "weather", "trail", "history", "routes", "synthesizer", "writer"]
@@ -39,7 +40,14 @@ AGENT_LABELS: dict[AgentName, str] = {
     "writer": "Alert Writer",
 }
 
-# The drivers an agent may cite for a hazard. The terrain ones come from the step 11 stack.
+# Each domain gets its own closed vocabularies, so the schema sent to the provider can only
+# describe hazards that domain actually produces: a landslide agent cannot return a slab, and
+# a snowpack agent cannot cite soil wetness. app/domains.py holds the same lists and
+# tests/test_agent_schemas.py pins them together (step 34).
+LandslideType = Literal["landslide", "debris_flow"]
+AvalancheType = Literal["slab_avalanche", "loose_snow_avalanche", "wet_snow_avalanche"]
+
+# The drivers a landslide agent may cite. The terrain ones come from the step 11 stack.
 Driver = Literal[
     "slope_angle",
     "drainage_proximity",
@@ -49,6 +57,20 @@ Driver = Literal[
     "past_landslides",
     "recent_rain",
     "forecast_rain",
+]
+
+# The drivers an avalanche agent may cite: what loads a slope with snow and what is under it.
+AvalancheDriver = Literal[
+    "slope_angle",
+    "lee_loading",
+    "convex_rollover",
+    "open_slope",
+    "above_treeline",
+    "new_snow_load",
+    "wind_slab",
+    "warming_instability",
+    "rain_on_snow",
+    "past_avalanches",
 ]
 
 Confidence = Annotated[float, Field(ge=0, le=1, description="0 to 1. Lower it when facts are thin or disagree.")]
@@ -65,12 +87,41 @@ class AgentOutput(BaseModel):
 
 
 class TerrainReport(AgentOutput):
-    type: HazardType = Field(description="debris_flow when the zone is channelized, else landslide.")
+    type: LandslideType = Field(description="debris_flow when the zone is channelized, else landslide.")
     severity: RiskLevel
     drivers: list[Driver] = Field(min_length=1, max_length=4)
     confidence: Confidence
     place: str = Field(description="2 to 6 words locating the zone, using only names in the facts.")
     notes: str = Field(description="One or two plain sentences on where the zone is and what the ground is like.")
+    reasoning: Steps
+
+
+class SnowpackReport(AgentOutput):
+    """The avalanche twin of TerrainReport: the start zone, and what kind of release it is."""
+
+    type: AvalancheType = Field(
+        description="wet_snow_avalanche when the pack is warming or rained on; slab_avalanche when "
+                    "new snow or wind has built a slab; otherwise loose_snow_avalanche."
+    )
+    severity: RiskLevel
+    drivers: list[AvalancheDriver] = Field(min_length=1, max_length=4)
+    confidence: Confidence
+    place: str = Field(description="2 to 6 words locating the start zone, using only names in the facts.")
+    notes: str = Field(description="One or two plain sentences on where the start zone is and what the "
+                                   "snow on it is doing.")
+    reasoning: Steps
+
+
+class SnowWeatherReport(AgentOutput):
+    """The avalanche twin of WeatherReport: what the weather is doing to the snowpack."""
+
+    modifier: Literal["worse", "stable", "better"]
+    severity: RiskLevel = Field(description="The level the weather alone gives the start zone.")
+    confidence: Confidence
+    primary_signal: Literal["new_snow", "wind", "warming", "rain_on_snow", "none"] = Field(
+        description="Which trigger signal is doing the most work today, or none on a quiet day."
+    )
+    note: str = Field(description="One or two plain sentences with the snow, wind, and temperature numbers.")
     reasoning: Steps
 
 
@@ -221,6 +272,19 @@ AGENT_OUTPUTS: dict[AgentName, type[AgentOutput]] = {
     "routes": RouteScan,
     "synthesizer": SynthesisReport,
     "writer": AlertDraft,
+}
+
+# The avalanche run swaps only the two agents whose subject actually changes. The trail, the
+# route network, the decision, and the copy have the same shape in both domains (step 34).
+AVALANCHE_AGENT_OUTPUTS: dict[AgentName, type[AgentOutput]] = {
+    **AGENT_OUTPUTS,
+    "terrain": SnowpackReport,
+    "weather": SnowWeatherReport,
+}
+
+OUTPUTS_BY_DOMAIN: dict[str, dict[AgentName, type[AgentOutput]]] = {
+    "landslide": AGENT_OUTPUTS,
+    "avalanche": AVALANCHE_AGENT_OUTPUTS,
 }
 
 

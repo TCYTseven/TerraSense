@@ -17,6 +17,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from app.config import REPO_ROOT
+from app.domains import DEFAULT_DOMAIN, HazardDomain, spec
 
 INDEX_PATH = REPO_ROOT / "data" / "seed" / "packs" / "index.json"
 RAINIER_SLUG = "mount-rainier"
@@ -68,16 +69,21 @@ def _pack_file(slug: str, rainier_path: Path, pack_name: str, base: Path) -> Pat
     return rainier_path if slug == RAINIER_SLUG else base / "packs" / slug / pack_name
 
 
-def susceptibility_path(slug: str) -> Path:
-    return _pack_file(slug, ARTIFACTS_DIR / "susceptibility.tif", "susceptibility.tif", ARTIFACTS_DIR)
+# Each domain's artifacts sit side by side under the same pack folder, named by the domain's
+# spec (step 34). Rainier keeps the legacy unprefixed landslide names.
+def susceptibility_path(slug: str, domain: HazardDomain = DEFAULT_DOMAIN) -> Path:
+    name = spec(domain).susceptibility_file
+    return _pack_file(slug, ARTIFACTS_DIR / name, name, ARTIFACTS_DIR)
 
 
-def probability_path(slug: str) -> Path:
-    return _pack_file(slug, ARTIFACTS_DIR / "probability.tif", "probability.tif", ARTIFACTS_DIR)
+def probability_path(slug: str, domain: HazardDomain = DEFAULT_DOMAIN) -> Path:
+    name = spec(domain).probability_file
+    return _pack_file(slug, ARTIFACTS_DIR / name, name, ARTIFACTS_DIR)
 
 
-def metrics_path(slug: str) -> Path:
-    return _pack_file(slug, ARTIFACTS_DIR / "metrics.json", "metrics.json", ARTIFACTS_DIR)
+def metrics_path(slug: str, domain: HazardDomain = DEFAULT_DOMAIN) -> Path:
+    name = spec(domain).metrics_file
+    return _pack_file(slug, ARTIFACTS_DIR / name, name, ARTIFACTS_DIR)
 
 
 def network_path(slug: str) -> Path:
