@@ -1,9 +1,8 @@
 """In-process runout simulations (step 28). Nothing is written to Postgres.
 
-A simulation traces frames down the one route most likely to fail, then
-attaches template callouts. The snapshot goes out before the callouts, so the map
-can start while the notes are still being written. Templates are the path when no
-provider is configured; both audiences are always present.
+A simulation traces frames down the one route most likely to fail, then asks Gemini
+or Grok for one downvalley community alert (with a static fallback when no key is set).
+The snapshot goes out before the alert, so the map can play while the model answers.
 """
 
 from __future__ import annotations
@@ -14,6 +13,7 @@ from dataclasses import dataclass, field
 
 from app.ml.pressure import worst_route
 from app.ml.runout import trace_runout
+from app.simulation_communities import generate_community_callout
 
 NOTHING_TO_SIMULATE = "Nothing reaches Moderate today, so there's nothing to simulate."
 
@@ -22,6 +22,7 @@ NOTHING_TO_SIMULATE = "Nothing reaches Moderate today, so there's nothing to sim
 class SimulationState:
     id: str
     slug: str
+    mountain: dict | None = None
     status: str = "running"
     method: str = ""
     source: str = "trail"
@@ -63,12 +64,12 @@ class SimulationRegistry:
     def get(self, simulation_id: str) -> SimulationState | None:
         return self._items.get(simulation_id)
 
-    def start(self, slug: str, trails: list[dict]) -> SimulationState:
+    def start(self, slug: str, trails: list[dict], mountain: dict | None = None) -> SimulationState:
         """Only the route most likely to fail is ever simulated."""
         point = worst_route(trails)
         if point is None:
             raise ValueError(NOTHING_TO_SIMULATE)
-        state = SimulationState(id=str(uuid.uuid4()), slug=slug, pressure_point=point)
+        state = SimulationState(id=str(uuid.uuid4()), slug=slug, mountain=mountain, pressure_point=point)
         self._items[state.id] = state
         state.task = asyncio.create_task(self._run(state, point, trails))
         return state
@@ -88,11 +89,18 @@ class SimulationRegistry:
             state.frames = traced["frames"]
             state.steps = traced["steps"]
             self._broadcast(state, {"type": "snapshot", "simulation": state.view()})
-            callouts = template_callouts(state.steps, point)
-            for callout in callouts:
-                state.callouts.append(callout)
-                self._broadcast(state, {"type": "callout", "callout": callout})
-            state.callouts_from_templates = True
+            mountain = state.mountain or {"slug": state.slug, "name": state.slug.replace("-", " ").title()}
+            callout, used_llm = await generate_community_callout(
+                mountain,
+                point,
+                state.steps,
+                state.frames,
+                distance_m=state.distance_m,
+                drop_m=state.drop_m,
+            )
+            state.callouts.append(callout)
+            self._broadcast(state, {"type": "callout", "callout": callout})
+            state.callouts_from_templates = not used_llm
             state.status = "done"
             self._broadcast(state, {"type": "final", "simulation": state.view()})
         except Exception as exc:

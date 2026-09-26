@@ -9,8 +9,8 @@ export function simulationClock(seconds: number): string {
 }
 
 /**
- * The runout timeline pinned to the top of the mountain view, plus callouts
- * reached so far. The bar is display-only; it does not scrub.
+ * The runout timeline pinned to the top of the mountain view, plus one community
+ * alert box when the simulation backend returns it.
  */
 export default function SimulationBar({
   phase,
@@ -36,7 +36,13 @@ export default function SimulationBar({
   const duration = simulation.duration_s || simulation.frames.at(-1)?.t_s || 1;
   const progress = Math.min(1, timeS / duration);
   const step = [...simulation.steps].reverse().find((item) => item.t_s <= timeS + 0.05);
-  const visible = simulation.callouts.filter((callout) => callout.t_s <= timeS + 0.05);
+  const community = simulation.callouts.find(
+    (callout) => callout.audience === "communities" && callout.t_s <= timeS + 0.05,
+  );
+  const waitingForCommunity =
+    (phase === "playing" || phase === "finished") &&
+    !community &&
+    !simulation.callouts.some((c) => c.audience === "communities");
   const stepLabel = step?.title ?? "Slope releases";
 
   return (
@@ -56,26 +62,34 @@ export default function SimulationBar({
           <p className="shrink-0 font-mono text-[11px] leading-none tabular-nums text-foreground">{simulationClock(timeS)}</p>
         </div>
       </div>
-      {visible.length > 0 && (
-        <div className="pointer-events-none absolute inset-x-3 bottom-14 z-20 flex max-h-[36%] flex-col gap-1.5 overflow-hidden md:inset-x-4 md:bottom-16">
-          {visible.map((callout) => (
-            <Callout key={callout.id} callout={callout} />
-          ))}
+      {(community || waitingForCommunity) && (
+        <div className="pointer-events-none absolute inset-x-3 bottom-14 z-20 md:inset-x-4 md:bottom-16">
+          {community ? (
+            <CommunityAlert callout={community} />
+          ) : (
+            <div className="border-l-2 border-foreground/35 bg-card/95 px-2.5 py-2 backdrop-blur-sm">
+              <p className="text-[11px] leading-tight text-muted-foreground">Communities to alert</p>
+              <p className="mt-1 text-sm leading-snug text-muted-foreground animate-pulse">Identifying downvalley settlements…</p>
+            </div>
+          )}
         </div>
       )}
     </>
   );
 }
 
-function Callout({ callout }: { callout: SimulationCallout }) {
-  const audience = callout.audience === "public" ? "Public notice, draft, not sent" : "Rangers";
+function CommunityAlert({ callout }: { callout: SimulationCallout }) {
+  const places = callout.places?.filter(Boolean) ?? [];
   return (
-    <div className="border-l-2 border-foreground/35 bg-card/95 px-2.5 py-1.5 backdrop-blur-sm">
+    <div className="border-l-2 border-amber-500/80 bg-card/95 px-2.5 py-2 backdrop-blur-sm">
       <p className="flex items-baseline justify-between gap-2 text-[11px] leading-tight text-muted-foreground">
-        <span className="min-w-0 truncate">{audience}</span>
+        <span className="min-w-0 truncate">Communities to alert · illustrative</span>
         <span className="shrink-0 font-mono tabular-nums">{simulationClock(callout.t_s)}</span>
       </p>
-      <p className="mt-0.5 text-sm leading-snug text-foreground">{callout.text}</p>
+      {places.length > 0 && (
+        <p className="mt-1 text-xs font-medium leading-snug text-foreground">{places.join(" · ")}</p>
+      )}
+      <p className="mt-1 text-sm leading-snug text-foreground">{callout.text}</p>
     </div>
   );
 }

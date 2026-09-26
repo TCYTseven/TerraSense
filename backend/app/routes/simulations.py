@@ -24,7 +24,13 @@ class SimulationStarted(BaseModel):
 
 
 def _trails(conn: psycopg.Connection[DictRow], slug: str) -> tuple[dict | None, list[dict]]:
-    mountain = conn.execute("SELECT id, slug FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    mountain = conn.execute(
+        """
+        SELECT id, slug, name, lat, lon, elevation_m, region
+        FROM mountains WHERE slug = %s
+        """,
+        (slug,),
+    ).fetchone()
     if mountain is None:
         return None, []
     rows = conn.execute(
@@ -70,7 +76,7 @@ async def simulate(slug: str, conn: Conn) -> SimulationStarted:
     if not trails:
         raise HTTPException(status_code=409, detail=NOTHING_TO_SIMULATE)
     try:
-        state = registry.start(slug, trails)
+        state = registry.start(slug, trails, mountain=dict(mountain))
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     return SimulationStarted(simulation_id=state.id)

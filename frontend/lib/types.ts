@@ -634,9 +634,11 @@ export interface RunoutStep {
 export interface SimulationCallout {
   id: string;
   step_id: string;
-  audience: "rangers" | "public";
+  audience: "rangers" | "public" | "communities";
   text: string;
   t_s: number;
+  /** Named settlements when the backend attached a community alert. */
+  places?: string[];
 }
 
 /** An illustrative debris-flow runout. Times are simulated seconds, not a forecast. */
