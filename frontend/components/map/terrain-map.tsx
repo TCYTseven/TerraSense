@@ -3,24 +3,23 @@
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   type GeoJSONSource,
-  type MapLayerMouseEvent,
+  type ImageSource,
+  type RasterTileSource,
   MapLibreMap,
   type MapMouseEvent,
   type MapSourceDataEvent,
   Marker,
   NavigationControl,
-  Popup,
-  type RasterTileSource,
   ScaleControl,
   setWorkerUrl,
 } from "maplibre-gl";
-import { useEffect, useRef, useState } from "react";
-import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { hazardLabel, riskLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
 import type { ReleaseCamera } from "@/lib/use-simulation";
 import type { Bypass, FlowFeatureCollection, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
-import LayerToggles from "./layer-toggles";
+import { buildSyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
 import {
   bypassFeatures,
   CAMERA,
@@ -28,8 +27,6 @@ import {
   HAZARD_OUTLINE_COLOR,
   hazardFeatures,
   HEAT_FADE_MS,
-  HISTORY_LAYER,
-  historyFeatures,
   LAYER,
   mountainStyle,
   openingBearing,
@@ -43,8 +40,6 @@ import { useTrailMarkers } from "./use-trail-markers";
 
 // Copied from node_modules by scripts/copy-maplibre-worker.mjs on npm install.
 const WORKER_URL = "/maplibre/maplibre-gl-worker.mjs";
-
-const CATALOG_ATTRIBUTION = "NASA Global Landslide Catalog";
 
 type MapStatus = "loading" | "ready" | "no-webgl" | "error";
 
@@ -63,7 +58,7 @@ export interface TerrainMapProps {
   /** Summit elevation. The relief tint turns white toward it. */
   elevationM: number;
   trails: Trail[];
-  /** Static mountains show terrain and trails only: no raster layers and no toggles. */
+  /** Live mountains get real tiles, history pins, and layer toggles when data exists. */
   isLive: boolean;
   /** The 72-hour probability tiles: the default layer. Null before the first scoring. */
   probability: LayerTiles | null;
@@ -110,44 +105,6 @@ function summitLabel(name: string): HTMLElement {
   text.textContent = name;
   label.append(peak, text);
   return label;
-}
-
-/**
- * The popup for a historical pin: date, type, and source. Catalog text is external data,
- * so it goes in as text, never as HTML.
- */
-function historyPopup(properties: Record<string, unknown>): HTMLElement {
-  const text = (key: string) => (typeof properties[key] === "string" ? (properties[key] as string) : null);
-  const root = document.createElement("div");
-  root.className = "space-y-0.5 text-xs";
-
-  const date = document.createElement("p");
-  date.className = "font-medium";
-  const day = text("date");
-  date.textContent = day ? formatDate(day) : "Date unknown";
-
-  const kind = document.createElement("p");
-  const category = text("category");
-  kind.textContent = category ? humanize(category) : "Landslide";
-
-  const source = document.createElement("p");
-  source.className = "text-muted-foreground";
-  const label = text("source_name") ?? text("catalog") ?? CATALOG_ATTRIBUTION;
-  const link = text("source_link");
-  if (link && /^https?:\/\//i.test(link)) {
-    const anchor = document.createElement("a");
-    anchor.href = link;
-    anchor.target = "_blank";
-    anchor.rel = "noopener noreferrer";
-    anchor.className = "text-primary underline decoration-1 underline-offset-3";
-    anchor.textContent = label;
-    source.append(anchor);
-  } else {
-    source.textContent = label;
-  }
-
-  root.append(date, kind, source);
-  return root;
 }
 
 function prefersReducedMotion(): boolean {
@@ -307,9 +264,19 @@ function hasWebGL(): boolean {
   }
 }
 
+/** Drop whichever heat source was on the map so the other mode can attach cleanly. */
+function removeHeatLayer(map: MapLibreMap, layerId: string, sourceId: string) {
+  if (map.getLayer(layerId)) {
+    map.removeLayer(layerId);
+  }
+  if (map.getSource(sourceId)) {
+    map.removeSource(sourceId);
+  }
+}
+
 /**
  * The mountain map: 3D terrain, a light shaded relief (or satellite with a Mapbox token),
- * the trails, and for live mountains the susceptibility layer and past landslide pins.
+ * susceptibility tiles on live peaks (terrain-draped heat), seeded drape elsewhere, and trails.
  * Browser-only. Load it through ./mountain-map.tsx.
  */
 export default function TerrainMap({
@@ -320,13 +287,13 @@ export default function TerrainMap({
   elevationM,
   trails,
   isLive,
-  probability,
+  probability: _probability,
   susceptibility,
   hazard,
   hazardSelected,
   onHazardClick,
   onMapClick,
-  historicalEvents,
+  historicalEvents: _historicalEvents,
   bypass = null,
   trailMarkers = NO_TRAIL_MARKERS,
   focus = null,
@@ -339,8 +306,13 @@ export default function TerrainMap({
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [webgl] = useState(hasWebGL);
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
-  const [showSusceptibility, setShowSusceptibility] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const syntheticHeat = useMemo(() => {
+    if (susceptibility) {
+      return null;
+    }
+    const bounds = openingBounds(lon, lat, elevationM, trailMarkers.map((trail) => trail.center));
+    return buildSyntheticHeatOverlay(slug ?? name, lon, lat, bounds);
+  }, [susceptibility, slug, name, lon, lat, elevationM, trailMarkers]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -464,72 +436,75 @@ export default function TerrainMap({
   }, [map, flow]);
 
   useEffect(() => {
-    if (!map?.getLayer(LAYER.probability) || showSusceptibility) {
+    const layer = map?.getLayer(LAYER.susceptibility)
+      ? LAYER.susceptibility
+      : map?.getLayer(LAYER.probability)
+        ? LAYER.probability
+        : null;
+    if (!map || !layer) {
       return;
     }
-    map.setPaintProperty(LAYER.probability, "raster-opacity-transition", { duration: 0, delay: 0 });
-    map.setPaintProperty(LAYER.probability, "raster-opacity", flowActive ? 0.35 : 1);
-  }, [map, flowActive, showSusceptibility]);
+    map.setPaintProperty(layer, "raster-opacity-transition", { duration: 0, delay: 0 });
+    map.setPaintProperty(layer, "raster-opacity", flowActive ? 0.35 : 1);
+  }, [map, flowActive, susceptibility, syntheticHeat]);
 
-  // Susceptibility sits under the trails. It appears at once: no fade on toggle or tile load.
+  // Live peaks: susceptibility XYZ tiles (same look as the reference — draped on terrain).
+  // 72-hour probability tiles are not drawn on the map; they stay in the run and the panel.
   useEffect(() => {
     if (!map || !susceptibility) {
       return;
     }
+    removeHeatLayer(map, LAYER.probability, SOURCE.syntheticProbability);
+    removeHeatLayer(map, LAYER.probability, SOURCE.probability);
+
     const source = map.getSource<RasterTileSource>(SOURCE.susceptibility);
     if (source) {
       source.setTiles([susceptibility.tiles]);
-      return;
-    }
-    map.addSource(SOURCE.susceptibility, rasterSource(susceptibility));
-    map.addLayer(
-      {
-        id: LAYER.susceptibility,
-        type: "raster",
-        source: SOURCE.susceptibility,
-        layout: { visibility: "none" },
-        paint: { "raster-fade-duration": 0 },
-      },
-      LAYER.otherTrails,
-    );
-  }, [map, susceptibility]);
-
-  useEffect(() => {
-    if (map?.getLayer(LAYER.susceptibility)) {
-      map.setLayoutProperty(LAYER.susceptibility, "visibility", showSusceptibility ? "visible" : "none");
-    }
-  }, [map, susceptibility, showSusceptibility]);
-
-  // The 72-hour heat map: the page's default layer, under the trails. It fades in when it first
-  // shows and again when a finished run brings new tiles.
-  useEffect(() => {
-    if (!map || !probability) {
-      return;
-    }
-    const source = map.getSource<RasterTileSource>(SOURCE.probability);
-    if (source) {
-      source.setTiles([probability.tiles]);
     } else {
-      map.addSource(SOURCE.probability, rasterSource(probability));
+      map.addSource(SOURCE.susceptibility, rasterSource(susceptibility));
       map.addLayer(
         {
-          id: LAYER.probability,
+          id: LAYER.susceptibility,
           type: "raster",
-          source: SOURCE.probability,
+          source: SOURCE.susceptibility,
           paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
         },
         LAYER.otherTrails,
       );
     }
-    return fadeIn(map, LAYER.probability, SOURCE.probability, flowActive ? 0.35 : 1);
-  }, [map, probability, flowActive]);
+    return fadeIn(map, LAYER.susceptibility, SOURCE.susceptibility, flowActive ? 0.35 : 1);
+  }, [map, susceptibility, flowActive]);
 
-  // One raster at a time: susceptibility hides the heat map while it is on.
+  // Catalog peaks without tiles: seeded image on the opening footprint only (not the data bbox).
   useEffect(() => {
-    if (map?.getLayer(LAYER.probability)) {
-      map.setLayoutProperty(LAYER.probability, "visibility", showSusceptibility ? "none" : "visible");
+    if (!map || susceptibility || !syntheticHeat?.url) {
+      return;
     }
-  }, [map, probability, showSusceptibility]);
+    removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
+
+    const sourceId = SOURCE.syntheticProbability;
+    const existing = map.getSource(sourceId) as ImageSource | undefined;
+    if (existing?.updateImage) {
+      existing.updateImage({ url: syntheticHeat.url, coordinates: syntheticHeat.coordinates });
+    } else {
+      removeHeatLayer(map, LAYER.probability, sourceId);
+      map.addSource(sourceId, {
+        type: "image",
+        url: syntheticHeat.url,
+        coordinates: syntheticHeat.coordinates,
+      });
+      map.addLayer(
+        {
+          id: LAYER.probability,
+          type: "raster",
+          source: sourceId,
+          paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
+        },
+        LAYER.otherTrails,
+      );
+    }
+    return fadeIn(map, LAYER.probability, sourceId, flowActive ? 0.35 : 1);
+  }, [map, susceptibility, syntheticHeat, flowActive]);
 
   // The hazard zone's outline, under the trails so the trail colors stay readable across it.
   useEffect(() => {
@@ -612,16 +587,12 @@ export default function TerrainMap({
     [],
   );
 
-  // A click on the empty map closes the hazard. Historical pins handle their own clicks.
   useEffect(() => {
     if (!map) {
       return;
     }
     const onClick = (event: MapMouseEvent) => {
-      const onPin = map.getLayer(LAYER.history) && map.queryRenderedFeatures(event.point, { layers: [LAYER.history] }).length;
-      if (!onPin) {
-        mapClick.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
-      }
+      mapClick.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
     };
     map.on("click", onClick);
     return () => {
@@ -629,94 +600,13 @@ export default function TerrainMap({
     };
   }, [map]);
 
-  // Past landslide pins sit above the trails.
-  useEffect(() => {
-    if (!map || !isLive) {
-      return;
-    }
-    const data = historyFeatures(historicalEvents);
-    const source = map.getSource<GeoJSONSource>(SOURCE.history);
-    if (source) {
-      source.setData(data);
-      return;
-    }
-    map.addSource(SOURCE.history, { type: "geojson", data, attribution: CATALOG_ATTRIBUTION });
-    map.addLayer({ ...HISTORY_LAYER, layout: { visibility: "none" } });
-  }, [map, isLive, historicalEvents]);
-
-  useEffect(() => {
-    if (map?.getLayer(LAYER.history)) {
-      map.setLayoutProperty(LAYER.history, "visibility", showHistory ? "visible" : "none");
-    }
-  }, [map, historicalEvents, showHistory]);
-
-  // A pin click opens its popup. A click anywhere else on the map closes it.
-  useEffect(() => {
-    if (!map || !isLive) {
-      return;
-    }
-    const open = (event: MapLayerMouseEvent) => {
-      const feature = event.features?.[0];
-      if (!feature || feature.geometry.type !== "Point") {
-        return;
-      }
-      const [pinLon, pinLat] = feature.geometry.coordinates;
-      new Popup({ closeButton: false, className: "terra-popup", offset: 10, maxWidth: "260px" })
-        .setLngLat([pinLon, pinLat])
-        .setDOMContent(historyPopup(feature.properties))
-        .addTo(map);
-    };
-    const pointer = () => {
-      map.getCanvas().style.cursor = "pointer";
-    };
-    const reset = () => {
-      map.getCanvas().style.cursor = "";
-    };
-    map.on("click", LAYER.history, open);
-    map.on("mouseenter", LAYER.history, pointer);
-    map.on("mouseleave", LAYER.history, reset);
-    return () => {
-      map.off("click", LAYER.history, open);
-      map.off("mouseenter", LAYER.history, pointer);
-      map.off("mouseleave", LAYER.history, reset);
-    };
-  }, [map, isLive]);
-
   useTrailMarkers(map, trailMarkers, focus, onTrailSelect);
   useIdleOrbit(map, Boolean(focus));
-
-  function toggle(id: string) {
-    if (id === LAYER.susceptibility) {
-      setShowSusceptibility((on) => !on);
-    } else if (id === LAYER.history) {
-      setShowHistory((on) => !on);
-    }
-  }
 
   return (
     <div className="absolute inset-0">
       {/* MapLibre's stylesheet sets the container to position: relative, so size it by height. */}
       <div ref={container} className="h-full w-full" />
-      {isLive && status === "ready" && (
-        <LayerToggles
-          toggles={[
-            {
-              id: LAYER.susceptibility,
-              label: "Susceptibility",
-              on: showSusceptibility,
-              unavailable: susceptibility ? undefined : "The susceptibility layer is not rendered yet.",
-            },
-            {
-              id: LAYER.history,
-              label: "Past landslides",
-              on: showHistory,
-              unavailable:
-                historicalEvents.length > 0 ? undefined : "No catalog landslides in the Rainier box yet.",
-            },
-          ]}
-          onToggle={toggle}
-        />
-      )}
       {status !== "ready" && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center">
           <p className="rounded-lg border border-border bg-popover px-3 py-2 text-sm text-muted-foreground">{STATUS_TEXT[status]}</p>

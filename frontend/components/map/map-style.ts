@@ -99,6 +99,7 @@ export const SOURCE = {
   surround: "surround",
   susceptibility: "susceptibility",
   probability: "probability",
+  syntheticProbability: "synthetic-probability",
   hazard: "hazard",
   bypass: "bypass",
   history: "historical-events",

@@ -25,8 +25,8 @@ export interface HillMountainViewProps {
 function noop() {}
 
 /**
- * The hill card's left column: the 3D terrain map with its heat map, trails, and layer
- * toggles, plus a lettered marker per top-five trail. A "View" click or a click on the trail on
+ * The hill card's left column: the 3D terrain map with its heat drape, trails, and a lettered
+ * marker per top-five trail. A "View" click or a click on the trail on
  * the map (a new `focus`) flies the camera to that trail's region. Fills its `relative` parent.
  */
 export default function HillMountainView({
