@@ -58,7 +58,8 @@ class Hero:
 
     trail: str                  # the seed's trail name
     parts: tuple[str, ...]      # OpenStreetMap names joined into the hero line
-    start: tuple[float, float]  # (lon, lat) of mile 0
+    start: tuple[float, float] | None = None  # (lon, lat) of mile 0; closed loops only.
+                                # An open hero puts mile 0 at its lower trailhead instead.
     closed: bool = False        # True when the parts must join into one closed loop
 
 
@@ -153,10 +154,13 @@ PACKS = {
              peak_lat=45.374, peak_lon=-121.696, peak_elevation_m=3429,
              bbox=bbox_around(45.374, -121.696, 15)),
         # North America, East Coast: the Presidential Range paths (Tuckerman Ravine,
-        # Crawford Path, the Appalachian Trail) all start inside 15 km.
+        # Crawford Path, the Appalachian Trail) all start inside 15 km. The longest
+        # named line in the box is the valley Presidential Rail Trail, so the hero is
+        # pinned to the summit approach like Everest's Base Camp Trek.
         Pack(slug="mount-washington", name="Mount Washington",
              peak_lat=44.271, peak_lon=-71.304, peak_elevation_m=1917,
-             bbox=bbox_around(44.271, -71.304, 15)),
+             bbox=bbox_around(44.271, -71.304, 15),
+             hero=Hero(trail="Tuckerman Ravine Trail", parts=("Tuckerman Ravine Trail",))),
         # South America: the Normal Route walks in through the Horcones valley, 18 km south.
         Pack(slug="aconcagua", name="Aconcagua",
              peak_lat=-32.653, peak_lon=-70.011, peak_elevation_m=6961,
@@ -174,9 +178,13 @@ PACKS = {
              peak_lat=35.361, peak_lon=138.727, peak_elevation_m=3776,
              bbox=bbox_around(35.361, 138.727, 15)),
         # Asia: the Khumbu trails (Gorak Shep, Base Camp, Kala Patthar) lie 8-12 km southwest.
+        # The hero is pinned: the longest line in the box is the Sherpani Amphu Laptsa
+        # expedition crossing, but the demo's story is the Base Camp corridor. The name
+        # comes from the OSM route relation over the Khumbu's unnamed ways.
         Pack(slug="mount-everest", name="Mount Everest",
              peak_lat=27.988, peak_lon=86.925, peak_elevation_m=8849,
-             bbox=bbox_around(27.988, 86.925, 18)),
+             bbox=bbox_around(27.988, 86.925, 18),
+             hero=Hero(trail="Everest Base Camp Trek", parts=("Everest Base Camp Trek",))),
         # Oceania: the Hooker Valley Track runs to 14 km south of the summit.
         Pack(slug="aoraki-mount-cook", name="Aoraki / Mount Cook",
              peak_lat=-43.595, peak_lon=170.142, peak_elevation_m=3724,

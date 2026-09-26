@@ -1,0 +1,30 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 5732,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -71.3026,
+          44.2637
+        ]
+      },
+      "properties": {
+        "id": 5732,
+        "date": "2013-12-28",
+        "title": "Mount Washington, N.H.",
+        "category": "snow_avalanche",
+        "trigger": "other",
+        "size": "medium",
+        "setting": "unknown",
+        "location_accuracy": "1km",
+        "fatalities": 0,
+        "source_name": "www.theepochtimes.com",
+        "source_link": "http://www.theepochtimes.com/n3/422588-mount-washington-landslide-2-hikers-that-triggered-landslide-are-rescued/",
+        "catalog": "NASA Global Landslide Catalog"
+      }
+    }
+  ]
+}

@@ -253,33 +253,49 @@ def stage_dem(force: bool, pack: mp.Pack, paths: mp.PackPaths) -> None:
     fetch_raster(pack.dem_urls, paths.dem, DEM_ATTRIBUTION, dem_summary, pack, force, predictor=3)
 
 
-SYNTH_LANDCOVER_RES = 1 / 3600  # one arc second; any grid works for a constant field
-SNOW_AND_ICE = 70  # the WorldCover class code
+SYNTH_LANDCOVER_RES = 1 / 3600  # one arc second; any grid works for a two-class field
+SNOW_AND_ICE = 70   # WorldCover class codes
+WATER = 80
+# GLO-30 reads sea ice and open water at a metre or less above the geoid; land coasts in
+# these boxes barely exist below it. Cells at or under it become class 80 so step 12's
+# water rule zeroes the sound instead of scoring sea ice like a slope.
+SEA_LEVEL_MAX_M = 1.0
 
 SYNTH_LANDCOVER_NOTE = (
-    "Synthetic land cover: ESA WorldCover v200 maps nothing south of 60 deg S, so every "
-    "pixel carries WorldCover class 70 (Snow and ice), the dominant Antarctic surface."
+    "Synthetic land cover: ESA WorldCover v200 maps nothing south of 60 deg S. Pixels at "
+    "or below sea level on the pack's DEM carry WorldCover class 80 (Permanent water "
+    "bodies); every other pixel carries class 70 (Snow and ice), the dominant Antarctic "
+    "surface."
 )
 
 
-def write_synthetic_landcover(pack: mp.Pack, path: Path) -> None:
-    """A constant snow-and-ice raster for a box WorldCover does not map (Antarctica).
+def write_synthetic_landcover(pack: mp.Pack, path: Path, dem_path: Path) -> None:
+    """A snow-and-ice raster for a box WorldCover does not map (Antarctica).
 
     It mirrors the real product's format (uint8 class codes, EPSG:4326, nodata 0) so
-    step 11 resamples it like any downloaded window. The class histogram the verify
-    step prints will honestly read 100% class 70."""
-    west, south, east, north = pack.bbox
-    width = math.ceil((east - west) / SYNTH_LANDCOVER_RES)
-    height = math.ceil((north - south) / SYNTH_LANDCOVER_RES)
-    transform = rasterio.transform.from_origin(west, north, SYNTH_LANDCOVER_RES, SYNTH_LANDCOVER_RES)
+    step 11 resamples it like any downloaded window. With the pack's DEM on disk (the
+    stage order guarantees it) the raster sits on the DEM's own grid and sea-level
+    cells become water; without it every pixel is snow and ice on a 1 arcsec grid."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp_path = path.with_name(path.name + ".part")
+    if dem_path.exists():
+        with rasterio.open(dem_path) as dem:
+            elevation = dem.read(1)
+            height, width = elevation.shape
+            transform = dem.transform
+        classes = np.where(elevation <= SEA_LEVEL_MAX_M, WATER, SNOW_AND_ICE).astype(np.uint8)
+    else:
+        west, south, east, north = pack.bbox
+        width = math.ceil((east - west) / SYNTH_LANDCOVER_RES)
+        height = math.ceil((north - south) / SYNTH_LANDCOVER_RES)
+        transform = rasterio.transform.from_origin(west, north, SYNTH_LANDCOVER_RES, SYNTH_LANDCOVER_RES)
+        classes = np.full((height, width), SNOW_AND_ICE, dtype=np.uint8)
     with rasterio.open(
         tmp_path, "w", driver="GTiff", width=width, height=height, count=1, dtype="uint8",
         crs="EPSG:4326", transform=transform, nodata=0,
         tiled=True, blockxsize=256, blockysize=256, compress="deflate",
     ) as dst:
-        dst.write(np.full((height, width), SNOW_AND_ICE, dtype=np.uint8), 1)
+        dst.write(classes, 1)
         dst.update_tags(SOURCE_URL="synthetic (no WorldCover coverage south of 60S)",
                         ATTRIBUTION=SYNTH_LANDCOVER_NOTE)
     tmp_path.replace(path)
@@ -296,7 +312,7 @@ def stage_landcover(force: bool, pack: mp.Pack, paths: mp.PackPaths) -> None:
             print(f"  {rel(paths.landcover)} exists, skipping (use --force to refresh)")
         else:
             print(f"  {SYNTH_LANDCOVER_NOTE}")
-            write_synthetic_landcover(pack, paths.landcover)
+            write_synthetic_landcover(pack, paths.landcover, paths.dem)
         verify_raster(paths.landcover, landcover_summary, pack)
         return
     fetch_raster(pack.landcover_urls, paths.landcover, LANDCOVER_ATTRIBUTION, landcover_summary, pack, force)
