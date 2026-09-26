@@ -32,7 +32,22 @@ log = logging.getLogger(__name__)
 
 SEED_PATH = REPO_ROOT / "data" / "seed" / "mountains.json"
 TARGET_COUNT = 1000
+MIN_ELEVATION_M = 1800
 USER_AGENT = "TerraSense/1.0 (hackathon; mountain catalog)"
+
+# Smaller latitude slices so one Overpass call does not time out and we quota per band for a global globe.
+LATITUDE_BANDS: tuple[tuple[float, float], ...] = (
+    (-90, -60),
+    (-60, -45),
+    (-45, -30),
+    (-30, -15),
+    (-15, 15),
+    (15, 30),
+    (30, 45),
+    (45, 60),
+    (60, 75),
+    (75, 90),
+)
 
 RAINIER: dict[str, Any] = {
     "name": "Mount Rainier",
@@ -142,7 +157,8 @@ def fetch_wikidata_raw() -> list[dict]:
 
 
 def _overpass_band(south: float, north: float) -> list[dict]:
-    query = f'[out:json][timeout:90];node["natural"="peak"]["name"]({south},-180,{north},180);out tags;'
+    # "out body" includes lat/lon; "out tags" does not, which broke seed generation.
+    query = f'[out:json][timeout:90];node["natural"="peak"]["name"]["ele"]({south},-180,{north},180);out body;'
     body = urllib.parse.urlencode({"data": query}).encode()
     last_error: Exception | None = None
     for base in OVERPASS_URLS:
@@ -175,7 +191,7 @@ def _overpass_band(south: float, north: float) -> list[dict]:
             elevation_m = int(float(ele_raw))
         except ValueError:
             continue
-        if elevation_m < 2500:
+        if elevation_m < MIN_ELEVATION_M:
             continue
         rows.append(
             {
@@ -191,8 +207,10 @@ def _overpass_band(south: float, north: float) -> list[dict]:
 
 def fetch_overpass_raw() -> list[dict]:
     rows: list[dict] = []
-    for south, north in ((-90, -45), (-45, 0), (0, 45), (45, 90)):
-        rows.extend(_overpass_band(south, north))
+    for south, north in LATITUDE_BANDS:
+        band_rows = _overpass_band(south, north)
+        log.info("Overpass band %s..%s: %s peaks (>=%s m)", south, north, len(band_rows), MIN_ELEVATION_M)
+        rows.extend(band_rows)
         time.sleep(1)
     return rows
 
@@ -240,8 +258,46 @@ def raw_to_seed_rows(rows: list[dict]) -> list[dict]:
     return mountains
 
 
+def _in_band(lat: float, south: float, north: float) -> bool:
+    if north >= 90:
+        return lat >= south
+    return south <= lat < north
+
+
+def pick_stratified(rows: list[dict], target: int = TARGET_COUNT) -> list[dict]:
+    """Take the highest peaks in each latitude band so the globe is not all Antarctica/Andes."""
+    deduped = dedupe_nearby(rows)
+    quota = max(40, (target + len(LATITUDE_BANDS) - 1) // len(LATITUDE_BANDS))
+    picked: list[dict] = []
+    picked_keys: set[tuple[float, float]] = set()
+
+    for south, north in LATITUDE_BANDS:
+        band = sorted(
+            (r for r in deduped if _in_band(r["lat"], south, north)),
+            key=lambda r: -r["elevation_m"],
+        )
+        for row in band[:quota]:
+            key = (round(row["lat"], 2), round(row["lon"], 2))
+            if key in picked_keys:
+                continue
+            picked_keys.add(key)
+            picked.append(row)
+            if len(picked) >= target:
+                return picked[:target]
+
+    for row in sorted(deduped, key=lambda r: -r["elevation_m"]):
+        if len(picked) >= target:
+            break
+        key = (round(row["lat"], 2), round(row["lon"], 2))
+        if key in picked_keys:
+            continue
+        picked_keys.add(key)
+        picked.append(row)
+    return picked[:target]
+
+
 def build_seed_list(rows: list[dict]) -> list[dict]:
-    picked = dedupe_nearby(rows)[:TARGET_COUNT]
+    picked = pick_stratified(rows)
     by_slug = {m["slug"]: m for m in raw_to_seed_rows(picked)}
     by_slug[RAINIER["slug"]] = RAINIER
     return sorted(by_slug.values(), key=lambda m: (-m["elevation_m"], m["name"]))
