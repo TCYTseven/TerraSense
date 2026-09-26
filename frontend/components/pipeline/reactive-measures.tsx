@@ -1,54 +1,126 @@
-import type { ReactiveMeasure } from "@/lib/hill";
+import TrailBadge from "@/components/hill/trail-badge";
+import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
+import {
+  MEASURE_CATEGORIES,
+  MEASURE_CATEGORY_LABELS,
+  type MeasureCategory,
+  type ReactiveMeasure,
+  type TrailRisk,
+} from "@/lib/hill";
+import type { RiskLevel } from "@/lib/types";
 
-function Group({ title, note, measures }: { title: string; note?: string; measures: ReactiveMeasure[] }) {
-  if (measures.length === 0) return null;
+/** "Now" is the loudest chip; later deadlines stay outlined. Neither uses a risk or accent color. */
+function When({ when, category }: { when: string; category: MeasureCategory }) {
+  if (category === "public") {
+    return (
+      <span className="shrink-0 rounded-sm border border-border px-1.5 py-0.5 text-xs text-muted-foreground">
+        Draft, not sent
+      </span>
+    );
+  }
   return (
-    <div>
-      <h4 className="flex items-baseline justify-between gap-3 text-xs text-muted-foreground">
-        <span>{title}</span>
-        {note && <span>{note}</span>}
-      </h4>
-      <ul className="mt-1.5 space-y-1.5">
-        {measures.map((measure, i) => (
-          <li key={`${measure.title}-${i}`} className="flex gap-2.5 rounded-md border border-border bg-card px-2.5 py-2">
-            {measure.letter ? (
-              <span
-                aria-label={`Trail ${measure.letter}`}
-                className="grid size-5 shrink-0 place-items-center rounded-sm border border-border font-mono text-xs"
-              >
-                {measure.letter}
-              </span>
-            ) : (
-              <span aria-hidden className="size-5 shrink-0" />
-            )}
-            <span className="min-w-0">
-              <span className="block text-sm">{measure.title}</span>
-              <span className="block text-xs text-muted-foreground">{measure.detail}</span>
-              {measure.audience === "public" && (
-                <span className="mt-1 inline-block rounded-sm border border-border px-1.5 text-[11px] text-muted-foreground">
-                  Draft, not sent
-                </span>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    <span
+      className={`shrink-0 rounded-sm px-1.5 py-0.5 text-xs font-semibold ${
+        when === "Now" ? "bg-foreground text-background" : "border border-border text-foreground"
+      }`}
+    >
+      {when}
+    </span>
   );
 }
 
-/** What to do now, by audience. Public notices are drafts; nothing goes out from here. */
-export default function ReactiveMeasures({ measures }: { measures: ReactiveMeasure[] }) {
+function Group({
+  category,
+  measures,
+  levels,
+}: {
+  category: MeasureCategory;
+  measures: ReactiveMeasure[];
+  levels: Map<string, RiskLevel>;
+}) {
+  if (measures.length === 0) return null;
+  const headingId = `measures-${category}`;
   return (
-    <section aria-labelledby="reactive-measures-title" className="mt-4 border-t border-border pt-3">
-      <h3 id="reactive-measures-title" className="text-sm font-medium">Reactive Measures</h3>
-      <div className="mt-2 space-y-3">
-        <Group title="Rangers" measures={measures.filter((m) => m.audience === "rangers")} />
-        <Group
-          title="Public notice"
-          note="Drafts, not sent"
-          measures={measures.filter((m) => m.audience === "public")}
-        />
+    <section aria-labelledby={headingId}>
+      <h4 id={headingId} className="flex items-baseline justify-between gap-3 text-sm font-medium text-muted-foreground">
+        <span>{MEASURE_CATEGORY_LABELS[category]}</span>
+        {category === "public" && <span className="text-xs font-normal">Nothing is sent from here</span>}
+      </h4>
+      <ul className="mt-2 space-y-2">
+        {measures.map((measure, i) => {
+          const level = measure.letter ? levels.get(measure.letter) : undefined;
+          return (
+            <li key={`${measure.title}-${i}`} className="rounded-lg border border-border bg-background/50 px-4 py-3">
+              <div className="flex items-start gap-3">
+                {measure.letter && level ? (
+                  <span className="mt-0.5">
+                    <TrailBadge letter={measure.letter} level={level} />
+                    <span className="sr-only">Trail {measure.letter}</span>
+                  </span>
+                ) : null}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="text-base font-semibold leading-snug">{measure.title}</p>
+                    <When when={measure.when} category={measure.category} />
+                  </div>
+                  <p className="mt-1 text-sm leading-relaxed text-foreground/80">{measure.detail}</p>
+                </div>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * What to do now, grouped the way an incident is run. The section takes the overall level's
+ * treatment, since these measures are the answer to that level. Public notices are drafts.
+ */
+export default function ReactiveMeasures({
+  measures,
+  level,
+  trails,
+}: {
+  measures: ReactiveMeasure[];
+  level: RiskLevel;
+  trails: TrailRisk[];
+}) {
+  const levels = new Map(trails.map((trail) => [trail.letter, trail.level]));
+  const drafts = measures.filter((m) => m.category === "public").length;
+  const actions = measures.length - drafts;
+  const now = measures.filter((m) => m.when === "Now").length;
+  return (
+    <section
+      id="reactive-measures"
+      aria-labelledby="reactive-measures-title"
+      className={`border-t border-border px-5 py-5 ${LEVEL_TREATMENT[level]}`}
+    >
+      <h2 id="reactive-measures-title" className="text-xl font-semibold tracking-[-0.01em]">
+        Reactive Measures
+      </h2>
+      <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+        <span>Response to</span>
+        <LevelWord level={level} className="font-semibold" />
+        <span>risk ·</span>
+        <span>
+          <span className="font-mono text-foreground">{actions}</span> actions,{" "}
+          <span className="font-mono text-foreground">{now}</span> now ·
+        </span>
+        <span>
+          <span className="font-mono text-foreground">{drafts}</span> public drafts
+        </span>
+      </p>
+      <div className="mt-4 space-y-5">
+        {MEASURE_CATEGORIES.map((category) => (
+          <Group
+            key={category}
+            category={category}
+            measures={measures.filter((m) => m.category === category)}
+            levels={levels}
+          />
+        ))}
       </div>
     </section>
   );

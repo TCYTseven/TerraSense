@@ -118,6 +118,7 @@ Geist is the create-next-app default, so a Geist screen reads as a starter templ
 | Lead (risk sentence) | 16 / 24 | 400 | Sans |
 | Body (panel rows, hazard values, agent names) | 14 / 20 | 400 | Sans |
 | Meta (labels, hover card, toggles, popups, status lines) | 12 / 16 | 400 | Sans |
+| Hill card panel, raised a step for legibility | Rows, trail names, bullets, agent names: 16 / 24. Labels, secondary lines, status, traces: 14 / 20. Reactive Measures title: 20 / 28 | 400–600 | Sans |
 | Button | 14 / 20 | 500 | Sans |
 | Hiker level | 36 / 40 | 600 | Sans, tracking −0.02em |
 | Hiker sentence | 21 / 30 | 400 | Sans |
@@ -165,11 +166,12 @@ The Alert Writer prompt (step 20) uses the same formats.
 
 Step 8 builds it with `react-globe.gl`. Property names below are that library's.
 
+- **Brightness.** The globe reads as daylight across its whole face: ambient light 0.9, a hemisphere fill, a softer sun, and the day texture as a faint emissive layer (`EARTH_GLOW` 0.45), so the side away from the sun never goes black. (This replaces the dark texture below for the light home theme.)
 - **Texture. [confirm]** A dark day-side Earth, for example three-globe's example `earth-dark.jpg`, or NASA Blue Marble darkened and desaturated. At most 4096 × 2048 and under 1 MB, committed as `frontend/public/globe/earth-dark.jpg`. No night-lights texture: city lights are orange and yellow and would read as risk. No bump map, clouds, or starfield. Never hot-link a texture. The venue network is not part of the demo.
 - **Atmosphere.** `atmosphereColor` at the text color, `atmosphereAltitude` 0.12. Not the accent: the glow is not interactive.
 - **Backdrop.** A radial gradient behind a transparent globe canvas: background light end at the center, dark end at the edges. This is the only gradient in the app.
 - **Start view.** Over Mount Rainier (46.85, −121.76) at altitude 2.5. The idle spin starts from there.
-- **Markers.** A 10 px dot in the level color, a 2 px ring in the dark background, and a 26 px halo of the level color at 20% alpha. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2).
+- **Markers.** A mountain logo instead of a dot: two peaks in the level color with a white snowcap and a dark outline, always facing the camera, centered on the mountain's point. The halo ring stays, and Rainier keeps its extra live ring. Dangerous mountains (High and Extreme) also get a translucent sphere in the level color at 40% alpha, centered on the logo and larger at Extreme. Only the invisible hit sphere takes the pointer. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2).
 - **Hover card.** Panel surface, border, 8 px radius, 12 px padding, 12 px right of the marker. It appears and disappears at once. Three lines:
   1. The name, body size, 600.
   2. The level dot and word.
@@ -261,7 +263,8 @@ Two to four notes from the AI, one model call routed like the agents (see [Copy]
 - **Terrain.** Exaggeration 1.5 (spec 6.2).
 - **Sky.** `setFog` with `color`, `high-color`, and `space-color` at the dark background, `horizon-blend` 0.08, `star-intensity` 0. The default Mapbox sky is light blue, a color the spec does not have.
 - **Default camera.** Centered on the flagged drainage, zoom about 12, pitch 55. Step 18 picks the bearing so the drainage faces the camera and the bypass sits in frame. Record the center, zoom, and bearing here when step 18 is done.
-  - *Recorded at step 18:* the map keeps step 15's opening frame, the summit plus the Skyline loop fitted with 150 px of top padding, pitch 55, bearing -14 (about zoom 12.2 at 1440 x 900). The flagged miles move with each run, and every one of them, with any bypass, sits on or inside the loop, so one frame serves every run.
+  - *Recorded at step 18:* the map kept step 15's opening frame, the summit plus the Skyline loop (about zoom 12.2 at 1440 x 900).
+  - *Replaced by the hill card's panel pass:* the map opens on the mountain's footprint, so every mountain gets the same kind of view. Flanks average about 22°, so a mountain's base spreads roughly relief / tan(22°) from the summit. Relief is taken as 85% of the summit elevation, giving a radius of about 2.1 × elevation (`FOOTPRINT_PER_M`), clamped to 3–25 km: about 9 km for Rainier. The frame also takes in the top-five trail markers within twice that radius. Fitted with 150 px of top padding, pitch 55, bearing -14. The user can zoom out one level past it and no further.
 - **Controls.** None beyond the attribution and logo that Mapbox's terms require. No navigation, fullscreen, or geolocate control. Drag, scroll, pinch, and rotate stay on.
 
 ### Raster layers
@@ -323,6 +326,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 
 - **Markers.** One per top-five trail at its region's center, matching the panel badge, with a 1 px ring so it reads on the relief. Each marker is a button labelled "Trail A, <name>, risk 0.74".
 - **Tooltip.** Hover or keyboard focus opens a popup with no close button: the trail name, the mono score with its level word, the slope, and the primary risk factor. It closes when the pointer leaves.
+- **Zoom limit.** The map can zoom out one level past its opening frame (`CAMERA.zoomOutRoom`) and no further, so the mountain always fills the view.
 - **View.** Flies the camera to the trail's region in 1.5 s (UX.md rule 10's fly-to), pitched for the 3D view, and opens the tooltip on arrival. The marker takes a 2 px accent ring while it is selected. Reduced motion jumps instead.
 
 ### Agent pipeline
@@ -341,7 +345,7 @@ Status never uses a risk color. The running card gets a background of the text c
 
 - **Trace.** A click on a card expands a container directly beneath it with the agent's full reasoning trace as a numbered list, growing while the agent runs. One trace is open at a time; a second click closes it. Traces use no risk colors.
 - **Before the first run.** One muted line: "Press Analyze now to run the agents."
-- **Reactive Measures.** After the Mass Alert Writer finishes, a section below the pipeline groups the measures under "Rangers" and "Public notice". Every public notice is labelled "Draft, not sent" (UX.md rule 11 applies here too).
+- **Reactive Measures.** After the Mass Alert Writer finishes, its own panel section below the Agents section, and the loudest thing on the panel after the overall score. The title is at 20 px, 600. It takes the overall level's High/Extreme treatment, because the measures answer that level. A summary line reads "Response to ‹level› risk · N actions, N now · N public drafts". Measures are grouped the way an incident is run, in this order: Closures and access, Evacuation and sweeps, Search and rescue readiness, Field monitoring, Agency coordination, and Public notice. Each measure is a card: the trail badge when it concerns one, the title at 16 px 600, the detail at 14 px, and a deadline chip ("Now" solid in the text color, later deadlines outlined; never a risk or accent color). Every public notice carries "Draft, not sent" (UX.md rule 11 applies here too). The orchestrator's done line points to it.
 
 ### Actions
 
@@ -414,6 +418,7 @@ UX.md rule 10 is the complete list. This section sets the values.
 | Motion | Value | When |
 |---|---|---|
 | Idle globe spin | About one turn every 2 minutes (`controls().autoRotateSpeed = 0.5`) | Always on the globe. Pauses on marker hover or drag, and resumes after 3 s idle |
+| Idle mountain orbit | 1.2° per second, about one turn every 5 minutes (`CAMERA.orbitDegPerSec`) | The mountain page map while idle. Pauses while the pointer is over the map, stops on drag, zoom, or keys and resumes after 8 s, and stays off once **View** has focused a trail. Off under reduced motion |
 | Fly-to | 1.5 s total, in the sequence below | Marker click or search |
 | Heat map fade | `raster-opacity` from 0 to 1 over 600 ms (`raster-opacity-transition`) | When the probability layer first shows, and when new tiles arrive after a finished run |
 | Work pulse | Opacity 1 to 0.4 and back, 1.2 s, ease-in-out, repeating. One keyframe, `work-pulse`, used through one class, `animate-work` | Running agent cards, the current simulation step, "Writing callouts…", and skeleton bars only |

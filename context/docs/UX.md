@@ -31,7 +31,7 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 7. **Weather is text in the Weather agent's trace.** The mountain page has no rain section. Weather is never a map layer.
 8. **Static mountains do not pretend to analyze.** Hide **Analyze now**, the pressure points, and **Simulate** when `is_live` is false.
 9. **A running analysis is visible.** An Orchestrator node and five agent cards, each idle, running, done, or error. The running card moves. A failure says the run failed and leaves the last good hazard on the map.
-10. **Motion is short.** Idle globe spin. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
+10. **Motion is short.** Idle globe spin. A slow idle orbit of the mountain on the mountain page, which stops for the user. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
 11. **A simulation says what it is.** It is an illustrative runout from today's worst slope, not a forecast of timing. Every public message it shows is a draft that was not sent.
 
 ## The screens
@@ -65,7 +65,7 @@ Static mountains open the same panel with terrain only, their fixed level, and o
 
 ### Mountain page (hill detail card, rebuilt Sep 25, 2026)
 
-Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor.
+Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor. The opening view frames the whole mountain, sized from its elevation, so any mountain opens the same way. While nobody is using it, the camera slowly orbits the mountain. It can't zoom out more than one level past the opening view.
 
 **Right, about 45%:** one panel that scrolls, top to bottom:
 
@@ -73,7 +73,7 @@ Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain o
 2. **Overall risk.** The score as a number, with the level word and color.
 3. **Top 5 at-risk trails.** Riskiest first. Each row: letter, name, score, and **View**, which flies the camera to that trail's region.
 4. **Preventative measures.** Three to five short bullets.
-5. **Agents.** An Orchestrator node connected to five cards: Terrain, Weather, Trails, Synthesizer, Mass Alert Writer. A click on a card opens its full reasoning trace directly beneath it, one at a time. After a run, **Reactive Measures** appear below the cards: ranger actions, and public notices as drafts that were not sent.
+5. **Agents.** An Orchestrator node connected to five cards: Terrain, Weather, Trails, Synthesizer, Mass Alert Writer. A click on a card opens its full reasoning trace directly beneath it, one at a time. After a run, **Reactive Measures** get their own prominent section below the cards. They are grouped the way an incident is run: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, and public notices as drafts that were not sent. Each measure has a deadline.
 6. **Analyze now**, pinned to the bottom. The orchestrator runs Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer. The button is disabled while the run lasts.
 
 The page has no rain section and no reasoning side panel: the Weather card's trace carries the rain, and each card's trace is the reasoning. The hiker card is not on this page for now.

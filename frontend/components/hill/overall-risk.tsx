@@ -7,7 +7,7 @@ export default function OverallRisk({ hill }: { hill: HillView }) {
   const { level, score } = hill.risk;
   return (
     <section aria-labelledby="risk-heading" className={`border-t border-border px-5 py-4 ${LEVEL_TREATMENT[level]}`}>
-      <h2 id="risk-heading" className="text-xs text-muted-foreground">
+      <h2 id="risk-heading" className="text-sm text-muted-foreground">
         Overall risk
       </h2>
       <p className="mt-2 flex items-baseline gap-3">
@@ -16,7 +16,7 @@ export default function OverallRisk({ hill }: { hill: HillView }) {
       </p>
       {!hill.isLive && <p className="mt-2 text-base">Display marker. Live analysis runs on Mount Rainier only.</p>}
       {hill.isDemo && (
-        <p className="mt-2 text-xs text-muted-foreground">Illustrative scores until the trail model lands.</p>
+        <p className="mt-2 text-sm text-muted-foreground">Illustrative scores until the trail model lands.</p>
       )}
     </section>
   );
