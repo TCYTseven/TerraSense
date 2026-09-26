@@ -20,6 +20,7 @@ from app.agents.tools import RunContext
 from app.assessment import assess, mile_text
 from app.weather import get_hourly_rain
 
+from .conftest import storm_rain
 from .fake_llm import app as fake_llm
 
 FIXTURE = "backend/fixtures/open_meteo_storm.json"
@@ -39,12 +40,8 @@ def fake_env(monkeypatch):
 
 
 @pytest.fixture(scope="module")
-def assessment(db_conn):
-    import os
-
-    os.environ.setdefault("OPEN_METEO_FIXTURE", FIXTURE)
-    rain = get_hourly_rain()
-    return assess(db_conn, rain=rain)
+def assessment(db_conn, skyline_storm):
+    return assess(db_conn, rain=storm_rain())
 
 
 def run_pipeline(assessment, env=KEYS, rain=True):

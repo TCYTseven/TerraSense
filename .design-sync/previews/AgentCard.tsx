@@ -64,7 +64,7 @@ export const RunningExpanded = () =>
 export const Idle = () =>
   card({ id: "synthesizer", status: "idle", summary: "", trace: [], startedAt: null, finishedAt: null });
 
-/** Failed: the status word reads "failed" and the error sits under the trace. */
+/** Failed: the status word reads "failed". The summary stays in the card header; the trace sits in the terminal below. */
 export const Failed = () =>
   card(
     {

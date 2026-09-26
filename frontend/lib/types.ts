@@ -168,10 +168,49 @@ export interface MountainDetail extends Mountain {
 
 export type LandslideRiskState = "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN";
 
+export type RiskProbabilitySource = "calibrated_classifier" | "model_b_estimate";
+
+export interface RiskEstimateDriver {
+  factor: "terrain" | "forecast_rain" | "antecedent_moisture";
+  label: string;
+  detail: string;
+  logit_contribution: number;
+  effect: "raises" | "lowers" | "neutral";
+}
+
+/** How the uncalibrated Model B estimate at the point was made. */
+export interface RiskEstimate {
+  method: string;
+  calibrated: false;
+  unit: string;
+  pixel_probability: number | null;
+  susceptibility: number | null;
+  /** The 1 km classifier cell around the point, on the same 30 m map. */
+  cell: { size_m: number; mean: number; max: number; share_high: number } | null;
+  rain: {
+    source: string;
+    as_of: string;
+    past_72h_mm: number;
+    next_72h_mm: number;
+    past_7d_mm: number;
+    threshold_72h_mm: number;
+    threshold_7d_mm: number;
+  } | null;
+  drivers: RiskEstimateDriver[];
+}
+
+/**
+ * `state` belongs to the calibrated classifier alone. `probability` is the chance to show: the
+ * calibrated one when it exists, else the Model B estimate the heat map is drawn from.
+ */
 export interface LandslideRiskPrediction {
   location: { latitude: number; longitude: number };
   prediction_window: { start: string; end: string };
   state: LandslideRiskState;
+  probability: number | null;
+  probability_source: RiskProbabilitySource | null;
+  risk_level: RiskLevel | null;
+  estimate: RiskEstimate | null;
   calibrated_probability: number | null;
   high_risk_threshold: number | null;
   confidence: { lower: number | null; upper: number | null };
@@ -472,4 +511,78 @@ export interface Advisory {
 export interface RunUpdate {
   kind: "run";
   run: Run;
+}
+
+/** One slope the runout can start from. Rank 1 is the route most likely to fail. */
+export interface PressurePoint {
+  id: string;
+  rank: number;
+  level: RiskLevel;
+  peak: number;
+  lon: number;
+  lat: number;
+  polygon: Polygon;
+  facing: string;
+  elevation_m: number | null;
+  drivers: string[];
+  trail_id: string | null;
+  trail_name: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
+}
+
+export interface FlowFeatureCollection {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: { level: RiskLevel; intensity: number };
+    geometry: Polygon;
+  }>;
+}
+
+export interface RunoutFrame {
+  index: number;
+  t_s: number;
+  geojson: FlowFeatureCollection;
+}
+
+export interface RunoutStep {
+  id: string;
+  kind: "release" | "channel" | "trail" | "stop";
+  title: string;
+  t_s: number;
+  lon: number;
+  lat: number;
+  distance_m: number | null;
+  drop_m: number | null;
+  trail_name: string | null;
+  start_mile: number | null;
+  end_mile: number | null;
+  level: RiskLevel | null;
+}
+
+export interface SimulationCallout {
+  id: string;
+  step_id: string;
+  audience: "rangers" | "public";
+  text: string;
+  t_s: number;
+}
+
+/** An illustrative debris-flow runout. Times are simulated seconds, not a forecast. */
+export interface Simulation {
+  id: string;
+  mountain_slug: string;
+  status: "running" | "done" | "error";
+  method: string;
+  source: "dem" | "trail";
+  pressure_point: PressurePoint | null;
+  duration_s: number;
+  distance_m: number;
+  drop_m: number;
+  frames: RunoutFrame[];
+  steps: RunoutStep[];
+  callouts: SimulationCallout[];
+  callouts_from_templates: boolean;
+  error: string | null;
 }

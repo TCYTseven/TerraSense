@@ -250,15 +250,20 @@ def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
     # Carry the stricter classifier alongside it so every agent can see whether a production-grade
     # calibrated answer is actually available; this never turns an unavailable classifier into a
     # negative risk finding.
+    # The point estimate is left out: at the summit it is one pixel of the map above, and an agent
+    # would quote it as the mountain's chance.
     if ctx.rain is not None:
-        facts["production_72h_classification"] = predict_location(
-            ctx.peak[0], ctx.peak[1], rain_override=ctx.rain
+        classification = predict_location(
+            ctx.peak[0], ctx.peak[1], rain_override=ctx.rain, probability_override=a.probability
         ).to_dict()
+        for key in ("probability", "probability_source", "risk_level", "estimate"):
+            classification.pop(key)
+        facts["production_72h_classification"] = classification
     else:
         facts["production_72h_classification"] = {
             "state": "UNCERTAIN",
             "calibrated_probability": None,
-            "reason_codes": ["FORECAST_UNAVAILABLE"],
+            "reason_codes": ["FORECAST_UNAVAILABLE", "WEATHER_FEED_UNAVAILABLE"],
         }
     if a.zone is not None:
         facts["hazard_zone"] = {

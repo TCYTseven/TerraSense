@@ -1,4 +1,4 @@
-import type { Forecast, LandslideRiskPrediction, LayerTiles, Mountain, MountainDetail, Run } from "./types";
+import type { Forecast, LandslideRiskPrediction, LayerTiles, Mountain, MountainDetail, Run, Simulation } from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -133,4 +133,30 @@ export function getLandslideRisk(
 /** The WebSocket URL for a run's live stream. */
 export function runStreamUrl(runId: string): string {
   return `${API_URL.replace(/^http/, "ws")}/runs/${encodeURIComponent(runId)}/stream`;
+}
+
+/** Start an illustrative runout. The API picks the worst route when no point is named. */
+export function startSimulation(slug: string, pressurePointId?: string, init?: RequestInit): Promise<{ simulation_id: string }> {
+  return postJson(`/mountains/${encodeURIComponent(slug)}/simulate`, {
+    ...init,
+    body: JSON.stringify(pressurePointId ? { pressure_point_id: pressurePointId } : {}),
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
+}
+
+/** A simulation, finished or still tracing. Null when the id is unknown. */
+export async function getSimulation(simulationId: string, init?: RequestInit): Promise<Simulation | null> {
+  try {
+    return await getJson<Simulation>(`/simulations/${encodeURIComponent(simulationId)}`, init);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+}
+
+/** The WebSocket URL for a simulation's frames, steps, and callouts. */
+export function simulationStreamUrl(simulationId: string): string {
+  return `${API_URL.replace(/^http/, "ws")}/simulations/${encodeURIComponent(simulationId)}/stream`;
 }

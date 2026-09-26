@@ -217,14 +217,14 @@ The right column before a simulation, top to bottom:
 
 ### Panel actions
 
-- **Simulate.** Primary, styled like **Analyze now**: accent fill, 40 px, full width. It starts the simulation from the selected point. Hidden on static mountains (UX.md rule 8), and disabled with the meta line "Nothing reaches Moderate today, so there's nothing to simulate." when the list is empty.
+- **Simulate.** Primary, styled like **Analyze now**: accent fill, 40 px. On the mountain page it shares the footer row with **Analyze now** (Sep 26, 2026) and shows only when the mountain has routes. It starts the runout from the route most likely to fail. Hidden when there are no routes. While it plays the label is "Simulating…". **Replay** replaces it when the frames have finished: secondary, border only, and it does not recompute.
 - **Open ranger view.** Secondary, styled like **Hiker forecast**, 8 px below. It closes the panel and runs the [fly-to](#motion) from the current globe view into `/mountains/[slug]`.
 - **Back to pressure points** (simulation only). An accent text button at body size at the top of the column, like the hiker card's back button.
 - **Replay** (simulation only). Secondary, in place of **Simulate**, disabled while playing. It restarts playback from the frames already loaded; nothing is recomputed.
 
 ### Simulation
 
-After **Simulate**, the right column's content swaps in place, at once. The header row and footer stay. The left map plays the flow.
+Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A bar across the top of the mountain view shows the current step, the simulated clock, and the span from release to stop. The bar is a display: it does not scrub, and it stays in step with the footprint. The method line under it never hides. Until a 30 m grid is on disk it reads "Illustrative runout along the trail's downhill line. Not a forecast of timing." Callouts sit on the map. The column swap below is the globe panel's layout, and that panel is not built. The rules for the flow, the method line, the callouts, and the lack of a scrubber still apply.
 
 **Right column, top to bottom**
 
@@ -248,7 +248,7 @@ After **Simulate**, the right column's content swaps in place, at once. The head
 
 Two to four notes from the AI, one model call routed like the agents (see [Copy](#copy) for wording). **[confirm]** At least one for rangers and one public notice.
 
-- Each callout sits under the "Callouts" label: a meta line with the audience on the left and the step's simulated time in mono on the right, then the text at body size. A 2 px left border in the text color at 40% runs beside it. No fill, no card, no accent, no risk color.
+- Each callout sits under the "Callouts" label: a meta line with the audience on the left and the step's simulated time in mono on the right, then the text at body size. A 2 px left border in the text color at 40% runs beside it. No accent, no risk color. On the mountain page the notes float on the terrain, so each one uses the card color as its background. In the globe panel column they have no fill.
 - Audience labels: "Rangers" and "Public notice, draft, not sent". The public label never shortens.
 - A callout appears at once when playback reaches its step. Under reduced motion, all of them show at once.
 - While the model call is out, one meta line reads "Writing callouts…" with the work pulse. If the call fails, code templates stand in and the status line adds "Callouts came from templates. The AI didn't answer."
@@ -317,7 +317,7 @@ The mountain page's hill detail card, rebuilt Sep 25, 2026 (UX.md, Mountain page
 3. **Top 5 at-risk trails.** One row per trail, riskiest first: a letter badge (A to E), the name, the level dot and the mono score, and a **View** text button in the accent. The badge is a small circle in the trail's level color with the letter in background-dark text, the same as its map marker. The last trail viewed is marked as selected.
 4. **Preventative measures.** Three to five bullets, one line each where they fit.
 5. **Agents.** See [Agent pipeline](#agent-pipeline).
-6. **Footer.** **Analyze now**.
+6. **Footer.** **Simulate**, when the mountain has routes, and **Analyze now**, when it is live. See [Panel actions](#panel-actions). On Sep 26, 2026 **Simulate** moved here from the globe panel: it plays on this map.
 
 ### High and Extreme
 

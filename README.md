@@ -78,7 +78,12 @@ The source downloader records provenance but does not fabricate provider data or
 convert arbitrary raw products silently. Historical IMERG/ERA5-Land and archived
 forecast data must be normalized into the documented schema before training. Until
 real timestamped data and calibrated artifacts exist under `ml/artifacts/`, the
-production endpoint intentionally returns `UNCERTAIN`.
+production endpoint intentionally returns `UNCERTAIN`. It still answers with
+`probability`, a 0 to 1 chance of a landslide in the next 72 hours. That chance is
+the Model B estimate under the point, read from the same map as the heat layer, and
+`probability_source: "model_b_estimate"` says so. A calibrated classifier's
+probability replaces it once one exists. `probability` is `null` only outside the
+Rainier study box, without rain data, or without terrain data.
 
 ```bash
 curl -X POST http://localhost:8000/api/v1/landslide-risk \

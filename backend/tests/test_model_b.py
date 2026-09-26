@@ -49,6 +49,36 @@ def test_run_preserves_grid_and_nodata_and_wet_rain_increases_risk(tmp_path, mon
     assert np.isfinite(wet.probability[:1, :]).all()
 
 
+def test_terrain_gates_the_rain_trigger(tmp_path, monkeypatch):
+    """A saturating storm cannot make flat, stable ground high risk, and a dry week keeps steep ground below high."""
+    values = np.array([[0.0, 0.5, 1.0]], dtype="float32")
+    path = tmp_path / "susceptibility.tif"
+    _raster(path, values)
+    monkeypatch.setattr(model_b, "SUSCEPTIBILITY_PATH", path)
+
+    storm = model_b.run(_rain(past_7d_mm=500.0, next_72h_mm=500.0)).probability[0]
+    dry = model_b.run(_rain()).probability[0]
+
+    assert storm[0] < 0.2, "stable ground stays low in the worst storm"
+    assert storm[2] > 0.7, "the most susceptible ground reaches extreme in a storm"
+    assert storm[0] < storm[1] < storm[2]
+    assert dry.max() < 0.45, "no ground reaches high without rain"
+
+
+def test_contributions_add_up_to_the_probability(tmp_path, monkeypatch):
+    values = np.array([[0.62]], dtype="float32")
+    path = tmp_path / "susceptibility.tif"
+    _raster(path, values)
+    monkeypatch.setattr(model_b, "SUSCEPTIBILITY_PATH", path)
+    rain = _rain(past_7d_mm=30.0, next_72h_mm=40.0)
+
+    terms = model_b.contributions(0.62, rain)
+    logit = terms["terrain"] + terms["forecast_rain"] + terms["antecedent_moisture"]
+
+    assert np.isclose(model_b.run(rain).probability[0, 0], 1 / (1 + np.exp(-logit)), atol=1e-6)
+    assert terms["next_72h_mm"] == 40.0 and terms["threshold_72h_mm"] == model_b.RAINFALL_THRESHOLD_72H_MM
+
+
 def test_rain_signals_are_bounded_and_missing_rain_is_explicit():
     dry = model_b.rain_signals(None)
     storm = model_b.rain_signals(_rain(past_7d_mm=500.0, next_72h_mm=500.0))

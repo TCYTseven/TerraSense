@@ -10,7 +10,7 @@ FIXTURE = "backend/fixtures/open_meteo_storm.json"
 
 
 @pytest.fixture(scope="module")
-def ctx(db_conn, monkeypatch_module):
+def ctx(db_conn, monkeypatch_module, skyline_storm):
     monkeypatch_module.setenv("OPEN_METEO_FIXTURE", FIXTURE)
     rain = get_hourly_rain()
     return RunContext(run_id="test", slug="mount-rainier", mountain="Mount Rainier", peak=(46.8523, -121.7603),

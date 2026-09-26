@@ -150,12 +150,60 @@ class RiskDriver(BaseModel):
     direction: Literal["model risk driver"]
 
 
+class RiskEstimateCell(BaseModel):
+    """The 1 km classifier cell around the point, on the same 30 m map."""
+
+    size_m: int
+    mean: float
+    max: float
+    share_high: float
+
+
+class RiskEstimateRain(BaseModel):
+    source: str
+    as_of: datetime
+    past_72h_mm: float
+    next_72h_mm: float
+    past_7d_mm: float
+    threshold_72h_mm: float
+    threshold_7d_mm: float
+
+
+class RiskEstimateDriver(BaseModel):
+    factor: Literal["terrain", "forecast_rain", "antecedent_moisture"]
+    label: str
+    detail: str
+    logit_contribution: float
+    effect: Literal["raises", "lowers", "neutral"]
+
+
+class RiskEstimate(BaseModel):
+    """How the uncalibrated Model B estimate at this point was made."""
+
+    method: str
+    calibrated: Literal[False]
+    unit: str
+    pixel_probability: float | None
+    susceptibility: float | None
+    cell: RiskEstimateCell | None
+    rain: RiskEstimateRain | None
+    drivers: list[RiskEstimateDriver]
+
+
 class LandslideRiskPrediction(BaseModel):
-    """Fail-closed, calibrated 72-hour rainfall-triggered landslide prediction."""
+    """Fail-closed, calibrated 72-hour rainfall-triggered landslide prediction.
+
+    `state` belongs to the calibrated classifier alone. `probability` is the chance to show: the
+    calibrated one when it exists, else the Model B estimate the heat map is drawn from.
+    """
 
     location: dict[str, float]
     prediction_window: dict[str, datetime]
     state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"]
+    probability: float | None = Field(default=None, ge=0, le=1)
+    probability_source: Literal["calibrated_classifier", "model_b_estimate"] | None = None
+    risk_level: RiskLevel | None = None
+    estimate: RiskEstimate | None = None
     calibrated_probability: float | None
     high_risk_threshold: float | None
     confidence: RiskConfidence

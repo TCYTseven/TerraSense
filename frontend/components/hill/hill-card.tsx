@@ -4,11 +4,14 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
+import SimulateButton from "@/components/pipeline/simulate-button";
 import ReactiveMeasures from "@/components/pipeline/reactive-measures";
+import SimulationBar from "@/components/map/simulation-bar";
 import LandslideRiskCard from "@/components/panel/landslide-risk-card";
 import { buildHillView } from "@/lib/fixtures/hill-demo";
 import type { CameraFocus, TrailLetter } from "@/lib/hill";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
+import { useSimulation } from "@/lib/use-simulation";
 import type { LayerTiles, MountainDetail } from "@/lib/types";
 import HillHeader from "./hill-header";
 import OverallRisk from "./overall-risk";
@@ -36,7 +39,15 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
+  const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
+  const hasRoutes = mountain.trails.length > 0;
+  const flowOn = simulation.phase === "playing" || simulation.phase === "finished";
+  const matched = hill.trails.find((trail) => trail.name === simulation.simulation?.pressure_point?.trail_name);
+  const selected =
+    focus && simulation.camera && focus.nonce > simulation.camera.nonce
+      ? focus.letter
+      : (matched?.letter ?? focus?.letter ?? null);
 
   function view(letter: TrailLetter) {
     setFocus({ letter, nonce: Date.now() });
@@ -57,16 +68,20 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           focus={focus}
           onTrailSelect={view}
           onMapClick={setRiskLocation}
+          release={simulation.camera}
+          flow={flowOn ? (simulation.simulation?.frames[simulation.frameIndex]?.geojson ?? null) : null}
+          flowActive={flowOn}
         />
+        <SimulationBar phase={simulation.phase} simulation={simulation.simulation} timeS={simulation.timeS} />
       </section>
 
       <aside className="flex min-h-0 flex-col border-t border-border bg-card md:w-[45%] md:border-l md:border-t-0">
         <div className="min-h-0 flex-1 md:overflow-y-auto">
           <HillHeader hill={hill} />
           <OverallRisk hill={hill} />
-          <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />
-          {hill.trails.length > 0 && (
-            <TrailList trails={hill.trails} selected={focus?.letter ?? null} onView={view} />
+          {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
+          {live && hill.trails.length > 0 && (
+            <TrailList trails={hill.trails} selected={selected} onView={view} />
           )}
           <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
             <h2 id="agents-heading" className="text-sm text-muted-foreground">
@@ -83,9 +98,17 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
             <PreventativeMeasures items={hill.preventative} />
           )}
         </div>
-        <footer className="border-t border-border bg-card px-5 py-4">
-          <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} />
-        </footer>
+        {(live || hasRoutes) && (
+          <footer className="border-t border-border bg-card px-5 py-4">
+            <div className={hasRoutes && live ? "flex gap-2" : undefined}>
+              {hasRoutes && (
+                <SimulateButton phase={simulation.phase} onSimulate={simulation.start} onReplay={simulation.replay} />
+              )}
+              {live && <AnalyzeButton running={pipeline.running} onAnalyze={pipeline.analyze} className={hasRoutes ? "flex-1" : undefined} />}
+            </div>
+            {simulation.error && <p className="mt-2 text-sm text-foreground">{simulation.error}</p>}
+          </footer>
+        )}
       </aside>
     </main>
   );
