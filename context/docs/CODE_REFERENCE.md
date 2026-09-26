@@ -313,6 +313,7 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 | `backend/app/ml/runout.py` | 27 | Runout frames and steps down the worst route, no model call. Releases at the route's highest point on the terrain tiles and spreads over the terrain grid (`flow_routing.py`); frames are nested brown bands by depth. Without a grid, a band along the route walked only downhill; without tiles at all, the seed's upper end |
 | `backend/app/ml/elevation.py` | 27 | `sample_elevations(points)`: meters at each lon/lat, bilinear on z13 Terrarium tiles (the map's terrain source). `height_grid(lon, lat, radius_m)`: a square `Grid` of heights, 2x2 pixels to a 26 m cell. Reads `data/raw/terrarium/`, fetches a missing tile from AWS and keeps it. None if any tile is unavailable |
 | `backend/app/ml/flow_routing.py` | 27 | The 2D runout on a `Grid`. `spread`: Holmgren multiple-flow-direction from a release patch, only to lower cells, stopping at the reach angle or max runout. `footprint`: the routed cells plus margins that widen downhill, never higher than the cell they grow from. `shade_depth` and `polygons`: depth inside the footprint and smoothed lon/lat (Multi)Polygons per shade |
+| `backend/app/ml/flow_field.py` | 27 | The runout as one continuous field for smooth playback: per cell of a Web Mercator grid, cover, arrival time, and depth, base64-encoded. `terrain_field` crops and blurs the routed footprint; `trail_field` draws the trail fallback as a ribbon that widens downhill. The polygon frames stay for older clients. |
 | `backend/tests/test_flow_routing.py` | 27 | On a synthetic valley: every reached cell was fed from a higher one, and the traced runout is a `dem` area with nested shades that only grows downhill |
 | `backend/app/simulations.py` | 28 | In-process simulations keyed by id, and the callouts call through the router |
 | `backend/app/routes/simulations.py` | 26, 28 | `GET /mountains/{slug}/pressure-points`, `POST /mountains/{slug}/simulate`, `GET /simulations/{id}`, `WS /simulations/{id}/stream` |
@@ -338,7 +339,8 @@ GET  /forecast?mountain_id&trail_id                     (step 25)
 |---|---|---|
 | `frontend/components/map/simulation-bar.tsx` | 30 | Time bar, method line, and callouts over the mountain view |
 | `frontend/components/pipeline/simulate-button.tsx` | 30 | **Simulate** / **Replay** beside **Analyze now** |
-| `frontend/lib/use-simulation.ts` | 30 | Playback: one frame every 500 ms, synced to the time bar |
+| `frontend/lib/use-simulation.ts` | 30 | Playback on a continuous clock: exposes a `Playhead` the map reads every animation frame, and updates the time bar and step label every 100 ms. Playback length stays 500 ms per traced frame. |
+| `frontend/lib/runout-field.ts` | 30 | `RunoutPainter`: decodes a simulation `field`, upsamples it bilinearly once, and paints the flow into a canvas at any simulated time: a soft-edged front, dark core to pale edge, a darker snout, and a pale rim. `Playhead`, `playheadTime`. |
 
 ### Data and ML
 

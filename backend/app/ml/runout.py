@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 
-from app.ml import flow_routing
+from app.ml import flow_field, flow_routing
 from app.ml.elevation import height_grid, sample_elevations
 from app.ml.pressure import _bearing, _haversine, _line, _move
 
@@ -107,6 +107,7 @@ def _over_terrain(point: dict, trails: list[dict]) -> dict | None:
         "distance_m": round(total, 1),
         "drop_m": round(drop_m, 1),
         "frames": frames,
+        "field": flow_field.terrain_field(grid, mask, arrive, share, FRONT_SPEED_MS, total / FRONT_SPEED_MS),
         "steps": steps,
     }
 
@@ -214,6 +215,7 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
         "distance_m": round(samples[-1][2], 1),
         "drop_m": round(drop_m, 1),
         "frames": frames,
+        "field": flow_field.trail_field(samples, _half_width, FRONT_SPEED_MS, samples[-1][2] / FRONT_SPEED_MS),
         "steps": steps,
     }
 
@@ -268,7 +270,7 @@ def _band(samples: list[tuple[float, float, float]], shade: int, level: str, int
         nxt = samples[min(index + 1, len(samples) - 1)]
         prv = samples[max(index - 1, 0)]
         heading = _bearing([prv[0], prv[1]], [nxt[0], nxt[1]]) if nxt != prv else 180
-        full = 40 + min(180, dist * 0.045)
+        full = 2 * _half_width(dist)
         core = min(CORE_WIDTH_M, full)
         half = (core + (full - core) * shade / (SHADES - 1)) / 2
         lo = _move(lon, lat, (heading - 90) % 360, half)
@@ -282,6 +284,11 @@ def _band(samples: list[tuple[float, float, float]], shade: int, level: str, int
         "properties": {"level": level, "intensity": intensity, "shade": shade, "rim": rim},
         "geometry": {"type": "Polygon", "coordinates": [ring]},
     }
+
+
+def _half_width(dist: float) -> float:
+    """Half the corridor's full width at this distance down the path: it fans out as it descends."""
+    return (40 + min(180, dist * 0.045)) / 2
 
 
 def _downhill(coords: list[list[float]]) -> tuple[list[tuple[float, float, float]], list[float], tuple[float, float]] | None:

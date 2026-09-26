@@ -1,8 +1,9 @@
 "use client";
 
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
+import type { Playhead } from "@/lib/runout-field";
 import type { ReleaseCamera } from "@/lib/use-simulation";
-import type { FlowFeatureCollection, LayerTiles, MountainDetail } from "@/lib/types";
+import type { FlowFeatureCollection, LayerTiles, MountainDetail, RunoutField } from "@/lib/types";
 import MountainMap from "./mountain-map";
 
 export interface MountainTerrainViewProps {
@@ -19,6 +20,8 @@ export interface MountainTerrainViewProps {
   onMapClick: (coordinate: { latitude: number; longitude: number }) => void;
   release?: ReleaseCamera | null;
   flow?: FlowFeatureCollection | null;
+  flowField?: RunoutField | null;
+  playhead?: Playhead | null;
   flowActive?: boolean;
 }
 
@@ -39,6 +42,8 @@ export default function MountainTerrainView({
   onMapClick,
   release = null,
   flow = null,
+  flowField = null,
+  playhead = null,
   flowActive = false,
 }: MountainTerrainViewProps) {
   return (
@@ -64,6 +69,8 @@ export default function MountainTerrainView({
         onTrailSelect={onTrailSelect}
         release={release}
         flow={flow}
+        flowField={flowField}
+        playhead={playhead}
         flowActive={flowActive}
       />
     </div>

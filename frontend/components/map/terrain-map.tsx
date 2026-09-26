@@ -2,6 +2,7 @@
 
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
+  type CanvasSource,
   type GeoJSONSource,
   type ImageSource,
   type RasterTileSource,
@@ -17,8 +18,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
 import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
+import { type Playhead, playheadTime, RunoutPainter } from "@/lib/runout-field";
 import type { ReleaseCamera } from "@/lib/use-simulation";
-import type { Bypass, FlowFeatureCollection, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
+import type {
+  Bypass,
+  FlowFeatureCollection,
+  Hazard,
+  HistoricalEvent,
+  LayerTiles,
+  Position,
+  RunoutField,
+  Trail,
+} from "@/lib/types";
 import { buildSyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
 import {
   bypassFeatures,
@@ -87,6 +98,10 @@ export interface TerrainMapProps {
   release?: ReleaseCamera | null;
   /** The current runout footprint. Null before a simulation and after it is cleared. */
   flow?: FlowFeatureCollection | null;
+  /** The runout as a continuous field. When set, it is drawn instead of `flow`. */
+  flowField?: RunoutField | null;
+  /** The clock the field is swept by. The map redraws from it every animation frame. */
+  playhead?: Playhead | null;
   /** Dims the probability heat map while the flow is on screen. */
   flowActive?: boolean;
 }
@@ -309,6 +324,8 @@ export default function TerrainMap({
   onTrailSelect,
   release = null,
   flow = null,
+  flowField = null,
+  playhead = null,
   flowActive = false,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
@@ -478,6 +495,62 @@ export default function TerrainMap({
       LAYER.otherTrails,
     );
   }, [map, flow]);
+
+  // The runout field: a canvas draped on the terrain, redrawn every animation frame from
+  // the playhead so the front sweeps down continuously. Linear resampling keeps it soft.
+  useEffect(() => {
+    if (!map || !flowField || !playhead) {
+      return;
+    }
+    let painter: RunoutPainter;
+    try {
+      painter = new RunoutPainter(flowField, playhead.durationS);
+    } catch {
+      return;
+    }
+    painter.draw(playheadTime(playhead, performance.now()));
+    map.addSource(SOURCE.flowField, {
+      type: "canvas",
+      canvas: painter.canvas,
+      coordinates: flowField.corners,
+      animate: true,
+    });
+    map.addLayer(
+      {
+        id: LAYER.flowField,
+        type: "raster",
+        source: SOURCE.flowField,
+        paint: { "raster-resampling": "linear", "raster-fade-duration": 0, "raster-opacity": 1 },
+      },
+      LAYER.otherTrails,
+    );
+    const source = map.getSource<CanvasSource>(SOURCE.flowField);
+    let frame = 0;
+    let settled = false;
+    const step = () => {
+      const t = playheadTime(playhead, performance.now());
+      painter.draw(t);
+      if (t >= playhead.durationS) {
+        if (settled) {
+          // The final picture has been uploaded once; stop re-uploading the canvas.
+          source?.pause();
+          return;
+        }
+        settled = true;
+      }
+      frame = window.requestAnimationFrame(step);
+    };
+    frame = window.requestAnimationFrame(step);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (map.getLayer(LAYER.flowField)) {
+        map.removeLayer(LAYER.flowField);
+      }
+      if (map.getSource(SOURCE.flowField)) {
+        map.removeSource(SOURCE.flowField);
+      }
+    };
+  }, [map, flowField, playhead]);
 
   useEffect(() => {
     const layer = map?.getLayer(LAYER.susceptibility)

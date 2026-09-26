@@ -161,3 +161,26 @@ def test_runout_releases_at_the_top_and_never_flows_up(monkeypatch):
     assert stop["lat"] < 46.8155
     walked = heights([(step["lon"], step["lat"]) for step in sorted(traced["steps"], key=lambda step: step["t_s"]) if step["kind"] != "trail"])
     assert walked == sorted(walked, reverse=True)
+
+
+def test_trail_field_sweeps_downhill_and_decodes():
+    import base64
+
+    import numpy as np
+
+    from app.ml import flow_field
+
+    samples = [(-121.76, 46.85, 0.0), (-121.76, 46.845, 555.0), (-121.755, 46.84, 1200.0)]
+    field = flow_field.trail_field(samples, lambda dist: 20 + dist * 0.02, 5, 240)
+    width, height = field["width"], field["height"]
+    cover = np.frombuffer(base64.b64decode(field["cover"]), np.uint8).reshape(height, width)
+    arrival = np.frombuffer(base64.b64decode(field["arrival"]), "<u2").reshape(height, width)
+    depth = np.frombuffer(base64.b64decode(field["depth"]), np.uint8).reshape(height, width)
+    assert len(field["corners"]) == 4
+    # Flow cells have an arrival; cells far off the ribbon never do.
+    assert (arrival[cover > 127] < flow_field.NEVER).all()
+    assert (arrival[cover == 0] == flow_field.NEVER).all()
+    # The release (top rows) arrives before the toe (bottom rows), and the core is deepest.
+    flowing = np.where(cover > 127, arrival, np.nan)
+    assert np.nanmean(flowing[: height // 3]) < np.nanmean(flowing[-height // 3 :])
+    assert depth.max() > 200

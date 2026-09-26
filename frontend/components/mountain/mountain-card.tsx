@@ -79,6 +79,7 @@ export default function MountainCard({
   const simulationSupported = live && hasRoutes;
   const [simulateUnsupportedOpen, setSimulateUnsupportedOpen] = useState(false);
   const flowOn = simulation.phase === "playing" || simulation.phase === "finished";
+  const flowField = simulation.simulation?.field ?? null;
   const matched = hill.trails.find((trail) => trail.name === simulation.simulation?.pressure_point?.trail_name);
   const selected =
     focus && simulation.camera && focus.nonce > simulation.camera.nonce
@@ -119,7 +120,9 @@ export default function MountainCard({
           onTrailSelect={view}
           onMapClick={setRiskLocation}
           release={simulation.camera}
-          flow={flowOn ? (simulation.simulation?.frames[simulation.frameIndex]?.geojson ?? null) : null}
+          flow={flowOn && !flowField ? (simulation.simulation?.frames[simulation.frameIndex]?.geojson ?? null) : null}
+          flowField={flowOn ? flowField : null}
+          playhead={simulation.playhead}
           flowActive={flowOn}
         />
         <SimulationBar phase={simulation.phase} simulation={simulation.simulation} timeS={simulation.timeS} />
