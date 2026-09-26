@@ -1,0 +1,14 @@
+split,n,positives,prevalence
+train_all,29404,7351,0.2500
+loro:south_lowland,8838,2653,0.3002
+loro:south_cascades,1529,77,0.0504
+loro:central_lowland,3351,522,0.1558
+loro:central_cascades,4960,1515,0.3054
+loro:north_lowland,5297,1341,0.2532
+loro:north_cascades,5429,1243,0.2290
+spatial_cv:fold_0,5986,1470,0.2456
+spatial_cv:fold_1,5941,1470,0.2474
+spatial_cv:fold_2,5939,1470,0.2475
+spatial_cv:fold_3,5595,1471,0.2629
+spatial_cv:fold_4,5943,1470,0.2473
+external:rainier,372,93,0.2500

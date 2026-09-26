@@ -1,0 +1,763 @@
+{
+  "generated_at": "2026-09-26T12:35:40+00:00",
+  "design": {
+    "lead_hours": 0,
+    "control_places": 4,
+    "case_draws": 5,
+    "kinds": [
+      "same_place_other_day",
+      "other_place_same_day",
+      "other_place_other_day"
+    ],
+    "terrain_family": "lgbm_current",
+    "rows": 1950,
+    "cases": 78,
+    "prevalence": 0.04,
+    "clusters_in_full_design": 78,
+    "clusters_precise_location": 21,
+    "live_formula": "sigmoid(W1*(logit(s) - logit(0.25)) + W0 + W2*r + W3*m)",
+    "constants": {
+      "W0": -1.32,
+      "W1": 1.0,
+      "W2": 0.92,
+      "W3": 0.76
+    }
+  },
+  "coverage": {
+    "clusters": 82,
+    "storms": 36,
+    "water_years": 11,
+    "records_by_region": {
+      "central_lowland": 7,
+      "north_cascades": 11,
+      "north_lowland": 51,
+      "south_cascades": 26,
+      "south_lowland": 1034
+    },
+    "clusters_by_region": {
+      "central_lowland": 7,
+      "north_cascades": 3,
+      "north_lowland": 46,
+      "south_cascades": 6,
+      "south_lowland": 20
+    },
+    "records_in_rainier_box": 0
+  },
+  "metrics": {
+    "terrain_only": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.7795,
+      "pr_auc": 0.113,
+      "lift": 2.8261,
+      "brier": 0.0751,
+      "ece": 0.1284,
+      "log_loss": 0.2511,
+      "concordance_same_place_other_day": 0.5,
+      "concordance_other_place_same_day": 0.8413,
+      "concordance_other_place_other_day": 0.8413,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 27,
+        "fp": 188,
+        "tn": 1684,
+        "fn": 51,
+        "precision": 0.1256,
+        "recall": 0.3462,
+        "specificity": 0.8996,
+        "f1": 0.1843,
+        "share_flagged": 0.1103
+      }
+    },
+    "rain_only_live": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.7886,
+      "pr_auc": 0.1219,
+      "lift": 3.0476,
+      "brier": 0.095,
+      "ece": 0.1966,
+      "log_loss": 0.3193,
+      "concordance_same_place_other_day": 0.9038,
+      "concordance_other_place_same_day": 0.5,
+      "concordance_other_place_other_day": 0.9038,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 43,
+        "fp": 357,
+        "tn": 1515,
+        "fn": 35,
+        "precision": 0.1075,
+        "recall": 0.5513,
+        "specificity": 0.8093,
+        "f1": 0.1799,
+        "share_flagged": 0.2051
+      }
+    },
+    "live_combined": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.8605,
+      "pr_auc": 0.2292,
+      "lift": 5.7293,
+      "brier": 0.0742,
+      "ece": 0.1226,
+      "log_loss": 0.2394,
+      "concordance_same_place_other_day": 0.9038,
+      "concordance_other_place_same_day": 0.8413,
+      "concordance_other_place_other_day": 0.9371,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 47,
+        "fp": 215,
+        "tn": 1657,
+        "fn": 31,
+        "precision": 0.1794,
+        "recall": 0.6026,
+        "specificity": 0.8851,
+        "f1": 0.2765,
+        "share_flagged": 0.1344
+      }
+    },
+    "live_combined_no_forecast": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.8542,
+      "pr_auc": 0.2309,
+      "lift": 5.7723,
+      "brier": 0.071,
+      "ece": 0.1166,
+      "log_loss": 0.2324,
+      "concordance_same_place_other_day": 0.867,
+      "concordance_other_place_same_day": 0.8413,
+      "concordance_other_place_other_day": 0.9343,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 45,
+        "fp": 196,
+        "tn": 1676,
+        "fn": 33,
+        "precision": 0.1867,
+        "recall": 0.5769,
+        "specificity": 0.8953,
+        "f1": 0.2821,
+        "share_flagged": 0.1236
+      }
+    },
+    "fitted_additive": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.826,
+      "pr_auc": 0.1587,
+      "lift": 3.9668,
+      "brier": 0.0435,
+      "ece": 0.0341,
+      "log_loss": 0.1575,
+      "concordance_same_place_other_day": 0.8974,
+      "concordance_other_place_same_day": 0.8413,
+      "concordance_other_place_other_day": 0.9491,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 12,
+        "fp": 46,
+        "tn": 1826,
+        "fn": 66,
+        "precision": 0.2069,
+        "recall": 0.1538,
+        "specificity": 0.9754,
+        "f1": 0.1765,
+        "share_flagged": 0.0297
+      }
+    },
+    "fitted_interaction": {
+      "n": 1950,
+      "positives": 78,
+      "prevalence": 0.04,
+      "roc_auc": 0.8257,
+      "pr_auc": 0.1585,
+      "lift": 3.9627,
+      "brier": 0.0431,
+      "ece": 0.0332,
+      "log_loss": 0.1569,
+      "concordance_same_place_other_day": 0.8974,
+      "concordance_other_place_same_day": 0.8413,
+      "concordance_other_place_other_day": 0.9499,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 12,
+        "fp": 44,
+        "tn": 1828,
+        "fn": 66,
+        "precision": 0.2143,
+        "recall": 0.1538,
+        "specificity": 0.9765,
+        "f1": 0.1791,
+        "share_flagged": 0.0287
+      }
+    }
+  },
+  "metrics_precise_locations": {
+    "terrain_only": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.7336,
+      "pr_auc": 0.0803,
+      "lift": 2.0065,
+      "brier": 0.1116,
+      "ece": 0.223,
+      "log_loss": 0.3615,
+      "concordance_same_place_other_day": 0.5,
+      "concordance_other_place_same_day": 0.7798,
+      "concordance_other_place_other_day": 0.7798,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 7,
+        "fp": 78,
+        "tn": 426,
+        "fn": 14,
+        "precision": 0.0824,
+        "recall": 0.3333,
+        "specificity": 0.8452,
+        "f1": 0.1321,
+        "share_flagged": 0.1619
+      }
+    },
+    "rain_only_live": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.8765,
+      "pr_auc": 0.1509,
+      "lift": 3.7717,
+      "brier": 0.1515,
+      "ece": 0.2996,
+      "log_loss": 0.4531,
+      "concordance_same_place_other_day": 0.9643,
+      "concordance_other_place_same_day": 0.5,
+      "concordance_other_place_other_day": 0.9643,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 20,
+        "fp": 200,
+        "tn": 304,
+        "fn": 1,
+        "precision": 0.0909,
+        "recall": 0.9524,
+        "specificity": 0.6032,
+        "f1": 0.166,
+        "share_flagged": 0.419
+      }
+    },
+    "live_combined": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.8934,
+      "pr_auc": 0.2277,
+      "lift": 5.6915,
+      "brier": 0.1605,
+      "ece": 0.2847,
+      "log_loss": 0.4677,
+      "concordance_same_place_other_day": 0.9643,
+      "concordance_other_place_same_day": 0.7798,
+      "concordance_other_place_other_day": 0.9211,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 21,
+        "fp": 157,
+        "tn": 347,
+        "fn": 0,
+        "precision": 0.118,
+        "recall": 1.0,
+        "specificity": 0.6885,
+        "f1": 0.2111,
+        "share_flagged": 0.339
+      }
+    },
+    "live_combined_no_forecast": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.9115,
+      "pr_auc": 0.2435,
+      "lift": 6.0877,
+      "brier": 0.1408,
+      "ece": 0.258,
+      "log_loss": 0.4185,
+      "concordance_same_place_other_day": 0.9583,
+      "concordance_other_place_same_day": 0.7798,
+      "concordance_other_place_other_day": 0.9524,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 21,
+        "fp": 138,
+        "tn": 366,
+        "fn": 0,
+        "precision": 0.1321,
+        "recall": 1.0,
+        "specificity": 0.7262,
+        "f1": 0.2333,
+        "share_flagged": 0.3029
+      }
+    },
+    "fitted_additive": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.903,
+      "pr_auc": 0.2432,
+      "lift": 6.0805,
+      "brier": 0.0697,
+      "ece": 0.1396,
+      "log_loss": 0.2346,
+      "concordance_same_place_other_day": 0.9643,
+      "concordance_other_place_same_day": 0.7798,
+      "concordance_other_place_other_day": 0.933,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 11,
+        "fp": 46,
+        "tn": 458,
+        "fn": 10,
+        "precision": 0.193,
+        "recall": 0.5238,
+        "specificity": 0.9087,
+        "f1": 0.2821,
+        "share_flagged": 0.1086
+      }
+    },
+    "fitted_interaction": {
+      "n": 525,
+      "positives": 21,
+      "prevalence": 0.04,
+      "roc_auc": 0.9037,
+      "pr_auc": 0.2443,
+      "lift": 6.1086,
+      "brier": 0.0685,
+      "ece": 0.1384,
+      "log_loss": 0.2325,
+      "concordance_same_place_other_day": 0.9643,
+      "concordance_other_place_same_day": 0.7798,
+      "concordance_other_place_other_day": 0.936,
+      "high_bin": {
+        "threshold": 0.45,
+        "tp": 11,
+        "fp": 44,
+        "tn": 460,
+        "fn": 10,
+        "precision": 0.2,
+        "recall": 0.5238,
+        "specificity": 0.9127,
+        "f1": 0.2895,
+        "share_flagged": 0.1048
+      }
+    }
+  },
+  "storm_bootstrap": {
+    "reps": 1000,
+    "storms": 35,
+    "ci95": {
+      "terrain_only": {
+        "roc_auc": [
+          0.7346,
+          0.8425
+        ],
+        "pr_auc": [
+          0.0921,
+          0.1547
+        ],
+        "concordance_same_place_other_day": [
+          0.5,
+          0.5
+        ],
+        "concordance_other_place_same_day": [
+          0.7917,
+          0.9183
+        ],
+        "concordance_other_place_other_day": [
+          0.7917,
+          0.9183
+        ]
+      },
+      "rain_only_live": {
+        "roc_auc": [
+          0.7402,
+          0.8327
+        ],
+        "pr_auc": [
+          0.1048,
+          0.1483
+        ],
+        "concordance_same_place_other_day": [
+          0.8272,
+          0.9442
+        ],
+        "concordance_other_place_same_day": [
+          0.5,
+          0.5
+        ],
+        "concordance_other_place_other_day": [
+          0.8272,
+          0.9442
+        ]
+      },
+      "live_combined": {
+        "roc_auc": [
+          0.8222,
+          0.9194
+        ],
+        "pr_auc": [
+          0.1871,
+          0.437
+        ],
+        "concordance_same_place_other_day": [
+          0.8272,
+          0.9442
+        ],
+        "concordance_other_place_same_day": [
+          0.7917,
+          0.9183
+        ],
+        "concordance_other_place_other_day": [
+          0.9049,
+          0.9697
+        ]
+      },
+      "live_combined_no_forecast": {
+        "roc_auc": [
+          0.8161,
+          0.9034
+        ],
+        "pr_auc": [
+          0.1849,
+          0.423
+        ],
+        "concordance_same_place_other_day": [
+          0.7812,
+          0.9153
+        ],
+        "concordance_other_place_same_day": [
+          0.7917,
+          0.9183
+        ],
+        "concordance_other_place_other_day": [
+          0.8951,
+          0.9606
+        ]
+      },
+      "fitted_additive": {
+        "roc_auc": [
+          0.7904,
+          0.9137
+        ],
+        "pr_auc": [
+          0.1492,
+          0.3964
+        ],
+        "concordance_same_place_other_day": [
+          0.8186,
+          0.9389
+        ],
+        "concordance_other_place_same_day": [
+          0.7917,
+          0.9183
+        ],
+        "concordance_other_place_other_day": [
+          0.9222,
+          0.9767
+        ]
+      },
+      "fitted_interaction": {
+        "roc_auc": [
+          0.7906,
+          0.9136
+        ],
+        "pr_auc": [
+          0.1493,
+          0.3936
+        ],
+        "concordance_same_place_other_day": [
+          0.8186,
+          0.9389
+        ],
+        "concordance_other_place_same_day": [
+          0.7917,
+          0.9183
+        ],
+        "concordance_other_place_other_day": [
+          0.9226,
+          0.9767
+        ]
+      }
+    },
+    "delta_vs_live_ci95": {
+      "terrain_only": {
+        "roc_auc": [
+          -0.1131,
+          -0.0557
+        ],
+        "pr_auc": [
+          -0.2912,
+          -0.0831
+        ],
+        "concordance_same_place_other_day": [
+          -0.4442,
+          -0.3272
+        ],
+        "concordance_other_place_same_day": [
+          0.0,
+          0.0
+        ],
+        "concordance_other_place_other_day": [
+          -0.1332,
+          -0.0355
+        ]
+      },
+      "rain_only_live": {
+        "roc_auc": [
+          -0.1373,
+          -0.0334
+        ],
+        "pr_auc": [
+          -0.3006,
+          -0.0686
+        ],
+        "concordance_same_place_other_day": [
+          0.0,
+          0.0
+        ],
+        "concordance_other_place_same_day": [
+          -0.4183,
+          -0.2917
+        ],
+        "concordance_other_place_other_day": [
+          -0.1208,
+          0.0152
+        ]
+      },
+      "live_combined_no_forecast": {
+        "roc_auc": [
+          -0.0241,
+          0.0081
+        ],
+        "pr_auc": [
+          -0.0802,
+          0.0296
+        ],
+        "concordance_same_place_other_day": [
+          -0.0912,
+          0.0112
+        ],
+        "concordance_other_place_same_day": [
+          0.0,
+          0.0
+        ],
+        "concordance_other_place_other_day": [
+          -0.0288,
+          0.0129
+        ]
+      },
+      "fitted_additive": {
+        "roc_auc": [
+          -0.0462,
+          0.0024
+        ],
+        "pr_auc": [
+          -0.1061,
+          -0.0017
+        ],
+        "concordance_same_place_other_day": [
+          -0.0307,
+          0.0197
+        ],
+        "concordance_other_place_same_day": [
+          0.0,
+          0.0
+        ],
+        "concordance_other_place_other_day": [
+          0.0025,
+          0.0216
+        ]
+      },
+      "fitted_interaction": {
+        "roc_auc": [
+          -0.0465,
+          0.0031
+        ],
+        "pr_auc": [
+          -0.1064,
+          -0.0018
+        ],
+        "concordance_same_place_other_day": [
+          -0.0307,
+          0.0197
+        ],
+        "concordance_other_place_same_day": [
+          0.0,
+          0.0
+        ],
+        "concordance_other_place_other_day": [
+          0.0025,
+          0.0217
+        ]
+      }
+    }
+  },
+  "case_draw_sensitivity": [
+    {
+      "draw": 0,
+      "terrain_only_roc_auc": 0.7795,
+      "terrain_only_pr_auc": 0.113,
+      "terrain_only_concordance_other_place_same_day": 0.8413,
+      "terrain_only_concordance_same_place_other_day": 0.5,
+      "rain_only_live_roc_auc": 0.7886,
+      "rain_only_live_pr_auc": 0.1219,
+      "rain_only_live_concordance_other_place_same_day": 0.5,
+      "rain_only_live_concordance_same_place_other_day": 0.9038,
+      "live_combined_roc_auc": 0.8605,
+      "live_combined_pr_auc": 0.2292,
+      "live_combined_concordance_other_place_same_day": 0.8413,
+      "live_combined_concordance_same_place_other_day": 0.9038,
+      "live_combined_no_forecast_roc_auc": 0.8542,
+      "live_combined_no_forecast_pr_auc": 0.2309,
+      "live_combined_no_forecast_concordance_other_place_same_day": 0.8413,
+      "live_combined_no_forecast_concordance_same_place_other_day": 0.867,
+      "fitted_additive_roc_auc": 0.826,
+      "fitted_additive_pr_auc": 0.1587,
+      "fitted_additive_concordance_other_place_same_day": 0.8413,
+      "fitted_additive_concordance_same_place_other_day": 0.8974,
+      "fitted_interaction_roc_auc": 0.8257,
+      "fitted_interaction_pr_auc": 0.1585,
+      "fitted_interaction_concordance_other_place_same_day": 0.8413,
+      "fitted_interaction_concordance_same_place_other_day": 0.8974
+    },
+    {
+      "draw": 1,
+      "terrain_only_roc_auc": 0.7735,
+      "terrain_only_pr_auc": 0.113,
+      "terrain_only_concordance_other_place_same_day": 0.8365,
+      "terrain_only_concordance_same_place_other_day": 0.5,
+      "rain_only_live_roc_auc": 0.7886,
+      "rain_only_live_pr_auc": 0.1219,
+      "rain_only_live_concordance_other_place_same_day": 0.5,
+      "rain_only_live_concordance_same_place_other_day": 0.9038,
+      "live_combined_roc_auc": 0.8564,
+      "live_combined_pr_auc": 0.2243,
+      "live_combined_concordance_other_place_same_day": 0.8365,
+      "live_combined_concordance_same_place_other_day": 0.9038,
+      "live_combined_no_forecast_roc_auc": 0.8491,
+      "live_combined_no_forecast_pr_auc": 0.2268,
+      "live_combined_no_forecast_concordance_other_place_same_day": 0.8365,
+      "live_combined_no_forecast_concordance_same_place_other_day": 0.867,
+      "fitted_additive_roc_auc": 0.8245,
+      "fitted_additive_pr_auc": 0.1594,
+      "fitted_additive_concordance_other_place_same_day": 0.8365,
+      "fitted_additive_concordance_same_place_other_day": 0.8974,
+      "fitted_interaction_roc_auc": 0.8248,
+      "fitted_interaction_pr_auc": 0.1597,
+      "fitted_interaction_concordance_other_place_same_day": 0.8365,
+      "fitted_interaction_concordance_same_place_other_day": 0.891
+    },
+    {
+      "draw": 2,
+      "terrain_only_roc_auc": 0.772,
+      "terrain_only_pr_auc": 0.1102,
+      "terrain_only_concordance_other_place_same_day": 0.8253,
+      "terrain_only_concordance_same_place_other_day": 0.5,
+      "rain_only_live_roc_auc": 0.7886,
+      "rain_only_live_pr_auc": 0.1219,
+      "rain_only_live_concordance_other_place_same_day": 0.5,
+      "rain_only_live_concordance_same_place_other_day": 0.9038,
+      "live_combined_roc_auc": 0.8584,
+      "live_combined_pr_auc": 0.2086,
+      "live_combined_concordance_other_place_same_day": 0.8253,
+      "live_combined_concordance_same_place_other_day": 0.9038,
+      "live_combined_no_forecast_roc_auc": 0.8512,
+      "live_combined_no_forecast_pr_auc": 0.2119,
+      "live_combined_no_forecast_concordance_other_place_same_day": 0.8253,
+      "live_combined_no_forecast_concordance_same_place_other_day": 0.867,
+      "fitted_additive_roc_auc": 0.8258,
+      "fitted_additive_pr_auc": 0.1415,
+      "fitted_additive_concordance_other_place_same_day": 0.8253,
+      "fitted_additive_concordance_same_place_other_day": 0.8974,
+      "fitted_interaction_roc_auc": 0.8262,
+      "fitted_interaction_pr_auc": 0.1426,
+      "fitted_interaction_concordance_other_place_same_day": 0.8253,
+      "fitted_interaction_concordance_same_place_other_day": 0.8942
+    },
+    {
+      "draw": 3,
+      "terrain_only_roc_auc": 0.7881,
+      "terrain_only_pr_auc": 0.1181,
+      "terrain_only_concordance_other_place_same_day": 0.8558,
+      "terrain_only_concordance_same_place_other_day": 0.5,
+      "rain_only_live_roc_auc": 0.7886,
+      "rain_only_live_pr_auc": 0.1219,
+      "rain_only_live_concordance_other_place_same_day": 0.5,
+      "rain_only_live_concordance_same_place_other_day": 0.9038,
+      "live_combined_roc_auc": 0.8646,
+      "live_combined_pr_auc": 0.2455,
+      "live_combined_concordance_other_place_same_day": 0.8558,
+      "live_combined_concordance_same_place_other_day": 0.9038,
+      "live_combined_no_forecast_roc_auc": 0.8588,
+      "live_combined_no_forecast_pr_auc": 0.2485,
+      "live_combined_no_forecast_concordance_other_place_same_day": 0.8558,
+      "live_combined_no_forecast_concordance_same_place_other_day": 0.867,
+      "fitted_additive_roc_auc": 0.8277,
+      "fitted_additive_pr_auc": 0.1702,
+      "fitted_additive_concordance_other_place_same_day": 0.8558,
+      "fitted_additive_concordance_same_place_other_day": 0.8974,
+      "fitted_interaction_roc_auc": 0.8272,
+      "fitted_interaction_pr_auc": 0.171,
+      "fitted_interaction_concordance_other_place_same_day": 0.8558,
+      "fitted_interaction_concordance_same_place_other_day": 0.8974
+    },
+    {
+      "draw": 4,
+      "terrain_only_roc_auc": 0.7787,
+      "terrain_only_pr_auc": 0.114,
+      "terrain_only_concordance_other_place_same_day": 0.8333,
+      "terrain_only_concordance_same_place_other_day": 0.5,
+      "rain_only_live_roc_auc": 0.7886,
+      "rain_only_live_pr_auc": 0.1219,
+      "rain_only_live_concordance_other_place_same_day": 0.5,
+      "rain_only_live_concordance_same_place_other_day": 0.9038,
+      "live_combined_roc_auc": 0.8602,
+      "live_combined_pr_auc": 0.2311,
+      "live_combined_concordance_other_place_same_day": 0.8333,
+      "live_combined_concordance_same_place_other_day": 0.9038,
+      "live_combined_no_forecast_roc_auc": 0.8539,
+      "live_combined_no_forecast_pr_auc": 0.227,
+      "live_combined_no_forecast_concordance_other_place_same_day": 0.8333,
+      "live_combined_no_forecast_concordance_same_place_other_day": 0.867,
+      "fitted_additive_roc_auc": 0.827,
+      "fitted_additive_pr_auc": 0.1587,
+      "fitted_additive_concordance_other_place_same_day": 0.8333,
+      "fitted_additive_concordance_same_place_other_day": 0.8974,
+      "fitted_interaction_roc_auc": 0.827,
+      "fitted_interaction_pr_auc": 0.1586,
+      "fitted_interaction_concordance_other_place_same_day": 0.8333,
+      "fitted_interaction_concordance_same_place_other_day": 0.8942
+    }
+  ],
+  "in_sample_fit": {
+    "coef_logit_s": 0.6788,
+    "coef_rain": 0.8681,
+    "coef_moisture": 0.7897,
+    "intercept": -2.543,
+    "note": "full-data fit, for the terrain weight only; live W1 is 1"
+  },
+  "rainier": "no dated event cluster has a record in the Rainier box; this is not Rainier validation",
+  "caveats": [
+    "prevalence is set by the design (1 case : 4 control days : 4 places : 16 place-days); probabilities and the 0.45 bin are not real-world rates",
+    "lead-0 rain reads the reanalysis next 72 h, a perfect forecast; see live_combined_no_forecast",
+    "GLC-only clusters place the case up to 5 km from the slide; see metrics_precise_locations"
+  ],
+  "runtime_s": 148.1
+}

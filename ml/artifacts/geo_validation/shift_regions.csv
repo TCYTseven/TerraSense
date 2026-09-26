@@ -1,0 +1,8 @@
+target,n,positives,prevalence,domain_auc,internal_validation_roc_auc,shift_weighted_validation_roc_auc,heldout_roc_auc,drop_explained_by_shift,unexplained_gap,effective_sample_size,verdict,share_in_support,roc_auc_in_support,roc_auc_out_of_support,n_out_of_support,positives_confidence_ge5_share,positives_non_wa_wgs_share,mean_abs_smd,max_psi,features_psi_over_0_25
+south_lowland,8838,2653,0.3002,0.7288,0.8037,0.7534,0.7770,0.0503,-0.0236,12604.3605,no material drop,0.9612,0.7759,0.8059,343,0.1858,0.0000,0.0787,1.7005,3.0000
+south_cascades,1529,77,0.0504,0.8069,0.8078,0.7036,0.6017,0.1041,0.1020,11748.5812,"drop beyond covariate shift: label or process difference, or model failure",0.9281,0.5985,0.5483,110,0.2987,0.0000,0.3583,2.7556,6.0000
+central_lowland,3351,522,0.1558,0.8354,0.7863,0.8632,0.8822,-0.0769,-0.0190,9230.5291,no material drop,0.8538,0.8630,0.9796,490,1.0000,0.0000,0.4167,1.4052,9.0000
+central_cascades,4960,1515,0.3054,0.8010,0.8151,0.6951,0.6843,0.1200,0.0108,10827.3212,drop explained by covariate shift,0.9460,0.6814,0.6766,268,0.5393,0.0000,0.3992,3.5225,10.0000
+north_lowland,5297,1341,0.2532,0.9478,0.7569,0.8681,0.9518,-0.1112,-0.0837,2589.0695,no material drop,0.6868,0.9320,0.9685,1659,0.9754,0.0000,0.6712,5.3381,10.0000
+north_cascades,5429,1243,0.2290,0.7551,0.8034,0.7155,0.7326,0.0879,-0.0171,13110.7912,drop explained by covariate shift,0.9206,0.7352,0.6059,431,0.3121,0.0000,0.2858,1.3317,5.0000
+rainier,372,93,0.2500,0.8599,0.8009,0.6907,0.6188,0.1102,0.0719,6803.7148,"drop beyond covariate shift: label or process difference, or model failure",0.8333,0.6579,0.6614,62,0.5591,0.2043,0.4902,4.8280,10.0000

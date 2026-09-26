@@ -1,0 +1,15 @@
+model,group,features,cv_roc_gain,loro_roc_gain,cv_pr_gain,loro_pr_gain,regions_where_removal_helps,improves_cv_hurts_external,consistently_harms_external,non_transferable_rank
+lgbm,slope,"slope,slope_std_150",0.0005,-0.0033,0.0022,-0.0013,2,True,False,1.0000
+lgbm,aspect,"aspect_sin,aspect_cos",0.0001,-0.0005,-0.0003,-0.0000,5,True,True,3.0000
+lgbm,curvature,"curvature,profile_curvature,plan_curvature",0.0067,0.0030,0.0137,0.0112,1,False,False,
+lgbm,relief,"relief_150,relief_500,relief_1000,roughness_90",0.0254,0.0114,0.0605,0.0176,1,False,False,
+lgbm,position,"tpi_500,tpi_1000",0.0075,0.0117,0.0091,0.0078,0,False,False,
+lgbm,hydrology,"dist_drainage,twi",0.0020,0.0003,0.0033,0.0003,2,False,False,
+lgbm,landcover,landcover,0.0000,-0.0009,0.0002,0.0010,2,True,False,2.0000
+logistic,slope,"slope,slope_std_150",0.0142,0.0089,0.0245,0.0121,2,False,False,
+logistic,aspect,"aspect_sin,aspect_cos",0.0000,-0.0005,0.0011,-0.0007,4,True,True,2.0000
+logistic,curvature,"curvature,profile_curvature,plan_curvature",0.0080,0.0023,0.0250,0.0147,2,False,False,
+logistic,relief,"relief_150,relief_500,relief_1000,roughness_90",0.0112,0.0067,0.0333,0.0094,2,False,False,
+logistic,position,"tpi_500,tpi_1000",0.0080,0.0118,0.0019,0.0104,0,False,False,
+logistic,hydrology,"dist_drainage,twi",0.0007,-0.0010,0.0033,-0.0003,3,True,False,1.0000
+logistic,landcover,landcover,0.0042,0.0010,0.0092,0.0052,2,False,False,

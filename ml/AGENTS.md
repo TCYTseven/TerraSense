@@ -34,6 +34,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 - Resample every layer to one 30 m grid before building features.
 - Split train and test by space, using the region column. Never shuffle pixels across the box.
 - The regional model never trains on the Rainier box or its 2 km buffer. Hyperparameters and the calibrator come from inner block CV on training folds only; thresholds are the shared bin edges, never picked on test data.
+- Judge a terrain change by leave-one-region-out metrics (`geo_validate.py`), not spatial CV alone. Never tune on the Rainier rows; `geo_validate.py` scores them once, after its selection rule has run. Thresholds and calibrators come from inner validation rows only. Report prevalence and lift with every PR-AUC.
 - Publish the AUC you measure in `artifacts/metrics.json`. 0.85 is not a gate. Until landslide labels exist, `metrics.json` says `trained: false` and `auc: null`: never present the knowledge-driven index as a trained model.
 - Tiles are XYZ PNG in EPSG:3857 so they sit on the map's 3D terrain.
 - Model B weights are named constants with a comment on each.
@@ -55,6 +56,8 @@ python ml/scripts/download_region.py                 # regional DEM + WorldCover
 python ml/scripts/build_regional_features.py         # 17-band regional stack, USGS v3 labels, Rainier window (~45 s)
 python ml/scripts/train_regional_susceptibility.py   # nested spatial CV, external Rainier test, calibrated map (~3 min)
 python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
+python ml/scripts/geo_validate.py        # step 35: leave-one-region-out validation, ablation, shift, errors (~6 min)
+python ml/scripts/combined_validate.py   # step 35: terrain x rain index on dated events (~2.5 min)
 python ml/scripts/validate_pipeline.py --require-probability  # read-only deployment audit
 python ml/scripts/build_risk_samples.py --dynamic data/raw/normalized/hourly.parquet --out data/processed/risk_samples.parquet
 python ml/scripts/build_risk_dataset.py --samples data/processed/risk_samples.parquet --out data/processed/landslide_risk.parquet

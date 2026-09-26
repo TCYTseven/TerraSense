@@ -23,6 +23,8 @@ The root [`README.md`](../../README.md) is the one-line pitch. This folder is th
 | [`../design-addendum.md`](../design-addendum.md) | You need sizes, copy, and states for a screen that UX.md already allows. |
 | [`seeding-and-catalog.md`](seeding-and-catalog.md) | You need to know where globe peaks and Rainier trails come from. |
 | [`CODE_REFERENCE.md`](CODE_REFERENCE.md) | You need a path, a type, or an endpoint. |
+| [`geographic_validation.md`](geographic_validation.md) | You need how well the landslide models hold up on unseen regions, at Rainier, and combined with rain. |
+| [`data_gap_analysis.md`](data_gap_analysis.md) | You need what labeled data exists by region and what to collect next. |
 | [`../TerraSense.md`](../TerraSense.md) | You need the product, the data model, the API, or the demo script. |
 | [`../implementation-steps.md`](../implementation-steps.md) | You need the build notes for a step. |
 

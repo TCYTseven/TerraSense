@@ -1,0 +1,5 @@
+model,variant,features,n,positives,prevalence,roc_auc,pr_auc,lift
+lgbm,full,"slope,aspect_sin,aspect_cos,curvature,profile_curvature,plan_curvature,dist_drainage,twi,landcover,relief_150,relief_500,relief_1000,tpi_500,tpi_1000,roughness_90,slope_std_150",372,93,0.2500,0.5968,0.3239,1.2957
+lgbm,minimal_transferable,"slope,slope_std_150,relief_150,relief_500,relief_1000,roughness_90,tpi_500,tpi_1000",372,93,0.2500,0.6308,0.3489,1.3956
+logistic,full,"slope,aspect_sin,aspect_cos,curvature,profile_curvature,plan_curvature,dist_drainage,twi,landcover,relief_150,relief_500,relief_1000,tpi_500,tpi_1000,roughness_90,slope_std_150",372,93,0.2500,0.6766,0.4732,1.8929
+logistic,minimal_transferable,"slope,slope_std_150,relief_150,relief_500,relief_1000,roughness_90,tpi_500,tpi_1000",372,93,0.2500,0.7315,0.5374,2.1497

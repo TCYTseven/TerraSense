@@ -27,6 +27,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 30. Play the simulation on the mountain page (Sep 26, 2026: **Simulate** sits beside **Analyze now** for mountains with routes, not in the unbuilt globe panel)
 - [ ] 31. Wire the hill card to the run stream and the advisory (agents, Reactive Measures, trail scores, the overall score, and preventative measures come from the API. Left: the fake-LLM check that the five trails match the advisory)
 - [ ] 32. Build mountain data packs for the demo peaks (Rainier-style DEM, land cover, index, tiles, and trails for 7 more peaks, 1-2 per continent)
+- [x] 35. Validate the landslide models across regions (leave-one-region-out terrain ROC-AUC 0.77 against 0.82 spatial CV; combined index 0.86 on dated events outside Rainier; see [docs/geographic_validation.md](docs/geographic_validation.md))
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -301,6 +302,19 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Point probability and terrain-gated Model B** (Sep 26). `POST /api/v1/landslide-risk` now returns a 0–1 `probability` for every in-domain click, with `probability_source`, the shared `risk_level`, and an `estimate` block. Without a calibrated model it is the Model B value at the clicked pixel on today's rain, explained by its three logit terms. It never changes the classifier's `UNCERTAIN`, and it stays `null` without rain or terrain. The map card leads with that chance. Model B's terrain weight was retuned (`w1` 2.4 to 7.0, center 0.75) because the storm fixture painted 100% of the box Extreme. Now 89% stays Low and the valley slopes carry the risk. The five hazard-path tests that had failed since Model B landed (they scored a dry map) now run on the storm plus a labeled Skyline debris corridor.
 
 Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
+
+- **Step 35: geographic validation** (Sep 26, ML track, branch `step-35-geographic-validation`). New scripts, all offline. The training and serving paths are unchanged.
+  - `geo_validate.py`: leave-one-region-out validation over six regions with a 2 km buffer. Hyperparameters, calibrators and thresholds are picked by inner LORO on training regions only. It compares seven model families and scores Rainier once, after a pre-registered selection.
+  - `geo_ablation.py`: feature transfer.
+  - `geo_diagnostics.py`: shift and errors.
+  - `combined_validate.py`: the terrain x rain index on 78 dated clusters, with a 2 x 2 space-time design.
+
+  Results:
+  - Deployed terrain model: 0.770 mean ROC-AUC on unseen regions (min 0.589), against 0.819 in spatial CV.
+  - `lgbm_stumps` (selected): +0.022 at Rainier, CI 0.009–0.034.
+  - Combined index: 0.861 (0.822–0.919), above terrain alone (0.780) and rain alone (0.789). No dated event lies in the Rainier box.
+
+  Details are in [docs/geographic_validation.md](docs/geographic_validation.md) and [docs/data_gap_analysis.md](docs/data_gap_analysis.md). Checked with `python -m pytest ml/tests` and full runs of both scripts.
 
 ## 1. Lay out the repo and environment
 
