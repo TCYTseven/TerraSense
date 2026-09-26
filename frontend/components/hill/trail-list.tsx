@@ -23,7 +23,7 @@ const DOT: Record<TrailRisk["level"], string> = {
 export default function TrailList({ trails, selected, onView }: TrailListProps) {
   return (
     <section aria-labelledby="trails-heading" className="border-t border-border py-4">
-      <h2 id="trails-heading" className="px-5 text-xs text-muted-foreground">
+      <h2 id="trails-heading" className="px-5 text-sm text-muted-foreground">
         Top {trails.length} at-risk trails
       </h2>
       <ol className="mt-2">
@@ -33,14 +33,14 @@ export default function TrailList({ trails, selected, onView }: TrailListProps) 
             <li
               key={trail.id}
               aria-current={isSelected ? "true" : undefined}
-              className={`flex items-center gap-3 border-l-2 py-2 pl-[18px] pr-5 text-sm ${
+              className={`flex items-center gap-3 border-l-2 py-2.5 pl-[18px] pr-5 text-base ${
                 isSelected ? "border-primary bg-accent" : "border-transparent"
               }`}
             >
               <TrailBadge letter={trail.letter} level={trail.level} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate">{trail.name}</span>
-                <span className="block text-xs text-muted-foreground">
+                <span className="block text-sm text-muted-foreground">
                   {trail.primaryFactor} · <span className="font-mono">{trail.slopeDeg}°</span>
                 </span>
               </span>
@@ -53,7 +53,7 @@ export default function TrailList({ trails, selected, onView }: TrailListProps) 
                 type="button"
                 onClick={() => onView(trail.letter)}
                 aria-label={`View ${trail.name} on the map`}
-                className="h-7 shrink-0 rounded-md border border-primary px-2.5 text-xs font-medium text-primary hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="h-8 shrink-0 rounded-md border border-primary px-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 View
               </button>

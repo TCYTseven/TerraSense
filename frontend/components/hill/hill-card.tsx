@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
+import ReactiveMeasures from "@/components/pipeline/reactive-measures";
 import { buildHillView } from "@/lib/fixtures/hill-demo";
 import type { CameraFocus, TrailLetter } from "@/lib/hill";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
@@ -65,13 +66,16 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           {live && hill.preventative.length > 0 && <PreventativeMeasures items={hill.preventative} />}
           {live && (
             <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
-              <h2 id="agents-heading" className="text-xs text-muted-foreground">
+              <h2 id="agents-heading" className="text-sm text-muted-foreground">
                 Agents
               </h2>
               <div className="mt-2">
                 <AgentPipeline state={pipeline.state} />
               </div>
             </section>
+          )}
+          {live && pipeline.state.orchestrator === "done" && pipeline.state.measures && (
+            <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
           )}
         </div>
         {live && (

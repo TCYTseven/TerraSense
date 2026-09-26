@@ -135,7 +135,7 @@ The first screen is a full-screen 3D Earth.
 
 - React Three Fiber, Three.js, and drei. A custom globe (`frontend/components/globe/`), not a globe library.
 - Textured Earth (`earth-day.jpg` with a topology bump map) and a light atmospheric rim.
-- Three markers. Color encodes overall risk on all four levels (see the design addendum's Risk mapping). Rainier is live and gets an extra ring. The other two use a fixed risk value loaded from seed data.
+- Three markers, each a mountain logo in its risk color. Color encodes overall risk on all four levels (see the design addendum's Risk mapping); High and Extreme mountains also sit in a larger translucent sphere of that color. Rainier is live and gets an extra ring. The other two use a fixed risk value loaded from seed data.
 - Drag, zoom, and a slow idle rotation that pauses on hover and during a flight.
 - Hover shows mountain name, elevation, region, risk level, and last refresh time.
 - Click turns the globe to face the mountain and opens the mountain panel (6.8). **Open ranger view** in the panel flies the camera in over 1.5 s, fades to the background, and opens the mountain view. (Built today: the click flies straight in. Steps 29 and 30 move it behind the panel.)
@@ -172,7 +172,7 @@ The page is two columns: the 3D mountain view about 55%, one scrolling stats pan
 - Overall risk: the score as a number, with the level word and color.
 - Top 5 at-risk trails, riskiest first: letter, name, score, and **View**, which flies the camera to the trail's region.
 - Preventative measures: three to five bullets.
-- The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below.
+- The agent pipeline: an Orchestrator node connected to Terrain, Weather, Trails, Synthesizer, and Mass Alert Writer cards. A click on a card opens its reasoning trace beneath it. After a run, **Reactive Measures** appear below as a prominent section: closures and access, evacuation and sweeps, search and rescue readiness, field monitoring, agency coordination, and public notice drafts, each with a deadline.
 - Button: **Analyze now**, pinned to the panel bottom.
 
 There is no rain section. Weather is text in the Weather agent's trace, never a map layer. Until the per-trail model and the agent stream are wired into the card, the trail scores, traces, and measures are illustrative and labeled as such; the orchestrator runs client-side.

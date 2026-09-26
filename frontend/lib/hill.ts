@@ -87,11 +87,29 @@ export interface PipelineAgentState {
   finishedAt: number | null;
 }
 
-/** What the rangers or the public should do now. Public items are drafts; nothing is sent. */
+/**
+ * The response to a slide, split the way an incident is run: who acts, and on what. Listed in
+ * the order the panel shows them, most urgent work first.
+ */
+export const MEASURE_CATEGORIES = ["closures", "evacuation", "rescue", "monitoring", "coordination", "public"] as const;
+export type MeasureCategory = (typeof MEASURE_CATEGORIES)[number];
+
+export const MEASURE_CATEGORY_LABELS: Record<MeasureCategory, string> = {
+  closures: "Closures and access",
+  evacuation: "Evacuation and sweeps",
+  rescue: "Search and rescue readiness",
+  monitoring: "Field monitoring",
+  coordination: "Agency coordination",
+  public: "Public notice",
+};
+
+/** One thing to do. Public items are drafts; nothing is sent from the app. */
 export interface ReactiveMeasure {
-  audience: "rangers" | "public";
+  category: MeasureCategory;
   title: string;
   detail: string;
+  /** When it has to happen, such as "Now" or "Within 1 h". */
+  when: string;
   /** The trail it concerns, when it concerns one. */
   letter: TrailLetter | null;
 }

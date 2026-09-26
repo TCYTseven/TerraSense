@@ -36,6 +36,7 @@ import {
   SOURCE,
   trailFeatures,
 } from "./map-style";
+import { useIdleOrbit } from "./use-idle-orbit";
 import { useTrailMarkers } from "./use-trail-markers";
 
 // Copied from node_modules by scripts/copy-maplibre-worker.mjs on npm install.
@@ -322,8 +323,8 @@ export default function TerrainMap({
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
   const [showSusceptibility, setShowSusceptibility] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
-  // The camera frames the trails the page opened with. Later updates only restyle the lines.
-  const trailsAtOpen = useRef(trails);
+  // The camera frames the markers the page opened with. Later updates only move the markers.
+  const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
   const hazardClick = useRef(onHazardClick);
   const mapClick = useRef(onMapClick);
@@ -338,8 +339,8 @@ export default function TerrainMap({
       return;
     }
     setWorkerUrl(WORKER_URL);
-    // Open on the summit and the hero trail together, or on the summit alone.
-    const bounds = openingBounds(lon, lat, trailsAtOpen.current);
+    // Open on the mountain's footprint, sized from its elevation, plus the trail markers near it.
+    const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
     const instance = new MapLibreMap({
       container: container.current,
       style: mountainStyle({ summitM: elevationM, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
@@ -348,12 +349,12 @@ export default function TerrainMap({
       pitch: CAMERA.pitch,
       bearing: CAMERA.bearing,
       maxPitch: CAMERA.maxPitch,
-      ...(bounds && {
-        bounds,
-        fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing: CAMERA.bearing },
-      }),
+      bounds,
+      fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing: CAMERA.bearing },
       attributionControl: { compact: true },
     });
+    // The opening frame is the widest view that still reads as this mountain.
+    instance.setMinZoom(instance.getZoom() - CAMERA.zoomOutRoom);
     instance.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
     instance.addControl(new ScaleControl({ unit: "imperial" }), "bottom-right");
     new Marker({ element: summitLabel(name), anchor: "bottom", offset: [0, -4] }).setLngLat([lon, lat]).addTo(instance);
@@ -587,6 +588,7 @@ export default function TerrainMap({
   }, [map, isLive]);
 
   useTrailMarkers(map, trailMarkers, focus);
+  useIdleOrbit(map, Boolean(focus));
 
   function toggle(id: string) {
     if (id === LAYER.susceptibility) {

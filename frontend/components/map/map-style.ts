@@ -1,13 +1,12 @@
 import type {
   CircleLayerSpecification,
   ExpressionSpecification,
-  LngLatBoundsLike,
   RasterSourceSpecification,
   SourceSpecification,
   StyleSpecification,
 } from "maplibre-gl";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { Bypass, Hazard, HistoricalEvent, LayerTiles, LineString, RiskLevel, Trail } from "@/lib/types";
+import type { Bypass, Hazard, HistoricalEvent, LayerTiles, LineString, Position, RiskLevel, Trail } from "@/lib/types";
 
 /**
  * The mountain map's style: 3D terrain from open elevation tiles under a light shaded relief.
@@ -33,6 +32,11 @@ export const CAMERA = {
   pitch: 55,
   bearing: -14,
   maxPitch: 70,
+  /** How far below the opening zoom the user may zoom out: one level, about twice the view. */
+  zoomOutRoom: 1,
+  /** The idle orbit: a full turn in about five minutes, resuming after 8 s without input. */
+  orbitDegPerSec: 1.2,
+  orbitResumeMs: 8000,
   // Extra room at the top: the exaggerated summit rises above where its base sits on screen.
   padding: { top: 150, bottom: 48, left: 48, right: 48 },
 } as const;
@@ -261,14 +265,38 @@ export function trailFeatures(trails: Trail[]): GeoJSON.FeatureCollection<GeoJSO
   return { type: "FeatureCollection", features };
 }
 
-/** The summit and the hero trail, [west, south, east, north], or null without a hero trail. */
-export function openingBounds(lon: number, lat: number, trails: Trail[]): LngLatBoundsLike | null {
-  const points = trails.filter(isHero).flatMap((trail) => trail.geom.coordinates);
-  if (points.length === 0) {
-    return null;
-  }
-  const lons = [lon, ...points.map(([x]) => x)];
-  const lats = [lat, ...points.map(([, y]) => y)];
+/**
+ * How far a mountain's base spreads from its summit, per meter of summit elevation. Flanks
+ * average about 22°, so the base sits roughly relief / tan(22°) out; relief is taken as 85% of
+ * the summit elevation, since the surrounding valleys are rarely at sea level.
+ * 0.85 / tan(22°) ≈ 2.1: about 9 km for Rainier, 19 km for Everest.
+ */
+export const FOOTPRINT_PER_M = 0.85 / Math.tan((22 * Math.PI) / 180);
+/** The framed radius stays readable for small hills and giant massifs alike. */
+export const FOOTPRINT_KM = { min: 3, max: 25 } as const;
+
+const KM_PER_DEG = 111.32;
+
+/**
+ * The opening frame for any mountain: a circle around the summit sized by its elevation (see
+ * FOOTPRINT_PER_M), stretched to take in the points of interest (the trail markers) that sit
+ * within twice that radius, so far-off outliers can't pull the view away from the mountain.
+ */
+export function openingBounds(
+  lon: number,
+  lat: number,
+  elevationM: number,
+  points: Position[] = [],
+): [number, number, number, number] {
+  const radiusKm = Math.min(FOOTPRINT_KM.max, Math.max(FOOTPRINT_KM.min, (FOOTPRINT_PER_M * elevationM) / 1000));
+  const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
+  const dLat = radiusKm / KM_PER_DEG;
+  const dLon = radiusKm / kmPerDegLon;
+  const near = points.filter(
+    ([x, y]) => Math.hypot((x - lon) * kmPerDegLon, (y - lat) * KM_PER_DEG) <= 2 * radiusKm,
+  );
+  const lons = [lon - dLon, lon + dLon, ...near.map(([x]) => x)];
+  const lats = [lat - dLat, lat + dLat, ...near.map(([, y]) => y)];
   return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
 }
 

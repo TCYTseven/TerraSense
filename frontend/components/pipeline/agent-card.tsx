@@ -37,7 +37,7 @@ export default function AgentCard({
         aria-expanded={expanded}
         aria-controls={traceId}
         aria-label={`${label}, ${statusWord}. ${expanded ? "Hide" : "Show"} its reasoning.`}
-        className={`flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring ${
+        className={`flex w-full items-start gap-3 rounded-md px-3 py-2.5 text-left hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring ${
           running ? "animate-work bg-foreground/4 motion-reduce:animate-none" : ""
         }`}
       >
@@ -46,13 +46,13 @@ export default function AgentCard({
         </span>
         <span className="min-w-0 flex-1">
           <span className="flex items-baseline justify-between gap-3">
-            <span className="text-sm">{label}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">
+            <span className="text-base">{label}</span>
+            <span className="shrink-0 text-sm text-muted-foreground">
               {time && <span className="mr-1.5 font-mono">{time}</span>}
               {statusWord}
             </span>
           </span>
-          <span title={line} className="block truncate text-xs text-muted-foreground">
+          <span title={line} className="block truncate text-sm text-muted-foreground">
             {line}
           </span>
         </span>
@@ -61,9 +61,9 @@ export default function AgentCard({
         />
       </button>
       {expanded && (
-        <div id={traceId} className="border-t border-border px-3 py-2.5">
+        <div id={traceId} className="border-t border-border px-4 py-3">
           {agent.trace.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {agent.status === "idle"
                 ? notReached
                   ? "No reasoning: the run stopped before this agent."
@@ -71,22 +71,22 @@ export default function AgentCard({
                 : "Starting…"}
             </p>
           ) : (
-            <ol className="space-y-1.5 text-xs">
+            <ol className="space-y-2 text-sm leading-relaxed">
               {agent.trace.map((step, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="w-4 shrink-0 text-right font-mono text-muted-foreground">{i + 1}</span>
+                  <span className="w-5 shrink-0 text-right font-mono text-muted-foreground">{i + 1}</span>
                   <span className="min-w-0 break-words">{step}</span>
                 </li>
               ))}
             </ol>
           )}
           {running && (
-            <p className="mt-1.5 flex items-center gap-2 pl-6 text-xs text-muted-foreground">
+            <p className="mt-2 flex items-center gap-2 pl-7 text-sm text-muted-foreground">
               <span className="animate-work motion-reduce:animate-none">Thinking…</span>
             </p>
           )}
           {agent.status === "error" && (
-            <p className="mt-1.5 border-l-2 border-foreground/40 pl-2 text-xs">{agent.summary}</p>
+            <p className="mt-2 border-l-2 border-foreground/40 pl-2 text-sm">{agent.summary}</p>
           )}
         </div>
       )}
