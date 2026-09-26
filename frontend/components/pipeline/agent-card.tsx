@@ -7,6 +7,56 @@ function seconds(agent: PipelineAgentState): string | null {
   return `${((agent.finishedAt - agent.startedAt) / 1000).toFixed(1)} s`;
 }
 
+/** Tool calls, model attempts, and route lines belong in the terminal. The rest is the write-up. */
+function isLogLine(step: string): boolean {
+  const text = step.replace(/^(?:Terrain|Weather|Trails|History|Routes|Synthesizer|Alert writer): /, "");
+  return text.startsWith("Tool ") || text.includes(" · ") || /\b(?:answered|failed:)/.test(text);
+}
+
+function splitTrace(trace: string[]): { log: string[]; prose: string[] } {
+  const log: string[] = [];
+  const prose: string[] = [];
+  for (const step of trace) {
+    (isLogLine(step) ? log : prose).push(step);
+  }
+  return { log, prose };
+}
+
+/**
+ * The opened trace: one terminal for the calls, then the write-up as continuous lines.
+ */
+function AgentTrace({ trace, time }: { trace: string[]; time: string | null }) {
+  const { log, prose } = splitTrace(trace);
+  return (
+    <div className="space-y-3">
+      {log.length > 0 && (
+        <div className="overflow-hidden rounded-lg border border-border bg-background">
+          <div className="flex items-center justify-between border-b border-border px-3 py-1.5 text-xs text-muted-foreground">
+            <span className="font-mono">agent</span>
+            {time && <span className="font-mono">worked {time}</span>}
+          </div>
+          <div className="px-3 py-2 font-mono text-[13px] leading-5 text-foreground/90">
+            {log.map((line, i) => (
+              <p key={i} className="whitespace-pre-wrap break-words">
+                {line}
+              </p>
+            ))}
+          </div>
+        </div>
+      )}
+      {prose.length > 0 && (
+        <div className="px-0.5 text-sm leading-6 text-foreground/90">
+          {prose.map((line, i) => (
+            <p key={i} className="break-words">
+              {line}
+            </p>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * One agent: name, status, and summary. A click opens its reasoning trace directly beneath it.
  * `notReached` marks an idle agent the failed run never got to.
@@ -61,9 +111,9 @@ export default function AgentCard({
         />
       </button>
       {expanded && (
-        <div id={traceId} className="border-t border-border px-4 py-3">
+        <div id={traceId} className="border-t border-border px-3 py-3">
           {agent.trace.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
+            <p className="px-1 text-sm text-muted-foreground">
               {agent.status === "idle"
                 ? notReached
                   ? "No reasoning: the run stopped before this agent."
@@ -71,22 +121,12 @@ export default function AgentCard({
                 : "Starting…"}
             </p>
           ) : (
-            <ol className="space-y-2 text-sm leading-relaxed">
-              {agent.trace.map((step, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="w-5 shrink-0 text-right font-mono text-muted-foreground">{i + 1}</span>
-                  <span className="min-w-0 break-words">{step}</span>
-                </li>
-              ))}
-            </ol>
+            <AgentTrace trace={agent.trace} time={time} />
           )}
           {running && (
-            <p className="mt-2 flex items-center gap-2 pl-7 text-sm text-muted-foreground">
+            <p className="mt-2 px-1 text-sm text-muted-foreground">
               <span className="animate-work motion-reduce:animate-none">Thinking…</span>
             </p>
-          )}
-          {agent.status === "error" && (
-            <p className="mt-2 border-l-2 border-foreground/40 pl-2 text-sm">{agent.summary}</p>
           )}
         </div>
       )}
