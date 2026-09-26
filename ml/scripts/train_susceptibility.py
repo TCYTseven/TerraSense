@@ -33,9 +33,11 @@ from sklearn.metrics import precision_score, roc_auc_score
 REPO_ROOT = Path(__file__).resolve().parents[2]
 STACK_PATH = REPO_ROOT / "data" / "processed" / "features.tif"
 TABLE_PATH = REPO_ROOT / "data" / "processed" / "features.parquet"
+LANDSLIDES_PATH = REPO_ROOT / "data" / "seed" / "landslides.geojson"
 ARTIFACTS_DIR = REPO_ROOT / "ml" / "artifacts"
 
 FEATURES = ["elevation", "slope", "aspect", "curvature", "dist_drainage", "landcover", "twi"]
+TABLE_COLUMNS = FEATURES + ["label", "region", "row", "col"]
 
 # Shared facts: the lower edge of the "high" bin.
 HIGH_THRESHOLD = 0.45
@@ -51,6 +53,7 @@ LGBM_PARAMS = {
     "subsample": 0.8,
     "subsample_freq": 1,
     "colsample_bytree": 0.8,
+    "n_jobs": 1,
     "random_state": RANDOM_SEED,
     "verbose": -1,
 }
@@ -103,9 +106,29 @@ def as_frame(values: dict[str, np.ndarray]) -> pd.DataFrame:
     return frame
 
 
+def validate_table(table: pd.DataFrame) -> None:
+    """Reject malformed training input before LightGBM can produce a misleading artifact."""
+    missing = [name for name in TABLE_COLUMNS if name not in table.columns]
+    if missing:
+        raise SystemExit(f"training table is missing required columns: {missing}")
+    required_values = [name for name in TABLE_COLUMNS if name != "aspect"]
+    if table[required_values].isna().any().any():
+        missing_values = table[required_values].columns[table[required_values].isna().any()].tolist()
+        raise SystemExit(f"training table has missing values in: {missing_values}")
+    labels = set(table["label"].unique().tolist())
+    if not labels <= {0, 1}:
+        raise SystemExit(f"training labels must be binary 0/1, got {sorted(labels)}")
+    if table[["row", "col"]].duplicated().any():
+        raise SystemExit("training table contains duplicate pixel coordinates")
+    if table["label"].nunique() < 2:
+        raise SystemExit("training table must contain both positive and negative labels")
+
+
 def split_regions(table: pd.DataFrame) -> list[int]:
     """Whole regions for the test set, holding at least TEST_POSITIVE_SHARE of the positives."""
     positives = table[table["label"] == 1].groupby("region").size()
+    if len(positives) < 2:
+        raise SystemExit("spatial validation needs positive labels in at least two regions")
     order = np.random.default_rng(RANDOM_SEED).permutation(positives.index.to_numpy())
     test, held = [], 0
     for region in order:
@@ -118,7 +141,10 @@ def split_regions(table: pd.DataFrame) -> list[int]:
 
 def train(table: pd.DataFrame) -> tuple[lgb.LGBMClassifier, dict, dict]:
     """Score on held-out regions, then refit on everything for the map."""
+    validate_table(table)
     test_regions = split_regions(table)
+    if not test_regions:
+        raise SystemExit("spatial validation could not select a held-out region")
     is_test = table["region"].isin(test_regions)
     train_rows, test_rows = table[~is_test], table[is_test]
     if test_rows["label"].nunique() < 2 or train_rows["label"].nunique() < 2:
@@ -137,13 +163,17 @@ def train(table: pd.DataFrame) -> tuple[lgb.LGBMClassifier, dict, dict]:
         "train_rows": len(train_rows),
         "test_rows": len(test_rows),
         "positives": int(table["label"].sum()),
+        "features": FEATURES,
         "note": "Scores are on held-out spatial blocks. The map comes from a refit on every row. "
                 "Negatives were sampled 1:3, so read the output as relative susceptibility.",
     }
 
     final = lgb.LGBMClassifier(**LGBM_PARAMS).fit(as_frame(table), table["label"])
     gain = final.booster_.feature_importance(importance_type="gain")
-    importance = {name: round(float(g / gain.sum()), 4) for name, g in zip(FEATURES, gain, strict=True)}
+    total_gain = gain.sum()
+    if total_gain <= 0:
+        raise SystemExit("LightGBM produced no feature gain; refusing to publish an unusable model")
+    importance = {name: round(float(g / total_gain), 4) for name, g in zip(FEATURES, gain, strict=True)}
     return final, metrics, importance
 
 
@@ -176,17 +206,39 @@ def knowledge_driven_index(stack: np.ndarray) -> np.ndarray:
     index = sum(weight * scores[name] for name, weight in INDEX_WEIGHTS.items())
     index[np.isnan(band["elevation"])] = np.nan
     low, high = np.nanpercentile(index, INDEX_STRETCH_PERCENTILES)
-    index = np.clip((index - low) / (high - low), 0, 1)
+    if not np.isfinite(low) or not np.isfinite(high) or high <= low:
+        index = np.zeros_like(index, dtype="float32")
+    else:
+        index = np.clip((index - low) / (high - low), 0, 1)
     index[band["landcover"] == 80] = 0.0
     return index.astype("float32")
 
 
 def write_raster(path: Path, values: np.ndarray, profile: dict, method: str) -> None:
     profile = {**profile, "count": 1, "dtype": "float32", "nodata": np.nan, "predictor": 3}
-    with rasterio.open(path, "w", **profile) as dst:
+    partial = path.with_name(path.name + ".part")
+    with rasterio.open(partial, "w", **profile) as dst:
         dst.write(values, 1)
         dst.set_band_description(1, "susceptibility")
         dst.update_tags(METHOD=method, SOURCE="ml/scripts/train_susceptibility.py")
+    partial.replace(path)
+
+
+def label_provenance() -> dict:
+    """Record the seed catalogs behind the current training table in the model card."""
+    if not LANDSLIDES_PATH.is_file():
+        return {}
+    payload = json.loads(LANDSLIDES_PATH.read_text(encoding="utf-8"))
+    features = payload.get("features", [])
+    accuracies = {"exact", "1km"}
+    return {
+        "seed_events": len(features),
+        "label_catalogs": sorted({feature.get("properties", {}).get("catalog") or "unknown" for feature in features}),
+        "usable_seed_events": sum(
+            (feature.get("properties", {}).get("location_accuracy") or "").lower() in accuracies
+            for feature in features
+        ),
+    }
 
 
 def main() -> None:
@@ -201,7 +253,9 @@ def main() -> None:
         table = pd.read_parquet(args.table)
         model, metrics, importance = train(table)
         susceptibility = predict_map(model, stack)
-        model.booster_.save_model(str(args.artifacts / "susceptibility_lgbm.txt"))
+        model_path = args.artifacts / "susceptibility_lgbm.txt"
+        model.booster_.save_model(str(model_path.with_name(model_path.name + ".part")))
+        model_path.with_name(model_path.name + ".part").replace(model_path)
         print(f"LightGBM on {len(table)} labeled pixels. Held-out regions {metrics['test_regions']}: "
               f"AUC {metrics['auc']}, precision at >= {HIGH_THRESHOLD} {metrics['precision_at_high']}")
     else:
@@ -228,9 +282,22 @@ def main() -> None:
         "share_at_or_above_high": round(float((valid >= HIGH_THRESHOLD).mean()), 4),
     }
     write_raster(args.artifacts / "susceptibility.tif", susceptibility, profile, metrics["method"])
-    (args.artifacts / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
-    (args.artifacts / "feature_importance.json").write_text(
-        json.dumps({"method": metrics["method"], "importance": importance}, indent=2) + "\n")
+    metrics["features"] = FEATURES
+    metrics.update(label_provenance())
+    metrics["grid"] = {
+        "crs": str(profile["crs"]),
+        "width": int(profile["width"]),
+        "height": int(profile["height"]),
+        "cell_m": 30,
+    }
+    for filename, payload in (
+        ("metrics.json", metrics),
+        ("feature_importance.json", {"method": metrics["method"], "importance": importance}),
+    ):
+        output = args.artifacts / filename
+        partial = output.with_name(output.name + ".part")
+        partial.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        partial.replace(output)
 
     print(f"wrote {rel(args.artifacts / 'susceptibility.tif')}: {valid.size} cells, mean {valid.mean():.3f}, "
           f"{(valid >= HIGH_THRESHOLD).mean():.1%} at or above {HIGH_THRESHOLD}")

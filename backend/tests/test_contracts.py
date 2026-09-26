@@ -114,7 +114,7 @@ class _FakeModelBResult:
     """What step 17 first shipped: float64 on the susceptibility grid, plus its transform and CRS."""
 
     probability = np.full((4, 4), 0.5, dtype="float64")
-    transform = Affine.translation(0, 0) * Affine.scale(30, -30)
+    transform = Affine.translation(0, 0) @ Affine.scale(30, -30)
     crs = rasterio.crs.CRS.from_epsg(32610)
 
 
@@ -134,8 +134,9 @@ def model_b():
     del sys.modules["app.ml.model_b"]
 
 
-def test_score_reads_model_b_and_normalises_what_it_returns(model_b):
+def test_score_reads_model_b_and_normalises_what_it_returns(model_b, monkeypatch):
     """Model B may hand back any float array and any CRS object; downstream needs float32 and a str."""
+    monkeypatch.setenv("OPEN_METEO_FIXTURE", FIXTURE)
     mapped = prob.score(get_hourly_rain())
     assert mapped.method == prob.MODEL_B_METHOD and not mapped.is_stand_in
     assert mapped.values.dtype == np.float32, "the tiler and the sampler both assume float32"
@@ -143,8 +144,9 @@ def test_score_reads_model_b_and_normalises_what_it_returns(model_b):
     assert mapped.transform is _FakeModelBResult.transform
 
 
-def test_model_b_receives_the_documented_rain_shape(model_b):
+def test_model_b_receives_the_documented_rain_shape(model_b, monkeypatch):
     """What a Model B author may rely on. Adding a series must not move or rename any of it."""
+    monkeypatch.setenv("OPEN_METEO_FIXTURE", FIXTURE)
     prob.score(get_hourly_rain())
     rain = model_b["rain"]
     assert len(rain.times) == len(rain.precipitation_mm)
@@ -177,15 +179,16 @@ def test_the_extra_series_reach_model_b_aligned_with_the_hours(model_b):
     assert rain.now_index == 4 and rain.at_now(rain.temperature_c) == 4.0
 
 
-def test_score_falls_back_to_the_labelled_stand_in_without_model_b():
-    """The ML track's module is absent for most of the build; the map still has to say what it is."""
-    assert "app.ml.model_b" not in sys.modules
+def test_score_uses_the_live_model_b_contract(monkeypatch):
+    """The live Model B module is the source of truth once the ML track has shipped it."""
+    monkeypatch.setenv("OPEN_METEO_FIXTURE", FIXTURE)
     mapped = prob.score(get_hourly_rain())
-    assert mapped.is_stand_in and mapped.method == prob.STAND_IN_METHOD
+    assert not mapped.is_stand_in and mapped.method == prob.MODEL_B_METHOD
 
 
-def test_the_map_summary_is_json_native():
-    assert_json_native(prob.summarize(prob.score().values), "map_summary")
+def test_the_map_summary_is_json_native(monkeypatch):
+    monkeypatch.setenv("OPEN_METEO_FIXTURE", FIXTURE)
+    assert_json_native(prob.summarize(prob.score(get_hourly_rain()).values), "map_summary")
 
 
 # --- 2. each agent's output schema, as a provider receives it ------------------------------------

@@ -14,7 +14,7 @@ from app.config import cors_origins
 from app.db import close_pool
 from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
-from app.routes import forecast, mountains, runs
+from app.routes import forecast, mountains, risk, runs
 
 # The Next.js dev server, plus any deployed origins from CORS_ORIGINS.
 # Browsers treat localhost and 127.0.0.1 as different origins.
@@ -48,6 +48,7 @@ app.add_middleware(
 app.include_router(mountains.router)
 app.include_router(runs.router)
 app.include_router(forecast.router)
+app.include_router(risk.router)
 # Map tiles rendered by ml/scripts/render_tiles.py. The folder may not exist until then.
 app.mount("/tiles", StaticFiles(directory=TILES_DIR, check_dir=False), name="tiles")
 
@@ -57,6 +58,23 @@ app.mount("/tiles", StaticFiles(directory=TILES_DIR, check_dir=False), name="til
 async def database_unavailable(_: Request, __: Exception) -> JSONResponse:
     """The database is down or unreachable. The frontend shows its error state."""
     return JSONResponse(status_code=503, content={"detail": "Database unavailable"})
+
+
+@app.get("/")
+def root() -> dict[str, str]:
+    """Browser-friendly entry point; the UI runs on http://localhost:3000."""
+    return {
+        "service": "TerraSense API",
+        "health": "/health",
+        "docs": "/docs",
+        "mountains": "/mountains",
+    }
+
+
+@app.get("/json/version")
+def chrome_devtools_probe() -> dict[str, str]:
+    """Chrome DevTools probes localhost ports; not a CDP target."""
+    return {"Browser": "TerraSense API", "Protocol-Version": "1.0"}
 
 
 @app.get("/health")

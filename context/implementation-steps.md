@@ -15,11 +15,11 @@ Finish each step on a track before you start the next one on that track. Stay in
 
 ### Pending
 
-- [ ] 10. Download the Rainier source layers (on main: DEM and land cover only. Landslide points, the labeled table, LightGBM, historical pins, and Model B are on `origin/step-10-local-nasa-export`, not merged. See [9-26-todo.md](9-26-todo.md))
-- [ ] 11. Build the terrain feature table (feature stack is on main. The labeled table is on that same branch)
-- [ ] 12. Train the susceptibility model (on main the map is still the knowledge-driven index. The branch has LightGBM, held-out AUC 0.715)
-- [ ] 14. Import trails and historical landslide pins (67 trails and 55 Skyline segments are on main. 37 historical pins are on that branch)
-- [ ] 17. Score 72-hour probability from live rain (on main the heat map is the susceptibility stand-in. `backend/app/ml/model_b.py` is on that branch)
+- [x] 10. Download the Rainier source layers (DEM, land cover, 4 NASA events, and 33 documented supplemental inventory labels are present)
+- [x] 11. Build the terrain feature table (30 m seven-band stack and 1,224-row labeled table are present)
+- [x] 12. Train the susceptibility model (LightGBM trained; held-out spatial AUC 0.715; susceptibility tiles rendered)
+- [x] 14. Import trails and historical landslide pins (67 OpenStreetMap trails, 55 hero segments, and 37 Rainier historical pins are present)
+- [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
 - [ ] 26. Rank the pressure points
 - [ ] 27. Trace a runout from a pressure point
 - [ ] 28. Expose simulate, the stream, and the callouts
@@ -106,68 +106,62 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Outcome.** Offline scripts have a DEM, a land-cover raster, and landslide points for the bounding box.
 
-**Done so far.** `ml/scripts/download_sources.py` wrote the Copernicus DEM GLO-30 and the ESA WorldCover 2021 clips to `data/raw/`, both checked against the bbox. `data/seed/sources.md` records both.
+**Done so far.** `ml/scripts/download_sources.py` writes and verifies the Copernicus DEM GLO-30, ESA WorldCover 2021 clip, and landslide points. NASA GLC is preferred; sparse high-accuracy NASA exports are supplemented by the official Washington Geological Survey Landslide Compilation layer so spatial training does not rely on one event cluster.
 
-**Left.** On main, `data/seed/landslides.geojson` is still missing. `origin/step-10-local-nasa-export` already has it (4 NASA events and 33 Washington labels). Merge that branch instead of downloading again.
+**Source note.** The supplied NASA export contributed 4 Rainier events, but only one is `1km` accurate; the script added 33 official Washington inventory polygons as conservative `1km` representative points. NASA events retain their original `1km`/`5km` accuracy, and no point was placed by hand.
 
-- Download landslide points inside the box from the NASA Global Landslide Catalog or a USGS inventory. On 2026-09-25 the build container got HTTP 403 from data.nasa.gov, ScienceBase, and Washington DNR.
-- On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. Or download the CSV in a browser and pass `--glc-csv path/to/export.csv`.
-- Fill in the access date and the point count in `data/seed/sources.md`. Do not place points by hand.
-
-**Done when.** The DEM, land cover, and `data/seed/landslides.geojson` all cover the shared bounding box, and `sources.md` names each file.
+**Done when.** The DEM, land cover, and `data/seed/landslides.geojson` cover the shared bounding box, `sources.md` names each source, and the downloader plus source adapter tests pass.
 
 ## 11. Build the terrain feature table
 
 **Outcome.** Model A has one row per pixel and a stable label.
 
-**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI).
+**Done so far.** `ml/scripts/build_features.py` writes `data/processed/features.tif`: a 30 m grid in UTM 10N (1004 × 757 cells) with seven bands (elevation, slope, aspect, curvature, distance to drainage, land cover, TWI). The current run writes a 1,224-row labeled table from 34 usable `exact`/`1km` points: 306 positives and 918 spatially excluded negatives across 14 regions.
 
 **Left.**
 
-- Rerun the script once step 10's points exist. It then writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives at about 1:3 from ground more than 500 m away, `label`, and `region` (7.5 km blocks).
+- It writes `data/processed/features.parquet`: positives within 50 m of `exact` or `1km` points, negatives at about 1:3 from ground more than 500 m away, `label`, and `region` (7.5 km blocks). The feature and label contract has adversarial unit coverage for region isolation, accuracy filtering, binary labels, and duplicate pixel prevention.
 
-**Done when.** The table has the seven features, a 0/1 label, and a region column, and the script prints the row count.
+**Done when.** The table has the seven features, a 0/1 label, and a region column, the script prints the row count, and the feature/label contract tests pass.
 
 ## 12. Train the susceptibility model
 
 **Outcome.** A LightGBM model and a susceptibility raster exist, with an honest score.
 
-**Done so far.** `ml/scripts/train_susceptibility.py` has the full LightGBM path: held-out spatial regions, AUC and precision at 0.45, gain importance, a refit, and a full-map prediction. Without labels it writes a knowledge-driven index (slope 0.35, distance to drainage 0.20, land cover 0.20, TWI 0.15, curvature 0.10) and `trained: false` in `ml/artifacts/metrics.json`.
+**Done so far.** `ml/scripts/train_susceptibility.py` trains LightGBM on the 1,224-row table, holds out whole spatial regions, reports AUC and precision at 0.45, refits on every labeled row, and writes a full-map prediction. The current run has AUC `0.7150`, precision at High `0.0000`, 1,041 train rows, 183 test rows, and 306 positives. The model file, metrics, feature importance, GeoTIFF, and 383 z10–z14 XYZ tiles are present.
 
 **Left.**
 
-- Rerun the script on the step 11 table.
-- Write the AUC you get into `metrics.json`, then into the Devpost draft in `TerraSense.md`. Do not treat 0.85 as a gate.
-- Re-render the susceptibility tiles (`python ml/scripts/render_tiles.py --layer susceptibility`).
+- No remaining step-12 implementation work. The score is reported honestly on a held-out spatial block; it is not treated as a 0.85 gate.
 
-**Done when.** The script prints AUC and writes a susceptibility raster that covers the Rainier box, and `metrics.json` says `trained: true`.
+**Done when.** The script prints AUC, writes a trained susceptibility raster covering the Rainier box, `metrics.json` says `trained: true`, the model artifact exists, and susceptibility tiles render.
 
 ## 14. Import trails and historical landslide pins
 
 **Outcome.** The map has real lines and real past events.
 
-**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves `historical_events` on `GET /mountains/mount-rainier`, and the list is empty while the points file is missing.
+**Done so far.** 67 OpenStreetMap trails (via Overture Maps) are in `data/seed/trails.geojson`. The hero trail, the Skyline loop, is cut into 55 segments of 0.1 mile in `data/seed/trail_segments.geojson`. `backend/app/history.py` serves 37 in-bounds `historical_events` on `GET /mountains/mount-rainier`, and static mountains remain empty. Historical-pin contract tests cover source, accuracy, bbox, and the static-mountain boundary.
 
 **Left.**
 
-- None in code. Once step 10 writes `data/seed/landslides.geojson`, the API re-reads it and the **Past landslides** toggle turns on.
+- None. The source file is committed, the API re-reads it when its mtime changes, and the **Past landslides** toggle is enabled for Rainier.
 
-**Done when.** Rainier returns a trail with mile-marked segments and a non-empty list of historical points inside the box, and a pin opens its popup on the map.
+**Done when.** Rainier returns a trail with mile-marked segments and 37 non-empty historical points inside the box, static mountains return no catalog points, and a pin opens its popup on the map.
 
 ## 17. Score 72-hour probability from live rain
 
 **Outcome.** Model B turns cached susceptibility and today's rain into a probability raster.
 
-**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam: it calls Model B when the module exists and serves the labeled stand-in otherwise. `origin/step-10-local-nasa-export` adds `backend/app/ml/model_b.py`. Main does not have that file yet.
+**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam, and `backend/app/ml/model_b.py` now produces the live probability raster.
 
 **Build.**
 
-- Implement `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`. This file belongs to the ML track.
+- Implemented `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`. The centered inputs keep dry, low-susceptibility cells below the high-risk bin.
 - Expose `run(rain)` returning an object with `.probability` (float32 0 to 1 on the susceptibility grid, NaN outside the data), `.transform`, and `.crs`. If the shape differs, adapt `_from_model_b()` in `probability.py` and nothing else.
 - Keep `w1`, `w2`, and `w3` as named constants. Document them next to the function.
 - Map probability through the shared bins.
 
-**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` then reads `model b`, and the stand-in note leaves the panel.
+**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` reads `model b`, and the stand-in note leaves the panel. `python -m app.assessment` now supplies the fetched rain to Model B and prints those totals.
 
 ## 26. Rank the pressure points
 
@@ -291,6 +285,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
 - **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 648 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
 - **Live hill-card agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores on the card are still the illustrative fixture.
+- **Production 72-hour classifier (new risk track).** Added a separate `(1 km cell, reference timestamp)` contract for rainfall-triggered landslide probability, direct NASA CSV/GeoJSON event ingestion, cell-aggregated static features, leakage-aware normalized observation/forecast samples, spatiotemporal LightGBM training, held-out calibration and target-precision thresholds, OOD/quality abstention, a backtest CLI, and `POST /api/v1/landslide-risk`. The checked-in API remains fail-closed until real timestamped IMERG/ERA5-Land/forecast inputs and calibrated artifacts are built; no performance numbers are fabricated.
 
 Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
 

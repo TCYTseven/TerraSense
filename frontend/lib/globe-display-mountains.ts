@@ -207,7 +207,7 @@ export function selectGlobeMountains(mountains: Mountain[], limit: number): Moun
 
   const live = mountains.filter((m) => m.is_live);
   const catalog = mountains.filter((m) => !m.is_live);
-  let budget = limit - live.length;
+  const budget = limit - live.length;
   if (budget <= 0) {
     return live.slice(0, limit);
   }

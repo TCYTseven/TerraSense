@@ -16,6 +16,7 @@ numpy>=2,<2.4
 rasterio~=1.4
 pillow>=11
 mercantile~=1.2
+lightgbm~=4.5
 
 # The hazard zone and trail risk (step 18): polygons and lines on the 30 m grid.
 shapely>=2.0
