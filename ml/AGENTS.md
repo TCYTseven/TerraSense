@@ -38,7 +38,7 @@ Run from the repo root:
 
 ```bash
 python3.12 -m venv ml/.venv && source ml/.venv/bin/activate
-pip install -r ml/requirements.txt
+pip install -r ml/requirements.txt -r ml/requirements-dev.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
