@@ -315,6 +315,15 @@ export function footprintRadiusKm(elevationM: number): number {
   return Math.min(FOOTPRINT_KM.max, Math.max(FOOTPRINT_KM.min, (FOOTPRINT_PER_M * elevationM) / 1000));
 }
 
+/** Geographic bounds for the catalog heat drape — inset inside the surround wash so the base meets the relief. */
+export function heatDrapeBounds(lon: number, lat: number, elevationM: number): [number, number, number, number] {
+  const radiusKm = footprintRadiusKm(elevationM) * 0.82;
+  const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
+  const dLat = radiusKm / KM_PER_DEG;
+  const dLon = radiusKm / kmPerDegLon;
+  return [lon - dLon, lat - dLat, lon + dLon, lat + dLat];
+}
+
 /** A closed ring of `steps` points at `radiusKm` around a point, in [lon, lat]. */
 function circle(lon: number, lat: number, radiusKm: number, steps = 96): Position[] {
   const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);

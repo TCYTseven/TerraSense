@@ -30,6 +30,7 @@ import {
   LAYER,
   mountainStyle,
   openingBearing,
+  heatDrapeBounds,
   openingBounds,
   rasterSource,
   SOURCE,
@@ -264,6 +265,11 @@ function hasWebGL(): boolean {
   }
 }
 
+/** Catalog peaks: API points at /tiles/synthetic/…; we paint one client image instead (no tile pop-in). */
+function isProceduralHeat(layer: LayerTiles): boolean {
+  return layer.tiles.includes("/tiles/synthetic/");
+}
+
 /** Drop whichever heat source was on the map so the other mode can attach cleanly. */
 function removeHeatLayer(map: MapLibreMap, layerId: string, sourceId: string) {
   if (map.getLayer(layerId)) {
@@ -276,7 +282,7 @@ function removeHeatLayer(map: MapLibreMap, layerId: string, sourceId: string) {
 
 /**
  * The mountain map: 3D terrain, a light shaded relief (or satellite with a Mapbox token),
- * susceptibility tiles on live peaks (terrain-draped heat), seeded drape elsewhere, and trails.
+ * pre-rendered susceptibility tiles on live peaks, one-shot seeded image on catalog peaks, and trails.
  * Browser-only. Load it through ./mountain-map.tsx.
  */
 export default function TerrainMap({
@@ -306,13 +312,17 @@ export default function TerrainMap({
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [webgl] = useState(hasWebGL);
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
-  const syntheticHeat = useMemo(() => {
-    if (susceptibility) {
-      return null;
+  const renderedHeat = susceptibility && !isProceduralHeat(susceptibility) ? susceptibility : null;
+  const instantHeat = useMemo(() => {
+    const drapeBounds = heatDrapeBounds(lon, lat, elevationM);
+    if (susceptibility && isProceduralHeat(susceptibility)) {
+      return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
     }
-    const bounds = openingBounds(lon, lat, elevationM, trailMarkers.map((trail) => trail.center));
-    return buildSyntheticHeatOverlay(slug ?? name, lon, lat, bounds);
-  }, [susceptibility, slug, name, lon, lat, elevationM, trailMarkers]);
+    if (!susceptibility) {
+      return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
+    }
+    return null;
+  }, [susceptibility, slug, name, lon, lat, elevationM]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -446,12 +456,11 @@ export default function TerrainMap({
     }
     map.setPaintProperty(layer, "raster-opacity-transition", { duration: 0, delay: 0 });
     map.setPaintProperty(layer, "raster-opacity", flowActive ? 0.35 : 1);
-  }, [map, flowActive, susceptibility, syntheticHeat]);
+  }, [map, flowActive, renderedHeat, instantHeat]);
 
-  // Live peaks: susceptibility XYZ tiles (same look as the reference — draped on terrain).
-  // 72-hour probability tiles are not drawn on the map; they stay in the run and the panel.
+  // Live peaks only: pre-rendered susceptibility XYZ tiles (draped on terrain like the reference).
   useEffect(() => {
-    if (!map || !susceptibility) {
+    if (!map || !renderedHeat) {
       return;
     }
     removeHeatLayer(map, LAYER.probability, SOURCE.syntheticProbability);
@@ -459,9 +468,9 @@ export default function TerrainMap({
 
     const source = map.getSource<RasterTileSource>(SOURCE.susceptibility);
     if (source) {
-      source.setTiles([susceptibility.tiles]);
+      source.setTiles([renderedHeat.tiles]);
     } else {
-      map.addSource(SOURCE.susceptibility, rasterSource(susceptibility));
+      map.addSource(SOURCE.susceptibility, rasterSource(renderedHeat));
       map.addLayer(
         {
           id: LAYER.susceptibility,
@@ -473,11 +482,11 @@ export default function TerrainMap({
       );
     }
     return fadeIn(map, LAYER.susceptibility, SOURCE.susceptibility, flowActive ? 0.35 : 1);
-  }, [map, susceptibility, flowActive]);
+  }, [map, renderedHeat, flowActive]);
 
-  // Catalog peaks without tiles: seeded image on the opening footprint only (not the data bbox).
+  // Catalog peaks: one canvas image (same seed as synthetic tiles, loads in one shot — no chunking).
   useEffect(() => {
-    if (!map || susceptibility || !syntheticHeat?.url) {
+    if (!map || !instantHeat?.url) {
       return;
     }
     removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
@@ -485,13 +494,13 @@ export default function TerrainMap({
     const sourceId = SOURCE.syntheticProbability;
     const existing = map.getSource(sourceId) as ImageSource | undefined;
     if (existing?.updateImage) {
-      existing.updateImage({ url: syntheticHeat.url, coordinates: syntheticHeat.coordinates });
+      existing.updateImage({ url: instantHeat.url, coordinates: instantHeat.coordinates });
     } else {
       removeHeatLayer(map, LAYER.probability, sourceId);
       map.addSource(sourceId, {
         type: "image",
-        url: syntheticHeat.url,
-        coordinates: syntheticHeat.coordinates,
+        url: instantHeat.url,
+        coordinates: instantHeat.coordinates,
       });
       map.addLayer(
         {
@@ -504,7 +513,7 @@ export default function TerrainMap({
       );
     }
     return fadeIn(map, LAYER.probability, sourceId, flowActive ? 0.35 : 1);
-  }, [map, susceptibility, syntheticHeat, flowActive]);
+  }, [map, instantHeat, flowActive]);
 
   // The hazard zone's outline, under the trails so the trail colors stay readable across it.
   useEffect(() => {

@@ -55,6 +55,20 @@
     "utm_crs": "EPSG:32632",
     "hero_trail": null
   },
+  "mount-erebus": {
+    "name": "Mount Erebus",
+    "peak_lat": -77.528,
+    "peak_lon": 167.155,
+    "peak_elevation_m": 3794,
+    "bbox": [
+      165.615,
+      -77.861,
+      168.695,
+      -77.195
+    ],
+    "utm_crs": "EPSG:32758",
+    "hero_trail": null
+  },
   "mount-everest": {
     "name": "Mount Everest",
     "peak_lat": 27.988,
@@ -110,5 +124,19 @@
     ],
     "utm_crs": "EPSG:32610",
     "hero_trail": "Skyline Trail"
+  },
+  "mount-washington": {
+    "name": "Mount Washington",
+    "peak_lat": 44.271,
+    "peak_lon": -71.304,
+    "peak_elevation_m": 1917,
+    "bbox": [
+      -71.493,
+      44.136,
+      -71.115,
+      44.406
+    ],
+    "utm_crs": "EPSG:32619",
+    "hero_trail": null
   }
 }

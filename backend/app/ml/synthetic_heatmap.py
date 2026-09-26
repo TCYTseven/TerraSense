@@ -180,18 +180,16 @@ def _score_at(nx: float, ny: float, field: _Field) -> float:
 
 
 def _edge_mask(u: float, v: float) -> float:
-    sides = min(_smoothstep(0, 0.14, u), _smoothstep(0, 0.14, 1 - u))
-    top = _smoothstep(0, 0.12, v)
-    bottom = 1 - _smoothstep(0.62, 1, v)
-    radius = math.hypot((u - 0.5) * 2, (v - 0.42) * 2)
-    round_edge = 1 - _smoothstep(0.95, 1.35, radius)
-    return sides * top * bottom * round_edge
+    dx = (u - 0.5) / 0.58
+    dy = (v - 0.5) / 0.68
+    dist = math.hypot(dx, dy)
+    return 1 - _smoothstep(0.68, 1.02, dist)
 
 
 def mountain_footprint_bbox(lon: float, lat: float, elevation_m: int | None) -> tuple[float, float, float, float]:
-    """West, south, east, north — same footprint idea as frontend openingBounds without trail points."""
+    """West, south, east, north — inset like frontend heatDrapeBounds (0.82 × footprint radius)."""
     elev = elevation_m if elevation_m and elevation_m > 0 else 3000
-    radius_km = min(FOOTPRINT_KM_MAX, max(FOOTPRINT_KM_MIN, FOOTPRINT_PER_M * elev / 1000))
+    radius_km = min(FOOTPRINT_KM_MAX, max(FOOTPRINT_KM_MIN, FOOTPRINT_PER_M * elev / 1000)) * 0.82
     km_lon = KM_PER_DEG * math.cos(math.radians(lat))
     d_lat = radius_km / KM_PER_DEG
     d_lon = radius_km / km_lon

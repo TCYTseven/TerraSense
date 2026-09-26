@@ -209,17 +209,14 @@ function colorForScore(score: number): [number, number, number, number] {
 }
 
 /**
- * Dissolves the drape into the terrain. Sides and the north edge fade over a short band.
- * The south edge fades across a much longer one: that is the cut that reads as a rectangle
- * laid on the lower slopes.
+ * Soft elliptical falloff centered on the summit (north/top of the drape). One smooth edge
+ * avoids the old ring artifacts from stacking a box mask and a radial mask.
  */
 function edgeMask(u: number, v: number): number {
-  const sides = Math.min(smoothstep(0, 0.14, u), smoothstep(0, 0.14, 1 - u));
-  const top = smoothstep(0, 0.12, v);
-  const bottom = 1 - smoothstep(0.62, 1, v);
-  const radius = Math.hypot((u - 0.5) * 2, (v - 0.42) * 2);
-  const round = 1 - smoothstep(0.95, 1.35, radius);
-  return sides * top * bottom * round;
+  const dx = (u - 0.5) / 0.58;
+  const dy = (v - 0.5) / 0.68;
+  const dist = Math.hypot(dx, dy);
+  return 1 - smoothstep(0.68, 1.02, dist);
 }
 
 /**
