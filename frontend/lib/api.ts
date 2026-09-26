@@ -1,4 +1,4 @@
-import type { Forecast, LayerTiles, Mountain, MountainDetail, Run } from "./types";
+import type { Forecast, LandslideRiskPrediction, LayerTiles, Mountain, MountainDetail, Run } from "./types";
 
 /** The FastAPI service. Set NEXT_PUBLIC_API_URL in the repo root .env. */
 export const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000").replace(
@@ -114,6 +114,20 @@ export async function getForecast(mountainId: string, trailId?: string | null, i
     }
     throw error;
   }
+}
+
+/** Classify rainfall-triggered landslide risk for the next 72 hours at a 1 km cell. */
+export function getLandslideRisk(
+  latitude: number,
+  longitude: number,
+  timestamp?: string,
+  init?: RequestInit,
+): Promise<LandslideRiskPrediction> {
+  return postJson<LandslideRiskPrediction>("/api/v1/landslide-risk", {
+    ...init,
+    body: JSON.stringify({ latitude, longitude, ...(timestamp ? { timestamp } : {}) }),
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
 }
 
 /** The WebSocket URL for a run's live stream. */

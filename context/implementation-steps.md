@@ -285,6 +285,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
 - **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 648 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
 - **Live hill-card agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores on the card are still the illustrative fixture.
+- **Production 72-hour classifier (new risk track).** Added a separate `(1 km cell, reference timestamp)` contract for rainfall-triggered landslide probability, direct NASA CSV/GeoJSON event ingestion, cell-aggregated static features, leakage-aware normalized observation/forecast samples, spatiotemporal LightGBM training, held-out calibration and target-precision thresholds, OOD/quality abstention, a backtest CLI, and `POST /api/v1/landslide-risk`. The checked-in API remains fail-closed until real timestamped IMERG/ERA5-Land/forecast inputs and calibrated artifacts are built; no performance numbers are fabricated.
 
 Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
 

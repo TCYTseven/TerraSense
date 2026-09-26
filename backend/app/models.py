@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.risk import RiskLevel
 
@@ -128,3 +128,40 @@ class MountainDetail(Mountain):
     historical_events: list[HistoricalEvent]
     # The run going right now, so a page that opens mid-run can follow it (step 22).
     active_run_id: str | None
+
+
+class RiskPredictionRequest(BaseModel):
+    """A point in the configurable prediction grid; the default cell is 1 km."""
+
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    timestamp: datetime | None = None
+
+
+class RiskConfidence(BaseModel):
+    lower: float | None
+    upper: float | None
+
+
+class RiskDriver(BaseModel):
+    feature: str
+    value: float | None
+    importance: float
+    direction: Literal["model risk driver"]
+
+
+class LandslideRiskPrediction(BaseModel):
+    """Fail-closed, calibrated 72-hour rainfall-triggered landslide prediction."""
+
+    location: dict[str, float]
+    prediction_window: dict[str, datetime]
+    state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"]
+    calibrated_probability: float | None
+    high_risk_threshold: float | None
+    confidence: RiskConfidence
+    data_quality_score: float
+    ood_score: float | None
+    reason_codes: list[str]
+    drivers: list[RiskDriver]
+    data_sources: dict[str, Any]
+    model: dict[str, Any]

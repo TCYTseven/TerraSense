@@ -10,7 +10,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 |---|---|---|
 | `seed/` | Yes | Small JSON and GeoJSON the API loads, plus `sources.md` |
 | `raw/` | No | Downloads such as the DEM and land cover. Recreate them with `ml/scripts/download_sources.py` |
-| `processed/` | No | Derived rasters and the feature table: `features.tif` (7-band stack on the 30 m UTM grid) and `features.parquet` (labeled sample). Rebuild with `ml/scripts/build_features.py` |
+| `processed/` | No | Derived rasters and feature tables: the legacy `features.tif`/`features.parquet` plus event-time `risk_samples.parquet` and `landslide_risk.parquet`. Rebuild with the scripts in `ml/scripts/`. |
 
 ## Seed files
 
@@ -21,7 +21,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `seed/trails.geojson` | 5, replaced in 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_segments.geojson` | 14 | `backend/app/seed.py`. Written by `ml/scripts/import_trails.py` |
 | `seed/trail_network.geojson` | 19 | `backend/app/bypass.py`. Written by `ml/scripts/build_trail_network.py` |
-| `seed/landslides.geojson` | 10, used in 14 | Map pins and model labels. Pending: data.nasa.gov was unreachable from the build container. See `seed/sources.md` |
+| `seed/landslides.geojson` | 10, used in 14 | Historical map pins and a source catalog. The event-time builder applies dated rainfall-trigger filters before using records as 72-hour labels. See `seed/sources.md` |
 | `seed/sources.md` | 10 | People. One entry per downloaded file |
 
 ## Seed formats

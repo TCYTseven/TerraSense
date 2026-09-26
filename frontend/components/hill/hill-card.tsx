@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
 import ReactiveMeasures from "@/components/pipeline/reactive-measures";
+import LandslideRiskCard from "@/components/panel/landslide-risk-card";
 import { buildHillView } from "@/lib/fixtures/hill-demo";
 import type { CameraFocus, TrailLetter } from "@/lib/hill";
 import { usePipeline } from "@/lib/pipeline/use-pipeline";
@@ -33,6 +34,7 @@ export interface HillCardProps {
 export default function HillCard({ mountain, probability, susceptibility }: HillCardProps) {
   const hill = useMemo(() => buildHillView(mountain), [mountain]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
+  const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
   const live = hill.isLive;
 
@@ -54,6 +56,7 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           trails={hill.trails}
           focus={focus}
           onTrailSelect={view}
+          onMapClick={setRiskLocation}
         />
       </section>
 
@@ -61,6 +64,7 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
         <div className="min-h-0 flex-1 md:overflow-y-auto">
           <HillHeader hill={hill} />
           <OverallRisk hill={hill} />
+          {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
           {live && hill.trails.length > 0 && (
             <TrailList trails={hill.trails} selected={focus?.letter ?? null} onView={view} />
           )}

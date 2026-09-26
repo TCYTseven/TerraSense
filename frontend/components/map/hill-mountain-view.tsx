@@ -14,6 +14,8 @@ export interface HillMountainViewProps {
   focus: CameraFocus | null;
   /** A click on a trail on the map: the same as its View button. */
   onTrailSelect: (letter: TrailLetter) => void;
+  /** A click on an empty map cell selects it for the production classifier. */
+  onMapClick: (coordinate: { latitude: number; longitude: number }) => void;
 }
 
 function noop() {}
@@ -30,6 +32,7 @@ export default function HillMountainView({
   trails,
   focus,
   onTrailSelect,
+  onMapClick,
 }: HillMountainViewProps) {
   return (
     <div className="absolute inset-0 overflow-hidden bg-muted">
@@ -47,7 +50,7 @@ export default function HillMountainView({
         hazard={mountain.active_hazard}
         hazardSelected={false}
         onHazardClick={noop}
-        onMapClick={noop}
+        onMapClick={onMapClick}
         historicalEvents={mountain.historical_events}
         trailMarkers={trails}
         focus={focus}

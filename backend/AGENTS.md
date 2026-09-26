@@ -33,6 +33,11 @@ an evacuation. The Alert Writer then turns that decision into the ranger and hik
 
 `app/ml/model_b.py` (step 17) sits here but belongs to the ML track. Nothing imports it directly: `app/ml/probability.py` is the seam. It calls `model_b.run(rain)` when the module exists and uses the susceptibility map as a labeled stand-in until then, so steps 18 onward run before Model B lands.
 
+`POST /api/v1/landslide-risk` is the stricter production classifier seam. It reads the canonical
+event-time feature contract in `app/ml/risk_contract.py`, applies a persisted calibrated model,
+and returns `HIGH_RISK`, `NOT_HIGH_RISK`, or fail-closed `UNCERTAIN`. Missing calibration,
+forecast, static inputs, or in-domain evidence must not become a negative prediction.
+
 ## Rules
 
 - Keep the API thin. Run state lives in the API process, keyed by `run_id`. No Redis, no PostGIS, no auth, no object storage.

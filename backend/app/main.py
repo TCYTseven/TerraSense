@@ -14,7 +14,7 @@ from app.config import cors_origins
 from app.db import close_pool
 from app.ml.readiness import setup_summary
 from app.ml.tiles import TILES_DIR
-from app.routes import forecast, mountains, runs
+from app.routes import forecast, mountains, risk, runs
 
 # The Next.js dev server, plus any deployed origins from CORS_ORIGINS.
 # Browsers treat localhost and 127.0.0.1 as different origins.
@@ -48,6 +48,7 @@ app.add_middleware(
 app.include_router(mountains.router)
 app.include_router(runs.router)
 app.include_router(forecast.router)
+app.include_router(risk.router)
 # Map tiles rendered by ml/scripts/render_tiles.py. The folder may not exist until then.
 app.mount("/tiles", StaticFiles(directory=TILES_DIR, check_dir=False), name="tiles")
 
