@@ -6,6 +6,7 @@ TerraSense is landslide hazard intelligence for park rangers and hikers. The ran
 
 - Link `styles.css` and load `_ds_bundle.js`. No provider is needed: `styles.css` sets the dark background, the text color, Space Grotesk, and the 2 px focus ring.
 - Components live on `window.TerraSense`: `RiskBadge`, `LevelWord`, `NeedsReviewTag`, `TrailBadge`, `OverallRisk`, `TrailList`, `PreventativeMeasures`, `AgentPipeline`, `AgentCard`, `StatusGlyph`, `ReactiveMeasures`, `AnalyzeButton`. Helpers: `RISK_LEVELS`, `riskLabel`, `levelForScore(score)` (bins: low < 0.2, moderate < 0.45, high ≤ 0.7, extreme above), `formatScore`, `PIPELINE_LABELS`, `MEASURE_CATEGORY_LABELS`, `MEASURE_TIMINGS`, `MEASURE_TIMING_LABELS`, `initialPipelineState()`, and `usePipeline(hill)`, which plays a scripted agent run (`{state, running, analyze}`).
+- **Pass a non-live mountain to `usePipeline`.** A live hill (`isLive: true`) calls the TerraSense API, which Claude Design cannot reach, so Analyze now would fail instead of playing. A non-live hill stays on the scripted demo run.
 - Each component's `.d.ts` spells out its data shapes inline. Read it before passing props.
 - Styling is Tailwind v4 utilities, **precompiled**: a class exists only if it is in `_ds_bundle.css`. Tailwind's default palette is removed, so `text-red-500` and `bg-white` do not exist. Use only the tokens below.
 - **The globe home** sits in the light scope: put `theme-home-light` on the home screen's root. Every role token swaps to its light value there. Mountain pages stay dark.
@@ -56,6 +57,10 @@ Space Grotesk (`font-sans`) for UI text. JetBrains Mono (`font-mono`) for **valu
 ## Motion
 
 No `transition-*`. The only animation class is `animate-work` (the running agent card, skeleton bars), with `motion-reduce:animate-none`.
+
+## Agent trace
+
+An expanded agent card shows one terminal: a `rounded-lg` box on `bg-background` with a header row (`agent` on the left, `worked <time>` on the right, both `font-mono`) and every trace line in `font-mono` beneath it. The card's one-line summary stays in the header above the trace and is never repeated beneath it. A failed card reads `failed` with its summary in the header; nothing extra sits under the trace. While running, one `text-sm` `Thinking…` line follows the terminal.
 
 ## Where the truth lives
 

@@ -40,6 +40,9 @@ await esbuild.build({
   jsx: 'automatic',
   external: ['react', 'react-dom', 'react/jsx-runtime'],
   alias: { '@': FRONTEND },
+  // usePipeline imports the live-run client (lib/api.ts), which reads NEXT_PUBLIC_API_URL at load.
+  // Designs have no TerraSense API and no `process`, so inline it; api.ts falls back to its default.
+  define: { 'process.env.NEXT_PUBLIC_API_URL': 'undefined' },
   logLevel: 'warning',
 });
 
@@ -50,7 +53,7 @@ writeFileSync(join(OUT, 'tsconfig.json'), JSON.stringify({
     declaration: true, emitDeclarationOnly: true, jsx: 'react-jsx', strict: true,
     moduleResolution: 'bundler', module: 'esnext', target: 'es2022', skipLibCheck: true,
     rootDir: ROOT, outDir: TYPES, baseUrl: FRONTEND, paths: { '@/*': ['./*'] },
-    types: [], typeRoots: [join(FRONTEND, 'node_modules/@types')],
+    types: ['node'], typeRoots: [join(FRONTEND, 'node_modules/@types')],
   },
   files: [ENTRY],
 }));

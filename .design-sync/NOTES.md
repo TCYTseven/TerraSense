@@ -16,6 +16,13 @@ Project: https://claude.ai/design/p/9607f63c-dacc-478a-8997-39b63859a0b3
 - **Scope grew from `RiskBadge` to 12 components.** The hill card rebuild (PRs #5 and #7) put the ranger UI in `frontend/components/hill/` and `components/pipeline/`, using the addendum's role names, so it compiles correctly under these tokens. `entry.ts` exports them plus the data helpers and `usePipeline`.
 - **Left out on purpose:** `HillHeader` (`next/link` needs the Next router), the map and globe (MapLibre, three.js), `HikerCard` and `HazardBlock` (not rendered on the page), and `THEME` (WebGL values).
 
+## Re-sync of 2026-09-26 (late): AgentCard re-check, usePipeline guidance, trace style
+
+- Re-ran the driver from the repo root (`node .design-sync/build-pkg.mjs` via `cfg.buildCmd`, then `resync.mjs --node-modules frontend/node_modules` with `DS_CHROMIUM_PATH` set to system Chrome; the sandboxed shell cannot launch Chrome, so the driver must run unsandboxed). Build and validate clean, 12/12 previews render. Capture re-shot **AgentCard only** (the preview edit below changed its source); **AgentPipeline carried forward**, so it needed no fresh screenshots.
+- Fixed the `AgentCard` Failed preview comment: it still described the error line under the trace that commit `58b2112` removed. The failed card keeps its summary in the header; nothing sits under the trace. Graded all five cells good from the fresh raws (the running cell's dim is the known `animate-work` mid-pulse warn).
+- `conventions.md` now says designs must pass a **non-live mountain** (`isLive: false`) to `usePipeline`: a live one calls the TerraSense API, which Claude Design cannot reach, so Analyze now would fail instead of playing the scripted demo.
+- `conventions.md` has a new **Agent trace** section describing the terminal style (one `rounded-lg` box on `bg-background`, `agent` / `worked <time>` header, every line in mono, summary stays in the header, `Thinking…` follows while running). Only classes the bundle already held, so no safelist change.
+
 ## Re-sync of 2026-09-26: Reactive Measures cluster by timing
 
 - The user decided that measures group by **when** they must happen, not by kind of work. `ReactiveMeasure.when` (free text) became `timing` (`now`, `within-1h`, `within-6h`, `within-24h`), and the category is now a card label. Updated: the `ReactiveMeasures` preview data, the `ReactiveMeasures` and `AgentPipeline` bodies in `dtsPropsFor`, the `entry.ts` exports (`MEASURE_TIMINGS`, `MEASURE_TIMING_LABELS`, `MeasureTiming`), and `conventions.md`.
