@@ -19,7 +19,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
 - [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
 - [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
-- [ ] 17. Score 72-hour probability from live rain (pulled for a rebuild; the heat map is the labeled susceptibility stand-in until it lands)
+- [x] 17. Score 72-hour probability from live rain (Model B combines susceptibility with forecast rain and antecedent moisture)
 - [ ] 26. Rank the pressure points
 - [ ] 27. Trace a runout from a pressure point
 - [ ] 28. Expose simulate, the stream, and the callouts
@@ -154,16 +154,16 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** Model B turns cached susceptibility and today's rain into a probability raster.
 
-**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam: it calls Model B when the module exists and serves the labeled stand-in otherwise.
+**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam, and `backend/app/ml/model_b.py` now produces the live probability raster.
 
 **Build.**
 
-- Implement `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`. This file belongs to the ML track.
+- Implemented `P = sigmoid(w1 * susceptibility + w2 * rainfall_exceedance + w3 * moisture_index)` in `backend/app/ml/model_b.py`. The centered inputs keep dry, low-susceptibility cells below the high-risk bin.
 - Expose `run(rain)` returning an object with `.probability` (float32 0 to 1 on the susceptibility grid, NaN outside the data), `.transform`, and `.crs`. If the shape differs, adapt `_from_model_b()` in `probability.py` and nothing else.
 - Keep `w1`, `w2`, and `w3` as named constants. Document them next to the function.
 - Map probability through the shared bins.
 
-**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` then reads `model b`, and the stand-in note leaves the panel.
+**Done when.** A Python call prints a probability raster summary and the rain totals that produced it, in well under 30 seconds after the first fetch. A run's `method` reads `model b`, and the stand-in note leaves the panel. `python -m app.assessment` now supplies the fetched rain to Model B and prints those totals.
 
 ## 26. Rank the pressure points
 

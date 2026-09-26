@@ -216,7 +216,7 @@ Create these as the steps call for them. Paths match [`../implementation-steps.m
 
 | Path | Step | Role |
 |---|---|---|
-| `backend/app/ml/model_b.py` | 17 | Susceptibility plus Open-Meteo rain |
+| `backend/app/ml/model_b.py` | 17 | `run(rain, path)` reads the susceptibility GeoTIFF and returns a `ModelBResult` (`probability`, `transform`, `crs`). `rain_signals()` converts 72-hour forecast exceedance and seven-day antecedent rain into bounded signals; named `W1`, `W2`, and `W3` feed the vectorized sigmoid. |
 | `backend/app/ml/pressure.py` | 26 | Up to five ranked pressure points from the probability map |
 | `backend/app/ml/runout.py` | 27 | Runout frames and steps from one pressure point, no model call |
 | `backend/app/simulations.py` | 28 | In-process simulations keyed by id, and the callouts call through the router |
