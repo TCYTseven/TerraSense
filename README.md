@@ -35,6 +35,9 @@ cd frontend && npm install && npm run dev
 cd backend
 python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
 python -m app.schema && python -m app.seed    # first run: create the tables, load data/seed/
+# Globe peaks live in data/seed/mountains.json (committed). Refresh offline only:
+#   python -m app.mountain_catalog --write-seed --source overpass && python -m app.seed
+# The API never calls Wikidata/Overpass on page load; it reads Postgres (seed file if the table is empty).
 uvicorn app.main:app --reload --port 8000
 ```
 

@@ -4,10 +4,12 @@ from typing import Annotated
 
 import psycopg
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel
 from psycopg.rows import DictRow
 
 from app.db import get_conn
 from app.history import historical_events
+from app.mountain_catalog import ensure_catalog, sync_catalog
 from app.ml.tiles import read_metadata
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
 from app.runs import registry
@@ -31,9 +33,29 @@ MOUNTAIN_COLUMNS = """
 """
 
 
+class CatalogSyncResponse(BaseModel):
+    count: int
+    source: str
+
+
+@router.post("/catalog/sync", response_model=CatalogSyncResponse)
+def sync_mountain_catalog(conn: Conn) -> CatalogSyncResponse:
+    """Reload data/seed/mountains.json into Postgres. Does not call Wikidata or Overpass."""
+    count, source = sync_catalog(conn)
+    conn.commit()
+    if count == 0:
+        raise HTTPException(
+            status_code=503,
+            detail="No mountains in the database. Add data/seed/mountains.json and run python -m app.seed.",
+        )
+    return CatalogSyncResponse(count=count, source=source)
+
+
 @router.get("")
 def list_mountains(conn: Conn) -> list[Mountain]:
     """Every mountain for the globe, live ones first. Static mountains carry their seed risk."""
+    ensure_catalog(conn)
+    conn.commit()
     rows = conn.execute(
         f"SELECT {MOUNTAIN_COLUMNS} FROM mountains ORDER BY is_live DESC, name"
     ).fetchall()

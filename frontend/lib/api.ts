@@ -42,6 +42,11 @@ async function getJson<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+/** Reload committed seed JSON into Postgres (ops only; no external catalog APIs). */
+export function syncMountainCatalog(init?: RequestInit): Promise<{ count: number; source: string }> {
+  return postJson("/mountains/catalog/sync", init);
+}
+
 /** Every mountain for the globe, live ones first. */
 export function getMountains(init?: RequestInit): Promise<Mountain[]> {
   return getJson<Mountain[]>("/mountains", init);
