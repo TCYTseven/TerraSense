@@ -1,46 +1,45 @@
 # Team brief
 
-The short version for HackGT. The full picture is in [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md). The product is in [`../TerraSense.md`](../TerraSense.md).
+The short version for HackGT. The full picture is in [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md). The product is in [`../TerraSense.md`](../TerraSense.md). Open work is [`../9-26-todo.md`](../9-26-todo.md).
 
-Written Thursday, Sep 24, 2026. Status updated Friday, Sep 25, 2026, after steps 1 to 10.
+Written Thursday, Sep 24, 2026. Status updated Saturday, Sep 26, 2026.
 
 ## Status right now
 
-- The hackathon scope is locked. One live mountain (Mount Rainier), landslide risk only, five agents, one hiker card. Discord was dropped on Sep 25, 2026: the ranger alert stays in the app.
-- [`context/implementation-steps.md`](../implementation-steps.md) is the build order. Steps 1 to 9 are done. Step 10 is partial: the DEM and land cover are downloaded, but the landslide points are pending because data.nasa.gov was unreachable from the build container. See [`data/seed/sources.md`](../../data/seed/sources.md).
-- `frontend/` is the dark globe: three risk markers from the API, hover cards, a search box, a 1.5 s fly-in, and the `/mountains/[slug]` page. The Mapbox view (step 15) is next on this track.
-- `backend/` serves `/health`, `/mountains`, and `/mountains/{slug}` from Postgres. It was verified on a local Postgres 16. No hosted database exists yet: provision Neon or Supabase, set `DATABASE_URL`, then run `python -m app.schema && python -m app.seed` from `backend/`.
-- The demo script runs up to "open Mount Rainier". Everything from the heat map on is still to build.
+- The hackathon scope is locked. One live mountain (Mount Rainier), landslide risk only, seven agents, the hill detail card, one mountain panel with a runout simulation. Discord was dropped on Sep 25, 2026: the ranger alert stays in the app.
+- Steps 1–9, 13, 15, 16, and 18–25 are done on main. Step 24 was dropped. The globe, the hill card, the heat map, the bypass, and the agent pipeline all run.
+- Steps 10, 11, 12, 14, and 17 are built on `origin/step-10-local-nasa-export` and are not on main. Merge that branch. Do not rebuild it. On main there are still no landslide points, LightGBM is untrained, and the heat map is the susceptibility stand-in.
+- Step 31 is half done. **Analyze now** on Rainier streams the seven agents into the five cards, and Reactive Measures come from the advisory. Trail scores, the overall score, and preventative measures are still illustrative.
+- Steps 26–30 (pressure points, runout, simulate, the mountain panel) are not started.
+- The default globe seed is 138 peaks (`SEED_MODE=mountainstest`), drawn 50 at a time. `data/seed/mountains.json` has 648. No hosted Postgres yet, and no live Gemini or xAI call has run.
 - Each folder has an `AGENTS.md` harness, and `.claude/agents/` defines a builder per track plus a reviewer. Start at the root [`AGENTS.md`](../../AGENTS.md).
 
 ## What you are building
 
-A judge spins a 3D globe, opens Mount Rainier, sees a 72-hour landslide heat map, watches five agents run, opens their reasoning, and reads a hiker card that names a bypass.
+A judge spins a 3D globe, opens Mount Rainier, reads the slopes most likely to fail, watches a debris-flow simulation, flies into the hill card, sees the heat map and five trails, watches the agents run, and reads the Reactive Measures.
 
-Two other mountains are dots on the globe with a fixed risk color. They do not run analysis.
+Other peaks are catalog markers with a fixed risk color. They do not run analysis.
 
 ## Setup
 
 1. Read [`TEAM_HANDOFF.md`](TEAM_HANDOFF.md) section "Decisions already made" before you pick a library.
-2. Copy `.env.example` to `.env` at the repo root, then follow the three commands in the root [`README.md`](../../README.md): the API on port 8000, the frontend on port 3000.
+2. Copy `.env.example` to `.env` at the repo root, then follow the commands in the root [`README.md`](../../README.md): the API on port 8000, the frontend on port 3000.
 3. Keys you will need, and do not commit: a Gemini key and an xAI key (either alone works), `DATABASE_URL`. A Mapbox token is optional. Open-Meteo needs no key.
 4. Agree on the shared facts in the implementation steps (Rainier bbox, slugs, risk bins) and use them in every track.
 
 ## Tracks
 
-The spec assumes four people. Claim a track in the repo or in chat so two people do not start the same step.
+The spec assumes four people. Claim a step in the repo or in chat so two people do not start the same step. Check `git branch -r` first. `step-10-local-nasa-export` already claims 10, 11, 12, 14, and 17.
 
-| Track | Steps | First output |
+| Track | Steps | Next |
 |---|---|---|
-| Frontend | 2, 7–9, 15–16, 23, 25 | Dark full-bleed shell, then the globe |
-| Backend | 3–6, 20–22 | FastAPI `/health`, then `GET /mountains` |
-| ML and data | 10–14, 17–19 | Rainier DEM on disk, then a susceptibility raster |
-| Product and pitch | Demo script, Devpost blanks | A two-minute script the team has read aloud |
-
-Steps 7–9 can use the API from step 6. Steps 10–14 can start as soon as the bounding box is agreed. Do not wait on each other past that.
+| Frontend | 2, 7–9, 15–16, 23, 25, 29–31 | Finish step 31's trail scores, then the mountain panel (29–30) |
+| Backend | 3–6, 20–22, 28 | Simulate, the stream, and the callouts (step 28), after pressure points exist |
+| ML and data | 10–14, 17–19, 26–27 | Merge the NASA-export branch, then rank pressure points (26) and trace a runout (27) |
+| Product and pitch | Demo script, Devpost blanks | Rehearse with real keys. Write the measured AUC into the Devpost draft after the merge |
 
 ## If you change the plan
 
-Change [`context/TerraSense.md`](../TerraSense.md) when the product changes, and [`context/implementation-steps.md`](../implementation-steps.md) when the order changes. Update [`CODE_REFERENCE.md`](CODE_REFERENCE.md) in the same change that adds a file.
+Change [`context/TerraSense.md`](../TerraSense.md) when the product changes, and [`context/implementation-steps.md`](../implementation-steps.md) when the order changes. Update [`CODE_REFERENCE.md`](CODE_REFERENCE.md) in the same change that adds a file. Tick today's open list in [`../9-26-todo.md`](../9-26-todo.md) when a pending item lands.
 
 A feature in the Out of Scope section needs a team decision written into the spec before anyone starts it.

@@ -5,10 +5,11 @@ TerraSense is a HackGT build: landslide hazard intelligence for one mountain, Mo
 ## Read first
 
 1. [`context/docs/TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md): status and tracks.
-2. [`context/TerraSense.md`](context/TerraSense.md): the product. If a feature is not in its Hackathon Scope, do not build it.
-3. [`context/implementation-steps.md`](context/implementation-steps.md): the 31 steps, split into pending and done, and the shared facts.
-4. The `AGENTS.md` in the folder you are about to change.
-5. [`context/docs/CODE_REFERENCE.md`](context/docs/CODE_REFERENCE.md) before you add, rename, or delete a file.
+2. [`context/9-26-todo.md`](context/9-26-todo.md): open work. Do not rebuild a step that this file says is already on a branch.
+3. [`context/TerraSense.md`](context/TerraSense.md): the product. If a feature is not in its Hackathon Scope, do not build it.
+4. [`context/implementation-steps.md`](context/implementation-steps.md): the 31 steps, split into pending and done, and the shared facts.
+5. The `AGENTS.md` in the folder you are about to change.
+6. [`context/docs/CODE_REFERENCE.md`](context/docs/CODE_REFERENCE.md) before you add, rename, or delete a file.
 
 ## Who owns which folder
 
