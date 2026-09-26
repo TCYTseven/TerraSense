@@ -169,3 +169,17 @@ def test_build_seed_list_gives_rainier_breathing_room():
     assert "Little Tahoma Peak" not in names  # would stack on Rainier's pin
     assert "Everest" in names
     assert "Mount Rainier" in names
+
+
+def test_build_seed_list_merges_featured_statics():
+    """Fuji and Huascarán ride along under their famous names; OSM's summit-point
+    names (like Kengamine) near them are dropped so pins don't stack."""
+    rows = [{"name": "Kengamine", "lat": 35.3628, "lon": 138.7307, "elevation_m": 3776, "region": "JP"}]
+    out = build_seed_list(rows)
+    by_slug = {m["slug"]: m for m in out}
+    assert "Kengamine" not in {m["name"] for m in out}
+    fuji = by_slug["mount-fuji"]
+    assert fuji["is_live"] is False
+    assert fuji["current_risk_level"] == "low"
+    huascaran = by_slug["huascaran"]
+    assert huascaran["current_risk_level"] == "high"

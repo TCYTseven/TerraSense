@@ -10,7 +10,7 @@ from psycopg.rows import DictRow
 from app.db import get_conn
 from app.history import historical_events
 from app.mountain_catalog import ensure_catalog, sync_catalog
-from app.ml.tiles import read_metadata
+from app.ml.tiles import layer_url_path, read_metadata, slug_tiles_dir
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, Trail, TrailSegment
 from app.runs import registry
 
@@ -23,7 +23,7 @@ Conn = Annotated[psycopg.Connection[DictRow], Depends(get_conn)]
 LAYERS = ("susceptibility", "probability")
 
 RENDER_HINT = {
-    "susceptibility": "Run ml/scripts/render_tiles.py.",
+    "susceptibility": "Run ml/scripts/render_tiles.py [--mountain SLUG].",
     "probability": "Run Analyze now, or python -m app.assessment --save from backend/.",
 }
 
@@ -120,7 +120,7 @@ def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles
         raise HTTPException(status_code=404, detail=f"{slug!r} is a static marker and has no map layers")
     if layer not in LAYERS:
         raise HTTPException(status_code=404, detail=f"Unknown layer {layer!r}. Layers: {', '.join(LAYERS)}")
-    metadata = read_metadata(layer)
+    metadata = read_metadata(layer, tiles_dir=slug_tiles_dir(slug))
     if metadata is None:
         raise HTTPException(status_code=404, detail=f"Layer {layer!r} is not rendered yet. {RENDER_HINT[layer]}")
 
@@ -128,7 +128,7 @@ def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles
     base = str(request.base_url).rstrip("/")
     return LayerTiles(
         layer=layer,
-        tiles=f"{base}/tiles/{layer}/{{z}}/{{x}}/{{y}}.png?v={metadata['version']}",
+        tiles=f"{base}/tiles/{layer_url_path(slug, layer)}/{{z}}/{{x}}/{{y}}.png?v={metadata['version']}",
         bounds=metadata["bounds"],
         minzoom=metadata["minzoom"],
         maxzoom=metadata["maxzoom"],

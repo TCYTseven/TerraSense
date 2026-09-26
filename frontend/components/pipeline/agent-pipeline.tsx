@@ -45,7 +45,7 @@ function orchestratorLine(state: PipelineState): React.ReactNode {
 
 /**
  * The orchestrator and its five agents. Terrain, Weather, and Trails branch off the rail together,
- * then the Synthesizer and the Mass Alert Writer. A card opens its reasoning trace beneath it, one
+ * then the Synthesizer and the Alerter. A card opens its reasoning trace beneath it, one
  * at a time. Reactive Measures follow once the orchestrator finishes.
  */
 export default function AgentPipeline({ state }: { state: PipelineState }) {

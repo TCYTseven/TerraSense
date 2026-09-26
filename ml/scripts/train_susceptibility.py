@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Train the landslide susceptibility model (implementation step 12).
+"""Train the landslide susceptibility model (implementation steps 12 and 32).
 
 Reads the step 11 outputs and writes, relative to the repo root:
   ml/artifacts/susceptibility.tif          0-1 susceptibility on the 30 m grid (gitignored)
@@ -13,8 +13,13 @@ Without labels it falls back to a knowledge-driven index (a weighted combination
 same seven features) so the map, tiles, and live model can run. metrics.json then says
 trained: false and auc: null. Rerun once the landslide points exist.
 
+--mountain SLUG scores another pack from ml/scripts/mountain_packs.py, under
+ml/artifacts/packs/<slug>/. A pack always takes the knowledge-driven index, even when
+a table is passed: the LightGBM labels are Rainier's, and a model moved to another
+mountain would be a fake number.
+
 Run from the repo root:
-  python ml/scripts/train_susceptibility.py [--table PATH] [--artifacts DIR]
+  python ml/scripts/train_susceptibility.py [--mountain SLUG] [--table PATH] [--artifacts DIR]
 """
 
 from __future__ import annotations
@@ -25,16 +30,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import lightgbm as lgb
+import mountain_packs as mp
 import numpy as np
 import pandas as pd
 import rasterio
 from sklearn.metrics import precision_score, roc_auc_score
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-STACK_PATH = REPO_ROOT / "data" / "processed" / "features.tif"
-TABLE_PATH = REPO_ROOT / "data" / "processed" / "features.parquet"
-LANDSLIDES_PATH = REPO_ROOT / "data" / "seed" / "landslides.geojson"
-ARTIFACTS_DIR = REPO_ROOT / "ml" / "artifacts"
 
 FEATURES = ["elevation", "slope", "aspect", "curvature", "dist_drainage", "landcover", "twi"]
 TABLE_COLUMNS = FEATURES + ["label", "region", "row", "col"]
@@ -92,10 +94,10 @@ def rel(path: Path) -> str:
     return str(path.relative_to(REPO_ROOT)) if path.is_relative_to(REPO_ROOT) else str(path)
 
 
-def read_stack() -> tuple[np.ndarray, dict]:
-    with rasterio.open(STACK_PATH) as ds:
+def read_stack(stack_path: Path) -> tuple[np.ndarray, dict]:
+    with rasterio.open(stack_path) as ds:
         if list(ds.descriptions) != FEATURES:
-            raise SystemExit(f"{rel(STACK_PATH)} bands {ds.descriptions} do not match {FEATURES}")
+            raise SystemExit(f"{rel(stack_path)} bands {ds.descriptions} do not match {FEATURES}")
         return ds.read(), ds.profile
 
 
@@ -224,11 +226,11 @@ def write_raster(path: Path, values: np.ndarray, profile: dict, method: str) -> 
     partial.replace(path)
 
 
-def label_provenance() -> dict:
+def label_provenance(landslides_path: Path) -> dict:
     """Record the seed catalogs behind the current training table in the model card."""
-    if not LANDSLIDES_PATH.is_file():
+    if not landslides_path.is_file():
         return {}
-    payload = json.loads(LANDSLIDES_PATH.read_text(encoding="utf-8"))
+    payload = json.loads(landslides_path.read_text(encoding="utf-8"))
     features = payload.get("features", [])
     accuracies = {"exact", "1km"}
     return {
@@ -243,14 +245,24 @@ def label_provenance() -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train the susceptibility model and write the map.")
-    parser.add_argument("--table", type=Path, default=TABLE_PATH, help="labeled table from step 11")
-    parser.add_argument("--artifacts", type=Path, default=ARTIFACTS_DIR, help="output directory")
+    parser.add_argument("--mountain", default=mp.RAINIER_SLUG,
+                        help=f"pack slug from mountain_packs.py (default: {mp.RAINIER_SLUG})")
+    parser.add_argument("--table", type=Path, default=None, help="labeled table from step 11 (Rainier only)")
+    parser.add_argument("--artifacts", type=Path, default=None, help="output directory")
     args = parser.parse_args()
+    pack, paths = mp.get(args.mountain), mp.paths(args.mountain)
+    rainier = pack.slug == mp.RAINIER_SLUG
+    table_path = args.table or paths.table
+    if args.artifacts is None:
+        args.artifacts = paths.artifacts
     args.artifacts.mkdir(parents=True, exist_ok=True)
 
-    stack, profile = read_stack()
-    if args.table.exists():
-        table = pd.read_parquet(args.table)
+    stack, profile = read_stack(paths.stack)
+    if not rainier and table_path.exists():
+        # The LightGBM labels are Rainier's; on another mountain they would be a fake number.
+        print(f"ignoring {rel(table_path)}: packs always use the knowledge-driven index")
+    if rainier and table_path.exists():
+        table = pd.read_parquet(table_path)
         model, metrics, importance = train(table)
         susceptibility = predict_map(model, stack)
         model_path = args.artifacts / "susceptibility_lgbm.txt"
@@ -269,10 +281,15 @@ def main() -> None:
             "high_threshold": HIGH_THRESHOLD,
             "weights": INDEX_WEIGHTS,
             "stretch_percentiles": INDEX_STRETCH_PERCENTILES,
-            "note": f"No labeled table at {rel(args.table)}: the landslide points are not downloaded yet, "
-                    "so no model was trained and no AUC was measured. Rerun steps 10 to 12 once they exist.",
+            "note": (
+                f"No labeled table at {rel(table_path)}: the landslide points are not downloaded yet, "
+                "so no model was trained and no AUC was measured. Rerun steps 10 to 12 once they exist."
+                if rainier else
+                f"The {pack.name} pack scores the knowledge-driven index. Only Rainier's landslide "
+                "inventory is dense enough to train on, so no model was trained and no AUC exists here."
+            ),
         }
-        print(f"No labeled table at {rel(args.table)}. Wrote the knowledge-driven index instead. AUC: not measured.")
+        print(f"Wrote the knowledge-driven index for {pack.slug}. AUC: not measured.")
 
     metrics["created_at"] = datetime.now(UTC).isoformat(timespec="seconds")
     valid = susceptibility[~np.isnan(susceptibility)]
@@ -283,7 +300,9 @@ def main() -> None:
     }
     write_raster(args.artifacts / "susceptibility.tif", susceptibility, profile, metrics["method"])
     metrics["features"] = FEATURES
-    metrics.update(label_provenance())
+    metrics["mountain"] = pack.slug
+    if rainier:
+        metrics.update(label_provenance(paths.landslides))
     metrics["grid"] = {
         "crs": str(profile["crs"]),
         "width": int(profile["width"]),

@@ -19,6 +19,7 @@ import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from app import packs
 from app.assessment import Assessment, level_runs
 from app.bypass import junctions_near, load_network
 from app.config import REPO_ROOT
@@ -73,9 +74,11 @@ class RunContext:
     slug: str
     mountain: str
     peak: tuple[float, float]  # lat, lon
-    assessment: Assessment
+    assessment: Assessment | None
     rain: HourlyRain | None
     rain_error: str | None = None
+    elevation_m: int | None = None
+    seed_level: str | None = None
     started: float = field(default_factory=time.perf_counter)
 
     @property
@@ -106,7 +109,7 @@ def get_raster_summary(ctx: RunContext, mountain: str) -> dict:
         summary["note"] = "No hero trail segment reaches high, so there is no hazard zone."
         return summary
     zone, flagged = a.zone, a.flagged
-    network = load_network()
+    network = load_network(packs.network_path(ctx.slug))
     summary["hazard_zone"] = {
         "id": "hz_001",
         "level": zone.level,
@@ -171,7 +174,7 @@ def get_weather(ctx: RunContext, lat: float, lon: float) -> dict:
     facts = {
         "source": rain.source,
         "as_of": rain.as_of.isoformat(),
-        "elevation_m": 1650,
+        "elevation_m": ctx.elevation_m if ctx.elevation_m is not None else 1650,
         "mm": {
             "past_24h": rain.past_24h_mm,
             "past_72h": rain.past_72h_mm,
@@ -213,7 +216,7 @@ def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
     to, which the blind_spots list names.
     """
     a = ctx.assessment
-    card = _model_card()
+    card = _model_card(ctx.slug)
     facts = {
         "role": "SOURCE OF TRUTH. These numbers are the model's answer. Do not recompute or "
                 "contradict them; explain what they mean.",
@@ -278,14 +281,19 @@ def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
     return facts
 
 
-def _model_card() -> dict:
-    """What ml/artifacts/metrics.json says about how the map was made. Empty when it is missing."""
-    if not METRICS_PATH.exists():
-        return {"note": "ml/artifacts/metrics.json is not written yet."}
+def _model_card(slug: str) -> dict:
+    """What the pack's metrics.json says about how the map was made. Empty when it is missing.
+
+    A pack's card says trained: false and names the knowledge-driven index; only Rainier's
+    ever reports an AUC.
+    """
+    metrics_path = packs.metrics_path(slug)
+    if not metrics_path.exists():
+        return {"note": "the pack's metrics.json is not written yet."}
     try:
-        metrics = json.loads(METRICS_PATH.read_text(encoding="utf-8"))
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return {"note": f"ml/artifacts/metrics.json could not be read ({type(exc).__name__})."}
+        return {"note": f"the pack's metrics.json could not be read ({type(exc).__name__})."}
     return {
         "method": metrics.get("method"),
         "trained": metrics.get("trained"),
@@ -335,8 +343,33 @@ def _km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return 6371.0 * 2 * math.asin(math.sqrt(h))
 
 
+def get_location_facts(ctx: RunContext, mountain: str) -> dict:
+    """Summit location, the catalog's display color, and the cell classifier.
+
+    Used when the mountain has no trail geometry. The classifier covers the Rainier training
+    domain and returns UNCERTAIN outside it. That is a coverage gap, not a finding of safety.
+    """
+    prediction = predict_location(ctx.peak[0], ctx.peak[1], rain_override=ctx.rain).to_dict()
+    return {
+        "mountain": ctx.mountain,
+        "latitude": ctx.peak[0],
+        "longitude": ctx.peak[1],
+        "elevation_m": ctx.elevation_m,
+        "trails_mapped": False,
+        "display_risk_level": ctx.seed_level,
+        "display_risk_note": "Catalog color only. It is not a measurement and it is not the model's answer.",
+        "cell_classification": prediction,
+        "note": (
+            "No trail lines and no terrain raster are stored for this mountain. "
+            "Judge the summit from its location, this classification, and the weather. "
+            "Do not invent a trail, a mile marker, or a bypass."
+        ),
+    }
+
+
 TOOLS: dict[str, Callable[..., dict]] = {
     "get_model_prediction": get_model_prediction,
+    "get_location_facts": get_location_facts,
     "get_raster_summary": get_raster_summary,
     "get_trail_segments": get_trail_segments,
     "get_trail_catalog": get_trail_catalog,

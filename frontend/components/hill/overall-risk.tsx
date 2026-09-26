@@ -14,7 +14,9 @@ export default function OverallRisk({ hill }: { hill: HillView }) {
         {hill.isLive && <span className="font-mono text-4xl/10 font-semibold tracking-tight">{formatScore(score)}</span>}
         <LevelWord level={level} className="text-base font-semibold" />
       </p>
-      {!hill.isLive && <p className="mt-2 text-base">Display marker. Live analysis runs on Mount Rainier only.</p>}
+      {!hill.isLive && (
+        <p className="mt-2 text-base">No trails are mapped here. Analyze uses this summit&apos;s location, the risk model, and live weather.</p>
+      )}
       {hill.isDemo && (
         <p className="mt-2 text-sm text-muted-foreground">Illustrative scores until the trail model lands.</p>
       )}

@@ -26,6 +26,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [ ] 29. Open the mountain panel over the globe
 - [x] 30. Play the simulation on the mountain page (Sep 26, 2026: **Simulate** sits beside **Analyze now** for mountains with routes, not in the unbuilt globe panel)
 - [ ] 31. Wire the hill card to the run stream and the advisory (agents and Reactive Measures stream from the API. Trail scores, the overall score, and preventative measures are still illustrative)
+- [ ] 32. Build mountain data packs for the demo peaks (Rainier-style DEM, land cover, index, tiles, and trails for 7 more peaks, 1-2 per continent)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -253,6 +254,14 @@ Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as
 
 **Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
 
+## 32. Build mountain data packs for the demo peaks
+
+Track: ML and data, with small backend and frontend seams. Added Sep 26, 2026 so clicking a prepared peak on the globe gets the Rainier treatment instead of fixtures.
+
+A pack reruns steps 10-14 and 19 for one more mountain, driven by the registry in `ml/scripts/mountain_packs.py`: DEM and WorldCover windows mosaicked from the same public COGs, the 30 m feature stack in the peak's own UTM zone, the knowledge-driven susceptibility index (never the Rainier LightGBM: its landslide labels are Rainier's), XYZ tiles, and OpenStreetMap trails via Overture with the longest named trail as the hero. Peaks: Mount Hood, Aconcagua, Matterhorn, Kilimanjaro, Mount Fuji, Mount Everest, Aoraki / Mount Cook. Rainier keeps its legacy paths and trained model; packs live under `packs/<slug>/` folders.
+
+**Done when.** `python ml/scripts/build_pack.py <slug>` builds a pack end to end, the API serves that pack's tiles and trails by slug, and opening a packed peak in the browser shows its own heat map and trails with the index labeled as an index. A peak with no named trails shows an empty trail list, never Rainier's.
+
 ## Before the demo
 
 Follow-up to steps 4 and 25. Not a numbered step.
@@ -283,7 +292,7 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Panel and map pass** (PR #7). Larger panel text. Reactive Measures became their own section; on Sep 26 they were re-clustered by timing (now, 1 h, 6 h, 24 h), with the kind of work as a label on each card. The map opens framed from the summit elevation, orbits while idle, and limits zoom-out.
 - **Light home and globe.** A light home theme and an evenly lit Earth. Mountain-logo markers replace the dots, and High and Extreme mountains keep a larger translucent sphere.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
-- **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 648 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
+- **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 1000 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
 - **Live hill-card agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores on the card are still the illustrative fixture.
 - **Production 72-hour classifier (new risk track).** Added a separate `(1 km cell, reference timestamp)` contract for rainfall-triggered landslide probability, direct NASA CSV/GeoJSON event ingestion, cell-aggregated static features, leakage-aware normalized observation/forecast samples, spatiotemporal LightGBM training, held-out calibration and target-precision thresholds, OOD/quality abstention, a backtest CLI, and `POST /api/v1/landslide-risk`. The checked-in API remains fail-closed until real timestamped IMERG/ERA5-Land/forecast inputs and calibrated artifacts are built; no performance numbers are fabricated.
 - **Point probability and terrain-gated Model B** (Sep 26). `POST /api/v1/landslide-risk` now returns a 0–1 `probability` for every in-domain click, with `probability_source`, the shared `risk_level`, and an `estimate` block. Without a calibrated model it is the Model B value at the clicked pixel on today's rain, explained by its three logit terms. It never changes the classifier's `UNCERTAIN`, and it stays `null` without rain or terrain. The map card leads with that chance. Model B's terrain weight was retuned (`w1` 2.4 to 7.0, center 0.75) because the storm fixture painted 100% of the box Extreme. Now 89% stays Low and the valley slopes carry the risk. The five hazard-path tests that had failed since Model B landed (they scored a dry map) now run on the storm plus a labeled Skyline debris corridor.

@@ -1,14 +1,18 @@
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
 
 
+sys.path.insert(0, str(Path(__file__).parents[1] / "scripts"))  # for the mountain_packs import
 SCRIPT = Path(__file__).parents[1] / "scripts" / "download_sources.py"
 SPEC = importlib.util.spec_from_file_location("download_sources", SCRIPT)
 download_sources = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(download_sources)
+
+RAINIER_BBOX = download_sources.mp.RAINIER_BBOX
 
 
 def test_waslid_features_emits_only_interior_points_with_training_contract():
@@ -41,12 +45,12 @@ def test_waslid_features_emits_only_interior_points_with_training_contract():
         ],
     }
 
-    features = download_sources.waslid_features(payload)
+    features = download_sources.waslid_features(payload, RAINIER_BBOX)
 
     assert len(features) == 1
     feature = features[0]
     lon, lat = feature["geometry"]["coordinates"]
-    west, south, east, north = download_sources.RAINIER_BBOX
+    west, south, east, north = RAINIER_BBOX
     assert west <= lon <= east and south <= lat <= north
     assert feature["properties"]["location_accuracy"] == "1km"
     assert feature["properties"]["date"] == "1970-01-01"
@@ -55,7 +59,7 @@ def test_waslid_features_emits_only_interior_points_with_training_contract():
 
 def test_waslid_features_rejects_arcgis_error_payload():
     with pytest.raises(ValueError, match="WASLID query did not return GeoJSON"):
-        download_sources.waslid_features({"error": {"message": "service unavailable"}})
+        download_sources.waslid_features({"error": {"message": "service unavailable"}}, RAINIER_BBOX)
 
 
 def test_fetch_waslid_sends_shared_bbox_query(monkeypatch):
@@ -73,7 +77,7 @@ def test_fetch_waslid_sends_shared_bbox_query(monkeypatch):
         return Response()
 
     monkeypatch.setattr(download_sources.requests, "get", fake_get)
-    payload = download_sources.fetch_waslid("https://example.test/query")
+    payload = download_sources.fetch_waslid(RAINIER_BBOX, "https://example.test/query")
 
     assert payload["type"] == "FeatureCollection"
     assert calls["url"] == "https://example.test/query"

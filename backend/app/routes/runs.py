@@ -44,16 +44,19 @@ def _uuid(value: str) -> bool:
 @router.post("/mountains/{slug}/analyze", status_code=202, responses={
     200: {"description": "A run was already going for this mountain. Its id comes back."},
     404: {"description": "No mountain with this slug."},
-    409: {"description": "A static marker: it does not run analysis."},
 })
 async def analyze(slug: str, conn: Conn, response: Response) -> AnalyzeStarted:
-    """Start the pipeline for a live mountain in the background. Only one run per mountain at a time."""
-    mountain = conn.execute("SELECT id, name, lat, lon, is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    """Start the pipeline in the background. Only one run per mountain at a time.
+
+    A mountain with mile-marked trails uses the Rainier map. Any other summit still runs: the
+    agents read its location, the cell classifier, and the weather, and they name no trail.
+    """
+    mountain = conn.execute(
+        "SELECT id, name, lat, lon, elevation_m, current_risk_level, is_live FROM mountains WHERE slug = %s",
+        (slug,),
+    ).fetchone()
     if mountain is None:
         raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
-    if not mountain["is_live"]:
-        raise HTTPException(status_code=409,
-                            detail=f"{mountain['name']} is a display marker. Live analysis runs on Mount Rainier only.")
     state, started = registry.start(slug, mountain)
     response.status_code = 202 if started else 200
     return AnalyzeStarted(run_id=state.id)
