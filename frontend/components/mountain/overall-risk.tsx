@@ -3,7 +3,14 @@ import { formatScore, formatUtc } from "@/lib/format";
 import type { MountainView } from "@/lib/mountain-view";
 
 /** The worst point on any mapped trail and its level. Static mountains show their fixed level only. */
-export default function OverallRisk({ hill }: { hill: MountainView }) {
+export default function OverallRisk({
+  hill,
+  mappedTrails = 0,
+}: {
+  hill: MountainView;
+  /** Catalog trails that are not scored yet. The empty-trail line is only for a place with none. */
+  mappedTrails?: number;
+}) {
   const { level, score } = hill.risk;
   return (
     <section aria-labelledby="risk-heading" className={`border-t border-border px-5 py-4 ${LEVEL_TREATMENT[level]}`}>
@@ -16,7 +23,7 @@ export default function OverallRisk({ hill }: { hill: MountainView }) {
         )}
         <LevelWord level={level} className="text-base font-semibold" />
       </p>
-      {!hill.isLive && (
+      {!hill.isLive && mappedTrails === 0 && (
         <p className="mt-2 text-base">No trails are mapped here. Analyze uses this summit&apos;s location, the risk model, and live weather.</p>
       )}
       {hill.isLive && hill.scoring && hill.scoring.trailsScored > 0 && (

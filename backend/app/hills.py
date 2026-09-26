@@ -1,7 +1,9 @@
-"""The hill seed: places scored by the existing landslide model, not catalog peaks.
+"""The hill seed: catalog hills and cliffs, plus the one live scored hill.
 
-data/seed/hills.json is the whole list. A mountain reseed does not read it, and
-this module does not register a step 32 pack.
+data/seed/hills.json is the whole list. Turtle Mountain is live and has a model
+window. The other rows are static markers (is_live false), the same pattern as
+the mountain catalog. A mountain reseed does not read this file, and this module
+does not register a step 32 pack.
 """
 
 from __future__ import annotations

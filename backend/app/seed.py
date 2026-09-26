@@ -28,16 +28,20 @@ SEED_DIR = REPO_ROOT / "data" / "seed"
 
 
 def seed_files(name: str) -> list[Path]:
-    """The main seed file plus each pack's copy of it, packs in slug order."""
-    return [SEED_DIR / name, *sorted((SEED_DIR / "packs").glob(f"*/{name}"))]
+    """The main seed file, each pack's copy, and each hill's copy, in slug order."""
+    return [
+        SEED_DIR / name,
+        *sorted((SEED_DIR / "packs").glob(f"*/{name}")),
+        *sorted((SEED_DIR / "hills").glob(f"*/{name}")),
+    ]
 
 
 def read_features(name: str, known_slugs: set[str]) -> list[dict]:
     """Features from the main file and every pack file of this name.
 
-    The main file stays strict: an unknown mountain there is a broken seed. A pack file
-    whose mountain is missing from the active catalog (SEED_MODE decides the catalog) is
-    skipped with a warning instead, so one absent slug never blocks the whole seed.
+    The main file stays strict: an unknown mountain there is a broken seed. A pack or hill
+    file whose slug is missing from the database is skipped with a warning instead, so one
+    absent slug never blocks the whole seed.
     """
     features: list[dict] = []
     for path in seed_files(name):
@@ -69,16 +73,21 @@ def load_mountains(conn: psycopg.Connection) -> int:
         )
     count = upsert_mountains(conn, mountains)
     conn.execute(
-        "DELETE FROM mountains WHERE is_live = false AND slug <> ALL(%s::text[])",
+        """
+        DELETE FROM mountains
+        WHERE is_live = false AND kind = 'mountain' AND slug <> ALL(%s::text[])
+        """,
         ([m["slug"] for m in mountains],),
     )
     return count
 
 
 def load_hills(conn: psycopg.Connection) -> int:
-    """Upsert data/seed/hills.json. A hill stays live, and a hill the file drops is removed.
+    """Upsert data/seed/hills.json. Each row keeps its own is_live flag.
 
-    The mountain catalog never lists these slugs. Loading it does not delete a live hill.
+    Turtle Mountain is the live scored hill. The rest are static catalog markers, the
+    same way most mountains are. A hill the file drops is removed. The mountain catalog
+    delete leaves kind = hill rows alone.
     """
     if not HILLS_PATH.is_file():
         return 0
@@ -93,14 +102,14 @@ def load_hills(conn: psycopg.Connection) -> int:
               (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live, kind)
             VALUES
               (%(name)s, %(slug)s, %(lat)s, %(lon)s, %(elevation_m)s, %(region)s,
-               %(current_risk_level)s, true, 'hill')
+               %(current_risk_level)s, %(is_live)s, 'hill')
             ON CONFLICT (slug) DO UPDATE SET
               name = EXCLUDED.name,
               lat = EXCLUDED.lat,
               lon = EXCLUDED.lon,
               elevation_m = EXCLUDED.elevation_m,
               region = EXCLUDED.region,
-              is_live = true,
+              is_live = EXCLUDED.is_live,
               kind = 'hill',
               current_risk_level = CASE
                 WHEN mountains.last_analyzed_at IS NULL THEN EXCLUDED.current_risk_level

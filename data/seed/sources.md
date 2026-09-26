@@ -20,6 +20,7 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 | `data/raw/osm/washington-latest.osm.pbf` | Geofabrik OpenStreetMap Washington extract | 2026-09-26 | Done. MD5 `4279177b98c6c2dabd0c6f2022cff20a`, 363,627,224 bytes |
 | `data/seed/landslides.geojson` | NASA Global Landslide Catalog local export, supplemented by Washington State Landslide Inventory Database — Landslide Compilation | 2026-09-26 | Done. 37 mapped events total: 4 NASA events (1 at 1km accuracy, 3 at 5km) plus 33 supplemental 1km inventory points |
 | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` | OpenStreetMap via Overture Maps | 2026-09-25 | Done. Written by `ml/scripts/import_trails.py` |
+| `data/seed/hills/<slug>/trails.geojson` | OpenStreetMap via the Overpass API, named `path` / `footway` / `track` / `bridleway` within 1.2 km | 2026-09-26 | Written for turtle-mountain, mount-adams-cincinnati, varna-peak, bokatol-peak, bukit-carcosa, bukit-bendera, and mount-albert-wellington. Other hills had no named path in that radius, or the query timed out. ODbL |
 | `data/seed/trail_network.geojson` | Derived from the two above and the DEM | 2026-09-25 | Done. Written by `ml/scripts/build_trail_network.py` |
 
 ## Elevation: `data/raw/rainier_dem_cop30.tif`

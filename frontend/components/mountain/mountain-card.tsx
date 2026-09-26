@@ -128,7 +128,7 @@ export default function MountainCard({
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:w-[45%] md:flex-none md:border-l md:border-t-0">
         <div className="shrink-0">
           <MountainHeader hill={hill} />
-          <OverallRisk hill={hill} />
+          <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
         </div>
         <PanelTabs active={tab} onChange={setTab} />
         <TabPanel tab="prevention" active={tab}>
@@ -136,8 +136,25 @@ export default function MountainCard({
           {live && hill.trails.length > 0 && (
             <TrailList trails={hill.trails} selected={selected} onView={view} />
           )}
-          {hill.trails.length === 0 && (
+          {hill.trails.length === 0 && mountain.trails.length === 0 && (
             <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>
+          )}
+          {hill.trails.length === 0 && mountain.trails.length > 0 && (
+            <section aria-labelledby="mapped-trails-heading" className="border-t border-border py-4">
+              <h2 id="mapped-trails-heading" className="px-5 text-sm text-muted-foreground">
+                Mapped trails
+              </h2>
+              <ul className="mt-2">
+                {mountain.trails.map((trail) => (
+                  <li key={trail.id} className="px-5 py-2 text-base">
+                    {trail.name}
+                    {trail.length_km != null && (
+                      <span className="ml-2 font-mono text-sm text-muted-foreground">{trail.length_km} km</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
         </TabPanel>
         <TabPanel tab="response" active={tab}>
