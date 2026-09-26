@@ -60,7 +60,7 @@ Static mountains open the same panel with terrain only, their fixed level, and o
 
 Two columns at full height. **Left, about 55%:** the 3D mountain view: terrain on a light shaded relief (or Mapbox satellite with a token), the 72-hour heat map by default, toggles for susceptibility and historical pins, trails, and one hazard pin. Each of the top five trails has a letter marker (A to E) on its region. Hovering a marker shows that trail's risk score, slope, and primary risk factor. The opening view frames the whole mountain, sized from its elevation, so any mountain opens the same way. While nobody is using it, the camera slowly orbits the mountain. It can't zoom out more than a third of a zoom level past the opening view. A click on a trail's marker or line on the map does what **View** does: the camera flies there and the trail's row is selected.
 
-**Right, about 45%:** one panel that scrolls, top to bottom:
+**Right, about 45%:** one panel. The header and overall risk stay at the top. Under them are two tabs (Sep 26, 2026), **Prevention** and **Response**. Each tab scrolls on its own and pins its own action to the bottom. The panel opens on Prevention.
 
 1. **Header.** The mountain name and one line of stats: elevation, mean slope, area.
 2. **Overall risk.** The score as a number, with the level word and color.
