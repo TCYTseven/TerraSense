@@ -52,10 +52,10 @@ export default async function MountainPage({ params }: PageProps<"/mountains/[sl
   if (!mountain) {
     notFound();
   }
-  // Static mountains have no raster layers.
-  const [probability, susceptibility, riskSummary] = mountain.is_live
-    ? await Promise.all([loadLayer(slug, "probability"), loadLayer(slug, "susceptibility"), loadRiskSummary(slug)])
-    : [null, null, null];
+  const susceptibility = await loadLayer(slug, "susceptibility");
+  const [probability, riskSummary] = mountain.is_live
+    ? await Promise.all([loadLayer(slug, "probability"), loadRiskSummary(slug)])
+    : [null, null];
 
   return (
     <HillCard mountain={mountain} probability={probability} susceptibility={susceptibility} riskSummary={riskSummary} />

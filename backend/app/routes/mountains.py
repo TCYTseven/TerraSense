@@ -10,6 +10,7 @@ from psycopg.rows import DictRow
 from app.db import get_conn
 from app.history import historical_events
 from app.mountain_catalog import ensure_catalog, sync_catalog
+from app.ml.synthetic_heatmap import synthetic_layer_metadata
 from app.ml.tiles import layer_url_path, read_metadata, slug_tiles_dir
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, MountainRiskSummary, Trail, TrailSegment
 from app.risk_summary import risk_summary
@@ -127,20 +128,39 @@ def get_risk_summary(slug: str, conn: Conn) -> MountainRiskSummary:
 
 @router.get("/{slug}/layers/{layer}")
 def get_layer(slug: str, layer: str, request: Request, conn: Conn) -> LayerTiles:
-    """The tile URL template for one raster layer. Only live mountains have layers."""
-    mountain = conn.execute("SELECT is_live FROM mountains WHERE slug = %s", (slug,)).fetchone()
+    """The tile URL template for one raster layer. Live peaks use rendered tiles; catalog peaks use synthetic XYZ."""
+    mountain = conn.execute(
+        "SELECT is_live, lat, lon, elevation_m FROM mountains WHERE slug = %s",
+        (slug,),
+    ).fetchone()
     if mountain is None:
         raise HTTPException(status_code=404, detail=f"No mountain with slug {slug!r}")
-    if not mountain["is_live"]:
-        raise HTTPException(status_code=404, detail=f"{slug!r} is a static marker and has no map layers")
     if layer not in LAYERS:
         raise HTTPException(status_code=404, detail=f"Unknown layer {layer!r}. Layers: {', '.join(LAYERS)}")
+    base = str(request.base_url).rstrip("/")
+
+    if not mountain["is_live"]:
+        if layer != "susceptibility":
+            raise HTTPException(
+                status_code=404,
+                detail=f"{slug!r} is a catalog marker; only the susceptibility-style heat map is available.",
+            )
+        metadata = synthetic_layer_metadata(slug, mountain["lon"], mountain["lat"], mountain["elevation_m"])
+        return LayerTiles(
+            layer=layer,
+            tiles=f"{base}/tiles/synthetic/{slug}/{{z}}/{{x}}/{{y}}.png?v={metadata['version']}",
+            bounds=metadata["bounds"],  # type: ignore[arg-type]
+            minzoom=metadata["minzoom"],
+            maxzoom=metadata["maxzoom"],
+            method=metadata.get("method"),
+            updated_at=metadata["created_at"],
+        )
+
     metadata = read_metadata(layer, tiles_dir=slug_tiles_dir(slug))
     if metadata is None:
         raise HTTPException(status_code=404, detail=f"Layer {layer!r} is not rendered yet. {RENDER_HINT[layer]}")
 
     # The version query makes browsers drop cached tiles after a re-render.
-    base = str(request.base_url).rstrip("/")
     return LayerTiles(
         layer=layer,
         tiles=f"{base}/tiles/{layer_url_path(slug, layer)}/{{z}}/{{x}}/{{y}}.png?v={metadata['version']}",
