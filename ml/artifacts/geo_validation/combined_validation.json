@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-26T12:35:40+00:00",
+  "generated_at": "2026-09-26T22:01:58+00:00",
   "design": {
     "lead_hours": 0,
     "control_places": 4,
@@ -759,5 +759,5 @@
     "lead-0 rain reads the reanalysis next 72 h, a perfect forecast; see live_combined_no_forecast",
     "GLC-only clusters place the case up to 5 km from the slide; see metrics_precise_locations"
   ],
-  "runtime_s": 148.1
+  "runtime_s": 115.8
 }

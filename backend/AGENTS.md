@@ -46,6 +46,10 @@ relative risk index, not an absolute chance. The estimate never changes `state`.
 terrain, a blank pixel, or a point outside the box gives `probability: null`, never a dry-day number.
 The agents' classification fact leaves the point estimate out.
 
+`POST /api/v1/avalanche-risk` is a separate 24-hour classifier seam. It uses its own snowpack and
+terrain feature contract and fails closed until a calibrated avalanche artifact and operational
+GFS/GEFS forecast are available. It must not reuse landslide thresholds or danger terminology.
+
 ## Rules
 
 - Keep the API thin. Run state lives in the API process, keyed by `run_id`. No Redis, no PostGIS, no auth, no object storage.

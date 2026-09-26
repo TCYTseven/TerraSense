@@ -11,6 +11,14 @@ from app.ml.risk_contract import MODEL_FEATURES
 from app.weather import HourlyRain
 
 
+def test_reported_probability_floor_does_not_change_exact_risk_score() -> None:
+    reported, applied, floor = risk_inference._reported_probability(0.03)
+
+    assert reported == 0.10
+    assert applied is True
+    assert floor == 0.10
+
+
 def test_calibrated_artifact_can_drive_high_risk_prediction(tmp_path, monkeypatch) -> None:
     model_path = tmp_path / "landslide_risk_lgbm.txt"
     metadata_path = tmp_path / "risk_model.json"

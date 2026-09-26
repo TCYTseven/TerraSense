@@ -35,6 +35,7 @@ from app.ml.risk_contract import (
     DEFAULT_ABSTENTION_BAND,
     DEFAULT_CELL_SIZE_M,
     DEFAULT_MIN_DATA_QUALITY,
+    DEFAULT_MIN_REPORTED_PROBABILITY,
     DEFAULT_OOD_THRESHOLD,
     MODEL_FEATURES,
     PREDICTION_HORIZON_HOURS,
@@ -74,6 +75,14 @@ def _env_bool(name: str, default: bool = True) -> bool:
     return value.strip().lower() not in {"0", "false", "no", "off"}
 
 
+def _reported_probability(value: float) -> tuple[float, bool, float]:
+    """Apply the API headline floor without changing calibrated model semantics."""
+    configured = _env_float("MIN_REPORTED_HAZARD_PROBABILITY", DEFAULT_MIN_REPORTED_PROBABILITY)
+    floor = max(DEFAULT_MIN_REPORTED_PROBABILITY, min(1.0, configured))
+    bounded = max(0.0, min(1.0, float(value)))
+    return round(max(floor, bounded), 4), bounded < floor, floor
+
+
 @dataclass(frozen=True)
 class RiskPrediction:
     latitude: float
@@ -93,6 +102,8 @@ class RiskPrediction:
     model: dict[str, Any]
     probability: float | None = None
     probability_source: ProbabilitySource | None = None
+    probability_floor_applied: bool = False
+    probability_floor: float = DEFAULT_MIN_REPORTED_PROBABILITY
     risk_level: RiskLevel | None = None
     estimate: dict[str, Any] | None = None
 
@@ -103,6 +114,8 @@ class RiskPrediction:
             "state": self.state,
             "probability": self.probability,
             "probability_source": self.probability_source,
+            "probability_floor_applied": self.probability_floor_applied,
+            "probability_floor": round(self.probability_floor, 3),
             "risk_level": self.risk_level,
             "estimate": self.estimate,
             "calibrated_probability": self.calibrated_probability,
@@ -564,15 +577,22 @@ def predict_location(
     estimate, headline, reasons = _model_b_estimate(latitude, longitude, rain, probability_override)
     probability: float | None = None
     source: ProbabilitySource | None = None
+    floor_applied = False
+    floor = DEFAULT_MIN_REPORTED_PROBABILITY
     if prediction.calibrated_probability is not None:
-        probability, source = prediction.calibrated_probability, "calibrated_classifier"
+        probability, floor_applied, floor = _reported_probability(prediction.calibrated_probability)
+        source = "calibrated_classifier"
     elif headline is not None:
-        probability, source = round(min(1.0, max(0.0, headline)), 4), "model_b_estimate"
+        probability, floor_applied, floor = _reported_probability(headline)
+        source = "model_b_estimate"
+    exact_probability = prediction.calibrated_probability if prediction.calibrated_probability is not None else headline
     return replace(
         prediction,
         probability=probability,
         probability_source=source,
-        risk_level=None if probability is None else risk_level(probability),
+        probability_floor_applied=floor_applied,
+        probability_floor=floor,
+        risk_level=None if exact_probability is None else risk_level(float(exact_probability)),
         estimate=estimate,
         reason_codes=list(dict.fromkeys([*prediction.reason_codes, *reasons])),
     )

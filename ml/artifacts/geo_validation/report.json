@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-26T12:41:48+00:00",
+  "generated_at": "2026-09-26T21:58:25+00:00",
   "table": "data/processed/regional_labels.parquet",
   "seed": 26,
   "buffer_m": 2000,
@@ -11541,7 +11541,7 @@
       ]
     }
   },
-  "runtime_s": 360.4,
+  "runtime_s": 387.0,
   "ablation": {
     "summary": [
       {

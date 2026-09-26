@@ -3,6 +3,8 @@
 rasterio>=1.4
 numpy>=2,<2.4    # pysheds 0.5 still calls np.in1d, which numpy 2.4 removed
 requests>=2.32
+# NOAA historical GFS/GEFS GRIB2 byte-range extraction:
+eccodes>=2.40
 # Step 11, build_features.py:
 scipy>=1.13
 pandas>=2.2

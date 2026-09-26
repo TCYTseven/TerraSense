@@ -87,9 +87,9 @@ Build one convincing loop, not a platform.
 
 - A 3D globe. Click Mount Rainier and fly in. One hill marker, Turtle Mountain in the Crowsnest Pass, uses a hill glyph and opens a hill page.
 - Two extra mountains as static globe markers so the globe is not a single dot. They do not run live analysis.
-- One live mountain: **Mount Rainier**. Precompute its terrain features before the event. Rainier stays the demo mountain on the existing landslide model until a separate mountain model exists. That model is planned and not started.
+- One live mountain: **Mount Rainier**. Precompute its terrain features before the event. Rainier stays the demo mountain on the existing landslide model; the separate avalanche classifier is an API/offline follow-on and does not change the landslide score.
 - One live hill: **Turtle Mountain**, Crowsnest Pass, Alberta. The existing regional LightGBM and Model B score it. Agent orchestration is not on the hill page.
-- Landslide risk only. A static susceptibility layer and a 72-hour probability layer driven by recent rain.
+- Landslide risk remains the primary demo hazard: a static susceptibility layer and a 72-hour probability layer driven by recent rain.
 - Historical landslide pins from a public catalog.
 - Trails colored by risk, plus one alternate route that avoids the worst segment.
 - Agents that stream their work into the UI: five analysts, a Risk Synthesizer, and an Alert Writer.
@@ -723,7 +723,7 @@ The same rain-on-steep-ground mechanism shows up in monsoon seasons in Nepal, so
 Do not build these during HackGT. They are real follow-ons, and they will sink the demo if you start them.
 
 - Rain what-if inputs ("what if it rains 6 inches"), or any other input to the simulation. The runout simulation in 6.8 replays today's worst slope and takes no inputs.
-- Hazard types other than landslide / debris flow: rockfall, flash flood, avalanche, exposure, river crossings, lightning, heat, wildlife, closures.
+- Avalanche UI, agent, trail-action, and map-layer integration remains out of the HackGT demo scope. The parallel avalanche API returns a separate 24-hour model state and must be validated with avalanche labels before it is presented as an operational warning.
 - Sending anything: SMS, email, Slack, Discord, push. Public notices in the simulation are drafts. Ranger signup, districts, acknowledge / escalate / dismiss.
 - Auth.
 - GPX download, public share pages, Open Graph images, browser geolocation.

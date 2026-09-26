@@ -19,6 +19,7 @@ ml/artifacts/landslide_risk_lgbm.txt
 ml/artifacts/risk_model.json
 ml/artifacts/risk_calibration.json
 ml/artifacts/risk_backtest_report.json
+ml/artifacts/avalanche/
 
 # Rendered map tiles. Recreate with ml/scripts/render_tiles.py.
 backend/tiles/

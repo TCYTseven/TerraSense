@@ -282,6 +282,8 @@ export interface LandslideRiskPrediction {
   state: LandslideRiskState;
   probability: number | null;
   probability_source: RiskProbabilitySource | null;
+  probability_floor_applied: boolean;
+  probability_floor: number;
   risk_level: RiskLevel | null;
   estimate: RiskEstimate | null;
   calibrated_probability: number | null;
@@ -291,6 +293,25 @@ export interface LandslideRiskPrediction {
   ood_score: number | null;
   reason_codes: string[];
   drivers: { feature: string; value: number | null; importance: number; direction: "model risk driver" }[];
+  data_sources: Record<string, unknown>;
+  model: Record<string, unknown>;
+}
+
+export interface AvalancheRiskPrediction {
+  location: { latitude: number; longitude: number };
+  prediction_window: { start: string; end: string };
+  state: LandslideRiskState;
+  probability: number | null;
+  calibrated_probability: number | null;
+  probability_floor_applied: boolean;
+  probability_floor: number;
+  high_risk_threshold: number | null;
+  confidence: { lower: number | null; upper: number | null };
+  data_quality_score: number;
+  ood_score: number | null;
+  reason_codes: string[];
+  drivers: { feature: string; label: string; value: number | null; importance: number; direction: "model risk driver" }[];
+  snowpack: Record<string, unknown>;
   data_sources: Record<string, unknown>;
   model: Record<string, unknown>;
 }

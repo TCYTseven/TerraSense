@@ -39,7 +39,10 @@ def no_terrain(monkeypatch):
     monkeypatch.setattr(runout, "height_grid", lambda lon, lat, radius: None)
 
 
-def test_rank_puts_the_steeper_trail_first():
+def test_rank_puts_the_steeper_trail_first(monkeypatch):
+    # Keep this fallback test independent of any ignored/generated raster in the developer
+    # checkout. Raster-specific behavior is covered by the tests below.
+    monkeypatch.setattr(pressure, "_raster_path", lambda: None)
     points = rank_pressure_points([GENTLE, STEEP])
     assert 1 <= len(points) <= 5
     assert points[0]["rank"] == 1

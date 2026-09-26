@@ -275,6 +275,8 @@ class LandslideRiskPrediction(BaseModel):
     state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"]
     probability: float | None = Field(default=None, ge=0, le=1)
     probability_source: Literal["calibrated_classifier", "model_b_estimate"] | None = None
+    probability_floor_applied: bool = False
+    probability_floor: float = Field(default=0.1, ge=0.1, le=1)
     risk_level: RiskLevel | None = None
     estimate: RiskEstimate | None = None
     calibrated_probability: float | None
@@ -284,5 +286,26 @@ class LandslideRiskPrediction(BaseModel):
     ood_score: float | None
     reason_codes: list[str]
     drivers: list[RiskDriver]
+    data_sources: dict[str, Any]
+    model: dict[str, Any]
+
+
+class AvalancheRiskPrediction(BaseModel):
+    """Fail-closed, calibrated next-24-hour avalanche prediction."""
+
+    location: dict[str, float]
+    prediction_window: dict[str, datetime]
+    state: Literal["HIGH_RISK", "NOT_HIGH_RISK", "UNCERTAIN"]
+    probability: float | None = Field(default=None, ge=0, le=1)
+    calibrated_probability: float | None = Field(default=None, ge=0, le=1)
+    probability_floor_applied: bool = False
+    probability_floor: float = Field(default=0.1, ge=0.1, le=1)
+    high_risk_threshold: float | None = Field(default=None, ge=0, le=1)
+    confidence: RiskConfidence
+    data_quality_score: float = Field(ge=0, le=1)
+    ood_score: float | None = Field(default=None, ge=0, le=1)
+    reason_codes: list[str]
+    drivers: list[dict[str, Any]]
+    snowpack: dict[str, Any]
     data_sources: dict[str, Any]
     model: dict[str, Any]
