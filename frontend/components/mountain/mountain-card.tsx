@@ -33,6 +33,11 @@ export interface MountainCardProps {
   susceptibility: LayerTiles | null;
   /** The trail scores on the saved heat map at page load. Null before the first save. */
   riskSummary: MountainRiskSummary | null;
+  /**
+   * When false, the Agents block stays idle, Analyze now is not rendered, and nothing
+   * starts a run. A hill page sets this. Simulate still appears when the place has routes.
+   */
+  orchestration?: boolean;
 }
 
 /**
@@ -40,18 +45,24 @@ export interface MountainCardProps {
  * overall risk stay at the top; under them two tabs, Prevention (Simulate pinned under it) and
  * Response (Analyze pinned under it). "View" on a trail row flies the camera to its marker.
  */
-export default function MountainCard({ mountain, probability, susceptibility, riskSummary }: MountainCardProps) {
+export default function MountainCard({
+  mountain,
+  probability,
+  susceptibility,
+  riskSummary,
+  orchestration = true,
+}: MountainCardProps) {
   const [summary, setSummary] = useState(riskSummary);
   const hill = useMemo(() => buildMountainView(mountain, summary), [mountain, summary]);
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [tab, setTab] = useState<PanelTab>("prevention");
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
-  const pipeline = usePipeline(hill);
+  const pipeline = usePipeline(hill, orchestration);
   const finished = pipeline.state.orchestrator === "done";
 
   // A finished run saves a new map, so the trail scores are read again.
   useEffect(() => {
-    if (!finished || !mountain.is_live) return;
+    if (!orchestration || !finished || !mountain.is_live) return;
     const controller = new AbortController();
     getRiskSummary(mountain.slug, { signal: controller.signal }).then(
       (next) => {
@@ -60,7 +71,7 @@ export default function MountainCard({ mountain, probability, susceptibility, ri
       () => {},
     );
     return () => controller.abort();
-  }, [finished, mountain.slug, mountain.is_live]);
+  }, [finished, mountain.slug, mountain.is_live, orchestration]);
   const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
   const hasRoutes = mountain.trails.length > 0;
@@ -125,7 +136,9 @@ export default function MountainCard({ mountain, probability, susceptibility, ri
           {live && hill.trails.length > 0 && (
             <TrailList trails={hill.trails} selected={selected} onView={view} />
           )}
-          {!live && <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>}
+          {hill.trails.length === 0 && (
+            <p className="px-5 py-4 text-base text-muted-foreground">No trails are mapped here.</p>
+          )}
         </TabPanel>
         <TabPanel tab="response" active={tab}>
           <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
@@ -143,8 +156,9 @@ export default function MountainCard({ mountain, probability, susceptibility, ri
             <PreventativeMeasures items={hill.preventative} />
           )}
         </TabPanel>
+        {(tab === "prevention" ? orchestration || hasRoutes : orchestration) && (
         <footer className="shrink-0 border-t border-border bg-card px-5 py-4">
-          {/* Each tab pins its own action. */}
+          {/* Each tab pins its own action. A hill with no routes has neither. */}
           {tab === "prevention" ? (
             <div className="flex">
               <SimulateButton
@@ -160,6 +174,7 @@ export default function MountainCard({ mountain, probability, susceptibility, ri
             <p className="mt-2 text-sm text-foreground">{simulation.error}</p>
           )}
         </footer>
+        )}
         <SimulationUnsupportedDialog
           open={simulateUnsupportedOpen}
           mountainName={mountain.name}

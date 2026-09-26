@@ -19,9 +19,16 @@ export default function OverallRisk({ hill }: { hill: MountainView }) {
       {!hill.isLive && (
         <p className="mt-2 text-base">No trails are mapped here. Analyze uses this summit&apos;s location, the risk model, and live weather.</p>
       )}
-      {hill.isLive && hill.scoring && (
+      {hill.isLive && hill.scoring && hill.scoring.trailsScored > 0 && (
         <p className="mt-2 text-sm text-muted-foreground">
           Worst point on any of {hill.scoring.trailsScored} mapped trails ·{" "}
+          <span className="font-mono">{Math.round(hill.scoring.shareAreaHigh * 100)}%</span> of the area at high or above ·
+          scored <span className="font-mono">{formatUtc(hill.scoring.scoredAt)}</span>
+        </p>
+      )}
+      {hill.isLive && hill.scoring && hill.scoring.trailsScored === 0 && (
+        <p className="mt-2 text-sm text-muted-foreground">
+          Worst cell on the heat map ·{" "}
           <span className="font-mono">{Math.round(hill.scoring.shareAreaHigh * 100)}%</span> of the area at high or above ·
           scored <span className="font-mono">{formatUtc(hill.scoring.scoredAt)}</span>
         </p>

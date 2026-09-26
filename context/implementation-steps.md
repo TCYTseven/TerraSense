@@ -32,7 +32,7 @@ Finish each step on a track before you start the next one on that track. Stay in
 - [x] 37. Record hills in the spec (Turtle Mountain, Crowsnest Pass: slug, peak, elevation, and bbox in the shared facts; the existing landslide model scores hills)
 - [x] 38. Seed and serve Turtle Mountain
 - [x] 39. Score Turtle Mountain with the existing landslide model
-- [ ] 40. Draw the hill glyph and open the hill page
+- [x] 40. Draw the hill glyph and open the hill page
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done

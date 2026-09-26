@@ -109,7 +109,7 @@ export default function MountainSearch({
   return (
     <div role="search">
       <label htmlFor={inputId} className="sr-only">
-        Search a mountain
+        Search mountains and hills
       </label>
       <div className="relative">
         {/* z-10: the input's backdrop blur would otherwise paint over the icon. */}
@@ -126,7 +126,7 @@ export default function MountainSearch({
           }
           autoComplete="off"
           spellCheck={false}
-          placeholder="Search a mountain"
+          placeholder="Search mountains and hills"
           value={query}
           disabled={disabled}
           onChange={(event) => {

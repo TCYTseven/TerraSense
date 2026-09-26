@@ -76,6 +76,18 @@ const PEAKS_GEOMETRY = new ShapeGeometry(shape(PEAKS));
 const SNOW_GEOMETRY = new ShapeGeometry(shape(SNOW));
 const OUTLINE_GEOMETRY = new ShapeGeometry(shape(OUTLINE));
 
+/** One lower rounded rise, in the same unit box as the peaks, with no snowcap. */
+function roundedRise(peak: number, half: number, base: number): Shape {
+  const s = new Shape();
+  s.moveTo(-half, base);
+  s.quadraticCurveTo(0, peak, half, base);
+  s.closePath();
+  return s;
+}
+
+const HILL_GEOMETRY = new ShapeGeometry(roundedRise(0.55, 0.55, 0));
+const HILL_OUTLINE_GEOMETRY = new ShapeGeometry(roundedRise(0.68, 0.68, -0.06));
+
 /** Visual meshes skip raycasting, so the pointer always reaches the hit sphere. */
 const noRaycast = () => null;
 
@@ -105,6 +117,7 @@ export default function MountainMarker({
 }) {
   const level = displayRiskLevel(mountain);
   const color = RISK_COLORS[level];
+  const hill = mountain.kind === "hill";
   const groupRef = useRef<Group>(null);
   const glyphMaterial = useRef<MeshBasicMaterial>(null);
   const snowMaterial = useRef<MeshBasicMaterial>(null);
@@ -195,8 +208,8 @@ export default function MountainMarker({
       )}
       <Billboard position={[0, 0, 0.004]}>
         {/* Centered on the mountain's point, so the glyph sits in the middle of its sphere. */}
-        <group scale={GLYPH_SIZE} position={[0, -GLYPH_SIZE * 0.47, 0]}>
-          <mesh geometry={OUTLINE_GEOMETRY} renderOrder={1} raycast={noRaycast}>
+        <group scale={GLYPH_SIZE} position={[0, -(hill ? GLYPH_SIZE * 0.28 : GLYPH_SIZE * 0.47), 0]}>
+          <mesh geometry={hill ? HILL_OUTLINE_GEOMETRY : OUTLINE_GEOMETRY} renderOrder={1} raycast={noRaycast}>
             <meshBasicMaterial
               ref={outlineMaterial}
               color={THEME.background}
@@ -206,12 +219,14 @@ export default function MountainMarker({
               toneMapped={false}
             />
           </mesh>
-          <mesh geometry={PEAKS_GEOMETRY} renderOrder={2} raycast={noRaycast}>
+          <mesh geometry={hill ? HILL_GEOMETRY : PEAKS_GEOMETRY} renderOrder={2} raycast={noRaycast}>
             <meshBasicMaterial ref={glyphMaterial} color={color} transparent opacity={0} depthTest={false} toneMapped={false} />
           </mesh>
-          <mesh geometry={SNOW_GEOMETRY} renderOrder={3} raycast={noRaycast}>
-            <meshBasicMaterial ref={snowMaterial} color="#ffffff" transparent opacity={0} depthTest={false} toneMapped={false} />
-          </mesh>
+          {!hill && (
+            <mesh geometry={SNOW_GEOMETRY} renderOrder={3} raycast={noRaycast}>
+              <meshBasicMaterial ref={snowMaterial} color="#ffffff" transparent opacity={0} depthTest={false} toneMapped={false} />
+            </mesh>
+          )}
         </group>
       </Billboard>
       <mesh position={[0, 0, 0.002]} raycast={noRaycast}>
@@ -274,6 +289,9 @@ function MarkerCard({ mountain }: { mountain: Mountain }) {
         <p className="font-mono text-xs text-muted-foreground">{formatElevation(mountain.elevation_m)}</p>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{mountain.region}</p>
+      {mountain.kind === "hill" && (
+        <p className="mt-0.5 text-xs text-muted-foreground">Hill. Landslide model.</p>
+      )}
       {previewSrc ? (
         <div className="relative mx-auto mt-2.5 aspect-square w-[84%] overflow-hidden rounded-sm bg-muted">
           {!imageLoaded ? <div className="absolute inset-0 animate-pulse bg-muted" aria-hidden /> : null}

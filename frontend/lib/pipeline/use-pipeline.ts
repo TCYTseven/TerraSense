@@ -17,14 +17,14 @@ export interface PipelineControls {
  * Holds the pipeline's state and runs it on demand. Every mountain calls the API.
  * A summit with no trails still runs: the agents use its location, the risk model, and the weather.
  */
-export function usePipeline(hill: MountainView): PipelineControls {
+export function usePipeline(hill: MountainView, enabled = true): PipelineControls {
   const [state, setState] = useState<PipelineState>(initialPipelineState);
   const [running, setRunning] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const busy = useRef(false);
 
   const analyze = useCallback(() => {
-    if (busy.current) return;
+    if (!enabled || busy.current) return;
     busy.current = true;
     controller.current?.abort();
     const next = new AbortController();
@@ -37,7 +37,7 @@ export function usePipeline(hill: MountainView): PipelineControls {
       busy.current = false;
       setRunning(false);
     });
-  }, [hill]);
+  }, [enabled, hill]);
 
   // Stop the run when the card unmounts.
   useEffect(
