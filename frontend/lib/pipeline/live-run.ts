@@ -1,0 +1,194 @@
+import { followRun } from "@/lib/run-stream";
+import { startAnalysis } from "@/lib/api";
+import { initialPipelineState } from "@/lib/pipeline/orchestrator";
+import {
+  PIPELINE_AGENTS,
+  type PipelineAgentId,
+  type PipelineAgentState,
+  type PipelineState,
+  type ReactiveMeasure,
+} from "@/lib/hill";
+import type { Advisory, AgentEvent, AgentName, Run } from "@/lib/types";
+
+/**
+ * The hill card shows five rows. The API runs seven agents. Trail, history, and routes
+ * share the Trails row so every real model call still appears in the trace.
+ */
+const CARD_AGENTS: Record<PipelineAgentId, readonly AgentName[]> = {
+  terrain: ["terrain"],
+  weather: ["weather"],
+  trails: ["trail", "history", "routes"],
+  synthesizer: ["synthesizer"],
+  alertWriter: ["writer"],
+};
+
+const AGENT_LABEL: Record<AgentName, string> = {
+  terrain: "Terrain",
+  weather: "Weather",
+  trail: "Trails",
+  history: "History",
+  routes: "Routes",
+  synthesizer: "Synthesizer",
+  writer: "Alert writer",
+};
+
+function idleAgent(id: PipelineAgentId): PipelineAgentState {
+  return { id, status: "idle", summary: "", trace: [], startedAt: null, finishedAt: null };
+}
+
+function traceLines(event: AgentEvent): string[] {
+  const prefix = CARD_AGENTS.trails.includes(event.agent) ? `${AGENT_LABEL[event.agent]}: ` : "";
+  const lines = [`${prefix}${event.summary}`];
+  const trace = event.trace;
+  if (!trace) {
+    return lines;
+  }
+  lines.push(`${prefix}${trace.route.provider} · ${trace.route.model} — ${trace.route.reason}`);
+  for (const tool of trace.tools) {
+    lines.push(`${prefix}Tool ${tool.name} (${tool.ms} ms)`);
+  }
+  for (const attempt of trace.attempts) {
+    const outcome = attempt.ok ? "answered" : `failed: ${attempt.error ?? "error"}`;
+    lines.push(`${prefix}${attempt.provider} ${attempt.model} ${outcome} (${attempt.latency_ms} ms)`);
+  }
+  for (const thought of trace.thoughts) {
+    lines.push(`${prefix}${thought}`);
+  }
+  for (const step of trace.reasoning) {
+    lines.push(`${prefix}${step}`);
+  }
+  for (const check of trace.checks) {
+    lines.push(`${prefix}${check}`);
+  }
+  return lines;
+}
+
+function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null): PipelineState {
+  const agents = {} as PipelineState["agents"];
+  for (const id of PIPELINE_AGENTS) {
+    const group = CARD_AGENTS[id].map((name) => events[name]).filter((event): event is AgentEvent => event != null);
+    if (group.length === 0) {
+      agents[id] = idleAgent(id);
+      continue;
+    }
+    const failed = group.find((event) => event.status === "error");
+    const running = group.some((event) => event.status === "running");
+    const waiting = CARD_AGENTS[id].some((name) => events[name] == null);
+    const status = failed ? "error" : running || waiting ? "running" : "done";
+    const latest = failed ?? [...group].reverse().find((event) => event.status === "running") ?? group[group.length - 1]!;
+    const started = group.map((event) => (event.trace?.started_at ? Date.parse(event.trace.started_at) : NaN)).filter((t) => !Number.isNaN(t));
+    const finished = group.map((event) => (event.trace?.finished_at ? Date.parse(event.trace.finished_at) : NaN)).filter((t) => !Number.isNaN(t));
+    agents[id] = {
+      id,
+      status,
+      summary: latest.summary,
+      trace: group.flatMap(traceLines),
+      startedAt: started.length ? Math.min(...started) : Date.now(),
+      finishedAt: status === "done" || status === "error" ? (finished.length ? Math.max(...finished) : Date.now()) : null,
+    };
+  }
+  return { orchestrator, agents, measures, error };
+}
+
+function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
+  const timing = advisory.response.priority_rank >= 2 ? "within-1h" : "within-6h";
+  const measures: ReactiveMeasure[] = advisory.avoid.map((route) => ({
+    category: "closures" as const,
+    title: `Keep hikers off ${route.trail}`,
+    detail: `${route.reason} ${route.guidance}`.trim(),
+    timing: "now" as const,
+    letter: null,
+  }));
+  for (const action of advisory.response.actions) {
+    measures.push({
+      category: "coordination",
+      title: action,
+      detail: advisory.response.headline,
+      timing,
+      letter: null,
+    });
+  }
+  measures.push({
+    category: "public",
+    title: advisory.alert.title,
+    detail: advisory.alert.hiker || advisory.alert.body,
+    timing,
+    letter: null,
+  });
+  return measures;
+}
+
+/**
+ * Starts POST /mountains/{slug}/analyze and paints the hill-card pipeline from the live
+ * WebSocket. The API calls Gemini or xAI with the keys in the repo root .env.
+ */
+export function runLiveAnalysis(
+  slug: string,
+  onUpdate: (state: PipelineState) => void,
+  signal: AbortSignal,
+): Promise<void> {
+  const events: Partial<Record<AgentName, AgentEvent>> = {};
+  let stop = () => {};
+
+  const publish = (orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null) => {
+    if (signal.aborted) {
+      return;
+    }
+    onUpdate(project(events, orchestrator, error, measures));
+  };
+
+  return new Promise((resolve) => {
+    const finish = () => {
+      stop();
+      resolve();
+    };
+    signal.addEventListener("abort", finish, { once: true });
+
+    onUpdate({ ...initialPipelineState(), orchestrator: "running" });
+
+    startAnalysis(slug, { signal })
+      .then((runId) => {
+        if (signal.aborted) {
+          finish();
+          return;
+        }
+        stop = followRun(runId, {
+          onEvent(event) {
+            events[event.agent] = event;
+            publish("running", null, null);
+          },
+          onRun(run: Run) {
+            for (const event of Object.values(run.agents)) {
+              if (event) {
+                events[event.agent] = event;
+              }
+            }
+            if (run.status === "running") {
+              publish("running", null, null);
+              return;
+            }
+            if (run.status === "error") {
+              publish("error", run.error ?? run.message, null);
+              finish();
+              return;
+            }
+            publish("done", null, run.advisory ? measuresFromAdvisory(run.advisory) : null);
+            finish();
+          },
+          onLost() {
+            publish("error", "Lost the analysis stream. The API may still be running the agents.", null);
+            finish();
+          },
+        });
+      })
+      .catch((error: unknown) => {
+        if (signal.aborted) {
+          finish();
+          return;
+        }
+        const message = error instanceof Error ? error.message : String(error);
+        onUpdate({ ...initialPipelineState(), orchestrator: "error", error: message });
+        finish();
+      });
+  });
+}
