@@ -12,6 +12,12 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 |---|---|---|---|
 | `data/raw/rainier_dem_cop30.tif` | Copernicus DEM GLO-30 | 2026-09-25 | Done |
 | `data/raw/rainier_landcover_worldcover2021.tif` | ESA WorldCover 2021 v200 | 2026-09-25 | Done |
+| `data/raw/coolr/global_landslide_catalog_export.csv` | NASA COOLR / Global Landslide Catalog current static CSV export | 2026-09-26 | Done. 8.1 MB |
+| `data/raw/usgs_v3/US_Landslide_v3_csv.zip` | USGS Landslide Inventories across the United States v3 CSV archive | 2026-09-26 | Done. MD5 `6262364ad05e05e683573fd58e4d6e27` |
+| `data/raw/soilgrids/soilgrids_*_{0-5,5-15,15-30,30-60}cm_mean.tif` | ISRIC SoilGrids 2.0 WCS: clay, sand, silt, bulk density, coarse fragments, soil organic carbon | 2026-09-26 | Done. 24 Rainier-bbox subsets at 0.002° output resolution |
+| `data/raw/noaa/gfs/*.grib2` | NOAA/NCEP GFS 0.25° NOMADS subsets, 2026-09-25 00Z, f000–f072 | 2026-09-26 | Done. 13 Rainier-area forecast files |
+| `data/raw/noaa/gefs/*.grib2` | NOAA/NCEP GEFS 0.25° NOMADS control, ensemble mean, and spread, 2026-09-25 00Z, f000–f072 | 2026-09-26 | Done. 39 Rainier-area forecast files |
+| `data/raw/osm/washington-latest.osm.pbf` | Geofabrik OpenStreetMap Washington extract | 2026-09-26 | Done. MD5 `4279177b98c6c2dabd0c6f2022cff20a`, 363,627,224 bytes |
 | `data/seed/landslides.geojson` | NASA Global Landslide Catalog local export, supplemented by Washington State Landslide Inventory Database — Landslide Compilation | 2026-09-26 | Done. 37 mapped events total: 4 NASA events (1 at 1km accuracy, 3 at 5km) plus 33 supplemental 1km inventory points |
 | `data/seed/trails.geojson`, `data/seed/trail_segments.geojson` | OpenStreetMap via Overture Maps | 2026-09-25 | Done. Written by `ml/scripts/import_trails.py` |
 | `data/seed/trail_network.geojson` | Derived from the two above and the DEM | 2026-09-25 | Done. Written by `ml/scripts/build_trail_network.py` |
@@ -39,7 +45,7 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 ## Landslide points: `data/seed/landslides.geojson`
 
 - **Status:** refreshed from the supplied NASA Global Landslide Catalog export on 2026-09-26. NASA has four events in the Rainier box, but only one is precise enough for 30 m pixel labels; the official Washington inventory supplements it with 33 conservative 1km representative points so the spatial split has enough positive regions. No point was placed by hand.
-- **Primary source:** NASA Global Landslide Catalog, "Global Landslide Catalog Export", data.nasa.gov dataset `dd9e-wu2v`. Local refresh command: `python ml/scripts/download_sources.py --only landslides --glc-csv /Users/Aarav/Documents/Global_Landslide_Catalog_Export_rows.csv --force`.
+- **Primary source:** NASA COOLR / Global Landslide Catalog, "Global Landslide Catalog Export". CSV: https://data.nasa.gov/docs/legacy/Global_Landslide_Catalog_Export/Global_Landslide_Catalog_Export_rows.csv. Local cache: `data/raw/coolr/global_landslide_catalog_export.csv`. Local refresh command: `python ml/scripts/download_sources.py --only landslides --glc-csv data/raw/coolr/global_landslide_catalog_export.csv --force`.
 - **Supplemental source:** Washington Geological Survey, Washington State Landslide Inventory Database, **Landslide Compilation** layer 131. URL: https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131
 - **Query URL:** https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131/query
 - **Licence/attribution:** Washington Geological Survey; retain the source URL and inventory name with the derived seed. The layer warns that mapped coverage and confidence vary by source and scale; its representative points are conservatively labeled `location_accuracy: 1km` for training.
@@ -47,7 +53,18 @@ Every layer uses the shared bounding box `[-121.93, 46.76, -121.54, 46.96]` (EPS
 
 **To refresh.** On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. If NASA is unavailable, the script automatically queries the Washington fallback. To use a downloaded NASA CSV explicitly, run `python ml/scripts/download_sources.py --only landslides --glc-csv path/to/export.csv`; sparse high-accuracy NASA results are supplemented with the Washington inventory.
 
-**For step 11.** The catalog geocodes events from news reports, so `location_accuracy` runs from `exact` to `50km`, and the box may hold only a few events. Keep `exact` and `1km` points for pixel labels. A USGS inventory, such as the U.S. Landslide Inventory, can add points from a network that reaches ScienceBase.
+**For step 11.** The catalog geocodes events from news reports, so `location_accuracy` runs from `exact` to `50km`, and the box may hold only a few events. Keep `exact` and `1km` points for pixel labels. The fetched USGS v3 CSV archive is at `data/raw/usgs_v3/US_Landslide_v3_csv/` and contains `us_ls_v3_point.csv` and `us_ls_v3_poly.csv`; source release: https://www.usgs.gov/data/landslide-inventories-across-united-states-ver-30-february-2025.
+
+## Production risk-source cache
+
+The following files are fetched for the event-time 72-hour classifier. They are all ignored by Git and are spatially scoped to the shared Rainier study area unless noted otherwise.
+
+- **NASA GLC:** current static CSV export above; the retired Socrata endpoint is not used.
+- **USGS v3:** official ScienceBase release `https://www.sciencebase.gov/catalog/item/671eef1fd34ed0f827ea9f12`, CSV archive `US_Landslide_v3_csv.zip`.
+- **SoilGrids 2.0:** WCS endpoint `https://maps.isric.org/mapserv`; each subset uses `SUBSETTINGCRS=EPSG:4326`, `OUTPUTCRS=EPSG:4326`, `X(-121.93,-121.54)`, `Y(46.76,46.96)`, and `RESX=RESY=0.002`. Coverage families are `clay`, `sand`, `silt`, `bdod`, `cfvo`, and `soc`, each at `0-5cm`, `5-15cm`, `15-30cm`, and `30-60cm` with the mean prediction.
+- **NOAA GFS:** NOMADS filter endpoint `https://nomads.ncep.noaa.gov/cgi-bin/filter_gfs_0p25.pl`; run directory `/gfs.20260925/00/atmos`, forecast files f000 through f072 at six-hour intervals. Requested fields are precipitation, precipitation rate, 2 m temperature, snow depth, snow water equivalent, and top-layer soil water where available.
+- **NOAA GEFS:** NOMADS filter endpoint `https://nomads.ncep.noaa.gov/cgi-bin/filter_gefs_atmos_0p25s.pl`; run directory `/gefs.20260925/00/atmos/pgrb2sp25`, with control (`gec00`), ensemble mean (`geavg`), and spread (`gespr`) at f000 through f072.
+- **OpenStreetMap / Geofabrik:** `https://download.geofabrik.de/north-america/us/washington-latest.osm.pbf`; the current Washington extract is retained because Geofabrik distributes it as a regional PBF, not a Rainier-only file. Use a PBF-aware extractor to clip roads around the bbox.
 
 ## Trails: `data/seed/trails.geojson` and `data/seed/trail_segments.geojson`
 
