@@ -74,9 +74,9 @@ export default function MountainCard({
   }, [finished, mountain.slug, mountain.is_live, orchestration]);
   const simulation = useSimulation(mountain.slug);
   const live = hill.isLive;
-  const hasRoutes = mountain.trails.length > 0;
-  /** Runout simulation needs a prepared pack and trail geometry (demo peaks only). */
-  const simulationSupported = live && hasRoutes;
+  const hasRoutes = mountain.trails.some((trail) => (trail.geom?.coordinates?.length ?? 0) >= 2);
+  /** Runout uses seeded trail geometry and Terrarium terrain when available (any peak or hill). */
+  const simulationSupported = hasRoutes;
   const [simulateUnsupportedOpen, setSimulateUnsupportedOpen] = useState(false);
   const flowOn = simulation.phase === "playing" || simulation.phase === "finished";
   const matched = hill.trails.find((trail) => trail.name === simulation.simulation?.pressure_point?.trail_name);
@@ -182,7 +182,8 @@ export default function MountainCard({
         )}
         <SimulationUnsupportedDialog
           open={simulateUnsupportedOpen}
-          mountainName={mountain.name}
+          placeName={mountain.name}
+          analyzeAvailable={orchestration && live}
           onClose={() => setSimulateUnsupportedOpen(false)}
         />
       </aside>

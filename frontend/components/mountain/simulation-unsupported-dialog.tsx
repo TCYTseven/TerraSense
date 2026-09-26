@@ -4,16 +4,17 @@ import { useEffect, useRef } from "react";
 
 export interface SimulationUnsupportedDialogProps {
   open: boolean;
-  mountainName: string;
+  placeName: string;
+  /** Live mountains with agents; hills and static markers stay false. */
+  analyzeAvailable: boolean;
   onClose: () => void;
 }
 
-/**
- * Shown when Simulate is pressed on a catalog peak without mapped trails or a runout pack.
- */
+/** Shown when Simulate is pressed but no routable trail geometry is seeded. */
 export default function SimulationUnsupportedDialog({
   open,
-  mountainName,
+  placeName,
+  analyzeAvailable,
   onClose,
 }: SimulationUnsupportedDialogProps) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -38,14 +39,15 @@ export default function SimulationUnsupportedDialog({
       <form method="dialog" className="px-5 py-4">
         <h2 className="text-lg font-semibold tracking-[-0.01em]">Simulation not available</h2>
         <p className="mt-2 text-base text-muted-foreground">
-          {mountainName} is not one of our prepared demo peaks yet. Debris-flow runout needs mapped
-          trails and a local terrain pack—the same setup as Mount Rainier and the other peaks we
-          built packs for.
+          {placeName} has no mapped trails with geometry yet. Debris-flow runout needs at least one
+          named route in OpenStreetMap within range of the site, imported into the seed.
         </p>
-        <p className="mt-2 text-base text-muted-foreground">
-          You can still run <span className="text-foreground">Analyze now</span> here: the agents use
-          this summit&apos;s location, live weather, and the landslide model.
-        </p>
+        {analyzeAvailable && (
+          <p className="mt-2 text-base text-muted-foreground">
+            You can still run <span className="text-foreground">Analyze now</span> here: the agents use
+            this summit&apos;s location, live weather, and the landslide model.
+          </p>
+        )}
         <button
           type="submit"
           className="mt-4 h-10 w-full rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90"
