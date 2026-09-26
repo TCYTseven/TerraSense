@@ -130,6 +130,7 @@ def validation() -> dict | None:
             "rainier_roc_auc": rainier["metrics"]["roc_auc"],
             "rainier_roc_auc_ci95": rainier["block_bootstrap_ci95"]["roc_auc"],
             "rainier_positives": rainier["metrics"]["positives"],
+            "rainier_slope_only_roc_auc": rainier["slope_only_roc_auc"],
             "trigger_roc_auc": fitted["metrics"]["lr_model_b"]["roc_auc"],
             "trigger_roc_auc_ci95": fitted["bootstrap"]["ci95"]["lr_model_b"]["roc_auc"],
             "trigger_events": counts["n_cases"],

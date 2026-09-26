@@ -4,11 +4,13 @@ This is the live trigger layer on top of the offline susceptibility raster. It i
 small and vectorized so a new Open-Meteo response can be scored in milliseconds after the
 GeoTIFF is opened.
 
-The index is sigmoid(W1 * logit(susceptibility) + W0 + W2 * rainfall_exceedance + W3 * moisture_index).
+The index is sigmoid(W1 * (logit(susceptibility) - TERRAIN_BASE_LOGIT) + W0 + W2 * rain + W3 * moisture).
 Terrain odds come from the susceptibility raster, calibrated with slide pixels sampled 1:3 against
 stable ones (ml/artifacts/metrics.json). Rain odds come from a logistic fit on 767 dated landslides,
 calibrated with slide days sampled 1:4 against quiet days in the same place
-(ml/artifacts/model_b_validation.json). Their product assumes terrain and rain act independently.
+(ml/artifacts/model_b_validation.json). Terrain enters relative to the average sampled pixel, so the index carries one base rate (W0's),
+not both. Their product assumes terrain and rain act independently, and the combined index was
+never validated as a whole: no dated event cell falls in the Rainier box.
 Both parts are validated for ranking places and days; the absolute level depends on the sampling
 ratios, so the output is a relative index, not a probability.
 """
@@ -31,6 +33,8 @@ SUSCEPTIBILITY_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility.tif"
 # The artifact's publish rule is not met: ROC-AUC is 0.005 below the hand-set weights (95% CI
 # -0.007 to -0.002), but calibration error falls from 0.189 to 0.032, and the index is binned.
 W1 = 1.0  # Terrain enters as the log-odds of calibrated susceptibility, unscaled.
+# Log-odds of the 1:3 sampling rate the susceptibility is calibrated at (base rate 0.25).
+TERRAIN_BASE_LOGIT = float(np.log(0.25 / 0.75))
 W0 = -1.32  # Rain odds on a day at both reference thresholds, 95% CI -1.51 to -1.18.
 W2 = 0.92  # Forecast rain over the 72-hour threshold, 95% CI 0.74-1.10 (hand-set 2.0).
 W3 = 0.76  # Past-week rain over the 7-day threshold, 95% CI 0.59-0.93 (hand-set 1.6).
@@ -99,7 +103,7 @@ def contributions(susceptibility: float, rain: HourlyRain | None) -> dict[str, f
     """Each input's term in the logit at one cell, and the rain totals behind the two rain terms."""
     signals = rain_signals(rain)
     return {
-        "terrain": float(W1 * _logit(np.float64(susceptibility))),
+        "terrain": float(W1 * (_logit(np.float64(susceptibility)) - TERRAIN_BASE_LOGIT)),
         "rain_baseline": W0,
         "forecast_rain": W2 * signals.rainfall_exceedance,
         "antecedent_moisture": W3 * signals.moisture_index,
@@ -151,7 +155,7 @@ def run(rain: HourlyRain | None = None, path: Path | None = None) -> ModelBResul
     signals = rain_signals(rain)
     valid = np.isfinite(susceptibility)
     with np.errstate(invalid="ignore"):
-        terrain = _logit(susceptibility)
+        terrain = _logit(susceptibility) - TERRAIN_BASE_LOGIT
     logit = (
         W1 * terrain
         + W0

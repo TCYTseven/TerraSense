@@ -209,8 +209,9 @@ function Source({ prediction }: { prediction: LandslideRiskPrediction }) {
       <div className="text-xs text-muted-foreground">
         <p className="font-medium text-foreground">Model B risk index, 0 to 1</p>
         <p className="mt-0.5">
-          The model that colors the heat map: terrain odds times rain odds, each fitted on mapped and dated
-          landslides. It ranks places and days. It is not the chance of a slide, and not a safety clearance.
+          The model that colors the heat map: terrain odds times rain odds, each fitted separately on mapped and
+          dated landslides; the combination is not validated as a whole. It ranks places and days. It is not the
+          chance of a slide, and not a safety clearance.
         </p>
       </div>
     );
@@ -271,12 +272,12 @@ function Validation({ validation: v }: { validation: RiskEstimateValidation }) {
     {
       label: "Terrain, Mount Rainier only",
       value: formatAuc(v.rainier_roc_auc, v.rainier_roc_auc_ci95),
-      detail: `${v.rainier_positives} mapped slides in this box, never trained on`,
+      detail: `${v.rainier_positives} mapped slide pixels in this box, never trained on. Slope alone scores ${v.rainier_slope_only_roc_auc.toFixed(2)}`,
     },
     {
       label: "Rain trigger, by day",
       value: formatAuc(v.trigger_roc_auc, v.trigger_roc_auc_ci95),
-      detail: `${v.trigger_events} dated slides, ${v.trigger_storms} storms, ${v.trigger_years[0]}–${v.trigger_years[1]}, whole years held out`,
+      detail: `${v.trigger_events} dated slide events, ${v.trigger_storms} storms, ${v.trigger_years[0]}–${v.trigger_years[1]}, whole years held out`,
     },
   ];
   return (

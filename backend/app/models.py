@@ -222,6 +222,7 @@ class RiskEstimateValidation(BaseModel):
     rainier_roc_auc: float
     rainier_roc_auc_ci95: list[float]
     rainier_positives: int
+    rainier_slope_only_roc_auc: float
     trigger_roc_auc: float
     trigger_roc_auc_ci95: list[float]
     trigger_events: int
