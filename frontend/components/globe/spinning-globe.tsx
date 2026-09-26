@@ -24,6 +24,9 @@ const AXIAL_TILT_RADIANS = 0.41;
 
 const EARTH_RADIUS = 1;
 
+/** How much the day texture lights itself, 0 to 1. Keeps the whole globe readable. */
+const EARTH_GLOW = 0.45;
+
 const ATMOSPHERE_VERTEX_SHADER = /* glsl */ `
   varying vec3 vNormal;
 
@@ -96,6 +99,10 @@ function Earth({
         <sphereGeometry args={[EARTH_RADIUS, 96, 96]} />
         <meshStandardMaterial
           map={colorMap}
+          // The day texture also glows faintly, so the side away from the sun never goes black.
+          emissiveMap={colorMap}
+          emissive="#ffffff"
+          emissiveIntensity={EARTH_GLOW}
           bumpMap={bumpMap}
           bumpScale={0.035}
           roughness={0.9}
@@ -176,9 +183,11 @@ export default function SpinningGlobe({
       gl={{ antialias: true, alpha: false }}
     >
       <color attach="background" args={[sceneBackground]} />
-      <ambientLight intensity={0.22} />
-      <directionalLight position={[4.5, 1.6, 3.2]} intensity={2.1} color="#fff4e5" />
-      <directionalLight position={[-3.5, -1.2, -2]} intensity={0.18} color="#6f93b5" />
+      {/* Bright, even daylight: the whole face of the globe reads, with a soft sun for relief. */}
+      <ambientLight intensity={0.9} />
+      <hemisphereLight args={["#ffffff", "#8aa2b8", 0.6]} />
+      <directionalLight position={[4.5, 1.6, 3.2]} intensity={1.6} color="#fff4e5" />
+      <directionalLight position={[-3.5, -1.2, -2]} intensity={0.7} color="#cfe0f0" />
       <Suspense fallback={null}>
         <Earth meshRef={earthRef} spinning={hoveredSlug === null && !flying} onReady={onReady}>
           {mountains.map((mountain) => (

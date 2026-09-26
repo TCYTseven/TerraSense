@@ -166,11 +166,12 @@ The Alert Writer prompt (step 20) uses the same formats.
 
 Step 8 builds it with `react-globe.gl`. Property names below are that library's.
 
+- **Brightness.** The globe reads as daylight across its whole face: ambient light 0.9, a hemisphere fill, a softer sun, and the day texture as a faint emissive layer (`EARTH_GLOW` 0.45), so the side away from the sun never goes black. (This replaces the dark texture below for the light home theme.)
 - **Texture. [confirm]** A dark day-side Earth, for example three-globe's example `earth-dark.jpg`, or NASA Blue Marble darkened and desaturated. At most 4096 × 2048 and under 1 MB, committed as `frontend/public/globe/earth-dark.jpg`. No night-lights texture: city lights are orange and yellow and would read as risk. No bump map, clouds, or starfield. Never hot-link a texture. The venue network is not part of the demo.
 - **Atmosphere.** `atmosphereColor` at the text color, `atmosphereAltitude` 0.12. Not the accent: the glow is not interactive.
 - **Backdrop.** A radial gradient behind a transparent globe canvas: background light end at the center, dark end at the edges. This is the only gradient in the app.
 - **Start view.** Over Mount Rainier (46.85, −121.76) at altitude 2.5. The idle spin starts from there.
-- **Markers.** A 10 px dot in the level color, a 2 px ring in the dark background, and a 26 px halo of the level color at 20% alpha. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2).
+- **Markers.** A mountain logo instead of a dot: two peaks in the level color with a white snowcap and a dark outline, always facing the camera, centered on the mountain's point. The halo ring stays, and Rainier keeps its extra live ring. Dangerous mountains (High and Extreme) also get a translucent sphere in the level color at 40% alpha, centered on the logo and larger at Extreme. Only the invisible hit sphere takes the pointer. Markers never pulse. Hover shows a pointer and a 2 px accent ring. No permanent labels (UX.md rule 2).
 - **Hover card.** Panel surface, border, 8 px radius, 12 px padding, 12 px right of the marker. It appears and disappears at once. Three lines:
   1. The name, body size, 600.
   2. The level dot and word.

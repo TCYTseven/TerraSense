@@ -1,6 +1,6 @@
 "use client";
 
-import { Html, useCursor } from "@react-three/drei";
+import { Billboard, Html, useCursor } from "@react-three/drei";
 import { type ThreeEvent, useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import {
@@ -9,11 +9,13 @@ import {
   MathUtils,
   type MeshBasicMaterial,
   Quaternion,
+  Shape,
+  ShapeGeometry,
   Vector3,
 } from "three";
 import RiskBadge from "@/components/risk-badge";
 import { formatElevation, refreshLabel } from "@/lib/format";
-import { RISK_COLORS } from "@/lib/theme";
+import { RISK_COLORS, THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { latLonToVector3 } from "./geo";
 
@@ -37,14 +39,44 @@ const LIVE_RING_OPACITY = 0.35;
 const FADE_START = 0.2;
 const FADE_END = 0.03;
 
+/** Height of the mountain glyph, in globe radii. */
+const GLYPH_SIZE = 0.05;
+
+/** Radius of the glow sphere behind the glyph for dangerous mountains (high and extreme). */
+const DANGER_SPHERE_RADIUS = { high: 0.046, extreme: 0.056 } as const;
+const DANGER_SPHERE_OPACITY = 0.4;
+
+function shape(points: [number, number][]): Shape {
+  const s = new Shape();
+  points.forEach(([x, y], i) => (i === 0 ? s.moveTo(x, y) : s.lineTo(x, y)));
+  s.closePath();
+  return s;
+}
+
+// The mountain glyph in a unit box, base on y = 0: a lower left peak and a taller right peak.
+const PEAKS: [number, number][] = [[-0.62, 0], [-0.28, 0.58], [-0.1, 0.36], [0.2, 0.9], [0.62, 0]];
+// The snowcap on the tall peak, with a jagged lower edge.
+const SNOW: [number, number][] = [[0.2, 0.9], [0.37, 0.6], [0.28, 0.66], [0.2, 0.58], [0.12, 0.66], [0.04, 0.62]];
+// The outline: the same peaks grown a little, drawn behind in the dark background color.
+const OUTLINE: [number, number][] = [[-0.74, -0.06], [-0.28, 0.7], [-0.1, 0.5], [0.2, 1.04], [0.74, -0.06]];
+
+const PEAKS_GEOMETRY = new ShapeGeometry(shape(PEAKS));
+const SNOW_GEOMETRY = new ShapeGeometry(shape(SNOW));
+const OUTLINE_GEOMETRY = new ShapeGeometry(shape(OUTLINE));
+
+/** Visual meshes skip raycasting, so the pointer always reaches the hit sphere. */
+const noRaycast = () => null;
+
 // Scratch vectors for the per-frame horizon check.
 const worldPosition = new Vector3();
 const outward = new Vector3();
 const toCamera = new Vector3();
 
 /**
- * One mountain on the globe: a dot and a halo in its risk color, lying flat on the
- * surface. Render it inside the rotating Earth mesh so it turns with the planet.
+ * One mountain on the globe: a mountain glyph in its risk color that always faces the camera,
+ * standing on a halo ring that lies flat on the surface. Dangerous mountains (high and extreme)
+ * also get a translucent sphere in their risk color, centered on the glyph. Render it inside
+ * the rotating Earth mesh so it turns with the planet.
  */
 export default function MountainMarker({
   mountain,
@@ -61,7 +93,12 @@ export default function MountainMarker({
 }) {
   const color = RISK_COLORS[mountain.current_risk_level];
   const groupRef = useRef<Group>(null);
-  const dotMaterial = useRef<MeshBasicMaterial>(null);
+  const glyphMaterial = useRef<MeshBasicMaterial>(null);
+  const snowMaterial = useRef<MeshBasicMaterial>(null);
+  const outlineMaterial = useRef<MeshBasicMaterial>(null);
+  const sphereMaterial = useRef<MeshBasicMaterial>(null);
+  const level = mountain.current_risk_level;
+  const dangerRadius = level === "high" || level === "extreme" ? DANGER_SPHERE_RADIUS[level] : null;
   const ringMaterial = useRef<MeshBasicMaterial>(null);
   const liveRingMaterial = useRef<MeshBasicMaterial>(null);
   const facingCamera = useRef(false);
@@ -88,7 +125,10 @@ export default function MountainMarker({
 
     facingCamera.current = fade > 0.5;
     group.visible = fade > 0.01;
-    if (dotMaterial.current) dotMaterial.current.opacity = fade;
+    for (const material of [glyphMaterial, snowMaterial, outlineMaterial]) {
+      if (material.current) material.current.opacity = fade;
+    }
+    if (sphereMaterial.current) sphereMaterial.current.opacity = DANGER_SPHERE_OPACITY * fade;
     if (ringMaterial.current) {
       ringMaterial.current.opacity = (hovered ? RING_OPACITY_HOVERED : RING_OPACITY) * fade;
     }
@@ -121,11 +161,41 @@ export default function MountainMarker({
 
   return (
     <group ref={groupRef} position={position} quaternion={quaternion} scale={hovered ? 1.35 : 1}>
-      <mesh position={[0, 0, 0.006]}>
-        <sphereGeometry args={[0.011, 20, 20]} />
-        <meshBasicMaterial ref={dotMaterial} color={color} transparent opacity={0} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 0, 0.002]}>
+      {dangerRadius && (
+        <mesh position={[0, 0, 0.004]} raycast={noRaycast}>
+          <sphereGeometry args={[dangerRadius, 32, 32]} />
+          <meshBasicMaterial
+            ref={sphereMaterial}
+            color={color}
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      )}
+      <Billboard position={[0, 0, 0.004]}>
+        {/* Centered on the mountain's point, so the glyph sits in the middle of its sphere. */}
+        <group scale={GLYPH_SIZE} position={[0, -GLYPH_SIZE * 0.47, 0]}>
+          <mesh geometry={OUTLINE_GEOMETRY} renderOrder={1} raycast={noRaycast}>
+            <meshBasicMaterial
+              ref={outlineMaterial}
+              color={THEME.background}
+              transparent
+              opacity={0}
+              depthTest={false}
+              toneMapped={false}
+            />
+          </mesh>
+          <mesh geometry={PEAKS_GEOMETRY} renderOrder={2} raycast={noRaycast}>
+            <meshBasicMaterial ref={glyphMaterial} color={color} transparent opacity={0} depthTest={false} toneMapped={false} />
+          </mesh>
+          <mesh geometry={SNOW_GEOMETRY} renderOrder={3} raycast={noRaycast}>
+            <meshBasicMaterial ref={snowMaterial} color="#ffffff" transparent opacity={0} depthTest={false} toneMapped={false} />
+          </mesh>
+        </group>
+      </Billboard>
+      <mesh position={[0, 0, 0.002]} raycast={noRaycast}>
         <ringGeometry args={[0.018, 0.023, 48]} />
         <meshBasicMaterial
           ref={ringMaterial}
@@ -138,7 +208,7 @@ export default function MountainMarker({
         />
       </mesh>
       {mountain.is_live && (
-        <mesh position={[0, 0, 0.002]}>
+        <mesh position={[0, 0, 0.002]} raycast={noRaycast}>
           <ringGeometry args={[0.03, 0.032, 64]} />
           <meshBasicMaterial
             ref={liveRingMaterial}
