@@ -7,7 +7,7 @@ This file has two parts:
 - [Part 1: Pending](#part-1-pending) is the work that is left, with the full build notes for each step.
 - [Part 2: Done](#part-2-done) records what each finished step shipped and how it was checked.
 
-Status as of late Friday, Sep 25, 2026. Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
+Status as of Saturday, Sep 26, 2026. The open list is [9-26-todo.md](9-26-todo.md). Step numbers never change, because commits and branches name them (`Step N: <title>`, `step-<N>-<short-name>`).
 
 Finish each step on a track before you start the next one on that track. Stay inside the hackathon scope: one live mountain (Mount Rainier), landslide risk only, seven agents (five analysts, a Risk Synthesizer, an Alert Writer), the hill detail card, one hiker card, one mountain panel with a runout simulation. The ranger alert stays in the app: Discord was dropped on Sep 25, 2026.
 
@@ -15,17 +15,17 @@ Finish each step on a track before you start the next one on that track. Stay in
 
 ### Pending
 
-- [ ] 10. Download the Rainier source layers (DEM and land cover done. Landslide points pending, see `data/seed/sources.md`)
-- [ ] 11. Build the terrain feature table (feature stack done. Labeled table waits on the step 10 landslide points)
-- [ ] 12. Train the susceptibility model (LightGBM path ready. The map uses a knowledge-driven index until labels exist)
-- [ ] 14. Import trails and historical landslide pins (67 OpenStreetMap trails and the hero trail's 55 mile segments done. The API returns `historical_events`, empty until the step 10 landslide points exist)
-- [ ] 17. Score 72-hour probability from live rain (pulled for a rebuild; the heat map is the labeled susceptibility stand-in until it lands)
+- [ ] 10. Download the Rainier source layers (on main: DEM and land cover only. Landslide points, the labeled table, LightGBM, historical pins, and Model B are on `origin/step-10-local-nasa-export`, not merged. See [9-26-todo.md](9-26-todo.md))
+- [ ] 11. Build the terrain feature table (feature stack is on main. The labeled table is on that same branch)
+- [ ] 12. Train the susceptibility model (on main the map is still the knowledge-driven index. The branch has LightGBM, held-out AUC 0.715)
+- [ ] 14. Import trails and historical landslide pins (67 trails and 55 Skyline segments are on main. 37 historical pins are on that branch)
+- [ ] 17. Score 72-hour probability from live rain (on main the heat map is the susceptibility stand-in. `backend/app/ml/model_b.py` is on that branch)
 - [ ] 26. Rank the pressure points
 - [ ] 27. Trace a runout from a pressure point
 - [ ] 28. Expose simulate, the stream, and the callouts
 - [ ] 29. Open the mountain panel over the globe
 - [ ] 30. Play the simulation in the panel
-- [ ] 31. Wire the hill card to the run stream and the advisory (the card runs on illustrative data and a scripted orchestrator today)
+- [ ] 31. Wire the hill card to the run stream and the advisory (agents and Reactive Measures stream from the API. Trail scores, the overall score, and preventative measures are still illustrative)
 - [ ] Before the demo: provision hosted Postgres, run one live pipeline with real Gemini and xAI keys, and rehearse (follow-up to steps 4 and 25)
 
 ### Done
@@ -98,7 +98,9 @@ Keep the globe, the heat map, and the agent stream.
 
 # Part 1: Pending
 
-The four data steps (10, 11, 12, 14) wait on one download: the landslide points. When they exist, run steps 10 to 12 again in order and then reload step 14's pins. Nothing downstream needs a code change. The pin toggle turns on by itself, and the tiles and hazard pick up the new susceptibility on the next run.
+On main, steps 10, 11, 12, 14, and 17 are still open: there is no `data/seed/landslides.geojson`, `metrics.json` says `trained: false`, and `backend/app/ml/model_b.py` is absent, so the heat map stays the susceptibility stand-in.
+
+That work is already on `origin/step-10-local-nasa-export` (landslide points, a 1,224-row labeled table, LightGBM with held-out AUC 0.715, 37 historical pins, and Model B). Merge it. Do not rebuild it. Main is six commits ahead of the branch point, so the merge has to keep the catalog and the live hill-card stream.
 
 ## 10. Download the Rainier source layers
 
@@ -106,7 +108,7 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Done so far.** `ml/scripts/download_sources.py` wrote the Copernicus DEM GLO-30 and the ESA WorldCover 2021 clips to `data/raw/`, both checked against the bbox. `data/seed/sources.md` records both.
 
-**Left.**
+**Left.** On main, `data/seed/landslides.geojson` is still missing. `origin/step-10-local-nasa-export` already has it (4 NASA events and 33 Washington labels). Merge that branch instead of downloading again.
 
 - Download landslide points inside the box from the NASA Global Landslide Catalog or a USGS inventory. On 2026-09-25 the build container got HTTP 403 from data.nasa.gov, ScienceBase, and Washington DNR.
 - On a network that reaches data.nasa.gov, run `python ml/scripts/download_sources.py --only landslides`. Or download the CSV in a browser and pass `--glc-csv path/to/export.csv`.
@@ -156,7 +158,7 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 **Outcome.** Model B turns cached susceptibility and today's rain into a probability raster.
 
-**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam: it calls Model B when the module exists and serves the labeled stand-in otherwise.
+**Done so far.** `backend/app/weather.py` fetches Open-Meteo rain for Paradise, with a 5-minute cache and an offline fixture. `backend/app/ml/probability.py` is the seam: it calls Model B when the module exists and serves the labeled stand-in otherwise. `origin/step-10-local-nasa-export` adds `backend/app/ml/model_b.py`. Main does not have that file yet.
 
 **Build.**
 
@@ -248,11 +250,11 @@ The four data steps (10, 11, 12, 14) wait on one download: the landslide points.
 
 Track: frontend. Added late Sep 25, 2026, after the mountain page was rebuilt as the hill detail card.
 
-Today the card runs on `buildHillView()` in `frontend/lib/fixtures/hill-demo.ts` (illustrative trail scores) and the scripted source in `frontend/lib/pipeline/orchestrator.ts`. The backend already has what the card needs.
+**Done so far (Sep 26).** On a live mountain, **Analyze now** calls `POST /mountains/{slug}/analyze` and follows the run socket (`frontend/lib/pipeline/live-run.ts`, used by `usePipeline`). The seven API agents fold onto the five cards: Trail, History, and Route Scout share the Trails row. Reactive Measures come from the run advisory. Static mountains still use the scripted source in `frontend/lib/pipeline/orchestrator.ts`.
+
+**Left.** `buildHillView()` in `frontend/lib/fixtures/hill-demo.ts` still supplies the trail scores, markers, overall score, mean slope, and preventative measures, and the card still says the scores are illustrative.
 
 - **Trails.** Build `HillView.trails` from the scored catalog: the Route Scout's exposed trails, or `trailscan` scores served with the mountain. Put each marker at the trail's worst point. The slope and primary factor come from the terrain stats.
-- **Agents.** Write an `AgentSource` over `followRun()` in `lib/run-stream.ts`, and pass it to `runPipeline`. Decide with the team how History and Route Scout appear: two more cards, or folded into Terrain and Trails. Update `PIPELINE_AGENTS`, `lib/types.ts`, and the docs together.
-- **Measures.** Map the advisory (`GET /runs/{id}/advisory`: routes to avoid, safe routes, ranger response, alerts) onto `ReactiveMeasure` categories. Public text stays a draft.
 - **Honesty.** Drop the "Illustrative scores" line only for numbers that came from a run.
 
 **Done when.** With the fake LLM server, one **Analyze now** on Rainier streams every agent into its card, the five trails and their markers match the advisory's scores, and the Reactive Measures come from the advisory. Unplugging the API mid-run shows the failure copy.
@@ -287,6 +289,8 @@ Work that landed on Sep 25, 2026 after step 25, outside the numbered steps.
 - **Panel and map pass** (PR #7). Larger panel text. Reactive Measures became their own section; on Sep 26 they were re-clustered by timing (now, 1 h, 6 h, 24 h), with the kind of work as a label on each card. The map opens framed from the summit elevation, orbits while idle, and limits zoom-out.
 - **Light home and globe.** A light home theme and an evenly lit Earth. Mountain-logo markers replace the dots, and High and Extreme mountains keep a larger translucent sphere.
 - **Gray mountain.** The map tints the mountain gray and fades its surroundings to white, using the same elevation footprint as the framing.
+- **Mountain catalog** (Sep 26). `data/seed/mountains.json` holds 648 peaks. The default `SEED_MODE=mountainstest` loads 138 from `data/seed/mountains_test.json`. The globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Fetch and selection live in `backend/app/mountain_catalog.py`. See [docs/seeding-and-catalog.md](docs/seeding-and-catalog.md).
+- **Live hill-card agents** (Sep 26, part of step 31). **Analyze now** on Mount Rainier streams the seven agents into the five cards and fills Reactive Measures from the advisory. Trail scores on the card are still the illustrative fixture.
 
 Checked with `npm run lint`, `npm run typecheck`, `pytest`, and headless Chrome walks of the globe and the card.
 

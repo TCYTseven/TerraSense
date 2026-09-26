@@ -6,12 +6,12 @@ Status as of Saturday, Sep 26, 2026. This is how the globe gets peaks and how Ra
 
 | Data | Globe / app source | External API on page load? |
 |------|-------------------|----------------------------|
-| **Mountain pins (catalog)** | `data/seed/mountains.json` → Postgres → `GET /mountains` | **No** |
+| **Mountain pins (catalog)** | `SEED_MODE=mountainstest` loads `data/seed/mountains_test.json` (138). `reseed` loads `data/seed/mountains.json` (648). Both go Postgres → `GET /mountains` | **No** |
 | **Trail lines & miles (Rainier)** | `data/seed/trails.geojson`, `trail_segments.geojson`, `trail_network.geojson` → Postgres | **No** |
 | **Weather (analyze)** | Open-Meteo inside a run only | **No** on globe load |
 | **LLM agents** | Gemini / xAI on **Analyze** only | **No** on globe load |
 
-If the globe shows only **two or three** pins, Postgres still has the **old** seed (three peaks). The ~1k catalog is not in git until `mountain_catalog --write-seed` finishes and you run `app.seed`.
+If the globe shows only **two or three** pins, Postgres still has the old three-peak seed. The committed catalogs are the 138-peak test file (default) and the 648-peak dump. Load one with `app.seed`, then restart the API.
 
 ---
 
@@ -56,14 +56,19 @@ After write + seed, commit **`data/seed/mountains.json`** so deploys and teammat
 
 ### Current file status
 
-Check locally:
+As of Saturday, Sep 26, 2026:
+
+| File | Rows | When it loads |
+|---|---|---|
+| `data/seed/mountains_test.json` | 138 | `SEED_MODE=mountainstest` (the default in `.env.example`) |
+| `data/seed/mountains.json` | 648 | `SEED_MODE=reseed` |
+
+The globe draws 50 of whichever file was seeded, unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` is `0` or another cap. The written target for the full dump is about 1,000. Re-run `--write-seed` only if the demo needs that set. After a reseed, the API count and the file count should match:
 
 ```bash
 python3 -c "import json; print(len(json.load(open('data/seed/mountains.json'))))"
 curl -s http://localhost:8000/mountains | python3 -c "import sys,json; print(len(json.load(sys.stdin)))"
 ```
-
-Both counts should match. Target is **~1000**; until then the globe will only show however many rows are in the file (historically **3**).
 
 ---
 

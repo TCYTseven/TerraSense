@@ -4,18 +4,18 @@ Map of the TerraSense repo. Update the matching section in the same change that 
 
 Planned paths are labeled **planned**. They are not in the tree yet. Do not import them. When you create one, remove the planned label and document the real exports.
 
-The product contract is [`../TerraSense.md`](../TerraSense.md). The build order is [`../implementation-steps.md`](../implementation-steps.md).
+The product contract is [`../TerraSense.md`](../TerraSense.md). The build order is [`../implementation-steps.md`](../implementation-steps.md). Open work is [`../9-26-todo.md`](../9-26-todo.md).
 
 ## What is in the tree
 
 ```
 frontend/          Next.js app. Runs with npm run dev.
-backend/           FastAPI service: health, mountain reads, schema, seed, the step 18 assessment.
-ml/scripts/        Offline scripts, one per step: downloads, features, model, tiles, trails.
-ml/artifacts/      Model outputs: metrics.json, feature_importance.json (the .tif is gitignored).
-data/seed/         Committed seed files: mountains, trails, the hero trail's segments, the bypass network.
-context/           Spec and the 25 implementation steps.
-context/docs/      Team brief, handoff, UX, this file.
+backend/           FastAPI service: health, mountains, catalog, assessment, seven-agent runs.
+ml/scripts/        Offline scripts: downloads, features, model, tiles, trails.
+ml/artifacts/      Model outputs: metrics.json, feature_importance.json (the .tif is gitignored). On main, trained is false.
+data/seed/         Committed seed files: two mountain catalogs, trails, segments, the bypass network. No landslide points on main.
+context/           Spec, the 31 steps, and 9-26-todo.md.
+context/docs/      Team brief, handoff, UX, seeding, this file.
 .claude/agents/    Subagent definitions: one builder per track and a reviewer.
 AGENTS.md          Agent guide: folder owners, team rules, shared facts.
 README.md          Pitch, the three commands, folder owners.

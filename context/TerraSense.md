@@ -42,11 +42,11 @@ TerraSense reads terrain and weather for a mountain, predicts where a landslide 
 
 ## Where the Build Stands
 
-As of late Friday, Sep 25, 2026. [implementation-steps.md](implementation-steps.md) splits the steps into done and pending, and it is the source of truth for status.
+As of Saturday, Sep 26, 2026. [implementation-steps.md](implementation-steps.md) splits the steps into done and pending. Open work is [9-26-todo.md](9-26-todo.md).
 
 **Works end to end**
 
-- **Globe.** A React Three Fiber Earth on the light home theme, evenly lit so no side goes black. Three mountain-logo markers from the API (Mount Rainier live, Huascarán and Mount Fuji static) in their risk colors; High and Extreme mountains sit in a larger translucent sphere. Hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
+- **Globe.** A React Three Fiber Earth on the light home theme, evenly lit so no side goes black. Mountain-logo markers come from the API. The default seed (`SEED_MODE=mountainstest`) is 138 peaks, and the globe draws 50 unless `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT` changes. Mount Rainier is the only live mountain. High and Extreme mountains sit in a larger translucent sphere. Hover cards, search, and a 1.5 s fly-in to `/mountains/[slug]`.
 - **Hill detail card (the mountain page).** Two columns, rebuilt Sep 25:
   - **Map, about 55%.** MapLibre GL with 3D terrain from AWS Terrain Tiles. The mountain renders gray on white surroundings. The opening frame is sized from the summit elevation, so any mountain opens the same way. The camera slowly orbits while idle, and zooming out stops one level past the opening view. The heat map is the default layer, with a susceptibility toggle. All 67 OpenStreetMap trails are drawn, and the hero trail (the Skyline loop, 5.5 mi) is colored by 0.1-mile segment. Five lettered markers (A–E) sit on the top at-risk trails, each with a hover tooltip (score, slope, primary factor), and **View** flies the camera to them.
   - **Panel, about 45%.** Stats, the overall score, the top five trails, preventative measures, an Orchestrator with five agent cards and inline reasoning traces, **Analyze now**, and a Reactive Measures section clustered by timing (now, within 1 hour, 6 hours, 24 hours).
@@ -62,15 +62,14 @@ As of late Friday, Sep 25, 2026. [implementation-steps.md](implementation-steps.
 
 **Not done yet**
 
-- **The hill card is not wired to the backend.** Its trail scores, agent traces, and Reactive Measures are illustrative. They come from `frontend/lib/fixtures/hill-demo.ts` and a client-side scripted orchestrator. The card shows five agents while the backend runs seven. Next step: an adapter from the run stream and the advisory to the card's `HillView` and `ReactiveMeasure`s (`lib/pipeline/orchestrator.ts` takes an `AgentSource` for this).
+- **The hill card is half wired.** On Mount Rainier, **Analyze now** streams the seven agents into the five cards (Trail, History, and Route Scout share the Trails row) and Reactive Measures come from the advisory (`frontend/lib/pipeline/live-run.ts`). Trail scores, markers, the overall score, mean slope, and preventative measures still come from `frontend/lib/fixtures/hill-demo.ts`, and the card still says those scores are illustrative.
 - **The hiker card and the hazard block** are not rendered since the rebuild. Their components are kept.
-- **Static mountains** (Huascarán, Mount Fuji) open the card with their level only.
-- **Landslide points.** The NASA Global Landslide Catalog was unreachable from the build container, so there are no labels and no historical pins. The **Past landslides** toggle is disabled, and the History Analyst reports the empty record.
-- **LightGBM.** It is untrained, so there is no AUC yet. Susceptibility is a knowledge-driven index with named weights: slope 0.35, distance to drainage 0.20, land cover 0.20, wetness 0.15, curvature 0.10, stretched between the 2nd and 98th percentile of the box. See `ml/artifacts/metrics.json`.
-- **Model B (step 17)** was pulled and is being rebuilt. Until it lands, the heat map is the susceptibility stand-in, and every layer, hazard, and prompt says so. Rain does not move the map yet. `backend/app/ml/probability.py` switches to Model B as soon as `backend/app/ml/model_b.py` exists.
+- **Catalog peaks** open the card with their level only. They do not run analysis.
+- **Steps 10, 11, 12, 14, and 17 are not on main.** There is no `data/seed/landslides.geojson`, so the **Past landslides** toggle stays disabled and the History Analyst reports an empty record. Susceptibility is a knowledge-driven index (`trained: false` in `ml/artifacts/metrics.json`): slope 0.35, distance to drainage 0.20, land cover 0.20, wetness 0.15, curvature 0.10. The heat map is that stand-in until `backend/app/ml/model_b.py` exists. All five steps are implemented on `origin/step-10-local-nasa-export` (37 pins, LightGBM AUC 0.715, Model B). Merge that branch. Do not rebuild it.
 - **Local ML artifacts.** A machine without `ml/artifacts/susceptibility.tif` fails a run before scoring. `/health` and the run's error name the missing file and the commands that build it.
 - **Mountain panel and simulation** (6.8). Specified in UX.md and the design addendum, and not built yet: steps 26 to 30.
 - **Live providers and hosting.** No live Gemini or xAI call has run, and no hosted Postgres is provisioned. Rehearse once with real keys before the demo.
+- **Catalog size.** `data/seed/mountains.json` has 648 peaks. The written target is about 1,000. The default seed is the 138-peak test file.
 
 Example copy in this file ("Ridge Trail mile 4.2 to 5.1", "Cedar Loop") is illustrative. The live trail is the Skyline loop, and the bypass comes from the trail network.
 
@@ -211,7 +210,7 @@ Two stages. Both stay explainable.
 
 - Tune weights on the dated events you actually have. If that set is tiny, say so and keep the weights explicit.
 - Categories: Low < 0.2, Moderate 0.2–0.45, High 0.45–0.7, Extreme > 0.7. Adjust so Rainier shows a visible High zone for the demo, and document the adjustment.
-- **Current state.** Being rebuilt (step 17). `backend/app/ml/probability.py` is the one seam: it calls `model_b.run(rain)` when the module exists, and returns the labeled stand-in otherwise.
+- **Current state.** On main, step 17 is not merged, so `backend/app/ml/probability.py` returns the labeled stand-in. It calls `model_b.run(rain)` when `backend/app/ml/model_b.py` exists. That file is on `origin/step-10-local-nasa-export`.
 
 Feature importance from LightGBM is enough for the "why" sentence. Skip SHAP.
 
@@ -231,7 +230,7 @@ Seven LLM calls with separate prompts. Every agent reads the ML model's predicti
 
 The five analysts run in parallel, then the Risk Synthesizer, then the Alert Writer. Each result streams to the UI. Code sets the final confidence (weights: terrain 0.30, weather 0.25, trail 0.20, routes 0.15, history 0.10) and checks the Synthesizer's routes and posture (`advisory.py`).
 
-The hill card's client-side orchestrator shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). History and Route Scout need cards, or need folding into these, when the card is wired to the stream.
+The hill card shows five cards: Terrain, Weather, and Trails together, then the Synthesizer, then the Mass Alert Writer (the card's name for the Alert Writer). On a live mountain those cards follow the API. History and Route Scout fold into the Trails row. Static mountains still use the scripted source.
 
 Consensus rule: if severity ratings differ by two or more levels, set `needs_review` and phrase the alert as an advisory.
 
@@ -616,7 +615,7 @@ Simulations live in the API process, keyed by `simulation_id`, like runs. They w
 - Tighten motion and copy.
 - 60–90 second backup video.
 - Devpost draft with the real AUC and the real data sources.
-- Wire the hill card to the run stream and the advisory, so its trail scores, traces, and Reactive Measures come from a real run.
+- Finish wiring the hill card: traces and Reactive Measures already come from a live run. Trail scores, the overall score, and preventative measures still come from the illustrative fixture.
 - Rehearse the live demo three times with real keys. Keep a finished run on screen in case the live call fails.
 
 If you are behind, drop in this order:
