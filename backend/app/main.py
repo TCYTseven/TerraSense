@@ -60,6 +60,23 @@ async def database_unavailable(_: Request, __: Exception) -> JSONResponse:
     return JSONResponse(status_code=503, content={"detail": "Database unavailable"})
 
 
+@app.get("/")
+def root() -> dict[str, str]:
+    """Browser-friendly entry point; the UI runs on http://localhost:3000."""
+    return {
+        "service": "TerraSense API",
+        "health": "/health",
+        "docs": "/docs",
+        "mountains": "/mountains",
+    }
+
+
+@app.get("/json/version")
+def chrome_devtools_probe() -> dict[str, str]:
+    """Chrome DevTools probes localhost ports; not a CDP target."""
+    return {"Browser": "TerraSense API", "Protocol-Version": "1.0"}
+
+
 @app.get("/health")
 def health(verbose: bool = False) -> dict:
     """Liveness check. ?verbose=1 adds local ML artifact status (no database)."""
