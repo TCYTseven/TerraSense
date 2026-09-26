@@ -369,6 +369,21 @@ def _empty_prediction(latitude: float, longitude: float, start: datetime, reason
     )
 
 
+def unavailable_prediction(
+    latitude: float,
+    longitude: float,
+    reasons: list[str],
+    *,
+    source: dict[str, Any] | None = None,
+) -> RiskPrediction:
+    """Build the same fail-closed response used when a run has no weather/model answer.
+
+    Runs fetch weather once before the agents start. This public seam lets the run context carry
+    that unavailable result forward without making a second network request from an agent tool.
+    """
+    return _empty_prediction(latitude, longitude, _now(), reasons, source)
+
+
 def _probability_map(rain: HourlyRain) -> ProbabilityMap:
     """The heat map's probability grid for this rain response, reused across map clicks."""
     global _map_cache

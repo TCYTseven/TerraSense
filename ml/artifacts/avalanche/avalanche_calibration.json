@@ -1,0 +1,7 @@
+{
+  "method": "platt",
+  "fitted_on": 39,
+  "regularization_C": 10.0,
+  "coef": 2.188045799220378,
+  "intercept": -1.3533758977925214
+}

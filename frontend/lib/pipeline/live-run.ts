@@ -1,6 +1,6 @@
 import { followRun } from "@/lib/run-stream";
 import { startAnalysis } from "@/lib/api";
-import { initialPipelineState } from "@/lib/pipeline/orchestrator";
+import { initialPipelineState } from "@/lib/pipeline/state";
 import {
   PIPELINE_AGENTS,
   type PipelineAgentId,
@@ -127,7 +127,13 @@ function cardStatus(
   return "idle";
 }
 
-function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null): PipelineState {
+function project(
+  events: Partial<Record<AgentName, AgentEvent>>,
+  orchestrator: PipelineState["orchestrator"],
+  error: string | null,
+  measures: ReactiveMeasure[] | null,
+  model: PipelineState["model"],
+): PipelineState {
   const agents = {} as PipelineState["agents"];
   for (const id of PIPELINE_AGENTS) {
     const names = CARD_AGENTS[id];
@@ -155,7 +161,7 @@ function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: P
       finishedAt: status === "done" || status === "error" ? (finished.length ? Math.max(...finished) : Date.now()) : null,
     };
   }
-  return { orchestrator, agents, measures, error };
+  return { orchestrator, agents, measures, model, error };
 }
 
 function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
@@ -198,11 +204,16 @@ export function runLiveAnalysis(
   const events: Partial<Record<AgentName, AgentEvent>> = {};
   let stop = () => {};
 
-  const publish = (orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null) => {
+  const publish = (
+    orchestrator: PipelineState["orchestrator"],
+    error: string | null,
+    measures: ReactiveMeasure[] | null,
+    model: PipelineState["model"] = null,
+  ) => {
     if (signal.aborted) {
       return;
     }
-    onUpdate(project(events, orchestrator, error, measures));
+    onUpdate(project(events, orchestrator, error, measures, model));
   };
 
   return new Promise((resolve) => {
@@ -240,7 +251,21 @@ export function runLiveAnalysis(
               finish();
               return;
             }
-            publish("done", null, run.advisory ? measuresFromAdvisory(run.advisory) : null);
+            const advisoryModel = run.advisory?.model;
+            publish(
+              "done",
+              null,
+              run.advisory ? measuresFromAdvisory(run.advisory) : null,
+              advisoryModel
+                ? {
+                    state: advisoryModel.classifier_state,
+                    probability: advisoryModel.classifier_probability,
+                    threshold: advisoryModel.classifier_threshold,
+                    decisionEligible: advisoryModel.classifier_decision_eligible,
+                    reasonCodes: advisoryModel.classifier_reason_codes,
+                  }
+                : null,
+            );
             finish();
           },
           onLost() {

@@ -62,6 +62,7 @@ from app.assessment import (
     signed_miles,
 )
 from app.history import historical_events
+from app.ml.risk_contract import production_decision_eligible
 from app.risk import RiskLevel, level_index, level_spread
 from app.trailscan import TrailScore, relative_only, resolve
 from app.weather import summarize
@@ -395,6 +396,15 @@ class Pipeline:
         """The tool call every agent makes first: the ML model's output as the source of truth."""
         return ("get_model_prediction", {"mountain": self.ctx.slug})
 
+    @property
+    def production_prediction(self) -> dict | None:
+        """The one classifier result computed before agent fan-out."""
+        return self.ctx.production_prediction
+
+    @property
+    def production_decision_eligible(self) -> bool:
+        return production_decision_eligible(self.production_prediction)
+
     async def terrain(self) -> AgentRun:
         zone = self.a.zone
         tools = [self._prediction(), ("get_raster_summary", {"mountain": self.ctx.slug})]
@@ -604,6 +614,10 @@ class Pipeline:
         confidence = weighted_confidence({agent: report.confidence for agent, report in reports.items()})
         spread = level_spread(levels)
         needs_review = spread >= REVIEW_SPREAD
+        classifier = self.production_prediction
+        classifier_level = classifier.get("risk_level") if self.production_decision_eligible else None
+        if classifier is not None and not self.production_decision_eligible:
+            needs_review = True
         avoid_pool = guards.avoid_pool(self.scores)
         safe_pool = guards.safe_pool(self.scores)
         comparative = relative_only(self.scores, needed=3, limit=guards.SAFE_POOL)
@@ -626,6 +640,10 @@ class Pipeline:
         context["Computed by code"] = {
             "final_confidence": confidence, "severity_spread_levels": spread, "needs_review": needs_review,
             "weights": CONFIDENCE_WEIGHTS, "analyst_severities": dict(zip(ANALYSTS, levels, strict=True)),
+            "classifier_state": None if classifier is None else classifier.get("state"),
+            "classifier_probability": None if classifier is None else classifier.get("calibrated_probability"),
+            "classifier_decision_eligible": self.production_decision_eligible,
+            "classifier_reason_codes": [] if classifier is None else classifier.get("reason_codes", []),
         }
 
         def check(report: SynthesisReport) -> list[str]:
@@ -652,6 +670,12 @@ class Pipeline:
             severity = low if level_index(severity) < level_index(low) else high
             run.trace.checks.append(f"Moved the severity from {out.severity} to {severity}: it must stay between "
                                     f"{low} and {high}.")
+        if classifier_level is not None and severity != classifier_level:
+            run.trace.checks.append(
+                f"Moved the severity from {severity} to {classifier_level}: the calibrated classifier is the "
+                "decision source; analyst prose cannot override it."
+            )
+            severity = classifier_level
         action = out.recommended_action
         if action == "close" and needs_review:
             action = "monitor"
@@ -659,6 +683,14 @@ class Pipeline:
         elif action == "close" and level_index(severity) <= level_index("moderate"):
             action = "monitor"
             run.trace.checks.append(f"Changed close to monitor: a {severity} level does not close a trail.")
+        if action == "close" and classifier is not None and (
+            not self.production_decision_eligible or classifier.get("state") != "HIGH_RISK"
+        ):
+            action = "monitor"
+            run.trace.checks.append(
+                "Changed close to monitor: a calibrated HIGH_RISK decision is required before operational "
+                "closure; the legacy map cannot authorize it."
+            )
 
         avoid, safe = self._routes(out, remaining, run)
         response, response_checks = guards.clamp_response(out.response, severity, action, needs_review)
@@ -680,6 +712,10 @@ class Pipeline:
             "reports": {agent: report.severity for agent, report in reports.items()},
             "weights": CONFIDENCE_WEIGHTS,
             "safety_is_relative": comparative,
+            "classifier_state": None if classifier is None else classifier.get("state"),
+            "classifier_probability": None if classifier is None else classifier.get("calibrated_probability"),
+            "classifier_decision_eligible": self.production_decision_eligible,
+            "classifier_reason_codes": [] if classifier is None else classifier.get("reason_codes", []),
         }
         agreement = "All five reports agree." if spread == 0 else \
             f"The reports span {spread} level{'s' if spread != 1 else ''}" + \
@@ -916,6 +952,7 @@ class Pipeline:
             )
 
         map_summary = prediction.get("map") or self.a.map_summary
+        classifier = prediction.get("production_72h_classification") or self.production_prediction or {}
         return Advisory(
             run_id=self.ctx.run_id,
             mountain_slug=self.ctx.slug,
@@ -939,6 +976,11 @@ class Pipeline:
                 map_mean=map_summary.get("mean"),
                 share_at_high=round(sum(map_summary["share"][level] for level in ("high", "extreme")), 3)
                 if map_summary.get("share") else None,
+                classifier_state=classifier.get("state"),
+                classifier_probability=classifier.get("calibrated_probability"),
+                classifier_threshold=classifier.get("high_risk_threshold"),
+                classifier_decision_eligible=production_decision_eligible(classifier),
+                classifier_reason_codes=list(classifier.get("reason_codes") or []),
             ),
             alert=AdvisoryAlert(
                 title=final.ranger_title,

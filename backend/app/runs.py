@@ -6,9 +6,10 @@ POST /mountains/{slug}/analyze starts a run, or hands back the one already runni
 2. fetches rain once and scores the step 18 map, trail risk, zone, and step 19 bypass;
 3. runs the agents, five analysts at once and then the Synthesizer and the Alert Writer,
    relaying each AgentEvent to the run's stream listeners;
-4. on success, renders the probability tiles, stores the trail's segment risk, saves the hazard
-   with the agents' text, and sets the mountain's risk level and last_analyzed_at, all in one
-   transaction;
+4. on success, renders the probability tiles and stores the trail's segment risk. It saves an
+   operational hazard and updates the authoritative mountain risk only when the calibrated
+   classifier is decision-eligible; otherwise it records last_analyzed_at and leaves the legacy
+   map as visualization-only context;
 5. stores the whole run (every agent's last event and trace, and the advisory) on its
    analysis_runs row, so GET /runs/{id}/advisory still answers after a restart.
 
@@ -44,6 +45,8 @@ from app import previous_runs
 from app.db import get_pool
 from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import format_missing_artifacts, setup_ready_for_analyze
+from app.ml.risk_contract import production_decision_eligible
+from app.ml.risk_inference import predict_location, unavailable_prediction
 from app.weather import HourlyRain, summarize, try_hourly_rain
 
 logger = logging.getLogger(__name__)
@@ -80,6 +83,10 @@ class RunState:
     severity: str | None = None
     needs_review: bool | None = None
     method: str | None = None
+    model_state: str | None = None
+    model_probability: float | None = None
+    model_decision_eligible: bool | None = None
+    model_reason_codes: list[str] = field(default_factory=list)
     rain: RainTotals | None = None
     error: str | None = None
     failed_agent: AgentName | None = None
@@ -103,6 +110,10 @@ class RunState:
             severity=self.severity,
             needs_review=self.needs_review,
             method=self.method,
+            model_state=self.model_state,
+            model_probability=self.model_probability,
+            model_decision_eligible=self.model_decision_eligible,
+            model_reason_codes=self.model_reason_codes,
             rain=self.rain,
             error=self.error,
             failed_agent=self.failed_agent,
@@ -200,12 +211,17 @@ class RunRegistry:
                 state.rain = _rain_totals(rain)
             assessment = await asyncio.to_thread(_assess, state.slug, rain)
             state.method = assessment.method
+            production_prediction = await asyncio.to_thread(
+                _production_prediction, state, rain, assessment.probability
+            )
+            _record_model_result(state, production_prediction)
 
             await self._phase(state, "agents",
                               "Five analysts are reading the model's map at once, then one synthesizer decides.")
             router, providers = self._llm()
             ctx = RunContext(run_id=state.id, slug=state.slug, mountain=state.mountain_name, peak=state.peak,
-                             assessment=assessment, rain=rain, rain_error=rain_error, started=state.started)
+                             assessment=assessment, rain=rain, rain_error=rain_error,
+                             production_prediction=production_prediction, started=state.started)
             result = await Pipeline(ctx, router, providers, lambda event: self._on_event(state, event)).run()
             if result.status != "done":
                 step = STEP_NAMES.get(result.failed_agent, "agent")
@@ -245,13 +261,16 @@ class RunRegistry:
             rain, rain_error = await asyncio.to_thread(try_hourly_rain, state.peak[0], state.peak[1])
             if rain is not None:
                 state.rain = _rain_totals(rain)
+            production_prediction = await asyncio.to_thread(_production_prediction, state, rain, None)
+            _record_model_result(state, production_prediction)
             geo = await asyncio.to_thread(predict_summit, state.slug, state.peak[0], state.peak[1])
             state.method = geo["method"] if geo.get("available") else "location cell classification"
             await self._phase(state, "agents", "Agents are reading this summit's location, risk, and weather.")
             router, providers = self._llm()
             ctx = RunContext(
                 run_id=state.id, slug=state.slug, mountain=state.mountain_name, peak=state.peak,
-                assessment=None, rain=rain, rain_error=rain_error, started=state.started,
+                assessment=None, rain=rain, rain_error=rain_error,
+                production_prediction=production_prediction, started=state.started,
                 elevation_m=state.elevation_m, seed_level=state.seed_level,
             )
             result = await LocationPipeline(ctx, router, providers, lambda event: self._on_event(state, event)).run()
@@ -260,7 +279,10 @@ class RunRegistry:
                 await self._fail(state, f"Run failed at the {step} step.", result.error, result.failed_agent)
                 return
             await self._phase(state, "saving", "Saving this summit's risk level.")
-            await asyncio.to_thread(_save_level, state, result.final.severity)
+            if state.model_decision_eligible:
+                await asyncio.to_thread(_save_level, state, result.final.severity)
+            else:
+                await asyncio.to_thread(_touch_analyzed_at, state)
             state.severity, state.needs_review = result.final.severity, result.final.needs_review
             state.advisory = result.final.advisory
             await self._finish(state, result.final)
@@ -275,6 +297,8 @@ class RunRegistry:
         state.message = f"Finished in {seconds:.0f} s."
         if final.needs_review:
             state.message += " Agents disagree on severity, so this is an advisory."
+        if state.model_decision_eligible is not True:
+            state.message += " The calibrated classifier is unavailable or uncertain; no operational hazard was saved."
         await asyncio.to_thread(_store_run, state)
         self._update(state)
 
@@ -341,26 +365,62 @@ def _save_level(state: RunState, severity: str) -> None:
         )
 
 
+def _touch_analyzed_at(state: RunState) -> None:
+    """Record that a run completed without overwriting the authoritative risk level."""
+    with get_pool().connection() as conn:
+        conn.execute(
+            "UPDATE mountains SET last_analyzed_at = now() WHERE id = %s",
+            (state.mountain_id,),
+        )
+
+
 def _assess(slug: str, rain: HourlyRain | None) -> Assessment:
     with get_pool().connection() as conn:
         return assess(conn, slug, rain)
 
 
+def _production_prediction(state: RunState, rain: HourlyRain | None, probability=None) -> dict:
+    """Score the calibrated cell classifier once for the whole run.
+
+    ``probability`` is the already-computed legacy map used only to populate the visual fallback
+    estimate. It is never promoted to a production classifier decision.
+    """
+    if rain is None:
+        return unavailable_prediction(
+            state.peak[0], state.peak[1],
+            ["FORECAST_UNAVAILABLE", "WEATHER_FEED_UNAVAILABLE"],
+        ).to_dict()
+    return predict_location(
+        state.peak[0], state.peak[1], rain_override=rain, probability_override=probability,
+    ).to_dict()
+
+
+def _record_model_result(state: RunState, prediction: dict) -> None:
+    """Expose the classifier status in every run snapshot without duplicating its full payload."""
+    state.model_state = prediction.get("state")
+    state.model_probability = prediction.get("calibrated_probability")
+    state.model_decision_eligible = production_decision_eligible(prediction)
+    state.model_reason_codes = list(prediction.get("reason_codes") or [])
+
+
 def _commit(state: RunState, assessment: Assessment, final: Final) -> str | None:
-    """Tiles, segment risk, the hazard, and the mountain's level, together. Returns the hazard id."""
+    """Publish map context; persist an operational hazard only for an eligible classifier result."""
     with get_pool().connection() as conn, conn.transaction():
         publish(conn, assessment)
         hazard_id = None
-        if assessment.zone is not None:
+        if state.model_decision_eligible and assessment.zone is not None:
             hazard_id = save_hazard(
                 conn, assessment, run_id=state.id, hazard_type=final.hazard_type, severity=final.severity,
                 confidence=final.confidence, drivers=final.drivers, what=final.what, why=final.why,
                 how_to_avoid=final.how_to_avoid, needs_review=final.needs_review,
             )
-        conn.execute(
-            "UPDATE mountains SET current_risk_level = %s, last_analyzed_at = now() WHERE id = %s",
-            (final.severity, state.mountain_id),
-        )
+        if state.model_decision_eligible:
+            conn.execute(
+                "UPDATE mountains SET current_risk_level = %s, last_analyzed_at = now() WHERE id = %s",
+                (final.severity, state.mountain_id),
+            )
+        else:
+            conn.execute("UPDATE mountains SET last_analyzed_at = now() WHERE id = %s", (state.mountain_id,))
     return hazard_id
 
 

@@ -97,6 +97,7 @@ def follow(client, run_id):
 
 def test_analyze_streams_and_saves(api):
     client, _ = api
+    baseline = client.get("/mountains/mount-rainier").json()
     started = client.post("/mountains/mount-rainier/analyze")
     assert started.status_code == 202
     run_id = started.json()["run_id"]
@@ -121,21 +122,33 @@ def test_analyze_streams_and_saves(api):
     assert run["status"] == "done" and set(run["agents"]) == set(AGENT_ORDER)
     mountain = client.get("/mountains/mount-rainier").json()
     assert mountain["active_run_id"] is None
-    assert mountain["active_hazard"]["run_id"] == run_id and mountain["active_hazard"]["id"] == run["hazard_id"]
-    hazard = mountain["active_hazard"]
-    assert hazard["what"]
-    if hazard.get("bypass"):
-        assert hazard["bypass"]["name"] == "Golden Gate Trail"
-    assert mountain["current_risk_level"] == run["severity"] and mountain["last_analyzed_at"]
+    assert mountain["last_analyzed_at"]
+    if run["model_decision_eligible"]:
+        assert mountain["active_hazard"]["run_id"] == run_id and mountain["active_hazard"]["id"] == run["hazard_id"]
+        hazard = mountain["active_hazard"]
+        assert hazard["what"]
+        if hazard.get("bypass"):
+            assert hazard["bypass"]["name"] == "Golden Gate Trail"
+        assert mountain["current_risk_level"] == run["severity"]
+    else:
+        assert run["model_state"] == "UNCERTAIN"
+        assert run["hazard_id"] is None and mountain["active_hazard"] is None
+        assert mountain["current_risk_level"] == baseline["current_risk_level"]
     hero = next(t for t in mountain["trails"] if t["segments"])
     assert all(s["risk_level"] for s in hero["segments"])
 
-    forecast = client.get("/forecast", params={"mountain_id": "mount-rainier", "trail_id": hero["id"]}).json()
-    assert forecast["run_id"] == run_id and forecast["level"] == run["severity"]
-    assert forecast["sentence"] == run["agents"]["writer"]["payload"]["hiker"]
-    if forecast.get("bypass"):
-        assert forecast["bypass"]["name"] == "Golden Gate Trail"
-    assert forecast["trail_name"] == hero["name"]
+    forecast_response = client.get("/forecast", params={"mountain_id": "mount-rainier", "trail_id": hero["id"]})
+    forecast_sentence = None
+    if run["model_decision_eligible"]:
+        forecast = forecast_response.json()
+        forecast_sentence = forecast["sentence"]
+        assert forecast["run_id"] == run_id and forecast["level"] == run["severity"]
+        assert forecast["sentence"] == run["agents"]["writer"]["payload"]["hiker"]
+        if forecast.get("bypass"):
+            assert forecast["bypass"]["name"] == "Golden Gate Trail"
+        assert forecast["trail_name"] == hero["name"]
+    else:
+        assert forecast_response.status_code == 404
 
     # The advisory rides on the run and answers on its own endpoints, in memory and from the row.
     advisory = run["advisory"]
@@ -146,18 +159,23 @@ def test_analyze_streams_and_saves(api):
     trails = {t["name"] for t in client.get("/mountains/mount-rainier").json()["trails"]}
     assert all(route["trail"] in trails for route in advisory["avoid"] + advisory["safe"])
     assert advisory["response"]["posture"] in ("all_clear", "watch", "advisory", "warning", "evacuate")
-    assert advisory["severity"] == run["severity"] and advisory["alert"]["hiker"] == forecast["sentence"]
+    assert advisory["severity"] == run["severity"]
+    if forecast_sentence is not None:
+        assert advisory["alert"]["hiker"] == forecast_sentence
 
     # Step 33: the same run is logged to previous_runs, tagged and split into the two sides of
     # the run, so the /history page has it after the process that ran it is gone.
     logged = client.get("/history", params={"slug": "mount-rainier"}).json()
     row = next(r for r in logged["runs"] if r["run_id"] == run_id)
     assert row["hazard_class"] in ("landslide", "debris_flow")
-    assert row["hazard_type"] == hazard["type"] and row["severity"] == run["severity"]
+    if run["model_decision_eligible"]:
+        assert row["hazard_type"] == hazard["type"]
+    assert row["severity"] == run["severity"]
     assert {c["agent"] for c in row["llm_calls"]} == set(AGENT_ORDER)
     detail = client.get(f"/history/{run_id}").json()
     assert set(detail["agent_outputs"]) == set(AGENT_ORDER)
-    assert detail["agent_outputs"]["writer"]["payload"]["hiker"] == forecast["sentence"]
+    if forecast_sentence is not None:
+        assert detail["agent_outputs"]["writer"]["payload"]["hiker"] == forecast_sentence
     assert detail["advisory"] == advisory
     assert detail["model_method"] == run["method"]
 
@@ -182,14 +200,19 @@ def test_advisory_404s_on_an_unknown_run_or_mountain(api):
 def test_failed_run_keeps_the_last_hazard(api, monkeypatch):
     client, _ = api
     first = client.post("/mountains/mount-rainier/analyze").json()["run_id"]
-    follow(client, first)
+    first_final = follow(client, first)[-1]["run"]
+    first_hazard = client.get("/mountains/mount-rainier").json()["active_hazard"]
     monkeypatch.setenv("FAKE_LLM_FAIL", "gemini,grok")
     failed = client.post("/mountains/mount-rainier/analyze").json()["run_id"]
     final = follow(client, failed)[-1]["run"]
     assert final["status"] == "error"
     assert final["message"] == "Run failed at the Terrain step."
     assert final["failed_agent"] == "terrain" and "No provider" in final["error"]
-    assert client.get("/mountains/mount-rainier").json()["active_hazard"]["run_id"] == first
+    current_hazard = client.get("/mountains/mount-rainier").json()["active_hazard"]
+    if first_final["model_decision_eligible"]:
+        assert current_hazard["run_id"] == first
+    else:
+        assert first_hazard is None and current_hazard is None
 
 
 def test_location_analyze_without_trails(api):

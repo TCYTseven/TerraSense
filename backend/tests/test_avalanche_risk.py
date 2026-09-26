@@ -36,7 +36,8 @@ def test_reported_probability_floor_is_at_least_ten_percent() -> None:
     assert floor == 0.10
 
 
-def test_missing_avalanche_artifact_fails_closed() -> None:
+def test_missing_avalanche_artifact_fails_closed(monkeypatch, tmp_path) -> None:
+    monkeypatch.setattr(avalanche_inference, "MODEL_PATH", tmp_path / "missing.model")
     result = predict_location(
         46.8523,
         -121.7603,

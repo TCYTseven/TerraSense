@@ -2,6 +2,7 @@
 
 import pytest
 
+from app.agents import tools as tools_module
 from app.agents.tools import RunContext, ToolError, call_tool, threshold_mm
 from app.assessment import assess
 from app.weather import get_hourly_rain
@@ -53,6 +54,39 @@ def test_weather_without_rain_raises(ctx):
     dry = RunContext(**{**ctx.__dict__, "rain": None, "rain_error": "Open-Meteo timed out"})
     with pytest.raises(ToolError, match="timed out"):
         call_tool(dry, "get_weather", lat=46.85, lon=-121.76)
+
+
+def test_model_prediction_uses_cached_classifier_without_recomputing(ctx, monkeypatch):
+    """Agent fan-out receives the coordinator's exact result, including its probability."""
+    cached = {
+        "state": "HIGH_RISK",
+        "probability": 0.84,
+        "probability_source": "calibrated_classifier",
+        "calibrated_probability": 0.84,
+        "high_risk_threshold": 0.81,
+        "risk_level": "extreme",
+        "reason_codes": [],
+    }
+    context = RunContext(**{**ctx.__dict__, "production_prediction": cached})
+    monkeypatch.setattr(tools_module, "predict_location", lambda *_args, **_kwargs: pytest.fail("recomputed"))
+
+    facts = call_tool(context, "get_model_prediction", mountain="mount-rainier").result
+
+    assert facts["production_72h_classification"] == cached
+    assert facts["decision_contract"]["decision_eligible"] is True
+
+
+def test_model_prediction_without_rain_is_fail_closed(ctx, monkeypatch):
+    context = RunContext(**{**ctx.__dict__, "rain": None, "production_prediction": None})
+    monkeypatch.setattr(tools_module, "predict_location", lambda *_args, **_kwargs: pytest.fail("recomputed"))
+
+    prediction = call_tool(context, "get_model_prediction", mountain="mount-rainier").result[
+        "production_72h_classification"
+    ]
+
+    assert prediction["state"] == "UNCERTAIN"
+    assert prediction["calibrated_probability"] is None
+    assert "FORECAST_UNAVAILABLE" in prediction["reason_codes"]
 
 
 def test_historical_events(ctx):

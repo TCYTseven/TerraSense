@@ -130,5 +130,13 @@ export interface PipelineState {
   agents: Record<PipelineAgentId, PipelineAgentState>;
   /** Null until the Alerter finishes. */
   measures: ReactiveMeasure[] | null;
+  /** The backend classifier result projected from the finished advisory. */
+  model: {
+    state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+    probability: number | null;
+    threshold: number | null;
+    decisionEligible: boolean;
+    reasonCodes: string[];
+  } | null;
   error: string | null;
 }

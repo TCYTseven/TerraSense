@@ -441,6 +441,10 @@ export interface Run {
   needs_review: boolean | null;
   /** How the heat map was made, such as "susceptibility stand-in (Model B pending)". */
   method: string | null;
+  model_state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+  model_probability: number | null;
+  model_decision_eligible: boolean | null;
+  model_reason_codes: string[];
   rain: RainTotals | null;
   error: string | null;
   failed_agent: AgentName | null;
@@ -554,6 +558,11 @@ export interface AdvisoryModel {
   map_max: number | null;
   map_mean: number | null;
   share_at_high: number | null;
+  classifier_state: "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN" | null;
+  classifier_probability: number | null;
+  classifier_threshold: number | null;
+  classifier_decision_eligible: boolean;
+  classifier_reason_codes: string[];
 }
 
 /** One agent's rating, so the panel can show where the agents agreed. */
