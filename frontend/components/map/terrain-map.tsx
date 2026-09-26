@@ -73,8 +73,8 @@ export interface TerrainMapProps {
   /** The pin is selected: the panel shows the hazard. */
   hazardSelected: boolean;
   onHazardClick: () => void;
-  /** A click on the map that hits no pin. */
-  onMapClick: () => void;
+  /** A click on the map that hits no pin, with the selected cell coordinate. */
+  onMapClick: (coordinate: { latitude: number; longitude: number }) => void;
   /** Past landslides for the pins. Empty until the catalog is downloaded. */
   historicalEvents: HistoricalEvent[];
   /** The hiker card's bypass: drawn dashed while the card is open, null otherwise. */
@@ -533,7 +533,7 @@ export default function TerrainMap({
     const onClick = (event: MapMouseEvent) => {
       const onPin = map.getLayer(LAYER.history) && map.queryRenderedFeatures(event.point, { layers: [LAYER.history] }).length;
       if (!onPin) {
-        mapClick.current();
+        mapClick.current({ latitude: event.lngLat.lat, longitude: event.lngLat.lng });
       }
     };
     map.on("click", onClick);

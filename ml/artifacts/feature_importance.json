@@ -1,10 +1,12 @@
 {
-  "method": "knowledge-driven index",
+  "method": "lightgbm",
   "importance": {
-    "slope": 0.35,
-    "dist_drainage": 0.2,
-    "landcover": 0.2,
-    "twi": 0.15,
-    "curvature": 0.1
+    "elevation": 0.4227,
+    "slope": 0.129,
+    "aspect": 0.1613,
+    "curvature": 0.0648,
+    "dist_drainage": 0.1265,
+    "landcover": 0.034,
+    "twi": 0.0618
   }
 }

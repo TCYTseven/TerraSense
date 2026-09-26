@@ -9,6 +9,12 @@ data/processed/
 
 # Large model outputs. metrics.json and small artifacts stay in git.
 ml/artifacts/*.tif
+# Production risk artifacts are generated from external, timestamped data and must be promoted
+# through the deployment artifact store, not committed with the source tree.
+ml/artifacts/landslide_risk_lgbm.txt
+ml/artifacts/risk_model.json
+ml/artifacts/risk_calibration.json
+ml/artifacts/risk_backtest_report.json
 
 # Rendered map tiles. Recreate with ml/scripts/render_tiles.py.
 backend/tiles/

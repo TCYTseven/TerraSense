@@ -4,13 +4,19 @@
 Writes, relative to the repo root:
   data/raw/rainier_dem_cop30.tif                 Copernicus DEM GLO-30 clipped to the bbox
   data/raw/rainier_landcover_worldcover2021.tif  ESA WorldCover 2021 v200 clipped to the bbox
-  data/seed/landslides.geojson                   NASA Global Landslide Catalog points in the bbox
+  data/seed/landslides.geojson                   NASA GLC or Washington inventory points in the bbox
 
 Rasters keep their native CRS (EPSG:4326). Step 11 builds the common 30 m grid.
 Source URLs, licences, and access dates live in data/seed/sources.md.
 
 Run from the repo root:
   python ml/scripts/download_sources.py [--only dem,landcover,landslides] [--force]
+
+The default NASA GLC export is preferred. If its host is unavailable, the script queries the
+official Washington Geological Survey Landslide Compilation ArcGIS layer instead. If an available
+NASA export has fewer than two usable high-accuracy points, the Washington inventory supplements
+it so the spatially held-out model does not train on a single event cluster; no labels are
+invented locally.
 """
 
 from __future__ import annotations
@@ -21,7 +27,7 @@ import json
 import math
 import os
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -30,6 +36,7 @@ import rasterio
 import requests
 from rasterio.enums import ColorInterp
 from rasterio.windows import Window, from_bounds
+from shapely.geometry import box, shape
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RAW_DIR = REPO_ROOT / "data" / "raw"
@@ -51,6 +58,12 @@ LANDCOVER_URL = (
 )
 # NASA Global Landslide Catalog, full CSV export of data.nasa.gov dataset dd9e-wu2v.
 GLC_CSV_URL = "https://data.nasa.gov/api/views/dd9e-wu2v/rows.csv?accessType=DOWNLOAD"
+# Washington Geological Survey's official Landslide Compilation layer. It is a polygon
+# inventory, so the fallback uses an interior representative point as a conservative label.
+WASLID_QUERY_URL = (
+    "https://gis.dnr.wa.gov/site3/rest/services/Geology/Landslide_Inventory_Database/MapServer/131/query"
+)
+WASLID_LAYER_URL = WASLID_QUERY_URL.removesuffix("/query")
 
 DEM_PATH = RAW_DIR / "rainier_dem_cop30.tif"
 LANDCOVER_PATH = RAW_DIR / "rainier_landcover_worldcover2021.tif"
@@ -96,6 +109,8 @@ GLC_FIELDS = {
 }
 
 STAGES = ("dem", "landcover", "landslides")
+WASLID_SOURCE_NAME = "Washington State Landslide Inventory Database — Landslide Compilation"
+TRAINING_ACCURACIES = {"exact", "1km"}
 
 
 def rel(path: Path) -> str:
@@ -299,25 +314,155 @@ def glc_features(csv_path: Path) -> list[dict]:
     return sorted(features, key=lambda feature: feature["properties"]["date"] or "")
 
 
-def stage_landslides(force: bool, glc_source: str) -> None:
-    """Filter the NASA Global Landslide Catalog to the bbox and write map pins as GeoJSON."""
+def usable_training_features(features: list[dict]) -> list[dict]:
+    """Return catalog points precise enough to become 30 m pixel labels."""
+    return [feature for feature in features
+            if (feature["properties"].get("location_accuracy") or "").lower() in TRAINING_ACCURACIES]
+
+
+def merge_catalog_features(primary: list[dict], supplemental: list[dict]) -> list[dict]:
+    """Combine catalogs without dropping provenance or duplicating the same catalog id."""
+    seen = {
+        (feature["properties"].get("catalog"), str(feature.get("id")))
+        for feature in primary
+    }
+    merged = list(primary)
+    for feature in supplemental:
+        key = (feature["properties"].get("catalog"), str(feature.get("id")))
+        if key not in seen:
+            merged.append(feature)
+            seen.add(key)
+    return sorted(merged, key=lambda feature: feature["properties"].get("date") or "")
+
+
+def _arcgis_date(value) -> str | None:
+    """Convert an ArcGIS epoch-millisecond or ISO date into the seed's YYYY-MM-DD value."""
+    if value in (None, ""):
+        return None
+    if isinstance(value, (int, float)):
+        return datetime.fromtimestamp(value / 1000, tz=UTC).date().isoformat()
+    return iso_date(str(value))
+
+
+def waslid_features(payload: dict) -> list[dict]:
+    """Convert WGS polygon features into representative point labels inside the Rainier bbox."""
+    if payload.get("type") != "FeatureCollection":
+        message = payload.get("error", {}).get("message", "not a GeoJSON FeatureCollection")
+        raise ValueError(f"WASLID query did not return GeoJSON: {message}")
+
+    west, south, east, north = RAINIER_BBOX
+    clip = box(west, south, east, north)
+    features = []
+    for feature in payload.get("features", []):
+        geometry = feature.get("geometry")
+        if not geometry:
+            continue
+        clipped = shape(geometry).intersection(clip)
+        if clipped.is_empty:
+            continue
+        point = clipped.representative_point()
+        props = feature.get("properties") or {}
+        event_id = props.get("LANDSLIDE_ID") or feature.get("id")
+        title = props.get("LANDSLIDE_NAME") or props.get("LANDSLIDE_TYPE") or "Mapped landslide"
+        date_value = props.get("LANDSLIDE_DATE")
+        if date_value in (None, ""):
+            date_value = props.get("LANDSLIDE_LIMIT_DATE")
+        features.append({
+            "type": "Feature",
+            "id": event_id,
+            "geometry": {"type": "Point", "coordinates": [round(point.x, 6), round(point.y, 6)]},
+            "properties": {
+                "id": event_id,
+                "date": _arcgis_date(date_value),
+                "title": title,
+                "category": props.get("LANDSLIDE_TYPE"),
+                "trigger": props.get("LANDSLIDE_TRIGGER_EVENT"),
+                "size": None,
+                "setting": props.get("LAND_USE"),
+                # Polygon geometry is more informative than the representative point, but the
+                # training contract accepts this conservative 1 km label accuracy class.
+                "location_accuracy": "1km",
+                "fatalities": None,
+                "source_name": props.get("SOURCE_INFORMATION") or WASLID_SOURCE_NAME,
+                "source_link": props.get("SOURCE_URL") or WASLID_LAYER_URL,
+                "catalog": WASLID_SOURCE_NAME,
+                "inventory_confidence": props.get("DATA_CONFIDENCE"),
+                "source_layer": props.get("FEATURE_SOURCE"),
+            },
+        })
+    return sorted(features, key=lambda feature: feature["properties"]["date"] or "")
+
+
+def fetch_waslid(url: str = WASLID_QUERY_URL) -> dict:
+    """Query the official Washington inventory for polygons intersecting the shared bbox."""
+    params = {
+        "where": "1=1",
+        "geometry": ",".join(str(value) for value in RAINIER_BBOX),
+        "geometryType": "esriGeometryEnvelope",
+        "inSR": "4326",
+        "spatialRel": "esriSpatialRelIntersects",
+        "outFields": "*",
+        "returnGeometry": "true",
+        "outSR": "4326",
+        "f": "geojson",
+    }
+    try:
+        response = requests.get(url, params=params, timeout=(15, 120))
+        response.raise_for_status()
+        return response.json()
+    except (requests.RequestException, ValueError) as exc:
+        raise RuntimeError(f"cannot query Washington landslide inventory: {type(exc).__name__}: {exc}") from exc
+
+
+def stage_waslid(force: bool) -> None:
+    """Use the official Washington inventory when the NASA export is unreachable."""
     if LANDSLIDES_PATH.exists() and not force:
         print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
         return
-    if urlparse(glc_source).scheme in ("http", "https"):
-        # The cache holds the default export only, so another URL always downloads.
-        if force or not GLC_CSV_PATH.exists() or glc_source != GLC_CSV_URL:
-            print(f"  downloading {glc_source}")
-            download(glc_source, GLC_CSV_PATH)
-        csv_path = GLC_CSV_PATH
-    else:
-        csv_path = Path(glc_source)
+    features = waslid_features(fetch_waslid())
+    if not features:
+        raise RuntimeError("Washington landslide inventory returned no features in the Rainier bbox")
+    SEED_DIR.mkdir(parents=True, exist_ok=True)
+    collection = {"type": "FeatureCollection", "features": features}
+    LANDSLIDES_PATH.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"  wrote {len(features)} Washington landslide points inside {list(RAINIER_BBOX)} to {rel(LANDSLIDES_PATH)}")
+
+
+def stage_landslides(force: bool, glc_source: str) -> None:
+    """Prefer NASA GLC and supplement sparse high-accuracy labels with the official inventory."""
+    if LANDSLIDES_PATH.exists() and not force:
+        print(f"  {rel(LANDSLIDES_PATH)} exists, skipping (use --force to refresh)")
+        return
+    csv_path = GLC_CSV_PATH
     try:
+        if urlparse(glc_source).scheme in ("http", "https"):
+            # The cache holds the default export only, so another URL always downloads.
+            if force or not GLC_CSV_PATH.exists() or glc_source != GLC_CSV_URL:
+                print(f"  downloading {glc_source}")
+                download(glc_source, GLC_CSV_PATH)
+            csv_path = GLC_CSV_PATH
+        else:
+            csv_path = Path(glc_source)
         features = glc_features(csv_path)
-    except ValueError:
+    except (OSError, RuntimeError, ValueError) as exc:
+        if urlparse(glc_source).scheme not in ("http", "https") or glc_source != GLC_CSV_URL:
+            raise
+        print(f"  NASA GLC unavailable ({type(exc).__name__}); using {WASLID_SOURCE_NAME}", file=sys.stderr)
         if csv_path == GLC_CSV_PATH:
-            csv_path.unlink()  # drop a bad download (e.g. an HTML page) so the next run fetches again
-        raise
+            csv_path.unlink(missing_ok=True)  # never retain a partial/HTML response as a future cache
+        return stage_waslid(force=True)
+    usable = usable_training_features(features)
+    if len({(feature["geometry"]["coordinates"][0], feature["geometry"]["coordinates"][1])
+            for feature in usable}) < 2:
+        print(
+            f"  NASA GLC supplied {len(features)} in-box events but only {len(usable)} usable "
+            f"high-accuracy point; adding {WASLID_SOURCE_NAME} as a documented supplement",
+            file=sys.stderr,
+        )
+        supplemental = waslid_features(fetch_waslid())
+        if not supplemental:
+            raise RuntimeError("NASA GLC is too sparse for spatial training and the supplemental inventory is empty")
+        features = merge_catalog_features(features, supplemental)
     SEED_DIR.mkdir(parents=True, exist_ok=True)
     collection = {"type": "FeatureCollection", "features": features}
     LANDSLIDES_PATH.write_text(json.dumps(collection, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
@@ -333,7 +478,7 @@ def main() -> int:
         "--glc-csv",
         default=GLC_CSV_URL,
         metavar="URL_OR_PATH",
-        help="NASA GLC export CSV to read, as a URL or a local file (default: the data.nasa.gov export)",
+        help="NASA GLC export CSV to read, as a URL or local file; default URL falls back to the official Washington inventory",
     )
     args = parser.parse_args()
     selected = [name.strip() for name in args.only.split(",") if name.strip()]

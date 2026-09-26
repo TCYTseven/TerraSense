@@ -166,6 +166,23 @@ export interface MountainDetail extends Mountain {
   active_run_id: string | null;
 }
 
+export type LandslideRiskState = "HIGH_RISK" | "NOT_HIGH_RISK" | "UNCERTAIN";
+
+export interface LandslideRiskPrediction {
+  location: { latitude: number; longitude: number };
+  prediction_window: { start: string; end: string };
+  state: LandslideRiskState;
+  calibrated_probability: number | null;
+  high_risk_threshold: number | null;
+  confidence: { lower: number | null; upper: number | null };
+  data_quality_score: number;
+  ood_score: number | null;
+  reason_codes: string[];
+  drivers: { feature: string; value: number | null; importance: number; direction: "model risk driver" }[];
+  data_sources: Record<string, unknown>;
+  model: Record<string, unknown>;
+}
+
 /**
  * Panel order. The first five are analysts: the backend fans them out together in one
  * asyncio.gather, so several rows can be "running" at once. The Risk Synthesizer waits for all

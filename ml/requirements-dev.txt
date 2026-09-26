@@ -1,0 +1,2 @@
+# ML/data checks. Install after ml/requirements.txt.
+pytest>=8

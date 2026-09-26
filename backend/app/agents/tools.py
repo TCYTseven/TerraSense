@@ -23,6 +23,7 @@ from app.assessment import Assessment, level_runs
 from app.bypass import junctions_near, load_network
 from app.config import REPO_ROOT
 from app.history import historical_events
+from app.ml.risk_inference import predict_location
 from app.risk import HIGH_THRESHOLD
 from app.trailscan import most_exposed, safest
 from app.trailscan import summarize as summarize_network
@@ -242,6 +243,20 @@ def get_model_prediction(ctx: RunContext, mountain: str) -> dict:
         },
         "trail_network": summarize_network(a.trail_scores),
     }
+    # The legacy map remains the agent source of truth for the current HackGT trail workflow.
+    # Carry the stricter classifier alongside it so every agent can see whether a production-grade
+    # calibrated answer is actually available; this never turns an unavailable classifier into a
+    # negative risk finding.
+    if ctx.rain is not None:
+        facts["production_72h_classification"] = predict_location(
+            ctx.peak[0], ctx.peak[1], rain_override=ctx.rain
+        ).to_dict()
+    else:
+        facts["production_72h_classification"] = {
+            "state": "UNCERTAIN",
+            "calibrated_probability": None,
+            "reason_codes": ["FORECAST_UNAVAILABLE"],
+        }
     if a.zone is not None:
         facts["hazard_zone"] = {
             "id": "hz_001",

@@ -2,6 +2,10 @@
 
 Offline Python for TerraSense: source downloads, the terrain feature table, the LightGBM susceptibility model, and map tiles. Track: ML and data. Nothing here runs as a server.
 
+The production-oriented event-time classifier is a separate path from the legacy 30 m susceptibility
+map. Its default prediction unit is a 1 km cell at a reference timestamp and its target is a
+rainfall-triggered event in the next 72 hours. See `context/docs/production-risk.md`.
+
 Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shared facts.
 
 ## Steps this folder owns
@@ -38,11 +42,18 @@ Run from the repo root:
 
 ```bash
 python3.12 -m venv ml/.venv && source ml/.venv/bin/activate
-pip install -r ml/requirements.txt
+pip install -r ml/requirements.lock.txt  # verified deployment environment
+# Or use the flexible direct requirements during development:
+# pip install -r ml/requirements.txt -r ml/requirements-dev.txt
 python ml/scripts/download_sources.py      # step 10: DEM, land cover, landslide points
 python ml/scripts/build_features.py        # step 11: 30 m feature stack, labeled table when points exist
+python ml/scripts/build_static_features.py # production path: aggregate static inputs to 1 km cells
 python ml/scripts/train_susceptibility.py  # step 12: LightGBM with labels, knowledge-driven index without
 python ml/scripts/render_tiles.py          # step 13: backend/tiles/susceptibility/{z}/{x}/{y}.png
+python ml/scripts/validate_pipeline.py --require-probability  # read-only deployment audit
+python ml/scripts/build_risk_samples.py --dynamic data/raw/normalized/hourly.parquet --out data/processed/risk_samples.parquet
+python ml/scripts/build_risk_dataset.py --samples data/processed/risk_samples.parquet --out data/processed/landslide_risk.parquet
+python ml/scripts/train_risk_model.py --table data/processed/landslide_risk.parquet
 python ml/scripts/import_trails.py         # step 14: OpenStreetMap trails via Overture, the hero trail's segments
 python ml/scripts/build_trail_network.py  # step 19: the network the bypass routes on (needs step 14's cache and the DEM)
 ```
