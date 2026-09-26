@@ -17,7 +17,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { formatDate, hazardLabel, humanize, riskLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
-import type { CameraFocus, TrailRisk } from "@/lib/hill";
+import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/hill";
 import type { Bypass, Hazard, HistoricalEvent, LayerTiles, Position, Trail } from "@/lib/types";
 import LayerToggles from "./layer-toggles";
 import {
@@ -83,6 +83,8 @@ export interface TerrainMapProps {
   trailMarkers?: TrailRisk[];
   /** The latest request to fly to a lettered trail. A new nonce flies again. */
   focus?: CameraFocus | null;
+  /** A click on a lettered trail's marker, line, or region. Set it to fly there like View. */
+  onTrailSelect?: (letter: TrailLetter) => void;
 }
 
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
@@ -320,6 +322,7 @@ export default function TerrainMap({
   bypass = null,
   trailMarkers = NO_TRAIL_MARKERS,
   focus = null,
+  onTrailSelect,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -592,7 +595,7 @@ export default function TerrainMap({
     };
   }, [map, isLive]);
 
-  useTrailMarkers(map, trailMarkers, focus);
+  useTrailMarkers(map, trailMarkers, focus, onTrailSelect);
   useIdleOrbit(map, Boolean(focus));
 
   function toggle(id: string) {
