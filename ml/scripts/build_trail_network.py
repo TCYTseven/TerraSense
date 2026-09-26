@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Build the walkable network the bypass routes on (implementation step 19).
+"""Build the walkable network the bypass routes on (implementation steps 19 and 32).
 
 Reads the step 14 cache of walkable OpenStreetMap segments and the step 10 DEM, and writes
-data/seed/trail_network.geojson: every walkable edge within KEEP_RADIUS_M of the hero loop that
-connects to it, split at junctions, with DEM elevations as a third coordinate.
+data/seed/trail_network.geojson (packs: data/seed/packs/<slug>/trail_network.geojson): every
+walkable edge within KEEP_RADIUS_M of the hero trail that connects to it, split at junctions,
+with DEM elevations as a third coordinate.
 
-The hero loop is not copied from OpenStreetMap. It is re-cut at each junction from the same
-simplified line that data/seed/trail_segments.geojson came from, so every loop piece carries
-from_mile and to_mile values that match the mile segments, and the other edges are snapped onto
-it where they meet it.
+The hero trail is not copied from OpenStreetMap. It is re-cut at each junction from the same
+simplified line that the mile segments came from, so every hero piece carries from_mile and
+to_mile values that match them, and the other edges are snapped onto it where they meet it.
+Rainier's hero is the closed Skyline loop; a pack's is its longest named trail, an open line
+with mile 0 at the lower trailhead.
 
 The API (backend/app/bypass.py) routes on this file during each run. Run from the repo root:
-  python ml/scripts/build_trail_network.py [--segments PATH] [--dem PATH] [--out PATH]
+  python ml/scripts/build_trail_network.py [--mountain SLUG] [--segments PATH] [--dem PATH] [--out PATH]
 """
 
 from __future__ import annotations
@@ -26,8 +28,6 @@ import networkx as nx
 import numpy as np
 import shapely
 from shapely.ops import substring
-
-NETWORK_PATH = it.REPO_ROOT / "data" / "seed" / "trail_network.geojson"
 
 KEEP_RADIUS_M = 2500  # edges farther from the loop than this cannot make a sensible bypass
 ON_LOOP_M = 3  # an OSM node this close to the loop is on it: a junction, or a piece of the loop itself
@@ -57,16 +57,20 @@ def loop_point(loop, distance_m: float) -> tuple[float, float]:
 def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dict]]:
     graph = it.walk_graph(segments)
     trails = it.trail_lines(segments)
-    loop_raw = it.hero_loop(trails)
-    # The exact line import_trails.py cut the mile segments from.
-    loop = shapely.simplify(loop_raw, it.SIMPLIFY_M)
+    selection = it.hero_line(trails, dem)
+    if selection is None:
+        raise SystemExit(f"no eligible named trail inside {list(it.PACK.bbox)}: nothing to route a bypass on")
+    # `loop` is the exact line import_trails.py cut the mile segments from. It closes for
+    # Rainier's Skyline loop and stays open for a pack's longest named trail.
+    hero_name, loop_raw, loop, hero_parts = selection
     length_m = loop.length
+    closed = loop.is_closed
 
-    # Drop OpenStreetMap's copy of the loop; the loop pieces below replace it.
+    # Drop OpenStreetMap's copy of the hero; the hero pieces below replace it.
     on_loop = []
     for u, v, data in graph.edges(data=True):
         middle = it.to_utm(shapely.LineString(data["coords"])).interpolate(0.5, normalized=True)
-        if data["label"] in it.HERO_PARTS and loop_raw.distance(middle) <= ON_LOOP_M:
+        if data["label"] in hero_parts and loop_raw.distance(middle) <= ON_LOOP_M:
             on_loop.append((u, v))
     graph.remove_edges_from(on_loop)
     graph.remove_nodes_from([n for n in list(graph.nodes) if graph.degree(n) == 0])
@@ -105,7 +109,8 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
             "geometry": {"type": "LineString", "coordinates": lonlat_z(line_utm, dem)},
         })
 
-    # The loop, cut at every junction. The trailhead (mile 0) is a node at both ends.
+    # The hero, cut at every junction. On the closed loop the trailhead (mile 0) is a node
+    # at both ends; an open hero simply ends at its last mile.
     cuts = sorted({0.0, length_m, *junctions.values()})
     cuts = [d for i, d in enumerate(cuts) if i == 0 or d - cuts[i - 1] > 0.5]
     if length_m - cuts[-1] > 0.5:
@@ -114,11 +119,11 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
         piece = substring(loop, a, b)
         coords = lonlat_z(piece, dem)
         coords[0][:2] = loop_point(loop, a)
-        coords[-1][:2] = loop_point(loop, b if b < length_m else 0.0)
+        coords[-1][:2] = loop_point(loop, 0.0 if closed and b >= length_m else min(b, length_m))
         features.append({
             "type": "Feature",
             "properties": {
-                "trail": it.HERO_TRAIL,
+                "trail": hero_name,
                 "hero": True,
                 "from_mile": round(a / it.METERS_PER_MILE, 3),
                 "to_mile": round(b / it.METERS_PER_MILE, 3),
@@ -132,7 +137,8 @@ def build(segments: list[dict], dem: it.Dem) -> tuple[dict, list[dict], list[dic
         "attribution": it.ATTRIBUTION,
         "license": "ODbL-1.0",
         "source": it.SEGMENTS_URL,
-        "hero_trail": it.HERO_TRAIL,
+        "mountain_slug": it.PACK.slug,
+        "hero_trail": hero_name,
         "hero_length_mi": round(length_m / it.METERS_PER_MILE, 3),
         "elevation": "meters above the EGM2008 geoid, sampled from the Copernicus DEM (step 10)",
     }
@@ -154,25 +160,31 @@ def write(header: dict, features: list[dict], path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build the walkable network the bypass routes on.")
-    parser.add_argument("--segments", type=Path, default=it.SEGMENTS_PATH, help="step 14 walkable segment cache")
-    parser.add_argument("--dem", type=Path, default=it.DEM_PATH, help="step 10 DEM")
-    parser.add_argument("--out", type=Path, default=NETWORK_PATH, help="seed file to write")
+    parser.add_argument("--mountain", default=None,
+                        help="pack slug from mountain_packs.py (default: mount-rainier)")
+    parser.add_argument("--segments", type=Path, default=None, help="step 14 walkable segment cache")
+    parser.add_argument("--dem", type=Path, default=None, help="step 10 DEM")
+    parser.add_argument("--out", type=Path, default=None, help="seed file to write")
     args = parser.parse_args()
+    it.configure(args.mountain or it.PACK.slug)
+    segments_path = args.segments or it.PATHS.segments_cache
+    dem_path = args.dem or it.PATHS.dem
+    out_path = args.out or it.PATHS.network
 
-    for path, fix in ((args.segments, "python ml/scripts/import_trails.py --force"),
-                      (args.dem, "python ml/scripts/download_sources.py --only dem")):
+    for path, fix in ((segments_path, f"python ml/scripts/import_trails.py --mountain {it.PACK.slug} --force"),
+                      (dem_path, f"python ml/scripts/download_sources.py --mountain {it.PACK.slug} --only dem")):
         if not path.exists():
             raise SystemExit(f"{it.rel(path)} is missing. Run `{fix}` first.")
 
-    header, features, junctions = build(it.read_segments(args.segments), it.Dem(args.dem))
-    write(header, features, args.out)
+    header, features, junctions = build(it.read_segments(segments_path), it.Dem(dem_path))
+    write(header, features, out_path)
     hero = [f for f in features if f["properties"]["hero"]]
     other = [f for f in features if not f["properties"]["hero"]]
     names = sorted({f["properties"]["trail"] for f in other if f["properties"]["trail"]})
-    print(f"wrote {it.rel(args.out)}: {len(hero)} loop pieces over {header['hero_length_mi']} mi, "
+    print(f"wrote {it.rel(out_path)}: {len(hero)} hero pieces over {header['hero_length_mi']} mi, "
           f"{len(other)} other edges ({sum(f['properties']['length_m'] for f in other) / 1000:.1f} km), "
-          f"{args.out.stat().st_size / 1e3:.0f} kB")
-    print(f"{len(junctions)} junctions on the {it.HERO_TRAIL}:")
+          f"{out_path.stat().st_size / 1e3:.0f} kB")
+    print(f"{len(junctions)} junctions on the {header['hero_trail']}:")
     for junction in junctions:
         print(f"  mile {junction['mile']:.2f}  {', '.join(junction['trails'])}")
     print(f"named trails in the network: {', '.join(names)}")
