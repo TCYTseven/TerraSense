@@ -1,72 +1,55 @@
 # TerraSense
 
-Landslide hazard intelligence for one mountain, Mount Rainier. Built for HackGT.
+Landslide hazard intelligence for Mount Rainier.
 
-TerraSense reads terrain and rain for Rainier, predicts where a landslide is likely in the next 72 hours, and turns that into a ranger alert and a hiker forecast.
-
-The prediction comes from an ML model over satellite terrain, land cover, and rain. Five agents
-then read that one map at the same time, each for something the model is blind to: the ground
-under the zone, the weather around it, the miles hikers walk, the landslide record, and the other
-66 trails on the mountain. A sixth agent reads all five and decides: three routes to keep hikers
-off today, three that are safest, and what the park should do about it, from a line in the
-newsletter to clearing the mountain.
+Predicts landslides up to 72 hours ahead, using ML and multiple agents for risk and trail safety recommendations.
 
 ```bash
-curl 'http://localhost:8000/mountains/mount-rainier/advisory'   # after one Analyze run
+curl 'http://localhost:8000/mountains/mount-rainier/advisory'
 ```
 
-## Setup
+## Quick Setup
 
 ```bash
-cp .env.example .env   # fill in values. .env is gitignored.
+cp .env.example .env   # fill in your values
 ```
 
-## Three commands
+## Run it locally
 
-**1. Frontend dev server.** Next.js on http://localhost:3000.
-
+**Frontend (Next.js):**
 ```bash
 cd frontend && npm install && npm run dev
 ```
 
-**2. API dev server.** FastAPI on http://localhost:8000.
-
+**Backend API (FastAPI, recommended way):**
 ```bash
 cd backend
-python3.12 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
-python -m app.schema && python -m app.seed    # first run: create the tables, load data/seed/
-# Globe peaks live in data/seed/mountains.json (committed). Refresh offline only:
-#   python -m app.mountain_catalog --write-seed --source overpass && python -m app.seed
-# The API never calls Wikidata/Overpass on page load; it reads Postgres (seed file if the table is empty).
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m app.schema
+python -m app.seed
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Map layers and Analyze** need `ml/artifacts/susceptibility.tif` and tiles under `backend/tiles/`. From the repo root (Python 3.12+, `pip install -r ml/requirements.txt`; on macOS, `brew install libomp` if LightGBM fails):
-
+**See API health:**  
 ```bash
-python ml/scripts/download_sources.py --only dem,landcover
-python ml/scripts/build_features.py && python ml/scripts/train_susceptibility.py
-PYTHONPATH=backend python ml/scripts/render_tiles.py
+curl 'http://localhost:8000/health?verbose=1'
 ```
 
-Check setup: `curl 'http://localhost:8000/health?verbose=1'`
-
-No API keys, or no network to Gemini and xAI? `backend/AGENTS.md` has the offline fake-provider commands.
-
-**3. Where the spec lives.**
-
+**Docs:**  
 - Product: [`context/TerraSense.md`](context/TerraSense.md)
-- Build order and shared facts: [`context/implementation-steps.md`](context/implementation-steps.md)
-- Team docs: [`context/docs/`](context/docs/README.md). Start with [`TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md).
+- Build: [`context/implementation-steps.md`](context/implementation-steps.md)
+- Team: [`context/docs/TEAM_BRIEF.md`](context/docs/TEAM_BRIEF.md)
 
-## Who owns which folder
+## Folder guide
 
-| Folder | Process | Track |
-|---|---|---|
-| `frontend/` | Next.js UI on port 3000 | Frontend |
-| `backend/` | FastAPI on port 8000 | Backend and agents |
-| `ml/` | Offline Python: downloads, features, model, tiles | ML and data |
-| `data/` | Files. `seed/` is in git. `raw/` and `processed/` are gitignored | ML and data |
-| `context/` | Spec, build steps, team docs | Product |
+| Folder      | What                              |
+|-------------|-----------------------------------|
+| `frontend/` | Next.js UI (port 3000)            |
+| `backend/`  | FastAPI & agents (port 8000)      |
+| `ml/`       | ML, features, tiles, model stuff  |
+| `data/`     | Data (only `seed/` is in git)     |
+| `context/`  | Specs and docs                    |
 
-Coding agents start at [`AGENTS.md`](AGENTS.md). Each folder has its own `AGENTS.md`.
+Coding agents live in [`AGENTS.md`](AGENTS.md) (each folder has one).
