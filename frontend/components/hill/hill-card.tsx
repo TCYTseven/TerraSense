@@ -64,7 +64,6 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           {live && hill.trails.length > 0 && (
             <TrailList trails={hill.trails} selected={focus?.letter ?? null} onView={view} />
           )}
-          {live && hill.preventative.length > 0 && <PreventativeMeasures items={hill.preventative} />}
           {live && (
             <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
               <h2 id="agents-heading" className="text-sm text-muted-foreground">
@@ -77,6 +76,9 @@ export default function HillCard({ mountain, probability, susceptibility }: Hill
           )}
           {live && pipeline.state.orchestrator === "done" && pipeline.state.measures && (
             <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
+          )}
+          {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
+            <PreventativeMeasures items={hill.preventative} />
           )}
         </div>
         {live && (

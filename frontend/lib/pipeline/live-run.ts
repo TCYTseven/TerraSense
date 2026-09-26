@@ -36,29 +36,46 @@ function idleAgent(id: PipelineAgentId): PipelineAgentState {
   return { id, status: "idle", summary: "", trace: [], startedAt: null, finishedAt: null };
 }
 
+function withoutModelNames(text: string): string {
+  return text
+    .replace(/\b(?:grok|gemini)[- .][\w.]+(?:[- ]flash)?\b/gi, "")
+    .replace(/\bGrok \d+(?:\.\d+)?\b/g, "")
+    .replace(/\bGemini [\d.]+ Flash\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.])/g, "$1")
+    .trim();
+}
+
 function traceLines(event: AgentEvent): string[] {
-  const prefix = CARD_AGENTS.trails.includes(event.agent) ? `${AGENT_LABEL[event.agent]}: ` : "";
-  const lines = [`${prefix}${event.summary}`];
+  const lines: string[] = [];
+  if (CARD_AGENTS.trails.includes(event.agent)) {
+    lines.push(AGENT_LABEL[event.agent]);
+  }
   const trace = event.trace;
   if (!trace) {
     return lines;
   }
-  lines.push(`${prefix}${trace.route.provider} · ${trace.route.model} — ${trace.route.reason}`);
+  const failover = withoutModelNames(trace.route.reason);
+  if (failover && /fail|rest|backup|busy|503|unavailable/i.test(trace.route.reason)) {
+    lines.push(failover);
+  }
   for (const tool of trace.tools) {
-    lines.push(`${prefix}Tool ${tool.name} (${tool.ms} ms)`);
+    lines.push(`${tool.name}  ${tool.ms} ms`);
   }
   for (const attempt of trace.attempts) {
-    const outcome = attempt.ok ? "answered" : `failed: ${attempt.error ?? "error"}`;
-    lines.push(`${prefix}${attempt.provider} ${attempt.model} ${outcome} (${attempt.latency_ms} ms)`);
+    if (!attempt.ok) {
+      const detail = (attempt.error ?? "request failed").replace(/^HTTP \d+:\s*/, "");
+      lines.push(`retry · ${detail}`);
+    }
   }
   for (const thought of trace.thoughts) {
-    lines.push(`${prefix}${thought}`);
+    lines.push(thought);
   }
   for (const step of trace.reasoning) {
-    lines.push(`${prefix}${step}`);
+    lines.push(step);
   }
   for (const check of trace.checks) {
-    lines.push(`${prefix}${check}`);
+    lines.push(check);
   }
   return lines;
 }
