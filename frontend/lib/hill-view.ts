@@ -1,3 +1,4 @@
+import { displayRiskLevel } from "./format";
 import { TRAIL_LETTERS, type HillView, type TrailRisk } from "./hill";
 import type { MountainDetail, MountainRiskSummary } from "./types";
 
@@ -40,10 +41,12 @@ function preventative(summary: MountainRiskSummary, trails: TrailRisk[]): string
 export function buildHillView(mountain: MountainDetail, summary: MountainRiskSummary | null): HillView {
   const base = { slug: mountain.slug, name: mountain.name, region: mountain.region, isLive: mountain.is_live };
   if (!mountain.is_live || summary === null) {
+    // A static mountain shows the model's live summit prediction, not the seeded catalog
+    // color: the score is the regional model's calibrated probability when it has one.
     return {
       ...base,
       stats: { elevationM: mountain.elevation_m, meanSlopeDeg: null, areaKm2: null },
-      risk: { score: null, level: mountain.current_risk_level },
+      risk: { score: mountain.model_probability ?? null, level: displayRiskLevel(mountain) },
       trails: [],
       preventative: [],
       scoring: null,

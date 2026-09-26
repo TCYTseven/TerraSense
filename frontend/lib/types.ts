@@ -32,6 +32,16 @@ export interface Mountain {
   current_risk_level: RiskLevel;
   last_analyzed_at: string | null;
   is_live: boolean;
+  /**
+   * The regional LightGBM model's live answer at the summit, so the UI shows the model's
+   * prediction rather than the seeded catalog color. model_input is "regional_feature_stack"
+   * (the summit's own pixel) or "placeholder_terrain_sample" (a labeled stand-in until the
+   * mountain gets its own terrain window). All null while the model artifacts are unbuilt.
+   */
+  model_probability: number | null;
+  model_risk_level: RiskLevel | null;
+  model_method: string | null;
+  model_input: string | null;
 }
 
 export interface TrailSegment {

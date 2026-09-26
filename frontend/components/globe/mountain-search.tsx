@@ -2,6 +2,7 @@
 
 import { type KeyboardEvent, useId, useMemo, useState } from "react";
 import RiskBadge from "@/components/risk-badge";
+import { displayRiskLevel } from "@/lib/format";
 import { orderMountainsForBrowse } from "@/lib/globe-display-mountains";
 import type { Mountain } from "@/lib/types";
 
@@ -165,7 +166,7 @@ export default function MountainSearch({
                     <span className="block truncate text-sm text-foreground">{mountain.name}</span>
                     <span className="block truncate text-xs text-muted-foreground">{mountain.region}</span>
                   </span>
-                  <RiskBadge level={mountain.current_risk_level} className="shrink-0 text-xs text-muted-foreground" />
+                  <RiskBadge level={displayRiskLevel(mountain)} className="shrink-0 text-xs text-muted-foreground" />
                 </li>
               ))}
             </ul>

@@ -24,6 +24,7 @@ from app.assessment import Assessment, level_runs
 from app.bypass import junctions_near, load_network
 from app.config import REPO_ROOT
 from app.history import historical_events
+from app.ml.geo_susceptibility import predict_summit
 from app.ml.risk_inference import predict_location
 from app.risk import HIGH_THRESHOLD
 from app.trailscan import most_exposed, safest
@@ -344,12 +345,16 @@ def _km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
 
 
 def get_location_facts(ctx: RunContext, mountain: str) -> dict:
-    """Summit location, the catalog's display color, and the cell classifier.
+    """Summit location, the regional model's prediction, and the cell classifier.
 
-    Used when the mountain has no trail geometry. The classifier covers the Rainier training
-    domain and returns UNCERTAIN outside it. That is a coverage gap, not a finding of safety.
+    Used when the mountain has no trail geometry. model_prediction is the regional LightGBM
+    susceptibility model scored live at this summit; on a mountain without its own terrain
+    window it says input_source "placeholder_terrain_sample" and must be read as a stand-in.
+    The stricter cell classifier covers the Rainier training domain and returns UNCERTAIN
+    outside it. That is a coverage gap, not a finding of safety.
     """
     prediction = predict_location(ctx.peak[0], ctx.peak[1], rain_override=ctx.rain).to_dict()
+    geo = predict_summit(ctx.slug, ctx.peak[0], ctx.peak[1])
     return {
         "mountain": ctx.mountain,
         "latitude": ctx.peak[0],
@@ -358,11 +363,17 @@ def get_location_facts(ctx: RunContext, mountain: str) -> dict:
         "trails_mapped": False,
         "display_risk_level": ctx.seed_level,
         "display_risk_note": "Catalog color only. It is not a measurement and it is not the model's answer.",
+        "model_prediction": {
+            "role": "SOURCE OF TRUTH when available. These numbers are the terrain model's answer; "
+                    "explain them, do not recompute or contradict them. Heed input_source: a "
+                    "placeholder_terrain_sample is a labeled stand-in, not this summit's ground.",
+            **geo,
+        },
         "cell_classification": prediction,
         "note": (
-            "No trail lines and no terrain raster are stored for this mountain. "
-            "Judge the summit from its location, this classification, and the weather. "
-            "Do not invent a trail, a mile marker, or a bypass."
+            "No trail lines and no baked terrain raster are stored for this mountain. "
+            "Judge the summit from the model prediction, its input_source, the classification, "
+            "and the weather. Do not invent a trail, a mile marker, or a bypass."
         ),
     }
 

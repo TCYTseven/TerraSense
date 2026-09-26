@@ -27,6 +27,31 @@ export function refreshLabel(mountain: Pick<Mountain, "is_live" | "last_analyzed
   return `Analyzed ${formatUtc(mountain.last_analyzed_at)}`;
 }
 
+/**
+ * The risk level a marker or badge shows. A finished run's severity wins (the agents started
+ * from the model and decided); before any run, the model's live prediction; the seeded catalog
+ * color only while the model has no answer.
+ */
+export function displayRiskLevel(
+  mountain: Pick<Mountain, "current_risk_level" | "last_analyzed_at" | "model_risk_level">,
+): RiskLevel {
+  if (mountain.last_analyzed_at) {
+    return mountain.current_risk_level;
+  }
+  return mountain.model_risk_level ?? mountain.current_risk_level;
+}
+
+/** "Model 0.47 · stand-in terrain": the model's summit line, or null before it has an answer. */
+export function modelPredictionLabel(
+  mountain: Pick<Mountain, "model_probability" | "model_input">,
+): string | null {
+  if (mountain.model_probability == null) {
+    return null;
+  }
+  const standIn = mountain.model_input === "placeholder_terrain_sample" ? " · stand-in terrain" : "";
+  return `Model ${formatScore(mountain.model_probability)}${standIn}`;
+}
+
 /** "4,392 m". */
 export function formatElevation(meters: number): string {
   return `${meters.toLocaleString("en-US")} m`;

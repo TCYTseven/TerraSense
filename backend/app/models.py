@@ -25,6 +25,14 @@ class Mountain(BaseModel):
     current_risk_level: RiskLevel
     last_analyzed_at: datetime | None
     is_live: bool
+    # The regional LightGBM model's live answer at the summit, so the UI shows the model's
+    # prediction rather than the seeded catalog color. model_input says what ground it scored:
+    # "regional_feature_stack" (the summit's own pixel) or "placeholder_terrain_sample" (a
+    # labeled slug-seeded stand-in until the mountain gets its own terrain window).
+    model_probability: float | None = None
+    model_risk_level: RiskLevel | None = None
+    model_method: str | None = None
+    model_input: str | None = None
 
 
 class TrailSegment(BaseModel):

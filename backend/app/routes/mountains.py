@@ -10,6 +10,7 @@ from psycopg.rows import DictRow
 from app.db import get_conn
 from app.history import historical_events
 from app.mountain_catalog import ensure_catalog, sync_catalog
+from app.ml.geo_susceptibility import predict_summit
 from app.ml.synthetic_heatmap import synthetic_layer_metadata
 from app.ml.tiles import layer_url_path, read_metadata, slug_tiles_dir
 from app.models import Hazard, LayerTiles, Mountain, MountainDetail, MountainRiskSummary, Trail, TrailSegment
@@ -40,6 +41,19 @@ class CatalogSyncResponse(BaseModel):
     source: str
 
 
+def _model_fields(row: dict) -> dict:
+    """The regional model's live answer at this summit. Cached per slug in the model seam."""
+    geo = predict_summit(row["slug"], row["lat"], row["lon"])
+    if not geo.get("available"):
+        return {}
+    return {
+        "model_probability": geo["probability"],
+        "model_risk_level": geo["risk_level"],
+        "model_method": geo["method"],
+        "model_input": geo["input_source"],
+    }
+
+
 @router.post("/catalog/sync", response_model=CatalogSyncResponse)
 def sync_mountain_catalog(conn: Conn) -> CatalogSyncResponse:
     """Reload data/seed/mountains.json into Postgres. Does not call Wikidata or Overpass."""
@@ -61,7 +75,7 @@ def list_mountains(conn: Conn) -> list[Mountain]:
     rows = conn.execute(
         f"SELECT {MOUNTAIN_COLUMNS} FROM mountains ORDER BY is_live DESC, name"
     ).fetchall()
-    return [Mountain(**row) for row in rows]
+    return [Mountain(**row, **_model_fields(row)) for row in rows]
 
 
 @router.get("/{slug}")
@@ -105,6 +119,7 @@ def get_mountain(slug: str, conn: Conn) -> MountainDetail:
 
     return MountainDetail(
         **mountain,
+        **_model_fields(mountain),
         trails=[Trail(**row, segments=segments_by_trail[row["id"]]) for row in trail_rows],
         active_hazard=Hazard(**hazard) if hazard else None,
         historical_events=historical_events(slug),

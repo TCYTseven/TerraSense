@@ -30,23 +30,28 @@ from app.agents.schemas import (
     LocationSynthesis,
     TerrainReport,
 )
+from app.ml.geo_susceptibility import PLACEHOLDER_INPUT, REAL_INPUT, predict_summit
 from app.risk import level_index, level_spread
 
-LOCATION_RULES = """You are one agent in TerraSense. This mountain has no mapped trails and no terrain raster.
+LOCATION_RULES = """You are one agent in TerraSense. This mountain has no mapped trails and no baked terrain raster.
 Use only the facts in this message. Never invent a trail name, a mile marker, a bypass, or a past landslide.
-The cell classifier is the risk model. Outside its training area it returns UNCERTAIN, which means it does
-not cover this summit. UNCERTAIN is not a finding that the slope is safe.
+The regional terrain model's model_prediction block is the risk model's answer and the run's source of
+truth when available: explain its probability and risk_level, never recompute or contradict them. Heed its
+input_source: placeholder_terrain_sample means the model scored labeled stand-in terrain, not this summit's
+own ground, so say so and keep confidence low. The stricter cell classifier is a second opinion; outside its
+training area it returns UNCERTAIN, which means it does not cover this summit, not that the slope is safe.
 Risk levels are low, moderate, high, extreme.
 Write plain sentences. No markdown. Return only the JSON object the schema asks for."""
 
 TERRAIN_SYSTEM = LOCATION_RULES + """
-You are the Terrain Analyst. There is no hazard polygon. Describe the summit from the cell classification.
+You are the Terrain Analyst. There is no hazard polygon. Describe the summit from the model prediction.
 - type: landslide.
-- severity: high only when the classifier state is HIGH_RISK. low only when it is NOT_HIGH_RISK.
-  Otherwise moderate, and say the classifier does not cover this summit.
+- severity: the model_prediction's risk_level when it is available. Only without a model answer fall back
+  to the classifier: high for HIGH_RISK, low for NOT_HIGH_RISK, otherwise moderate.
 - drivers: slope_angle, plus recent_rain or forecast_rain only when the weather block supports them.
 - place: the mountain's name. Do not name a trail.
-- confidence: at most 0.45 when the state is UNCERTAIN."""
+- confidence: at most 0.5 when input_source is placeholder_terrain_sample, and at most 0.45 when there is
+  no model answer and the classifier state is UNCERTAIN."""
 
 WEATHER_SYSTEM = LOCATION_RULES + """
 You are the Weather Analyst. Say whether the rain at this summit makes the ground worse, stable, or better.
@@ -59,8 +64,10 @@ precedent is none when the tool returns no events. severity stays moderate when 
 SYNTH_SYSTEM = LOCATION_RULES + """
 You are the Risk Synthesizer. You see every analyst report. Decide the severity, whether to monitor or
 close, and the ranger response. Do not name a trail. coverage_note must say that no trails are mapped.
-recommended_action is close only when the cell classifier state is HIGH_RISK. Otherwise monitor.
-When the classifier state is UNCERTAIN, the response is an advisory to confirm on site."""
+recommended_action is close only when the model's risk_level is high or extreme on this summit's own
+terrain (input_source regional_feature_stack), or the cell classifier state is HIGH_RISK. Otherwise monitor.
+When the model scored a placeholder terrain sample, or there is no model answer and the classifier state
+is UNCERTAIN, the response is an advisory to confirm on site."""
 
 WRITER_SYSTEM = LOCATION_RULES + """
 You are the Alert Writer. Write the ranger text and one hiker sentence.
@@ -69,14 +76,24 @@ how_to_avoid says there is no mapped route to switch to.
 When needs_review is true, ranger_body starts with "Advisory." and ends with "Confirm on site before closing." """
 
 
-def _state(ctx_runs: dict, agent: str) -> str:
-    facts = {}
+def _facts(ctx_runs: dict, agent: str) -> dict:
     run = ctx_runs.get(agent)
     if run and run.trace:
         for call in run.trace.tools:
             if call.name == "get_location_facts":
-                facts = call.result or {}
+                return call.result or {}
+    return {}
+
+
+def _state(ctx_runs: dict, agent: str) -> str:
+    facts = _facts(ctx_runs, agent)
     return (facts.get("cell_classification") or {}).get("state") or "UNCERTAIN"
+
+
+def _geo(ctx_runs: dict, agent: str) -> dict:
+    """The regional model's answer from the run's own tool result, so the panel shows what the agent saw."""
+    facts = _facts(ctx_runs, agent)
+    return facts.get("model_prediction") or {"available": False}
 
 
 class LocationPipeline(Pipeline):
@@ -104,10 +121,13 @@ class LocationPipeline(Pipeline):
 
     async def terrain(self) -> AgentRun:
         lat, lon = self.ctx.peak
+        # Cached, so the tool call inside the run pays nothing extra; the router just needs
+        # the model's peak before the call the way the Rainier pipeline uses the zone peak.
+        peak = predict_summit(self.ctx.slug, lat, lon).get("probability")
         run, _ = await self._call(
             "terrain",
-            signals=Signals(),
-            running="Reading the risk model at this summit.",
+            signals=Signals(zone_peak=peak),
+            running="Scoring the regional terrain model at this summit.",
             tools=[self._facts_tool(), ("get_historical_events", {"lat": lat, "lon": lon, "radius_km": 30})],
             context={},
             system=TERRAIN_SYSTEM,
@@ -116,6 +136,12 @@ class LocationPipeline(Pipeline):
             return run
         out: TerrainReport = run.output
         state = _state(self.runs, "terrain")
+        geo = _geo(self.runs, "terrain")
+        severity = out.severity
+        if geo.get("available") and geo.get("risk_level") and severity != geo["risk_level"]:
+            severity = geo["risk_level"]
+            run.trace.checks.append(f"Moved the severity from {out.severity} to {severity}: the model's "
+                                    "risk level is the source of truth, and an agent never argues with it.")
         place = self.ctx.mountain if "trail" in out.place.lower() else out.place
         if place != out.place:
             run.trace.checks.append("Replaced the place with the mountain name: no trail is mapped here.")
@@ -123,20 +149,36 @@ class LocationPipeline(Pipeline):
             "hazard_zone": {
                 "id": None,
                 "type": out.type,
-                "severity": out.severity,
-                "max_probability": None,
+                "severity": severity,
+                "max_probability": geo.get("probability"),
                 "drivers": list(out.drivers),
                 "confidence": out.confidence,
                 "place": place,
                 "notes": out.notes,
             },
             "cell_state": state,
-            "method": "location cell classification",
-            "severity": out.severity,
+            "model_prediction": {
+                "available": geo.get("available", False),
+                "probability": geo.get("probability"),
+                "risk_level": geo.get("risk_level"),
+                "input_source": geo.get("input_source"),
+            },
+            "method": geo["method"] if geo.get("available") else "location cell classification",
+            "severity": severity,
             "confidence": out.confidence,
         }
-        run.trace.checks.append(f"Cell classifier state is {state}. No terrain raster was scored.")
-        await self._done(run, f"Cell classification {state.replace('_', ' ').lower()} at {place}.", payload)
+        if geo.get("available"):
+            stand_in = " on stand-in terrain" if geo.get("input_source") == PLACEHOLDER_INPUT else ""
+            run.trace.checks.append(
+                f"The regional model puts this summit at {geo['probability']:.2f} ({geo['risk_level']}){stand_in}. "
+                f"Cell classifier state is {state}, a second opinion.")
+            summary = (f"Model {geo['risk_level']} at {geo['probability']:.2f}{stand_in} for {place}. "
+                       f"Classifier {state.replace('_', ' ').lower()}.")
+        else:
+            run.trace.checks.append(f"No model answer ({geo.get('reason', 'unavailable')}); "
+                                    f"cell classifier state is {state}. No terrain raster was scored.")
+            summary = f"Cell classification {state.replace('_', ' ').lower()} at {place}."
+        await self._done(run, summary, payload)
         return run
 
     async def weather(self) -> AgentRun:
@@ -227,11 +269,25 @@ class LocationPipeline(Pipeline):
             for agent, report in reports.items()
         })
         state = self.runs["terrain"].payload.get("cell_state", "UNCERTAIN")
+        geo = self.runs["terrain"].payload.get("model_prediction") or {"available": False}
+        placeholder = geo.get("input_source") == PLACEHOLDER_INPUT
         spread = level_spread(levels)
-        needs_review = spread >= 2 or state == "UNCERTAIN"
+        # A run on stand-in terrain, or with no model answer and an uncovered classifier, goes
+        # out as an advisory: the numbers are live but the ground is not confirmed on site.
+        needs_review = spread >= 2 or placeholder or (not geo.get("available") and state == "UNCERTAIN")
+        # Closing is allowed only on the model's own ground (or a HIGH_RISK classifier), never
+        # on a placeholder sample.
+        may_close = state == "HIGH_RISK" or (
+            geo.get("available") and geo.get("input_source") == REAL_INPUT
+            and geo.get("risk_level") in ("high", "extreme")
+        )
         context = {f"{agent}": reports[agent] for agent in ANALYSTS}
         context["Computed by code"] = {
             "cell_state": state,
+            "model_available": geo.get("available", False),
+            "model_probability": geo.get("probability"),
+            "model_risk_level": geo.get("risk_level"),
+            "model_input_source": geo.get("input_source"),
             "final_confidence": round(confidence, 2),
             "needs_review": needs_review,
             "weights": CONFIDENCE_WEIGHTS,
@@ -239,8 +295,9 @@ class LocationPipeline(Pipeline):
 
         def check(report: LocationSynthesis) -> list[str]:
             problems = []
-            if state != "HIGH_RISK" and report.recommended_action == "close":
-                problems.append("recommended_action must be monitor unless the cell classifier state is HIGH_RISK.")
+            if not may_close and report.recommended_action == "close":
+                problems.append("recommended_action must be monitor: neither the model on this summit's own "
+                                "terrain nor the cell classifier supports a closure.")
             if "trail" in report.coverage_note.lower() and "no trail" not in report.coverage_note.lower():
                 problems.append("coverage_note must say that no trails are mapped.")
             return problems
@@ -265,11 +322,15 @@ class LocationPipeline(Pipeline):
             severity = low if level_index(severity) < level_index(low) else high
             run.trace.checks.append(f"Moved the severity from {out.severity} to {severity}.")
         action = out.recommended_action
-        if state != "HIGH_RISK" and action == "close":
+        if not may_close and action == "close":
             action = "monitor"
-            run.trace.checks.append("Changed close to monitor: the classifier did not return HIGH_RISK.")
+            run.trace.checks.append("Changed close to monitor: neither the model on this summit's own terrain "
+                                    "nor the classifier supports a closure.")
         if "close" in remaining and action == "close":
             action = "monitor"
+        if placeholder:
+            run.trace.checks.append("The model scored a stand-in terrain sample, so the run goes out as an "
+                                    "advisory to confirm on site.")
         response, response_checks = clamp_response(out.response, severity, action, needs_review)
         run.trace.checks.extend(response_checks)
         run.trace.checks.append("No routes were attached: this mountain has no mapped trails.")
@@ -399,11 +460,21 @@ class LocationPipeline(Pipeline):
                 freezing_level_now_m=extra["freezing_level_m_now"],
             )
         state = self.runs["terrain"].payload.get("cell_state", "UNCERTAIN")
-        probability = None
         loc = self._tool(self.runs["terrain"], "get_location_facts") or {}
+        geo = loc.get("model_prediction") or {"available": False}
         cell = loc.get("cell_classification") or {}
-        if cell.get("calibrated_probability") is not None:
+        probability = geo.get("probability")
+        if probability is None and cell.get("calibrated_probability") is not None:
             probability = cell["calibrated_probability"]
+        if geo.get("available"):
+            method = geo["method"]
+            is_stand_in = geo.get("input_source") == PLACEHOLDER_INPUT
+            note = geo.get("note", "")
+        else:
+            method = "location cell classification"
+            is_stand_in = state == "UNCERTAIN"
+            note = ("The cell classifier does not cover this summit." if state == "UNCERTAIN"
+                    else f"Cell classifier state {state}.")
         return Advisory(
             run_id=self.ctx.run_id,
             mountain_slug=self.ctx.slug,
@@ -420,10 +491,9 @@ class LocationPipeline(Pipeline):
             response=AdvisoryResponse.model_validate(synth["response"]),
             conditions=conditions,
             model=AdvisoryModel(
-                method="location cell classification",
-                is_stand_in=state == "UNCERTAIN",
-                note=("The cell classifier does not cover this summit." if state == "UNCERTAIN"
-                      else f"Cell classifier state {state}."),
+                method=method,
+                is_stand_in=is_stand_in,
+                note=note,
                 map_max=probability,
                 map_mean=None,
                 share_at_high=None,

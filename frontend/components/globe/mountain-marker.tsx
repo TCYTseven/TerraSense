@@ -14,7 +14,7 @@ import {
   Vector3,
 } from "three";
 import RiskBadge from "@/components/risk-badge";
-import { formatElevation, refreshLabel } from "@/lib/format";
+import { displayRiskLevel, formatElevation, modelPredictionLabel, refreshLabel } from "@/lib/format";
 import { RISK_COLORS, THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { latLonToVector3 } from "./geo";
@@ -102,13 +102,13 @@ export default function MountainMarker({
   onHoverChange: (slug: string | null) => void;
   onSelect: (mountain: Mountain) => void;
 }) {
-  const color = RISK_COLORS[mountain.current_risk_level];
+  const level = displayRiskLevel(mountain);
+  const color = RISK_COLORS[level];
   const groupRef = useRef<Group>(null);
   const glyphMaterial = useRef<MeshBasicMaterial>(null);
   const snowMaterial = useRef<MeshBasicMaterial>(null);
   const outlineMaterial = useRef<MeshBasicMaterial>(null);
   const sphereMaterial = useRef<MeshBasicMaterial>(null);
-  const level = mountain.current_risk_level;
   const dangerRadius = level === "high" || level === "extreme" ? DANGER_SPHERE_RADIUS[level] : null;
   const ringMaterial = useRef<MeshBasicMaterial>(null);
   const liveRingMaterial = useRef<MeshBasicMaterial>(null);
@@ -258,8 +258,9 @@ export default function MountainMarker({
   );
 }
 
-/** Hover card: name, elevation, region, risk, and last refresh. */
+/** Hover card: name, elevation, region, risk, the model's prediction, and last refresh. */
 function MarkerCard({ mountain }: { mountain: Mountain }) {
+  const modelLine = modelPredictionLabel(mountain);
   return (
     <div className="w-64 translate-x-5 -translate-y-1/2 rounded-md border border-border bg-popover/95 px-3.5 py-3 shadow-xl shadow-foreground/10 backdrop-blur-sm">
       <div className="flex items-baseline justify-between gap-3">
@@ -267,7 +268,8 @@ function MarkerCard({ mountain }: { mountain: Mountain }) {
         <p className="font-mono text-xs text-muted-foreground">{formatElevation(mountain.elevation_m)}</p>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{mountain.region}</p>
-      <RiskBadge level={mountain.current_risk_level} className="mt-2.5 text-xs text-foreground" />
+      <RiskBadge level={displayRiskLevel(mountain)} className="mt-2.5 text-xs text-foreground" />
+      {modelLine && <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{modelLine}</p>}
       <p className="mt-1.5 font-mono text-[11px] text-muted-foreground">{refreshLabel(mountain)}</p>
     </div>
   );

@@ -41,6 +41,7 @@ from app.agents.schemas import (
 from app.agents.tools import RunContext
 from app.assessment import Assessment, assess, publish, save_hazard
 from app.db import get_pool
+from app.ml.geo_susceptibility import predict_summit
 from app.ml.readiness import format_missing_artifacts, setup_ready_for_analyze
 from app.weather import HourlyRain, summarize, try_hourly_rain
 
@@ -243,7 +244,8 @@ class RunRegistry:
             rain, rain_error = await asyncio.to_thread(try_hourly_rain, state.peak[0], state.peak[1])
             if rain is not None:
                 state.rain = _rain_totals(rain)
-            state.method = "location cell classification"
+            geo = await asyncio.to_thread(predict_summit, state.slug, state.peak[0], state.peak[1])
+            state.method = geo["method"] if geo.get("available") else "location cell classification"
             await self._phase(state, "agents", "Agents are reading this summit's location, risk, and weather.")
             router, providers = self._llm()
             ctx = RunContext(

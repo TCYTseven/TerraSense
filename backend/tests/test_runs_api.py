@@ -180,13 +180,28 @@ def test_failed_run_keeps_the_last_hazard(api, monkeypatch):
 
 
 def test_location_analyze_without_trails(api):
-    """A catalog peak with no trail geometry still runs, and it does not invent routes."""
+    """A catalog peak with no trail geometry still runs, and it does not invent routes.
+
+    With the regional model artifacts built, the run's method and its advisory quote the
+    model's live summit prediction; without them it falls back to the cell classifier.
+    """
+    from app.ml.geo_susceptibility import predict_summit
+
     client, _ = api
     started = client.post("/mountains/huascaran/analyze")
     assert started.status_code == 202
     final = follow(client, started.json()["run_id"])[-1]["run"]
     assert final["status"] == "done", final.get("error")
-    assert final["method"] == "location cell classification"
+    geo = predict_summit("huascaran", -9.1219, -77.6047)
+    if geo.get("available"):
+        assert final["method"] == "regional terrain susceptibility (LightGBM)"
+        assert final["advisory"]["model"]["map_max"] == geo["probability"]
+        # Huascarán has no terrain window of its own: stand-in input, so the run is an advisory.
+        assert geo["input_source"] == "placeholder_terrain_sample"
+        assert final["advisory"]["model"]["is_stand_in"] is True
+        assert final["needs_review"] is True
+    else:
+        assert final["method"] == "location cell classification"
     assert final["advisory"]["avoid"] == [] and final["advisory"]["safe"] == []
     assert "no trails" in final["agents"]["trail"]["summary"].lower()
 
