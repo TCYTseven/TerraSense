@@ -1,0 +1,896 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": 23020,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.782383,
+          46.765843
+        ]
+      },
+      "properties": {
+        "id": 23020,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 21426,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.696286,
+          46.779278
+        ]
+      },
+      "properties": {
+        "id": 21426,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24504,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.662839,
+          46.762387
+        ]
+      },
+      "properties": {
+        "id": 24504,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 13107,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.664911,
+          46.760549
+        ]
+      },
+      "properties": {
+        "id": 13107,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 25683,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.779002,
+          46.772757
+        ]
+      },
+      "properties": {
+        "id": 25683,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24501,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.744486,
+          46.762646
+        ]
+      },
+      "properties": {
+        "id": 24501,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 17522,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.705365,
+          46.761496
+        ]
+      },
+      "properties": {
+        "id": 17522,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 21756,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.670385,
+          46.761702
+        ]
+      },
+      "properties": {
+        "id": 21756,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 9264,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.778085,
+          46.764486
+        ]
+      },
+      "properties": {
+        "id": 9264,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 9254,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.781161,
+          46.768125
+        ]
+      },
+      "properties": {
+        "id": 9254,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 22304,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.777481,
+          46.771406
+        ]
+      },
+      "properties": {
+        "id": 22304,
+        "date": null,
+        "title": "Deep-seated undifferentiated",
+        "category": "Deep-seated undifferentiated",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 11638,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.771586,
+          46.768875
+        ]
+      },
+      "properties": {
+        "id": 11638,
+        "date": null,
+        "title": "Deep-seated undifferentiated",
+        "category": "Deep-seated undifferentiated",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 17529,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.771699,
+          46.774169
+        ]
+      },
+      "properties": {
+        "id": 17529,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19580,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.674631,
+          46.764063
+        ]
+      },
+      "properties": {
+        "id": 19580,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 14786,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.683516,
+          46.76999
+        ]
+      },
+      "properties": {
+        "id": 14786,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 29445,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.635635,
+          46.777603
+        ]
+      },
+      "properties": {
+        "id": 29445,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 5960,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.544269,
+          46.7617
+        ]
+      },
+      "properties": {
+        "id": 5960,
+        "date": null,
+        "title": "Mapped landslide",
+        "category": null,
+        "trigger": null,
+        "size": null,
+        "setting": null,
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Schasse, H. W., compiler, 1987, Geologic map of the Mount Rainier quadrangle, Washington: Washington Division of Geology and Earth Resources Open File Report 87-16, 43 p., 1 plate, scale 1:100,000.    ",
+        "source_link": "https://www.dnr.wa.gov/Publications/ger_ofr87-16_geol_map_mountrainier_100k.zip",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Geologic Mapping, 1:100,000-scale"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24045,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.77548,
+          46.773715
+        ]
+      },
+      "properties": {
+        "id": 24045,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19055,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.684409,
+          46.763559
+        ]
+      },
+      "properties": {
+        "id": 19055,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 29566,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.587299,
+          46.763479
+        ]
+      },
+      "properties": {
+        "id": 29566,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 18733,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.545656,
+          46.781995
+        ]
+      },
+      "properties": {
+        "id": 18733,
+        "date": null,
+        "title": "Debris slide and avalanches",
+        "category": "Debris slide and avalanches",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 15431,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.678651,
+          46.765356
+        ]
+      },
+      "properties": {
+        "id": 15431,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 10800,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.66604,
+          46.778204
+        ]
+      },
+      "properties": {
+        "id": 10800,
+        "date": null,
+        "title": "Debris slide and avalanches",
+        "category": "Debris slide and avalanches",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 15836,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.777185,
+          46.769904
+        ]
+      },
+      "properties": {
+        "id": 15836,
+        "date": null,
+        "title": "Deep-seated undifferentiated",
+        "category": "Deep-seated undifferentiated",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19936,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.760786,
+          46.779142
+        ]
+      },
+      "properties": {
+        "id": 19936,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24502,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.739963,
+          46.771058
+        ]
+      },
+      "properties": {
+        "id": 24502,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 27208,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.716549,
+          46.773194
+        ]
+      },
+      "properties": {
+        "id": 27208,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19943,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.555611,
+          46.764328
+        ]
+      },
+      "properties": {
+        "id": 19943,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 23691,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.706855,
+          46.763589
+        ]
+      },
+      "properties": {
+        "id": 23691,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 14087,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.638174,
+          46.781237
+        ]
+      },
+      "properties": {
+        "id": 14087,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 12026,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.789488,
+          46.762457
+        ]
+      },
+      "properties": {
+        "id": 12026,
+        "date": null,
+        "title": "Block fall or topple",
+        "category": "Block fall or topple",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 30761,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.696826,
+          46.782083
+        ]
+      },
+      "properties": {
+        "id": 30761,
+        "date": null,
+        "title": "Debris slide and avalanches",
+        "category": "Debris slide and avalanches",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 26887,
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.548494,
+          46.76159
+        ]
+      },
+      "properties": {
+        "id": 26887,
+        "date": null,
+        "title": "Debris slide and avalanches",
+        "category": "Debris slide and avalanches",
+        "trigger": null,
+        "size": null,
+        "setting": "Unknown",
+        "location_accuracy": "1km",
+        "fatalities": null,
+        "source_name": "Riedel, J; Stephen, D; Sharon, B; George, O; Larrabee, M; 2011, Geomorphology of Mt Rainer National Park, National Park Service",
+        "source_link": "https://www.morageology.com/view_pub.php?id=93",
+        "catalog": "Washington State Landslide Inventory Database — Landslide Compilation",
+        "inventory_confidence": "Low-Moderate",
+        "source_layer": "Miscellaneous Landslide Mapping"
+      }
+    }
+  ]
+}
