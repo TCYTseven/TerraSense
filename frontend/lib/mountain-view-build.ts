@@ -5,6 +5,31 @@ import type { MountainDetail, MountainRiskSummary } from "./types";
 const KM_PER_DEG_LAT = 111.2;
 const TRAIL_ZOOM = 13.3;
 
+function trailCenter(geom: MountainDetail["trails"][number]["geom"] | null, lon: number, lat: number): [number, number] {
+  if (!geom?.coordinates.length) return [lon, lat];
+  const mid = geom.coordinates[Math.floor(geom.coordinates.length / 2)];
+  return [mid[0], mid[1]];
+}
+
+/** Lettered markers for seeded routes when there is no saved risk map (hills and static peaks). */
+function buildMappedTrails(mountain: MountainDetail, level: ReturnType<typeof displayRiskLevel>): TrailRisk[] {
+  const sorted = [...mountain.trails].sort((a, b) => a.name.localeCompare(b.name));
+  return sorted.slice(0, TRAIL_LETTERS.length).map((trail, index) => ({
+    id: trail.id,
+    letter: TRAIL_LETTERS[index],
+    name: trail.name,
+    score: 0,
+    level,
+    slopeDeg: null,
+    primaryFactor: null,
+    center: trailCenter(trail.geom, mountain.lon, mountain.lat),
+    zoom: TRAIL_ZOOM,
+    geom: trail.geom,
+    lengthKm: trail.length_km,
+    fromRiskMap: false,
+  }));
+}
+
 function boxAreaKm2([west, south, east, north]: readonly number[]): number {
   const midLat = ((south + north) / 2) * (Math.PI / 180);
   return Math.round((east - west) * KM_PER_DEG_LAT * Math.cos(midLat) * (north - south) * KM_PER_DEG_LAT);
@@ -43,18 +68,20 @@ export function buildMountainView(mountain: MountainDetail, summary: MountainRis
   if (!mountain.is_live || summary === null) {
     // A static mountain shows the model's live summit prediction, not the seeded catalog
     // color: the score is the regional model's calibrated probability when it has one.
+    const level = displayRiskLevel(mountain);
     return {
       ...base,
       stats: { elevationM: mountain.elevation_m, meanSlopeDeg: null, areaKm2: null },
-      risk: { score: mountain.model_probability ?? null, level: displayRiskLevel(mountain) },
-      trails: [],
+      risk: { score: mountain.model_probability ?? null, level },
+      trails: buildMappedTrails(mountain, level),
       preventative: [],
       scoring: null,
     };
   }
-  const geomById = new Map(mountain.trails.map((trail) => [trail.id, trail.geom]));
+  const trailById = new Map(mountain.trails.map((trail) => [trail.id, trail]));
   const trails: TrailRisk[] = summary.trails.slice(0, TRAIL_LETTERS.length).map((scored, index) => {
-    const geom = geomById.get(scored.trail_id) ?? null;
+    const mapped = trailById.get(scored.trail_id);
+    const geom = mapped?.geom ?? null;
     const center = scored.worst_point ?? geom?.coordinates[Math.floor(geom.coordinates.length / 2)] ?? [mountain.lon, mountain.lat];
     return {
       id: scored.trail_id,
@@ -67,6 +94,8 @@ export function buildMountainView(mountain: MountainDetail, summary: MountainRis
       center,
       zoom: TRAIL_ZOOM,
       geom,
+      lengthKm: mapped?.length_km ?? null,
+      fromRiskMap: true,
     };
   });
   return {

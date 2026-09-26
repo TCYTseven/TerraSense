@@ -32,8 +32,11 @@ function metersBetween([lon0, lat0]: [number, number], [lon1, lat1]: [number, nu
   return Math.hypot(dx, dy);
 }
 
-/** "Trail A, Kautz Creek Trail, risk 0.74". */
+/** Accessible name for a lettered trail marker. */
 export function trailAriaLabel(trail: TrailRisk): string {
+  if (!trail.fromRiskMap) {
+    return `Trail ${trail.letter}, ${trail.name}`;
+  }
   return `Trail ${trail.letter}, ${trail.name}, risk ${formatScore(trail.score)}`;
 }
 
@@ -89,12 +92,19 @@ function tooltipContent(trail: TrailRisk): HTMLElement {
     return line;
   };
 
-  root.append(
-    name,
-    row("Risk", formatScore(trail.score), true, riskLabel(trail.level)),
-    ...(trail.slopeDeg !== null ? [row("Slope", `${Math.round(trail.slopeDeg)}°`, true)] : []),
-    ...(trail.primaryFactor !== null ? [row("Primary factor", trail.primaryFactor, false)] : []),
-  );
+  if (trail.fromRiskMap) {
+    root.append(
+      name,
+      row("Risk", formatScore(trail.score), true, riskLabel(trail.level)),
+      ...(trail.slopeDeg !== null ? [row("Slope", `${Math.round(trail.slopeDeg)}°`, true)] : []),
+      ...(trail.primaryFactor !== null ? [row("Primary factor", trail.primaryFactor, false)] : []),
+    );
+  } else {
+    root.append(
+      name,
+      ...(trail.lengthKm != null ? [row("Length", `${trail.lengthKm} km`, true)] : []),
+    );
+  }
   return root;
 }
 

@@ -28,6 +28,10 @@ export interface TrailRisk {
   zoom: number;
   /** The trail line, when the mountain's trails include it. */
   geom: LineString | null;
+  /** Mapped length from the API, when known. */
+  lengthKm: number | null;
+  /** True when score and level come from the saved 72-hour risk map. */
+  fromRiskMap: boolean;
 }
 
 /** The header's one line of basic stats. */
@@ -47,7 +51,7 @@ export interface MountainView {
   stats: MountainStats;
   /** The worst point on any mapped trail, 0 to 1, and its level. Null score until scored. */
   risk: { score: number | null; level: RiskLevel };
-  /** Exactly the top five, riskiest first, lettered A to E. Empty for static mountains. */
+  /** Top five by risk when scored; otherwise every mapped route (up to five letters). */
   trails: TrailRisk[];
   /** Three to five short bullets. */
   preventative: string[];
