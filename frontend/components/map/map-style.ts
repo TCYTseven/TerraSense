@@ -32,8 +32,8 @@ export const CAMERA = {
   pitch: 55,
   bearing: -14,
   maxPitch: 70,
-  /** How far below the opening zoom the user may zoom out: one level, about twice the view. */
-  zoomOutRoom: 1,
+  /** How far below the opening zoom the user may zoom out: a third of a level, about 1.25x the view. */
+  zoomOutRoom: 0.33,
   /** The idle orbit: a full turn in about five minutes, resuming after 8 s without input. */
   orbitDegPerSec: 1.2,
   orbitResumeMs: 8000,

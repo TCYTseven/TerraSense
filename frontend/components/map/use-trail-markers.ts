@@ -9,6 +9,8 @@ import { HAZARD_OUTLINE_COLOR, LAYER, SOURCE, trailRiskFeatures, trailRiskPaint 
 
 /** Hovering the ground this close to a trail's center shows its tooltip, in meters. */
 const REGION_RADIUS_M = 400;
+/** How far from a trail line, in pixels, a click still counts as on it. */
+const CLICK_SLOP_PX = 6;
 /** The camera's tilt when it flies to a trail. */
 const FOCUS_PITCH = 60;
 /** The one fly-to: 1.5 s. */
@@ -116,15 +118,25 @@ function signatureOf(trails: TrailRisk[]): string {
  * The lettered trail markers (A to E) on the mountain map: one Marker each at the trail's
  * center, a hover and focus tooltip, a subtle line for trails that have one, and a fly-to
  * whenever `focus` brings a new nonce. All imperative: no React state, so nothing re-renders.
+ * `onSelect` makes a click on the map act like the panel's View: a click on a marker, on a
+ * lettered trail's line, or near its marker selects that trail, so the parent sets a new
+ * focus and the camera flies there the same way.
  */
-export function useTrailMarkers(map: MapLibreMap | null, trails: TrailRisk[], focus: CameraFocus | null) {
+export function useTrailMarkers(
+  map: MapLibreMap | null,
+  trails: TrailRisk[],
+  focus: CameraFocus | null,
+  onSelect?: (letter: TrailLetter) => void,
+) {
   const trailsRef = useRef(trails);
+  const selectRef = useRef(onSelect);
   const controller = useRef<Controller | null>(null);
   const signature = signatureOf(trails);
   const selected = focus?.letter ?? null;
 
   useEffect(() => {
     trailsRef.current = trails;
+    selectRef.current = onSelect;
   });
 
   // Build the markers, the tooltip, and the lines. Rebuilt when the trails change.
@@ -187,9 +199,14 @@ export function useTrailMarkers(map: MapLibreMap | null, trails: TrailRisk[], fo
         keyboard = null;
         render();
       });
-      // A tap (no hover on touch) keeps the tooltip up.
+      // A click flies to the trail like View does. Without a handler, a tap (no hover on
+      // touch) just keeps the tooltip up.
       button.addEventListener("click", (event) => {
         event.stopPropagation();
+        if (selectRef.current) {
+          selectRef.current(trail.letter);
+          return;
+        }
         pinned = trail.letter;
         render();
       });
@@ -200,7 +217,8 @@ export function useTrailMarkers(map: MapLibreMap | null, trails: TrailRisk[], fo
       );
     }
 
-    const onMove = (event: MapMouseEvent) => {
+    // The lettered trail whose region (REGION_RADIUS_M around its marker) holds the point.
+    const regionAt = (event: MapMouseEvent): TrailLetter | null => {
       const point: [number, number] = [event.lngLat.lng, event.lngLat.lat];
       let nearest: TrailLetter | null = null;
       let best = REGION_RADIUS_M;
@@ -211,6 +229,10 @@ export function useTrailMarkers(map: MapLibreMap | null, trails: TrailRisk[], fo
           nearest = trail.letter;
         }
       }
+      return nearest;
+    };
+    const onMove = (event: MapMouseEvent) => {
+      const nearest = regionAt(event);
       if (nearest !== region) {
         region = nearest;
         render();
@@ -224,6 +246,23 @@ export function useTrailMarkers(map: MapLibreMap | null, trails: TrailRisk[], fo
       const target = event.originalEvent.target;
       if (target instanceof Node && [...buttons.values()].some((button) => button.contains(target))) {
         return;
+      }
+      // A click on a lettered trail's line, or near its marker, selects it like View.
+      if (selectRef.current) {
+        const hit = map.getLayer(LAYER.trailRisk)
+          ? map.queryRenderedFeatures(
+              [
+                [event.point.x - CLICK_SLOP_PX, event.point.y - CLICK_SLOP_PX],
+                [event.point.x + CLICK_SLOP_PX, event.point.y + CLICK_SLOP_PX],
+              ],
+              { layers: [LAYER.trailRisk] },
+            )[0]
+          : undefined;
+        const letter = (hit?.properties?.letter as TrailLetter | undefined) ?? regionAt(event);
+        if (letter && byLetter.has(letter)) {
+          selectRef.current(letter);
+          return;
+        }
       }
       pinned = null;
       render();
