@@ -8,7 +8,7 @@ import {
   type PipelineState,
   type ReactiveMeasure,
 } from "@/lib/hill";
-import type { Advisory, AgentEvent, AgentName, Run } from "@/lib/types";
+import { ANALYST_NAMES, type Advisory, type AgentEvent, type AgentName, type Run } from "@/lib/types";
 
 /**
  * The hill card shows five rows. The API runs seven agents. Trail, history, and routes
@@ -80,18 +80,69 @@ function traceLines(event: AgentEvent): string[] {
   return lines;
 }
 
+function analystsComplete(events: Partial<Record<AgentName, AgentEvent>>): boolean {
+  return ANALYST_NAMES.every((name) => {
+    const event = events[name];
+    return event != null && (event.status === "done" || event.status === "error");
+  });
+}
+
+/** UI status for one card. The three under "In parallel" move together during the backend fan-out. */
+function cardStatus(
+  id: PipelineAgentId,
+  events: Partial<Record<AgentName, AgentEvent>>,
+  orchestrator: PipelineState["orchestrator"],
+): PipelineAgentState["status"] {
+  const inFanOut = orchestrator === "running" && !analystsComplete(events);
+
+  if (id === "terrain") {
+    const event = events.terrain;
+    if (event?.status === "error") return "error";
+    if (event?.status === "done") return "done";
+    if (inFanOut) return "running";
+    return "idle";
+  }
+  if (id === "weather") {
+    const event = events.weather;
+    if (event?.status === "error") return "error";
+    if (event?.status === "done") return "done";
+    if (inFanOut) return "running";
+    return "idle";
+  }
+  if (id === "trails") {
+    const names = CARD_AGENTS.trails;
+    if (names.some((name) => events[name]?.status === "error")) return "error";
+    if (names.every((name) => events[name]?.status === "done")) return "done";
+    if (inFanOut) return "running";
+    return "idle";
+  }
+
+  const group = CARD_AGENTS[id].map((name) => events[name]).filter((event): event is AgentEvent => event != null);
+  if (group.length === 0) return "idle";
+  const failed = group.find((event) => event.status === "error");
+  if (failed) return "error";
+  const running = group.some((event) => event.status === "running");
+  if (running) return "running";
+  if (group.every((event) => event.status === "done")) return "done";
+  return "idle";
+}
+
 function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: PipelineState["orchestrator"], error: string | null, measures: ReactiveMeasure[] | null): PipelineState {
   const agents = {} as PipelineState["agents"];
   for (const id of PIPELINE_AGENTS) {
-    const group = CARD_AGENTS[id].map((name) => events[name]).filter((event): event is AgentEvent => event != null);
+    const names = CARD_AGENTS[id];
+    const group = names.map((name) => events[name]).filter((event): event is AgentEvent => event != null);
+    const status = cardStatus(id, events, orchestrator);
     if (group.length === 0) {
-      agents[id] = idleAgent(id);
+      agents[id] = {
+        ...idleAgent(id),
+        status,
+        summary: status === "running" ? "Running" : "",
+        startedAt: status === "running" ? Date.now() : null,
+      };
       continue;
     }
     const failed = group.find((event) => event.status === "error");
-    const running = group.some((event) => event.status === "running");
-    const waiting = CARD_AGENTS[id].some((name) => events[name] == null);
-    const status = failed ? "error" : running || waiting ? "running" : "done";
     const latest = failed ?? [...group].reverse().find((event) => event.status === "running") ?? group[group.length - 1]!;
     const started = group.map((event) => (event.trace?.started_at ? Date.parse(event.trace.started_at) : NaN)).filter((t) => !Number.isNaN(t));
     const finished = group.map((event) => (event.trace?.finished_at ? Date.parse(event.trace.finished_at) : NaN)).filter((t) => !Number.isNaN(t));
@@ -100,7 +151,7 @@ function project(events: Partial<Record<AgentName, AgentEvent>>, orchestrator: P
       status,
       summary: latest.summary,
       trace: group.flatMap(traceLines),
-      startedAt: started.length ? Math.min(...started) : Date.now(),
+      startedAt: started.length ? Math.min(...started) : status === "running" ? Date.now() : null,
       finishedAt: status === "done" || status === "error" ? (finished.length ? Math.max(...finished) : Date.now()) : null,
     };
   }
