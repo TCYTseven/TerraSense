@@ -12,6 +12,7 @@ Set OPEN_METEO_FIXTURE to a saved response to work offline; the result then says
 """
 
 import json
+import math
 import os
 import time
 from dataclasses import dataclass, field
@@ -67,7 +68,8 @@ class HourlyRain:
         """Sum over [now + start_hour, now + end_hour). Negative hours are the past."""
         lo = max(0, self.now_index + start_hour)
         hi = min(len(self.precipitation_mm), self.now_index + end_hour)
-        return float(sum(self.precipitation_mm[lo:hi]))
+        # fsum rounds once, so 72 equal hourly shares add back to the storm total exactly.
+        return math.fsum(self.precipitation_mm[lo:hi])
 
     def window(self, series: list[float], start_hour: int, end_hour: int) -> list[float]:
         """A slice of any hourly series over [now + start_hour, now + end_hour). Empty when absent."""

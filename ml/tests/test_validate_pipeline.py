@@ -6,6 +6,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 import rasterio
 from affine import Affine
 
@@ -15,6 +16,13 @@ sys.path.insert(0, str(REPO_ROOT / "ml" / "scripts"))
 import validate_pipeline as audit  # noqa: E402
 
 
+LOCAL_INPUTS = [*audit.SOURCES.values(), audit.FEATURE_STACK, audit.FEATURE_TABLE]
+
+
+@pytest.mark.skipif(
+    not all(path.exists() for path in LOCAL_INPUTS),
+    reason="raw downloads and the feature stack are gitignored; run steps 10 and 11 first",
+)
 def test_current_artifacts_pass_the_full_audit() -> None:
     summary = audit.validate(require_probability=True)
 

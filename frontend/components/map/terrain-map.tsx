@@ -373,7 +373,7 @@ export default function TerrainMap({
       setStatus((current) => (current === "ready" ? current : "error"));
     });
     return () => instance.remove();
-  }, [name, lon, lat, elevationM, webgl]);
+  }, [name, slug, lon, lat, elevationM, webgl]);
 
   useEffect(() => {
     map?.getSource<GeoJSONSource>(SOURCE.trails)?.setData(trailFeatures(trails));

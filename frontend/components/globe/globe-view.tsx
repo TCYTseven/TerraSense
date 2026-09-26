@@ -21,6 +21,9 @@ type LoadState =
   | { status: "ready"; mountains: Mountain[] }
   | { status: "error" };
 
+// One empty list for every render before the fetch lands, so the marker memo stays stable.
+const NO_MOUNTAINS: Mountain[] = [];
+
 /**
  * The globe screen: spaced markers from GET /mountains (see NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT),
  * search over the full list, and the fly-in.
@@ -49,7 +52,7 @@ export default function GlobeView() {
     return () => controller.abort();
   }, [attempt]);
 
-  const allMountains = state.status === "ready" ? state.mountains : [];
+  const allMountains = state.status === "ready" ? state.mountains : NO_MOUNTAINS;
   const globeLimit = globeMountainLimit();
   const globeMountains = useMemo(
     () => selectGlobeMountains(allMountains, globeLimit),

@@ -3,7 +3,7 @@
 import pytest
 
 from app.ml import probability
-from app.ml.hazard import line_exposure
+from app.ml.hazard import FEATURES_PATH, line_exposure
 from app.risk import HIGH_THRESHOLD, risk_level
 from app.risk_summary import TOP_TRAILS, risk_summary, saved_map
 from app.trailscan import scan_trails
@@ -38,6 +38,8 @@ def test_scores_are_read_from_the_saved_map(db_conn, storm_map) -> None:
 
 
 def test_a_storm_puts_the_top_trail_at_high_with_its_terrain(db_conn, storm_map) -> None:
+    if not FEATURES_PATH.exists():
+        pytest.skip("terrain stack not built (data/processed/features.tif)")
     summary = risk_summary(db_conn, "mount-rainier", storm_map)
     top = summary["trails"][0]
 
