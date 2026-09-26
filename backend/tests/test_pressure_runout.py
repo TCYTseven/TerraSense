@@ -1,5 +1,6 @@
 """Runout ranking and the illustrative corridor, with no database and no raster."""
 
+from app.ml import pressure
 from app.ml.pressure import rank_pressure_points
 from app.ml.runout import METHOD_TRAIL, trace_runout
 from app.simulations import template_callouts
@@ -61,3 +62,30 @@ def test_template_callouts_cover_both_audiences():
     for note in notes:
         assert len(note["text"].split()) <= 40
         assert "Kautz Creek Trail" in note["text"] or note["id"] == "rangers-stop"
+
+
+def test_worst_route_is_the_steepest_without_a_raster(monkeypatch):
+    monkeypatch.setattr(pressure, "_raster_path", lambda: None)
+    point = pressure.worst_route([GENTLE, STEEP])
+    assert point["trail_name"] == "Kautz Creek Trail"
+    assert pressure.worst_route([]) is None
+
+
+def test_worst_route_follows_the_highest_probability_on_the_line(monkeypatch, tmp_path):
+    import numpy as np
+    import rasterio
+    from rasterio.transform import from_origin
+
+    # A grid over both trails, hot only under the gentle one: probability beats grade.
+    path = tmp_path / "probability.tif"
+    transform = from_origin(-121.86, 46.81, 0.001, 0.001)
+    grid = np.full((60, 140), 0.1, dtype="float32")
+    col = int(round((-121.732 - -121.86) / 0.001))
+    grid[:, col - 3 : col + 4] = 0.8
+    with rasterio.open(path, "w", driver="GTiff", height=60, width=140, count=1, dtype="float32", crs="EPSG:4326", transform=transform) as dst:
+        dst.write(grid, 1)
+    monkeypatch.setattr(pressure, "_raster_path", lambda: path)
+    point = pressure.worst_route([STEEP, GENTLE])
+    assert point["trail_name"] == "Skyline Trail"
+    assert point["peak"] == 0.8
+    assert point["level"] == "extreme"

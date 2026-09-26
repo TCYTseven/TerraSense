@@ -202,7 +202,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 
 **Build.**
 
-- `POST /mountains/{slug}/simulate` with `{ pressure_point_id }` returns `{ simulation_id }`. 409 for a static mountain, 404 for an unknown point. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
+- `POST /mountains/{slug}/simulate` takes no inputs and returns `{ simulation_id }`. It always runs on the one route most likely to fail (Sep 26, 2026: the highest probability-raster value along the route, else the steepest route). 409 for a static mountain. State lives in the API process, keyed by id, like runs. Nothing is written to Postgres.
 - `WS /simulations/{id}/stream` sends one message with the frames and steps, then each callout, then a final message. `GET /simulations/{id}` returns the same, finished or not.
 - Callouts: one model call through the existing router, strong tier. It reads the steps and the pressure point and returns two to four `{ step_id, audience: rangers | public, text }`, at least one of each. The schema is closed, like the agents'.
 - Code checks every trail, mile, and time in the text against the steps, and enforces the word limits in the design addendum's Copy. On a failed check it runs one repair round, then the fallback provider, then templates. The trace records which.

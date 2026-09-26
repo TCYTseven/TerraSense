@@ -48,7 +48,7 @@ One panel, centered over the globe, for every mountain. It closes with Escape, i
 
 **Left: the mountain.** A 3D terrain map of the mountain with the 72-hour heat map and numbered pins on the pressure points. Trails are drawn and the hero trail is colored by segment. The map has no toggles.
 
-**Right: the pressure points.** The mountain's name and overall level, then up to five pressure points: the slopes most likely to fail, worst first. Each row gives its number, where it is, its level, and the terrain that drives it. A click on a row selects it and its pin, and that point is the one the simulation starts from. The first point is selected when the panel opens.
+**Right: the pressure points.** The mountain's name and overall level, then up to five pressure points: the slopes most likely to fail, worst first. Each row gives its number, where it is, its level, and the terrain that drives it. A click on a row selects it and its pin. The simulation does not take a selection: it always runs on the one route most likely to fail. The first point is selected when the panel opens.
 
 **Bottom of the right side:** **Open ranger view**, which flies into the mountain page. **Simulate** is not on this panel. As of Sep 26, 2026 it lives on the mountain page, beside **Analyze now**, and only for a mountain that has routes.
 

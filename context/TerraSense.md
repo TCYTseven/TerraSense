@@ -265,7 +265,7 @@ Added Sep 25, 2026 (team decision); folded into the hill detail card the same da
 
 Added Sep 25, 2026 as a panel over the globe. Moved onto the mountain page on Sep 26, 2026: **Simulate** belongs beside **Analyze now**, and only a mountain with routes gets it. Mount Rainier is the only seeded peak with routes. Peaks without routes do not show the button.
 
-**Simulate.** The camera flies to the route most likely to fail. The ranking uses the probability map when that raster exists, and otherwise the trail catalog: climb per kilometer, release at the uphill end of the line. The map then plays an illustrative landslide and debris-flow runout:
+**Simulate.** The simulation runs only on the one route most likely to fail, never on another route or pressure point. That route has the highest probability-map value anywhere along its line when the raster exists, and otherwise it is the steepest route in the trail catalog (climb per kilometer). The camera flies to it. The map then plays an illustrative landslide and debris-flow runout:
 
 - **Runout.** Without a 30 m elevation grid, the footprint walks downhill along that trail and widens as it descends. Arrival time is path distance divided by `FRONT_SPEED_MS` (5 m/s). With a grid, the same clock applies to Holmgren routing (`HOLMGREN_EXPONENT` 4), stopping at `REACH_ANGLE_DEG` (11°) or `MAX_RUNOUT_M`. Intensity is the share of the flow, 0 to 1, on the shared bins. It is not a snow avalanche: there is no snowpack to drive one.
 - **Heat on the map.** The footprint advances frame by frame on the risk ramp, hotter in the core and cooler at the edges. The existing heat map drops to 35% opacity while the flow shows. One frame every 500 ms, at most 40 frames.
@@ -568,7 +568,7 @@ GET  /tiles/{layer}/{z}/{x}/{y}.png
 
 Planned for 6.8 (steps 26 to 28):
 GET  /mountains/{slug}/pressure-points  → PressurePoint[]
-POST /mountains/{slug}/simulate         → { simulation_id }   body { pressure_point_id }
+POST /mountains/{slug}/simulate         → { simulation_id }   no body: always the route most likely to fail
 GET  /simulations/{simulation_id}
 WS   /simulations/{simulation_id}/stream → the frames and steps, then each callout, then done
 ```
