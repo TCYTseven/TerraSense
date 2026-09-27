@@ -102,7 +102,7 @@ export interface TerrainMapProps {
   flowField?: RunoutField | null;
   /** The clock the field is swept by. The map redraws from it every animation frame. */
   playhead?: Playhead | null;
-  /** Dims the probability heat map while the flow is on screen. */
+  /** True while a runout simulation is playing or finished; the heat drape dims so the flow reads clearly. */
   flowActive?: boolean;
   /** Dirt for a landslide, pale blue snow for an avalanche on a mountain. */
   flowPalette?: FlowPalette;

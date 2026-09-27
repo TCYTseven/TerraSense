@@ -2,7 +2,7 @@ import { LEVEL_TREATMENT, LevelWord } from "@/components/panel/level";
 import { formatScore, formatUtc } from "@/lib/format";
 import type { MountainView } from "@/lib/mountain-view";
 
-/** The worst point on any mapped trail and its level. Static mountains show their fixed level only. */
+/** The worst point on any mapped trail and its level. Shows the model or map score whenever one exists. */
 export default function OverallRisk({
   hill,
   mappedTrails = 0,
@@ -18,7 +18,7 @@ export default function OverallRisk({
         Overall risk
       </h2>
       <p className="mt-2 flex items-baseline gap-3">
-        {hill.isLive && score !== null && (
+        {score !== null && (
           <span className="font-mono text-4xl/10 font-semibold tracking-tight">{formatScore(score)}</span>
         )}
         <LevelWord level={level} className="text-base font-semibold" />

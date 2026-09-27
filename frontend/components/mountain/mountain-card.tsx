@@ -146,11 +146,11 @@ export default function MountainCard({
         <div className="shrink-0">
           <MountainHeader hill={hill} />
           <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
+          <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />
         </div>
         <PanelTabs active={tab} onChange={setTab} />
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabPanel tab="prevention" active={tab}>
-            {live && <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />}
             {hill.trails.length > 0 && (
               <TrailList
                 trails={hill.trails}
