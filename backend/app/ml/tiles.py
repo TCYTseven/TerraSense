@@ -46,13 +46,22 @@ def layer_url_path(slug: str, layer: str) -> str:
     """The layer's path under the /tiles static mount, mirroring slug_tiles_dir."""
     return layer if slug == RAINIER_SLUG else f"{slug}/{layer}"
 
-# A stepped ramp on the shared bins (design addendum, Raster layers), so every color on the map
-# is a level word in the panel. Low uses a pale wash so steep summit ice still reads on the drape;
-# moderate and above stay stronger. Probability and susceptibility share it.
-LEVEL_ALPHA = {"low": 0.26, "moderate": 0.40, "high": 0.55, "extreme": 0.70}
-LEVEL_RGBA = np.array(
-    [[*hex_rgb(RISK_HEX[level]), round(255 * LEVEL_ALPHA[level])] for level in RISK_LEVELS], dtype=np.uint8
-)
+# Stepped ramp for map tiles (design addendum, Raster layers). The panel still uses green for
+# "low"; on the terrain, sub-moderate cells use pale amber so the drape never reads as "safe".
+LEVEL_ALPHA = {"low": 0.18, "moderate": 0.42, "high": 0.58, "extreme": 0.76}
+
+
+def map_level_rgba() -> np.ndarray:
+    """RGBA per bin index: low bin is amber wash, not hazard green."""
+    rows: list[list[int]] = []
+    moderate_rgb = hex_rgb(RISK_HEX["moderate"])
+    for level in RISK_LEVELS:
+        rgb = moderate_rgb if level == "low" else hex_rgb(RISK_HEX[level])
+        rows.append([*rgb, round(255 * LEVEL_ALPHA[level])])
+    return np.array(rows, dtype=np.uint8)
+
+
+LEVEL_RGBA = map_level_rgba()
 NO_DATA_INDEX = len(RISK_LEVELS)
 
 
@@ -79,17 +88,20 @@ PALETTE_RGB = [int(c) for c in LEVEL_RGBA[:, :3].flatten()] + [0, 0, 0]
 PALETTE_ALPHA = bytes([int(a) for a in LEVEL_RGBA[:, 3]] + [0])
 
 
-def lift_for_map_display(values: np.ndarray) -> np.ndarray:
-    """Keep scored cells visible on the map; panel thresholds are unchanged."""
+def roughen(values: np.ndarray, tile: mercantile.Tile) -> np.ndarray:
+    """Break up flat bin bands with a stable speckle (display only)."""
+    seed = (tile.z << 22) ^ (tile.x << 11) ^ tile.y
+    rng = np.random.default_rng(seed & 0xFFFFFFFF)
+    jitter = rng.uniform(-0.06, 0.06, values.shape).astype(np.float32)
     out = values.copy()
     scored = ~np.isnan(out)
-    out[scored] = np.maximum(out[scored], 0.06)
+    out[scored] = np.clip(out[scored] + jitter[scored], 0.0, 1.0)
     return out
 
 
 def palette_image(values: np.ndarray) -> Image.Image:
     """8-bit PNG image of 0-1 values on the stepped risk ramp. NaN is transparent."""
-    image = Image.fromarray(level_indexes(lift_for_map_display(values)), "P")
+    image = Image.fromarray(level_indexes(values), "P")
     image.putpalette(PALETTE_RGB)
     image.info["transparency"] = PALETTE_ALPHA
     return image
@@ -183,6 +195,7 @@ def render_xyz(raster: Path, layer: str, zooms: Iterable[int] = DEFAULT_ZOOMS,
         # zlib level 6: a tenth of level 9's time for tiles about 9% larger. A run renders these live.
         warped = warp_tile(data, src_transform, src_crs, tile)
         warped = apply_radial_fade(warped, tile, center_lon, center_lat, radius_km)
+        warped = roughen(warped, tile)
         palette_image(warped).save(path, compress_level=6)
         count += 1
 

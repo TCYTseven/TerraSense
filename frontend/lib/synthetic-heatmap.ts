@@ -14,7 +14,7 @@ const EARTH_CIRCUMFERENCE_M = 40075016.686;
  * Share of the drape in each rank bin before scaling to the peak's overall score. Relative
  * hotspots only; absolute color comes from scaleToOverall().
  */
-const BIN_SHARES = [0.12, 0.3, 0.22, 0.36] as const;
+const BIN_SHARES = [0.08, 0.22, 0.28, 0.42] as const;
 const BIN_EDGES = [0, 0.2, 0.45, 0.7, 1] as const;
 
 /** Soft edge (km) on the ground so the drape reads circular, not like a square bbox. */
@@ -27,12 +27,12 @@ const EARTH_RADIUS_KM = 6371;
  * deep red is reserved for 0.7+ after the drape is scaled to the peak's overall model score.
  */
 const LEVELS = [
-  { min: 0.2, max: 0.45, color: RISK_COLORS.moderate, alpha: 0.46 },
-  { min: 0.45, max: 0.7, color: RISK_COLORS.high, alpha: 0.56 },
-  { min: 0.7, max: 1, color: RISK_COLORS.extreme, alpha: 0.66 },
+  { min: 0.2, max: 0.45, color: RISK_COLORS.moderate, alpha: 0.5 },
+  { min: 0.45, max: 0.7, color: RISK_COLORS.high, alpha: 0.62 },
+  { min: 0.7, max: 1, color: RISK_COLORS.extreme, alpha: 0.78 },
 ] as const;
 
-const LOW_WASH = { floor: 0.03, ceiling: 0.22, alpha: 0.48 } as const;
+const EDGE_SECTORS = 12;
 
 export interface SyntheticHeatOverlay {
   url: string;
@@ -122,9 +122,26 @@ interface Octave {
   angle: number;
 }
 
-/** Seeded grain for the drape, so two places with similar terrain still read differently. */
+interface Hotspot {
+  x: number;
+  y: number;
+  sigma: number;
+  amp: number;
+}
+
+/** Seeded grain plus gaussian cores for a mottled, auroral drape. */
 interface Field {
   octaves: Octave[];
+  spots: Hotspot[];
+  cover: number;
+  contrast: number;
+}
+
+interface EdgeProfile {
+  phase2: number;
+  phase3: number;
+  phase5: number;
+  sector: Float32Array;
 }
 
 function fbm(nx: number, ny: number, octaves: Octave[]): number {
@@ -141,12 +158,11 @@ function fbm(nx: number, ny: number, octaves: Octave[]): number {
   return noise / weight;
 }
 
-/** A different grain for every place: its own scale, rotation, and offsets. */
-function buildField(rand: () => number): Field {
+/** Per-peak blanket: warped fbm, hotspots, and a warm baseline tied to overall risk. */
+function buildField(rand: () => number, overallScore: number | null): Field {
   const octaves: Octave[] = [];
   let freq = 1.4 + rand() * 2.2;
-  const octaveCount = 4;
-  for (let i = 0; i < octaveCount; i += 1) {
+  for (let i = 0; i < 4; i += 1) {
     octaves.push({
       grid: makeGrid(rand, 4 + Math.floor(rand() * 5)),
       freq,
@@ -158,7 +174,72 @@ function buildField(rand: () => number): Field {
     freq *= 1.85 + rand() * 0.5;
   }
 
-  return { octaves };
+  const spots: Hotspot[] = [
+    { x: (rand() - 0.5) * 0.28, y: (rand() - 0.5) * 0.28, sigma: 0.2 + rand() * 0.18, amp: 0.65 + rand() * 0.35 },
+  ];
+  for (let i = 0; i < 2 + Math.floor(rand() * 4); i += 1) {
+    spots.push({
+      x: (rand() - 0.5) * 1.35,
+      y: (rand() - 0.5) * 1.05,
+      sigma: 0.09 + rand() * 0.2,
+      amp: 0.35 + rand() * 0.75,
+    });
+  }
+
+  const anchor = Math.max(0.12, Math.min(0.9, overallScore ?? 0.38));
+  return {
+    octaves,
+    spots,
+    cover: 0.34 + anchor * 0.48,
+    contrast: 0.34 + rand() * 0.32,
+  };
+}
+
+function scoreAt(nx: number, ny: number, field: Field): number {
+  const warpX = fbm(nx * 0.65 + 3.1, ny * 0.65 - 1.7, field.octaves);
+  const warpY = fbm(nx * 0.65 - 2.4, ny * 0.65 + 4.2, field.octaves);
+  const wx = nx + (warpX - 0.5) * 0.52;
+  const wy = ny + (warpY - 0.5) * 0.52;
+  const noise = fbm(wx, wy, field.octaves);
+
+  let hot = 0;
+  for (const spot of field.spots) {
+    const distance = Math.hypot(nx - spot.x, ny - spot.y);
+    hot += spot.amp * Math.exp(-(distance * distance) / (2 * spot.sigma * spot.sigma));
+  }
+
+  const score = field.cover + (noise - 0.5) * field.contrast + Math.min(hot, 1.35) * 0.38;
+  return Math.max(0, Math.min(1, score));
+}
+
+function buildEdgeProfile(seed: number): EdgeProfile {
+  const rand = mulberry32(seed);
+  const sector = new Float32Array(EDGE_SECTORS);
+  for (let i = 0; i < EDGE_SECTORS; i += 1) {
+    sector[i] = (rand() - 0.5) * 0.22;
+  }
+  return {
+    phase2: rand() * Math.PI * 2,
+    phase3: rand() * Math.PI * 2,
+    phase5: rand() * Math.PI * 2,
+    sector,
+  };
+}
+
+function organicEdgeMask(nx: number, ny: number, profile: EdgeProfile): number {
+  const dist = Math.hypot(nx * 0.94, ny * 1.02);
+  if (dist > 1.08) {
+    return 0;
+  }
+  const angle = Math.atan2(ny, nx);
+  const sectorIdx = Math.floor(((angle + Math.PI) / (2 * Math.PI)) * EDGE_SECTORS) % EDGE_SECTORS;
+  const boundary =
+    0.44 +
+    0.1 * Math.sin(angle * 2 + profile.phase2) +
+    0.07 * Math.sin(angle * 3 + profile.phase3) +
+    0.05 * Math.sin(angle * 5 + profile.phase5) +
+    profile.sector[sectorIdx]!;
+  return 1 - smoothstep(boundary - 0.04, boundary + 0.16, dist);
 }
 
 /**
@@ -167,46 +248,13 @@ function buildField(rand: () => number): Field {
  * texture filter does not fringe the edge with black.
  */
 function colorForScore(score: number): [number, number, number, number] {
-  if (score < LOW_WASH.floor) {
+  if (score < 0.1) {
     return [0, 0, 0, 0];
-  }
-  const [r, g, b] = hexRgb(RISK_COLORS.moderate);
-  if (score < LOW_WASH.ceiling) {
-    const t = smoothstep(LOW_WASH.floor, LOW_WASH.ceiling, score);
-    return [r, g, b, Math.round(LOW_WASH.alpha * t * 255)];
   }
   const level = LEVELS.find((entry) => score < entry.max) ?? LEVELS[LEVELS.length - 1];
   const [lr, lg, lb] = hexRgb(level.color);
-  const enter = level === LEVELS[0] ? smoothstep(level.min, level.min + 0.05, score) : 1;
+  const enter = level === LEVELS[0] ? smoothstep(level.min, level.min + 0.035, score) : 1;
   return [lr, lg, lb, Math.round(level.alpha * enter * 255)];
-}
-
-/** Worst-pixel cap from the card score: readable on low peaks, still no blanket extreme red. */
-function visualPeak(anchor: number): number {
-  const boosted = anchor * 1.65 + 0.09;
-  if (anchor < 0.2) {
-    return Math.min(0.34, Math.max(anchor, boosted));
-  }
-  if (anchor < 0.45) {
-    return Math.min(0.55, boosted);
-  }
-  return Math.min(0.88, boosted);
-}
-
-/**
- * Rank scores show relative hotspots; visualPeak() ties them to overall risk but leaves headroom
- * so a 0.11 summit still reads as light–moderate on the map, not invisible or all crimson.
- */
-function scaleToOverall(ranked: Float32Array, overall: number | null): Float32Array {
-  const anchor = Math.max(0.05, Math.min(0.95, overall ?? 0.12));
-  const peak = visualPeak(anchor);
-  const out = new Float32Array(ranked.length);
-  const floor = peak * 0.08;
-  const span = peak - floor;
-  for (let i = 0; i < ranked.length; i += 1) {
-    out[i] = floor + span * ranked[i];
-  }
-  return out;
 }
 
 interface ElevationGrid {
@@ -469,20 +517,30 @@ export async function buildSyntheticHeatOverlay(
   }
 
   const grid = await loadElevation(bounds).catch(() => null);
-  const field = buildField(mulberry32(hashSeed(slug, lon.toFixed(4), lat.toFixed(4))));
-  const scores = scaleToOverall(scoresFromRanks(rawScores(grid, bounds, field)), overallScore);
+  const rand = mulberry32(hashSeed(slug, lon.toFixed(4), lat.toFixed(4)));
+  const field = buildField(rand, overallScore);
+  const edge = buildEdgeProfile(hashSeed(slug, "edge-mask"));
+  const terrainRanked = grid
+    ? scoresFromRanks(rawScores(grid, bounds, { octaves: field.octaves, spots: [], cover: 0, contrast: 0 }))
+    : null;
   const image = ctx.createImageData(SIZE, SIZE);
   for (let y = 0; y < SIZE; y += 1) {
+    const ny = (y / (SIZE - 1)) * 2 - 1;
     const pxLat = north - (y / (SIZE - 1)) * (north - south);
     for (let x = 0; x < SIZE; x += 1) {
+      const nx = (x / (SIZE - 1)) * 2 - 1;
       const pxLon = west + (x / (SIZE - 1)) * (east - west);
-      const mask = radialGroundMask(bounds, pxLon, pxLat);
+      const mask = organicEdgeMask(nx, ny, edge) * radialGroundMask(bounds, pxLon, pxLat);
       const i = (y * SIZE + x) * 4;
       if (mask <= 0.01) {
         image.data[i + 3] = 0;
         continue;
       }
-      const [r, g, b, a] = colorForScore(scores[y * SIZE + x]);
+      let score = scoreAt(nx, ny, field);
+      if (terrainRanked) {
+        score = Math.min(1, score * 0.58 + terrainRanked[y * SIZE + x] * 0.42);
+      }
+      const [r, g, b, a] = colorForScore(score);
       image.data[i] = r;
       image.data[i + 1] = g;
       image.data[i + 2] = b;

@@ -341,10 +341,12 @@ export default function TerrainMap({
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [webgl] = useState(hasWebGL);
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
-  const rasterSusceptibility = useMemo(
-    () => (susceptibility && !isProceduralHeat(susceptibility) ? susceptibility : null),
-    [susceptibility],
-  );
+  const rasterSusceptibility = useMemo(() => {
+    if (probability) {
+      return null;
+    }
+    return susceptibility && !isProceduralHeat(susceptibility) ? susceptibility : null;
+  }, [susceptibility, probability]);
   const rasterProbability = probability;
   const hasRasterHeat = Boolean(rasterSusceptibility || rasterProbability);
   const [instantHeat, setInstantHeat] = useState<SyntheticHeatOverlay | null>(null);
@@ -631,7 +633,8 @@ export default function TerrainMap({
       if (!map.getLayer(layerId)) {
         continue;
       }
-      const layerOpacity = layerId === LAYER.syntheticAura ? opacity * 0.58 : opacity;
+      const layerOpacity =
+        layerId === LAYER.syntheticAura ? opacity * 0.78 : layerId === LAYER.probability && rasterSusceptibility === null && rasterProbability ? opacity * 0.82 : opacity;
       map.setPaintProperty(layerId, "raster-opacity-transition", { duration: 0, delay: 0 });
       map.setPaintProperty(layerId, "raster-opacity", layerOpacity);
     }
@@ -646,7 +649,8 @@ export default function TerrainMap({
 
     const cleanups: (() => void)[] = [];
     const opacity = flowActive ? 0.35 : 1;
-    const auraOpacity = opacity * 0.58;
+    const auraOpacity = opacity * 0.78;
+    const probOpacity = rasterProbability && rasterSusceptibility === null ? opacity * 0.82 : opacity;
 
     if (auraHeat?.url) {
       const auraSource = SOURCE.syntheticAura;
@@ -688,7 +692,7 @@ export default function TerrainMap({
           LAYER.otherTrails,
         );
       }
-      cleanups.push(fadeIn(map, layerId, sourceId, opacity));
+      cleanups.push(fadeIn(map, layerId, sourceId, layerId === LAYER.probability ? probOpacity : opacity));
     };
 
     if (rasterSusceptibility) {
