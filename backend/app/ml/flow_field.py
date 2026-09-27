@@ -9,7 +9,10 @@ the edge is soft and the flow never jumps.
 Wire format (JSON-ready): corners are [lon, lat] for top-left, top-right,
 bottom-right, bottom-left. `cover` and `depth` are base64 uint8 rows, top row
 first. `arrival` is base64 little-endian uint16: seconds / duration_s * 65534,
-and 65535 where the flow never arrives.
+and 65535 where the flow never arrives. On terrain the field also carries `ground`,
+the height under each cell as base64 little-endian uint16 steps of `ground_step_m`
+above `ground_base_m`, so the map can light each facet of the flow from the terrain's
+own slope. The trail ribbon has no ground, and the map leaves it unlit.
 """
 
 from __future__ import annotations
@@ -73,7 +76,22 @@ def terrain_field(grid, mask, arrive_s, share, duration_s: float) -> dict | None
     depth = depth / max(float(depth.max()), 1e-9)
 
     corners = [grid.lonlat(r0, c0), grid.lonlat(r0, c1), grid.lonlat(r1, c1), grid.lonlat(r1, c0)]
-    return encode(corners, cover, np.where(cover > 0, arrive, np.nan), depth, duration_s)
+    field = encode(corners, cover, np.where(cover > 0, arrive, np.nan), depth, duration_s)
+    return {**field, **encode_ground(grid.heights[r0:r1, c0:c1])}
+
+
+def encode_ground(heights) -> dict:
+    """Heights as uint16 steps above the lowest cell: 1 cm steps, coarser only over 655 m of relief."""
+    import numpy as np
+
+    base = math.floor(float(heights.min()) * 100) / 100
+    # Round the step up, so the highest cell still fits in 16 bits after rounding.
+    step = max(0.01, math.ceil((float(heights.max()) - base) / (NEVER - 1) * 1e4) / 1e4)
+    return {
+        "ground": _b64(np.clip(np.round((heights - base) / step), 0, NEVER).astype("<u2")),
+        "ground_base_m": base,
+        "ground_step_m": step,
+    }
 
 
 def trail_field(samples: list[tuple[float, float, float]], half_width_m, clock, duration_s: float) -> dict | None:

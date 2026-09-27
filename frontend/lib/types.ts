@@ -692,6 +692,13 @@ export interface RunoutField {
   cover: string;
   arrival: string;
   depth: string;
+  /**
+   * The terrain height under each cell, base64 little-endian uint16 steps of ground_step_m
+   * above ground_base_m, so the map can light each facet. Absent on the trail ribbon.
+   */
+  ground?: string;
+  ground_base_m?: number;
+  ground_step_m?: number;
 }
 
 /**

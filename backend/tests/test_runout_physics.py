@@ -170,3 +170,20 @@ def test_mountain_runout_is_a_labeled_snow_avalanche(monkeypatch):
     step_times = [step["t_s"] for step in traced["steps"]]
     assert step_times == sorted(step_times)
     assert max(step_times) == traced["duration_s"]
+
+
+def test_terrain_field_carries_the_ground_for_lighting(monkeypatch):
+    import base64
+
+    grid = _bowl_grid()
+    routed = flow_routing.spread(grid, LON, LAT, physics.DEBRIS_FLOW, 11, 6000)
+    mask, _, when = flow_routing.footprint(grid, routed)
+    from app.ml import flow_field
+
+    field = flow_field.terrain_field(grid, mask, when, routed.share, float(when[mask].max()))
+    ground = np.frombuffer(base64.b64decode(field["ground"]), "<u2").reshape(field["height"], field["width"])
+    heights = field["ground_base_m"] + ground * field["ground_step_m"]
+    # Decoded heights match the grid to within one step, and the slope still falls south.
+    assert heights.max() - heights.min() > 50
+    assert (np.diff(heights.mean(axis=1)) < 0).mean() > 0.9
+    assert field["ground_step_m"] <= 0.05
