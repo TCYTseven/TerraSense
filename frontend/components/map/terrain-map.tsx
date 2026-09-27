@@ -30,7 +30,7 @@ import type {
   RunoutField,
   Trail,
 } from "@/lib/types";
-import { buildSyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
+import { buildSyntheticHeatOverlay, type SyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
 import {
   bypassFeatures,
   CAMERA,
@@ -346,16 +346,22 @@ export default function TerrainMap({
     }
     return null;
   }, [probability, susceptibility]);
-  const instantHeat = useMemo(() => {
-    const drapeBounds = heatDrapeBounds(lon, lat, elevationM);
+  const [instantHeat, setInstantHeat] = useState<SyntheticHeatOverlay | null>(null);
+  // Places with no rendered tiles get a drape built from the elevation tiles under them.
+  useEffect(() => {
     if (renderedHeat) {
-      return null;
+      return;
     }
-    if (susceptibility && isProceduralHeat(susceptibility)) {
-      return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
-    }
-    return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
-  }, [renderedHeat, susceptibility, slug, name, lon, lat, elevationM]);
+    let cancelled = false;
+    buildSyntheticHeatOverlay(slug ?? name, lon, lat, heatDrapeBounds(lon, lat, elevationM)).then((overlay) => {
+      if (!cancelled) {
+        setInstantHeat(overlay);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [renderedHeat, slug, name, lon, lat, elevationM]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -593,9 +599,9 @@ export default function TerrainMap({
     return fadeIn(map, layerId, sourceId, flowActive ? 0.35 : 1);
   }, [map, renderedHeat, flowActive]);
 
-  // Catalog peaks: one canvas image (same seed as synthetic tiles, loads in one shot — no chunking).
+  // Catalog peaks: one canvas image drawn from the terrain, loaded in one shot with no tile pop-in.
   useEffect(() => {
-    if (!map || !instantHeat?.url) {
+    if (!map || renderedHeat || !instantHeat?.url) {
       return;
     }
     removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
@@ -622,7 +628,7 @@ export default function TerrainMap({
       );
     }
     return fadeIn(map, LAYER.probability, sourceId, flowActive ? 0.35 : 1);
-  }, [map, instantHeat, flowActive]);
+  }, [map, renderedHeat, instantHeat, flowActive]);
 
   // The hazard zone's outline, under the trails so the trail colors stay readable across it.
   useEffect(() => {
