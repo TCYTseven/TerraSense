@@ -11,8 +11,8 @@ const ZOOM_RANGE = { min: 9, max: 14 } as const;
 const EARTH_CIRCUMFERENCE_M = 40075016.686;
 
 /**
- * Share of the drape in each bin, lowest risk first. Every place is ranked against itself, so a
- * gentle hill and a massif both show the Rainier mix: some clear ground, and red on the worst.
+ * Share of the drape in each rank bin before scaling to the peak's overall score. Relative
+ * hotspots only; absolute color comes from scaleToOverall().
  */
 const BIN_SHARES = [0.12, 0.3, 0.22, 0.36] as const;
 const BIN_EDGES = [0, 0.2, 0.45, 0.7, 1] as const;
@@ -21,14 +21,16 @@ const BIN_EDGES = [0, 0.2, 0.45, 0.7, 1] as const;
 const FADE = { start: 0.76, end: 0.98 } as const;
 
 /**
- * Same bins and opacities as the Rainier probability tiles: low is clear so terrain shows
- * through, and the worst ground is the most opaque.
+ * Same bins as the live probability tiles. Opacity ramps gently at low scores (pale amber);
+ * deep red is reserved for 0.7+ after the drape is scaled to the peak's overall model score.
  */
 const LEVELS = [
-  { min: 0.2, max: 0.45, color: RISK_COLORS.moderate, alpha: 0.4 },
-  { min: 0.45, max: 0.7, color: RISK_COLORS.high, alpha: 0.55 },
-  { min: 0.7, max: 1, color: RISK_COLORS.extreme, alpha: 0.7 },
+  { min: 0.2, max: 0.45, color: RISK_COLORS.moderate, alpha: 0.46 },
+  { min: 0.45, max: 0.7, color: RISK_COLORS.high, alpha: 0.56 },
+  { min: 0.7, max: 1, color: RISK_COLORS.extreme, alpha: 0.66 },
 ] as const;
+
+const LOW_WASH = { floor: 0.03, ceiling: 0.22, alpha: 0.42 } as const;
 
 export interface SyntheticHeatOverlay {
   url: string;
@@ -163,13 +165,46 @@ function buildField(rand: () => number): Field {
  * texture filter does not fringe the edge with black.
  */
 function colorForScore(score: number): [number, number, number, number] {
-  const level = LEVELS.find((entry) => score < entry.max) ?? LEVELS[LEVELS.length - 1];
-  const [r, g, b] = hexRgb(level.color);
-  if (score < LEVELS[0].min) {
-    return [r, g, b, 0];
+  if (score < LOW_WASH.floor) {
+    return [0, 0, 0, 0];
   }
-  const enter = level === LEVELS[0] ? smoothstep(level.min, level.min + 0.04, score) : 1;
-  return [r, g, b, Math.round(level.alpha * enter * 255)];
+  const [r, g, b] = hexRgb(RISK_COLORS.moderate);
+  if (score < LOW_WASH.ceiling) {
+    const t = smoothstep(LOW_WASH.floor, LOW_WASH.ceiling, score);
+    return [r, g, b, Math.round(LOW_WASH.alpha * t * 255)];
+  }
+  const level = LEVELS.find((entry) => score < entry.max) ?? LEVELS[LEVELS.length - 1];
+  const [lr, lg, lb] = hexRgb(level.color);
+  const enter = level === LEVELS[0] ? smoothstep(level.min, level.min + 0.05, score) : 1;
+  return [lr, lg, lb, Math.round(level.alpha * enter * 255)];
+}
+
+/** Worst-pixel cap from the card score: readable on low peaks, still no blanket extreme red. */
+function visualPeak(anchor: number): number {
+  const boosted = anchor * 1.65 + 0.09;
+  if (anchor < 0.2) {
+    return Math.min(0.34, Math.max(anchor, boosted));
+  }
+  if (anchor < 0.45) {
+    return Math.min(0.55, boosted);
+  }
+  return Math.min(0.88, boosted);
+}
+
+/**
+ * Rank scores show relative hotspots; visualPeak() ties them to overall risk but leaves headroom
+ * so a 0.11 summit still reads as light–moderate on the map, not invisible or all crimson.
+ */
+function scaleToOverall(ranked: Float32Array, overall: number | null): Float32Array {
+  const anchor = Math.max(0.05, Math.min(0.95, overall ?? 0.12));
+  const peak = visualPeak(anchor);
+  const out = new Float32Array(ranked.length);
+  const floor = peak * 0.08;
+  const span = peak - floor;
+  for (let i = 0; i < ranked.length; i += 1) {
+    out[i] = floor + span * ranked[i];
+  }
+  return out;
 }
 
 interface ElevationGrid {
@@ -383,6 +418,8 @@ export async function buildSyntheticHeatOverlay(
   lon: number,
   lat: number,
   bounds: [number, number, number, number],
+  /** Summit model probability from GET /mountains/{slug}; anchors the drape to the overall risk card. */
+  overallScore: number | null = null,
 ): Promise<SyntheticHeatOverlay> {
   const [west, south, east, north] = bounds;
   const coordinates: SyntheticHeatOverlay["coordinates"] = [
@@ -401,7 +438,7 @@ export async function buildSyntheticHeatOverlay(
 
   const grid = await loadElevation(bounds).catch(() => null);
   const field = buildField(mulberry32(hashSeed(slug, lon.toFixed(4), lat.toFixed(4))));
-  const scores = scoresFromRanks(rawScores(grid, bounds, field));
+  const scores = scaleToOverall(scoresFromRanks(rawScores(grid, bounds, field)), overallScore);
   const image = ctx.createImageData(SIZE, SIZE);
   for (let y = 0; y < SIZE; y += 1) {
     const ny = (y / (SIZE - 1)) * 2 - 1;

@@ -43,6 +43,7 @@ import {
   openingBearing,
   heatDrapeBounds,
   openingBounds,
+  openingFitPadding,
   openingZoomFloor,
   rasterSource,
   SOURCE,
@@ -106,6 +107,8 @@ export interface TerrainMapProps {
   flowActive?: boolean;
   /** Dirt for a landslide, pale blue snow for an avalanche on a mountain. */
   flowPalette?: FlowPalette;
+  /** Catalog peaks: scales the procedural heat drape to match the overall risk score. */
+  overallRiskScore?: number | null;
 }
 
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
@@ -332,6 +335,7 @@ export default function TerrainMap({
   playhead = null,
   flowActive = false,
   flowPalette = "debris",
+  overallRiskScore = null,
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -353,7 +357,7 @@ export default function TerrainMap({
       return;
     }
     let cancelled = false;
-    buildSyntheticHeatOverlay(slug ?? name, lon, lat, heatDrapeBounds(lon, lat, elevationM)).then((overlay) => {
+    buildSyntheticHeatOverlay(slug ?? name, lon, lat, heatDrapeBounds(lon, lat, elevationM), overallRiskScore).then((overlay) => {
       if (!cancelled) {
         setInstantHeat(overlay);
       }
@@ -361,7 +365,7 @@ export default function TerrainMap({
     return () => {
       cancelled = true;
     };
-  }, [renderedHeat, slug, name, lon, lat, elevationM]);
+  }, [renderedHeat, slug, name, lon, lat, elevationM, overallRiskScore]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -389,8 +393,9 @@ export default function TerrainMap({
       }
       setWorkerUrl(WORKER_URL);
       // Open on the mountain's footprint, sized from its elevation, plus the trail markers near it.
-      const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
+      const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center), slug);
       const bearing = openingBearing(lon, lat, slug);
+      const fitPadding = openingFitPadding(slug);
       instance = new MapLibreMap({
         container: el,
         style: mountainStyle({ summitM: elevationM, lon, lat, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
@@ -400,7 +405,7 @@ export default function TerrainMap({
         bearing,
         maxPitch: CAMERA.maxPitch,
         bounds,
-        fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing },
+        fitBoundsOptions: { padding: fitPadding, pitch: CAMERA.pitch, bearing },
         attributionControl: { compact: true },
       });
       // The opening frame is the widest view that still reads as this mountain.
@@ -414,11 +419,12 @@ export default function TerrainMap({
         }
         const zoomFloor = openingZoomFloor(slug);
         if (instance.getZoom() < zoomFloor) {
-          instance.jumpTo({
-            center: [lon, lat],
-            zoom: zoomFloor,
+          instance.fitBounds(bounds, {
+            padding: fitPadding,
             pitch: CAMERA.pitch,
             bearing,
+            maxZoom: zoomFloor,
+            duration: 0,
           });
         }
         instance.resize();

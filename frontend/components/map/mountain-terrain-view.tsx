@@ -73,6 +73,7 @@ export default function MountainTerrainView({
         playhead={playhead}
         flowActive={flowActive}
         flowPalette={mountain.kind === "mountain" ? "snow" : "debris"}
+        overallRiskScore={mountain.model_probability}
       />
     </div>
   );

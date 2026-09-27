@@ -147,7 +147,7 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
         <div className={`mt-3 space-y-3 text-sm ${loading ? "opacity-50" : ""}`}>
           <Source prediction={prediction} />
           {prediction.probability !== null && prediction.estimate && <EstimateDetails estimate={prediction.estimate} />}
-          <ClassifierAudit prediction={prediction} />
+          {prediction.state !== "UNCERTAIN" && <ClassifierAudit prediction={prediction} />}
         </div>
       )}
     </section>

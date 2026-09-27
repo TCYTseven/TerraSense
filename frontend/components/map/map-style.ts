@@ -39,6 +39,8 @@ export const CAMERA = {
   orbitResumeMs: 8000,
   // Extra room at the top: the exaggerated summit rises above where its base sits on screen.
   padding: { top: 150, bottom: 48, left: 48, right: 48 },
+  /** Rainier's relief is tall; pitched views need more headroom so the summit stays in frame. */
+  rainierPadding: { top: 280, bottom: 64, left: 48, right: 48 },
   /** After fitBounds, never open wider than this — keeps massifs readable on screen. */
   openingZoomFloor: 11.45,
 } as const;
@@ -46,6 +48,11 @@ export const CAMERA = {
 /** Keep Kailash close enough for its summit relief to dominate instead of its 52 km kora. */
 export function openingZoomFloor(slug?: string): number {
   return slug === "mount-kailash" ? 12.25 : CAMERA.openingZoomFloor;
+}
+
+/** fitBounds padding for the opening frame (summit relief vs. pitch). */
+export function openingFitPadding(slug?: string): { top: number; bottom: number; left: number; right: number } {
+  return slug === "mount-rainier" ? CAMERA.rainierPadding : CAMERA.padding;
 }
 
 /** Oblique opening bearing: Rainier keeps the designed bearing; others get a stable view from coords. */
@@ -374,6 +381,7 @@ export function openingBounds(
   lat: number,
   elevationM: number,
   points: Position[] = [],
+  slug?: string,
 ): [number, number, number, number] {
   const radiusKm = footprintRadiusKm(elevationM);
   const kmPerDegLon = KM_PER_DEG * Math.cos((lat * Math.PI) / 180);
@@ -386,7 +394,12 @@ export function openingBounds(
   );
   const lons = [lon - dLon, lon + dLon, ...near.map(([x]) => x)];
   const lats = [lat - dLat, lat + dLat, ...near.map(([, y]) => y)];
-  return [Math.min(...lons), Math.min(...lats), Math.max(...lons), Math.max(...lats)];
+  let south = Math.min(...lats);
+  let north = Math.max(...lats);
+  if (slug === "mount-rainier") {
+    north = Math.max(north, lat + dLat * 0.55);
+  }
+  return [Math.min(...lons), south, Math.max(...lons), north];
 }
 
 // Scored segments take their risk color. Unscored ones stay a neutral ink line.
