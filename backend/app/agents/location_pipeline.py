@@ -30,7 +30,7 @@ from app.agents.schemas import (
     LocationSynthesis,
     TerrainReport,
 )
-from app.ml.geo_susceptibility import PLACEHOLDER_INPUT, REAL_INPUT, predict_summit
+from app.ml.geo_susceptibility import predict_summit
 from app.ml.risk_contract import production_decision_eligible
 from app.risk import level_index, level_spread
 
@@ -38,8 +38,8 @@ LOCATION_RULES = """You are one agent in TerraSense. This mountain has no mapped
 Use only the facts in this message. Never invent a trail name, a mile marker, a bypass, or a past landslide.
 The production_72h_classification block is the decision source when decision_eligible is true: explain its
 calibrated probability, state, and risk_level, never recompute or contradict them. The regional terrain
-model_prediction block is visualization/context only; placeholder_terrain_sample means it scored labeled
-stand-in terrain, not this summit's own ground. An UNCERTAIN classifier means insufficient evidence, not safety.
+model_prediction block is visualization/context only when the classifier is decision-eligible; otherwise
+it supplements the cell classification. An UNCERTAIN classifier means insufficient evidence, not safety.
 Risk levels are low, moderate, high, extreme.
 Write plain sentences. No markdown. Return only the JSON object the schema asks for."""
 
@@ -50,8 +50,7 @@ You are the Terrain Analyst. There is no hazard polygon. Describe the summit fro
   terrain context as provisional and keep the run advisory.
 - drivers: slope_angle, plus recent_rain or forecast_rain only when the weather block supports them.
 - place: the mountain's name. Do not name a trail.
-- confidence: at most 0.5 when input_source is placeholder_terrain_sample, and at most 0.45 when there is
-  no model answer and the classifier state is UNCERTAIN."""
+- confidence: at most 0.45 when there is no model answer and the classifier state is UNCERTAIN."""
 
 WEATHER_SYSTEM = LOCATION_RULES + """
 You are the Weather Analyst. Say whether the rain at this summit makes the ground worse, stable, or better.
@@ -65,8 +64,8 @@ SYNTH_SYSTEM = LOCATION_RULES + """
 You are the Risk Synthesizer. You see every analyst report. Decide the severity, whether to monitor or
 close, and the ranger response. Do not name a trail. coverage_note must say that no trails are mapped.
 recommended_action is close only when the production classifier is decision_eligible and HIGH_RISK.
-Otherwise monitor. When the classifier is UNCERTAIN or the regional terrain is a placeholder, the response
-is an advisory to confirm on site."""
+Otherwise monitor. When the classifier is UNCERTAIN or the regional model has no terrain window, the
+response is an advisory to confirm on site."""
 
 WRITER_SYSTEM = LOCATION_RULES + """
 You are the Alert Writer. Write the ranger text and one hiker sentence.
@@ -178,11 +177,10 @@ class LocationPipeline(Pipeline):
             "confidence": out.confidence,
         }
         if geo.get("available"):
-            stand_in = " on stand-in terrain" if geo.get("input_source") == PLACEHOLDER_INPUT else ""
             run.trace.checks.append(
-                f"The regional model puts this summit at {geo['probability']:.2f} ({geo['risk_level']}){stand_in}. "
+                f"The regional model puts this summit at {geo['probability']:.2f} ({geo['risk_level']}). "
                 f"Production classifier state is {state}; terrain output remains context unless calibrated.")
-            summary = (f"Model {geo['risk_level']} at {geo['probability']:.2f}{stand_in} for {place}. "
+            summary = (f"Model {geo['risk_level']} at {geo['probability']:.2f} for {place}. "
                        f"Classifier {state.replace('_', ' ').lower()}.")
         else:
             run.trace.checks.append(f"No model answer ({geo.get('reason', 'unavailable')}); "
@@ -282,18 +280,13 @@ class LocationPipeline(Pipeline):
         geo = self.runs["terrain"].payload.get("model_prediction") or {"available": False}
         cell = _facts(self.runs, "terrain").get("cell_classification") or {}
         classifier_eligible = production_decision_eligible(cell)
-        placeholder = geo.get("input_source") == PLACEHOLDER_INPUT
         spread = level_spread(levels)
-        # A run on stand-in terrain, or with no model answer and an uncovered classifier, goes
-        # out as an advisory: the numbers are live but the ground is not confirmed on site.
-        needs_review = spread >= 2 or placeholder or (not geo.get("available") and state == "UNCERTAIN")
+        # With no model answer and an uncovered classifier, the run stays advisory.
+        needs_review = spread >= 2 or (not geo.get("available") and state == "UNCERTAIN")
         if self.ctx.production_prediction is not None and not classifier_eligible:
             needs_review = True
-        # Closing is allowed only on the model's own ground (or a HIGH_RISK classifier), never
-        # on a placeholder sample.
         may_close = (classifier_eligible and state == "HIGH_RISK") if self.ctx.production_prediction is not None else state == "HIGH_RISK" or (
-            geo.get("available") and geo.get("input_source") == REAL_INPUT
-            and geo.get("risk_level") in ("high", "extreme")
+            geo.get("available") and geo.get("risk_level") in ("high", "extreme")
         )
         context = {f"{agent}": reports[agent] for agent in ANALYSTS}
         context["Computed by code"] = {
@@ -352,9 +345,6 @@ class LocationPipeline(Pipeline):
                                     "decision can authorize a closure.")
         if "close" in remaining and action == "close":
             action = "monitor"
-        if placeholder:
-            run.trace.checks.append("The model scored a stand-in terrain sample, so the run goes out as an "
-                                    "advisory to confirm on site.")
         response, response_checks = clamp_response(out.response, severity, action, needs_review)
         run.trace.checks.extend(response_checks)
         run.trace.checks.append("No routes were attached: this mountain has no mapped trails.")
@@ -492,7 +482,7 @@ class LocationPipeline(Pipeline):
             probability = cell["calibrated_probability"]
         if geo.get("available"):
             method = geo["method"]
-            is_stand_in = geo.get("input_source") == PLACEHOLDER_INPUT
+            is_stand_in = False
             note = geo.get("note", "")
         else:
             method = "location cell classification"

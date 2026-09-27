@@ -4,7 +4,7 @@ import json
 
 from app.config import REPO_ROOT
 from app.hills import TURTLE_BBOX, TURTLE_SLUG, hills, in_hill_bbox, is_hill
-from app.ml.geo_susceptibility import PLACEHOLDER_INPUT, predict_summit
+from app.ml.geo_susceptibility import predict_summit
 
 HILLS_PATH = REPO_ROOT / "data" / "seed" / "hills.json"
 
@@ -41,7 +41,7 @@ def test_hills_seed_matches_shared_facts():
 
 def test_turtle_mountain_is_not_a_placeholder_sample():
     result = predict_summit(TURTLE_SLUG, 49.57694, -114.41222)
-    assert result.get("input_source") != PLACEHOLDER_INPUT
+    assert result.get("input_source") != "placeholder_terrain_sample"
     if result.get("available"):
         assert result["input_source"] == "turtle-mountain feature window"
         assert result["model_card"]["auc"] is None

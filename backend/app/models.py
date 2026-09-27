@@ -36,8 +36,7 @@ class Mountain(BaseModel):
     kind: PlaceKind = "mountain"
     # The regional LightGBM model's live answer at the summit, so the UI shows the model's
     # prediction rather than the seeded catalog color. model_input says what ground it scored:
-    # "regional_feature_stack" (the summit's own pixel) or "placeholder_terrain_sample" (a
-    # labeled slug-seeded stand-in until the mountain gets its own terrain window).
+    # Names the terrain window, e.g. regional_feature_stack or a hill-specific feature window.
     model_probability: float | None = None
     model_risk_level: RiskLevel | None = None
     model_method: str | None = None

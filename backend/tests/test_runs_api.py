@@ -232,12 +232,10 @@ def test_location_analyze_without_trails(api):
     if geo.get("available"):
         assert final["method"] == "regional terrain susceptibility (LightGBM)"
         assert final["advisory"]["model"]["map_max"] == geo["probability"]
-        # Huascarán has no terrain window of its own: stand-in input, so the run is an advisory.
-        assert geo["input_source"] == "placeholder_terrain_sample"
-        assert final["advisory"]["model"]["is_stand_in"] is True
-        assert final["needs_review"] is True
+        assert final["advisory"]["model"]["is_stand_in"] is False
     else:
         assert final["method"] == "location cell classification"
+        assert geo["available"] is False
     assert final["advisory"]["avoid"] == [] and final["advisory"]["safe"] == []
     assert "no trails" in final["agents"]["trail"]["summary"].lower()
 

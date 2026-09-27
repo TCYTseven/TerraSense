@@ -28,28 +28,46 @@ export function refreshLabel(mountain: Pick<Mountain, "is_live" | "last_analyzed
 }
 
 /**
- * The risk level a marker or badge shows. A finished run's severity wins (the agents started
- * from the model and decided); before any run, the model's live prediction; the seeded catalog
- * color only while the model has no answer.
+ * The risk level a marker or badge shows. After a finished run, severity from the agents wins.
+ * Before that, a live model score on real terrain may replace the catalog seed when the API sets
+ * model_risk_level.
  */
 export function displayRiskLevel(
-  mountain: Pick<Mountain, "current_risk_level" | "last_analyzed_at" | "model_risk_level">,
+  mountain: Pick<
+    Mountain,
+    "current_risk_level" | "last_analyzed_at" | "model_risk_level"
+  >,
 ): RiskLevel {
   if (mountain.last_analyzed_at) {
     return mountain.current_risk_level;
   }
-  return mountain.model_risk_level ?? mountain.current_risk_level;
+  if (mountain.model_risk_level != null) {
+    return mountain.model_risk_level;
+  }
+  return mountain.current_risk_level;
 }
 
-/** "Model 0.47 · stand-in terrain": the model's summit line, or null before it has an answer. */
+/** Summit score for the mountain card when the model level is shown; null for catalog seed only. */
+export function displayRiskScore(
+  mountain: Pick<Mountain, "model_probability" | "last_analyzed_at" | "model_risk_level">,
+): number | null {
+  if (mountain.last_analyzed_at) {
+    return null;
+  }
+  if (mountain.model_risk_level != null) {
+    return mountain.model_probability;
+  }
+  return null;
+}
+
+/** "Model 0.47": the model's summit line, or null before it has an answer. */
 export function modelPredictionLabel(
-  mountain: Pick<Mountain, "model_probability" | "model_input">,
+  mountain: Pick<Mountain, "model_probability">,
 ): string | null {
   if (mountain.model_probability == null) {
     return null;
   }
-  const standIn = mountain.model_input === "placeholder_terrain_sample" ? " · stand-in terrain" : "";
-  return `Model ${formatScore(mountain.model_probability)}${standIn}`;
+  return `Model ${formatScore(mountain.model_probability)}`;
 }
 
 /** "4,392 m". */

@@ -355,9 +355,8 @@ def get_location_facts(ctx: RunContext, mountain: str) -> dict:
 
     Used when the mountain has no trail geometry. cell_classification is the one cached production
     result and is authoritative only when its decision contract is eligible. model_prediction is
-    regional LightGBM terrain context; on a mountain without its own terrain window it says
-    input_source "placeholder_terrain_sample" and must be read as a stand-in. UNCERTAIN is a
-    coverage/data gap, not a finding of safety.
+    regional LightGBM terrain context when a real feature stack covers the summit; otherwise
+    available is false. UNCERTAIN is a coverage/data gap, not a finding of safety.
     """
     prediction = _production_prediction(ctx)
     geo = predict_summit(ctx.slug, ctx.peak[0], ctx.peak[1])
@@ -370,9 +369,8 @@ def get_location_facts(ctx: RunContext, mountain: str) -> dict:
         "display_risk_level": ctx.seed_level,
         "display_risk_note": "Catalog color only. It is not a measurement and it is not the model's answer.",
         "model_prediction": {
-            "role": "SOURCE OF TRUTH when available. These numbers are the terrain model's answer; "
-                    "explain them, do not recompute or contradict them. Heed input_source: a "
-                    "placeholder_terrain_sample is a labeled stand-in, not this summit's ground.",
+            "role": "SOURCE OF TRUTH when available is true. These numbers are the terrain model's "
+                    "answer on real satellite-derived features; explain them, do not recompute or contradict them.",
             **geo,
         },
         "cell_classification": prediction,

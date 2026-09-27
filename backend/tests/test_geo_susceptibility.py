@@ -1,4 +1,4 @@
-"""The live regional-model seam: real pixel parity with the baked map, and the stand-in path.
+"""The live regional-model seam: real pixel parity with the baked map, and fail-closed off-stack peaks.
 
 The parity test is the sync check for the whole feature: the backend's live prediction at a
 stack pixel must equal the value apply_susceptibility_map.py baked into susceptibility.tif,
@@ -12,7 +12,7 @@ import pytest
 import rasterio
 
 from app.ml import geo_susceptibility as geo
-from app.risk import BIN_EDGES, PROBABILITY_CEILING, cap_probability
+from app.risk import cap_probability
 
 pytestmark = pytest.mark.skipif(
     geo._artifacts_stamp() is None or not geo.STACK_PATH.is_file(),
@@ -57,48 +57,29 @@ def test_prediction_matches_the_baked_map():
         assert result["probability"] == pytest.approx(cap_probability(expected), abs=2e-4)
 
 
-def test_placeholder_is_deterministic_and_labeled():
-    first = geo.predict_summit("mount-everest", *EVEREST_PEAK)
-    again = geo.predict_summit("mount-everest", *EVEREST_PEAK)
-    assert first["input_source"] == geo.PLACEHOLDER_INPUT
-    assert "stand-in" .replace(" ", "-") in first["note"].lower() or "stand-in" in first["note"].lower()
-    assert first["probability"] == again["probability"]
-    assert 0.0 <= first["probability"] <= 1.0
-    assert first["features"]["landcover"] != geo.WATER_CLASS
-
-
-def test_placeholder_varies_by_slug():
-    slugs = ["mount-everest", "kilimanjaro", "denali", "aconcagua", "mont-blanc"]
-    values = {geo.predict_summit(slug, *EVEREST_PEAK)["probability"] for slug in slugs}
-    assert len(values) > 1  # different slugs sample different ground
-    assert max(values) <= PROBABILITY_CEILING
-
-
-def test_risk_level_matches_shared_bins():
+def test_outside_stack_summit_is_unavailable():
     result = geo.predict_summit("mount-everest", *EVEREST_PEAK)
-    p = result["probability"]
-    low, high_edge, extreme = BIN_EDGES
-    expected = "low" if p < low else "moderate" if p < high_edge else "high" if p < extreme else "extreme"
-    assert result["risk_level"] == expected
+    assert result["available"] is False
+    assert result["probability"] is None
+    assert result["input_source"] is None
+    assert "outside the regional feature stack" in result["reason"]
 
 
-def test_polar_summit_uses_placeholder_not_projection_error():
-    """Antarctic peaks are outside the Rainier UTM stack's warp domain; catalog must not 500."""
+def test_polar_summit_outside_stack_is_unavailable():
+    """Antarctic peaks are outside the Rainier UTM stack; catalog must not invent terrain."""
     result = geo.predict_summit("mount-kirkpatrick", -84.3333, 166.4167)
-    assert result["available"] is True
-    assert result["input_source"] == geo.PLACEHOLDER_INPUT
-    assert 0.0 <= result["probability"] <= 1.0
+    assert result["available"] is False
+    assert result["probability"] is None
 
 
-def test_turtle_mountain_refuses_placeholder():
-    """The hill is outside the Washington stack, so a slug-seeded sample is not its ground."""
+def test_turtle_mountain_uses_hill_window_or_unavailable():
+    """The hill is outside the Washington stack; only its own raster may score it."""
     result = geo.predict_summit("turtle-mountain", 49.57694, -114.41222)
-    assert result.get("input_source") != geo.PLACEHOLDER_INPUT
     if result["available"]:
-        assert result["input_source"] == "turtle-mountain feature window"
+        assert "feature window" in result["input_source"]
         assert result["model_card"]["auc"] is None
     else:
-        assert "placeholder" not in result["reason"]
+        assert "hill terrain window" in result["reason"]
 
 
 def test_missing_artifacts_fail_soft(monkeypatch, tmp_path):

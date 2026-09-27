@@ -2,17 +2,14 @@
 
 The heat map already carries this model: ml/scripts/apply_susceptibility_map.py bakes
 ml/artifacts/susceptibility_lgbm.txt into ml/artifacts/susceptibility.tif offline. This module
-is the live seam for a single point, so the agents and the catalog can read the model's own
-answer for a mountain that has no baked raster: it loads the same booster and isotonic
-calibration, pulls the 16 terrain features from the satellite-derived feature stack
-(data/processed/rainier_regional_features.tif), and returns the calibrated probability with
-the shared risk level. predict at a stack pixel matches the raster to within float32.
+is the live seam for a single point: it loads the same booster and isotonic calibration, pulls
+the 16 terrain features from a built feature stack, and returns the calibrated probability with
+the shared risk level. At a pixel inside data/processed/rainier_regional_features.tif the answer
+matches the raster to within float32.
 
-A summit outside the stack has no satellite terrain of its own yet. Until each catalog
-mountain gets its own DEM and land-cover window, predict_summit falls back to a deterministic
-stand-in: a real terrain sample drawn from the stack, seeded by the slug so it is stable
-across restarts. The answer is labeled input_source="placeholder_terrain_sample" and its note
-says so; nothing may present it as the mountain's own ground.
+Catalog peaks outside that stack are scored only when they have their own hill feature window
+(data/processed/hills/<slug>/features.tif). Otherwise predict_summit returns unavailable — no
+synthetic or slug-seeded terrain samples.
 """
 
 from __future__ import annotations
@@ -38,14 +35,6 @@ METRICS_PATH = REPO_ROOT / "ml" / "artifacts" / "metrics.json"
 
 METHOD = "regional terrain susceptibility (LightGBM)"
 REAL_INPUT = "regional_feature_stack"
-PLACEHOLDER_INPUT = "placeholder_terrain_sample"
-HILL_INPUT = "hill_feature_window"
-PLACEHOLDER_NOTE = (
-    "STAND-IN INPUT: this mountain has no satellite terrain window of its own yet, so the "
-    "model scored a real terrain sample from the training stack, chosen deterministically "
-    "from the mountain's slug. The probability is a live model output on placeholder ground, "
-    "not a measurement of this summit."
-)
 
 # The booster was trained with landcover as a pandas Categorical over these WorldCover
 # classes (the pandas_categorical footer of susceptibility_lgbm.txt), so a raw class value
@@ -53,12 +42,8 @@ PLACEHOLDER_NOTE = (
 LANDCOVER_CLASSES = (10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100)
 WATER_CLASS = 80  # never trained on water; the offline map zeroes it, so this seam does too
 TOP_DRIVERS = 5
-# The placeholder pool subsamples the stack on this pixel stride: dense enough that every
-# slug lands on distinct ground, sparse enough to keep the pool under a megabyte.
-POOL_STRIDE = 8
 
 _model_cache: tuple[float, Any, list[str], np.ndarray, np.ndarray, dict] | None = None
-_pool_cache: tuple[float, np.ndarray] | None = None
 _prediction_cache: dict[tuple[str, float, float], dict] = {}
 
 
@@ -133,46 +118,6 @@ def _stack_features(
     return out
 
 
-def _placeholder_pool(features: list[str]) -> np.ndarray | None:
-    """Valid feature rows subsampled from the stack, for the slug-seeded stand-in."""
-    global _pool_cache
-    if not STACK_PATH.is_file():
-        return None
-    stamp = STACK_PATH.stat().st_mtime
-    if _pool_cache and _pool_cache[0] == stamp:
-        return _pool_cache[1]
-    with rasterio.open(STACK_PATH) as src:
-        stack = src.read()[:, ::POOL_STRIDE, ::POOL_STRIDE].astype("float64")
-        names = list(src.descriptions)
-    if any(name not in names for name in features):
-        return None
-    bands = np.stack([stack[names.index(name)] for name in features])
-    valid = np.isfinite(bands).all(axis=0)
-    landcover = bands[features.index("landcover")]
-    valid &= landcover != WATER_CLASS  # a stand-in on water would pin the answer to zero
-    pool = bands[:, valid].T  # (n_pixels, n_features)
-    if pool.shape[0] == 0:
-        return None
-    _pool_cache = (stamp, pool)
-    return pool
-
-
-def _slug_seed(slug: str) -> int:
-    """FNV-1a, so the same slug samples the same stand-in terrain on every process."""
-    h = 2166136261
-    for char in slug:
-        h = ((h ^ ord(char)) * 16777619) & 0xFFFFFFFF
-    return h
-
-
-def _placeholder_features(slug: str, features: list[str]) -> dict[str, float] | None:
-    pool = _placeholder_pool(features)
-    if pool is None:
-        return None
-    row = pool[_slug_seed(slug) % pool.shape[0]]
-    return dict(zip(features, (float(v) for v in row), strict=True))
-
-
 def _predict(booster: Any, features: list[str], values: dict[str, float],
              x_thresholds: np.ndarray, y_thresholds: np.ndarray) -> tuple[float, float]:
     """(raw booster score, calibrated probability under the shared cap), mirroring apply_susceptibility_map.py."""
@@ -210,7 +155,7 @@ def _unavailable(reason: str) -> dict[str, Any]:
 
 
 def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
-    """The regional model's answer at one summit, on real or clearly labeled stand-in terrain.
+    """The regional model's answer at one summit when real terrain features exist.
 
     Always JSON-native. `probability` is the isotonic-calibrated relative susceptibility (the
     same quantity as the heat map's pixels), `risk_level` its shared bin. Cached per point per
@@ -219,7 +164,7 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
     stamp = _artifacts_stamp()
     if stamp is None:
         missing = [str(p.relative_to(REPO_ROOT)) if p.is_relative_to(REPO_ROOT) else str(p)
-                   for p in (MODEL_PATH, CALIBRATION_PATH, STACK_PATH) if not p.is_file()]
+                   for p in (MODEL_PATH, CALIBRATION_PATH) if not p.is_file()]
         return _unavailable(f"model artifacts missing: {', '.join(missing)}")
     key = (slug, round(lat, 4), round(lon, 4))
     cache_stamp: Any = stamp
@@ -235,7 +180,6 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
     booster, features, x_thresholds, y_thresholds, metrics = loaded
 
     if is_hill(slug):
-        # A hill outside the Washington stack must not inherit a slug-seeded stand-in.
         values = _stack_features(lat, lon, features, hill_stack_path(slug))
         if values is None:
             return _unavailable(
@@ -247,13 +191,11 @@ def predict_summit(slug: str, lat: float, lon: float) -> dict[str, Any]:
         )
     else:
         values = _stack_features(lat, lon, features)
-        if values is not None:
-            input_source, note = REAL_INPUT, "Scored on this point's own satellite-derived terrain."
-        else:
-            values = _placeholder_features(slug, features)
-            if values is None:
-                return _unavailable("no terrain features: the feature stack has no valid pixels")
-            input_source, note = PLACEHOLDER_INPUT, PLACEHOLDER_NOTE
+        if values is None:
+            return _unavailable(
+                "summit is outside the regional feature stack and has no dedicated terrain window"
+            )
+        input_source, note = REAL_INPUT, "Scored on this point's own satellite-derived terrain."
 
     raw, probability = _predict(booster, features, values, x_thresholds, y_thresholds)
     level: RiskLevel = risk_level(probability)
