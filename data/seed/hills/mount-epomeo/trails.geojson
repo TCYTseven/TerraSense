@@ -1,0 +1,138 @@
+{
+  "type": "FeatureCollection",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "mount-epomeo",
+        "name": "vecchio sentiero",
+        "length_km": 0.29,
+        "elevation_gain_m": 43,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.89864,
+            40.7234
+          ],
+          [
+            13.89816,
+            40.72426
+          ],
+          [
+            13.89791,
+            40.72443
+          ],
+          [
+            13.89788,
+            40.72458
+          ],
+          [
+            13.89798,
+            40.72463
+          ],
+          [
+            13.89797,
+            40.72474
+          ],
+          [
+            13.89789,
+            40.72479
+          ],
+          [
+            13.89784,
+            40.72525
+          ],
+          [
+            13.89797,
+            40.72543
+          ],
+          [
+            13.89827,
+            40.72562
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "mount-epomeo",
+        "name": "Frasitelli Ciglio",
+        "length_km": 0.53,
+        "elevation_gain_m": 93,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            13.88196,
+            40.72011
+          ],
+          [
+            13.8818,
+            40.72024
+          ],
+          [
+            13.88171,
+            40.72041
+          ],
+          [
+            13.88108,
+            40.72073
+          ],
+          [
+            13.88091,
+            40.72087
+          ],
+          [
+            13.88082,
+            40.72099
+          ],
+          [
+            13.88076,
+            40.72122
+          ],
+          [
+            13.88108,
+            40.7214
+          ],
+          [
+            13.88117,
+            40.7217
+          ],
+          [
+            13.88148,
+            40.72213
+          ],
+          [
+            13.8818,
+            40.72228
+          ],
+          [
+            13.8818,
+            40.72257
+          ],
+          [
+            13.88231,
+            40.72265
+          ],
+          [
+            13.88255,
+            40.7229
+          ],
+          [
+            13.88233,
+            40.72377
+          ]
+        ]
+      }
+    }
+  ]
+}
