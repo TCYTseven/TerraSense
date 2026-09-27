@@ -2,6 +2,7 @@
 
 A simulation traces frames down the one route most likely to fail, then asks Gemini
 or Grok for one downvalley community alert (with a static fallback when no key is set).
+The place's kind picks the physics: a snow avalanche on a mountain, a debris flow on a hill.
 The snapshot goes out before the alert, so the map can play while the model answers.
 """
 
@@ -13,6 +14,7 @@ from dataclasses import dataclass, field
 
 from app.ml.pressure import worst_route
 from app.ml.runout import trace_runout
+from app.ml.runout_physics import process_for
 from app.simulation_communities import generate_community_callout
 
 NOTHING_TO_SIMULATE = "Nothing reaches Moderate today, so there's nothing to simulate."
@@ -32,6 +34,7 @@ class SimulationState:
     drop_m: float = 0
     frames: list = field(default_factory=list)
     flow_field: dict | None = None
+    physics: dict | None = None
     steps: list = field(default_factory=list)
     callouts: list = field(default_factory=list)
     callouts_from_templates: bool = False
@@ -52,6 +55,7 @@ class SimulationState:
             "drop_m": self.drop_m,
             "frames": self.frames,
             "field": self.flow_field,
+            "physics": self.physics,
             "steps": self.steps,
             "callouts": self.callouts,
             "callouts_from_templates": self.callouts_from_templates,
@@ -78,7 +82,8 @@ class SimulationRegistry:
 
     async def _run(self, state: SimulationState, point: dict, trails: list[dict]) -> None:
         try:
-            traced = await asyncio.to_thread(trace_runout, point, trails)
+            process = process_for((state.mountain or {}).get("kind"))
+            traced = await asyncio.to_thread(trace_runout, point, trails, process)
             # The flow releases at the route's highest point, so the pin and the camera go there.
             release = traced["release"]
             point = {**point, "lon": release["lon"], "lat": release["lat"], "elevation_m": release["elevation_m"]}
@@ -90,6 +95,7 @@ class SimulationRegistry:
             state.drop_m = traced["drop_m"]
             state.frames = traced["frames"]
             state.flow_field = traced.get("field")
+            state.physics = traced.get("physics")
             state.steps = traced["steps"]
             self._broadcast(state, {"type": "snapshot", "simulation": state.view()})
             mountain = state.mountain or {"slug": state.slug, "name": state.slug.replace("-", " ").title()}

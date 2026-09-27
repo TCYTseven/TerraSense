@@ -40,8 +40,11 @@ def blur(values, passes: int = 1):
     return out
 
 
-def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: float) -> dict | None:
-    """The routed footprint as a field, cropped to the flow plus a small margin."""
+def terrain_field(grid, mask, arrive_s, share, duration_s: float) -> dict | None:
+    """The routed footprint as a field, cropped to the flow plus a small margin.
+
+    arrive_s is each cell's arrival time in seconds, from the process's speed model.
+    """
     import numpy as np
 
     if not mask.any():
@@ -57,8 +60,8 @@ def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: floa
     cover = blur(solid, BLUR_PASSES)
     # Arrival averaged over flow cells only (normalized convolution), so the soft rim
     # takes its neighbours' time and the 8-direction fronts round off.
-    arrive = np.where(inside, arrive_m[r0:r1, c0:c1], 0.0)
-    arrive = blur(arrive * solid, BLUR_PASSES) / np.maximum(cover, 1e-9) / speed_ms
+    arrive = np.where(inside, arrive_s[r0:r1, c0:c1], 0.0)
+    arrive = blur(arrive * solid, BLUR_PASSES) / np.maximum(cover, 1e-9)
 
     # Deep where the cell sits far in from the edge and where most flow passes.
     inward = flow_routing.shade_depth(inside, DEPTH_LEVELS) / (DEPTH_LEVELS - 1)
@@ -73,12 +76,12 @@ def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: floa
     return encode(corners, cover, np.where(cover > 0, arrive, np.nan), depth, duration_s)
 
 
-def trail_field(samples: list[tuple[float, float, float]], half_width_m, speed_ms: float, duration_s: float) -> dict | None:
+def trail_field(samples: list[tuple[float, float, float]], half_width_m, clock, duration_s: float) -> dict | None:
     """A ribbon along the sampled path, widening downhill, on a z13 Mercator grid.
 
     samples are (lon, lat, metres along). half_width_m(dist) gives the ribbon's half
-    width at that distance. Arrival is the distance along the path at the nearest
-    point, over the front speed.
+    width at that distance. clock(dist) is the front's arrival in seconds at a distance
+    along the path; each pixel takes the arrival at its nearest point on the path.
     """
     import numpy as np
 
@@ -111,7 +114,7 @@ def trail_field(samples: list[tuple[float, float, float]], half_width_m, speed_m
     # 1 at the centerline, 0.5 at the ribbon edge, 0 at twice the half width.
     cover = np.clip(1 - best / 2, 0, 1)
     depth = np.clip(1 - best, 0, 1) ** 0.8
-    arrive = np.where(cover > 0, best_along / speed_ms, np.nan)
+    arrive = np.where(cover > 0, np.vectorize(clock, otypes=[float])(best_along), np.nan)
     corners = [_lonlat(x0, y0), _lonlat(x1, y0), _lonlat(x1, y1), _lonlat(x0, y1)]
     return encode(corners, cover, arrive, depth, duration_s)
 

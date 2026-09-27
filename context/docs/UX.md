@@ -32,7 +32,7 @@ The judge demo walks that order on purpose: globe, mountain panel, simulation, m
 8. **Static mountains do not pretend to analyze.** Hide **Analyze now** when `is_live` is false. Hide **Simulate** when the mountain has no routes. The seed's static peaks have no routes, so they show neither.
 9. **A running analysis is visible.** An Orchestrator node and five agent cards, each idle, running, done, or error. The running card moves. A failure says the run failed and leaves the last good hazard on the map.
 10. **Motion is short.** Idle globe spin. A slow idle orbit of the mountain on the mountain page, which stops for the user. Fly-to in about 1.5 seconds. Heat map fades in. A simulation plays its flow down the slope. Nothing else animates unless it shows that work is happening.
-11. **A simulation says what it is.** It is an illustrative landslide and debris-flow runout from the route most likely to fail, not a forecast of timing and not a snow avalanche. Every public message it shows is a draft that was not sent.
+11. **A simulation says what it is.** It is an illustrative runout from the route most likely to fail: a snow avalanche on a mountain, a landslide and debris flow on a hill (Sep 27, 2026). It is not a forecast of timing and not an avalanche bulletin. Every public message it shows is a draft that was not sent.
 
 ## The screens
 

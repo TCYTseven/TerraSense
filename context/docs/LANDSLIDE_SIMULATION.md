@@ -2,7 +2,7 @@
 
 For a browser-speed runout ("path") simulator on a DEM, the model to build is a Flow-Py/Flow-R/GPP-style multiple-flow-direction router: Holmgren exponent weighting, a persistence (inertia) term, and an energy-line (reach-angle / Fahrböschung) stopping rule. Next to it, add an optional 1-D Voellmy or Perla–Cheng–McClung (PCM) velocity profile along the most likely path. Use depth-averaged solvers (RAMMS, AvaFrame com1DFA, r.avaflow, D-Claw, Titan2D) only offline, for validation and calibration.
 
-**TerraSense today.** **Simulate** on the mountain page plays an **illustrative rain-triggered landslide / debris-flow** runout (`backend/app/ml/runout.py`), not a snow-avalanche forecast. Mount Rainier and other alpine mountains still sit in **avalanche terrain**; agents discuss weather and snow in traces, and rangers expect avalanche-bulletin language in disclaimers. The **snow-avalanche** material below is pertinent for mountains, for calibrating future runout modes, and for not conflating debris-flow playback with ski-tour or winter hazard maps.
+**TerraSense today (Sep 27, 2026).** **Simulate** on the mountain page runs Tier A and Tier B from this document (`backend/app/ml/runout_physics.py`, `flow_routing.py`, `runout.py`). A **hill** plays an illustrative debris-flow runout: Flow-R's 11° energy line capped at $V_{max}=15\ \mathrm{m\,s^{-1}}$, proportional persistence, and the energy-line speed. A **mountain** plays an illustrative snow-avalanche runout: the α–β reach angle (one SD long) on the steepest-descent profile, Flow-Py's exponent 8 with cosine persistence, and a Voellmy sled (μ 0.16, ξ 1360, h 1 m) integrated in PCM's closed form. Two project rules sit on top: the flow never moves to a higher cell, and the debris-flow exponent stays at the diffuse 1.1 so the footprint is an area on the coarse 26 m grid. None of it knows the snowpack, so it is not an avalanche bulletin or ATES map.
 
 ## TL;DR
 
@@ -108,7 +108,7 @@ $$E^{i}_{kin}=E^{0}_{kin}+\Delta E^{i}_{pot}-E^{i}_{f}$$
 
 **Simplified friction-limited model (SFLM):** $E^{i}_f=g\,\Delta x\tan\varphi$, with velocity cap
 $$V_i=\min\left\{\sqrt{V_0^2+2g\Delta h-2g\Delta x\tan\varphi},\;V_{max}\right\}$$
-Minimum travel angle in the Swiss Alps: about **11°** for coarse/medium debris flows, **7°** for fine-grained. Observed maximum Swiss debris-flow velocities were 13–14 m s⁻¹, so the authors often use $V_{max}=15\ \mathrm{m\,s^{-1}}$.\[14\] (TerraSense's implemented router uses the 11° angle and Holmgren spread on a local DEM; it does not yet use $V_{max}$ or persistence.)
+Minimum travel angle in the Swiss Alps: about **11°** for coarse/medium debris flows, **7°** for fine-grained. Observed maximum Swiss debris-flow velocities were 13–14 m s⁻¹, so the authors often use $V_{max}=15\ \mathrm{m\,s^{-1}}$.\[14\] (TerraSense's router uses the 11° angle, Holmgren spread, proportional persistence and $V_{max}=15$ on a local DEM for debris flows; see `backend/app/ml/runout_physics.py`.)
 
 **PCM option:** the closed-form segment update (Section 5.2), with momentum correction $V_i'=V_i\cos(\beta_i-\beta_{i+1})$ at sharp slope decreases.\[14\]
 

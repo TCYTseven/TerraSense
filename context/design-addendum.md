@@ -239,7 +239,7 @@ Sep 26, 2026: playback is on the mountain page. The flow draws on that map. A ba
 
 1. **Back to pressure points.**
 2. **Title row.** "Simulating pressure point 1" at body size, 600. Right-aligned on the same line, the simulated clock in mono, such as `T+04:30`.
-3. **Method line.** Meta, muted: "Illustrative runout from a travel-angle model on 30 m terrain. Not a forecast of timing." (UX.md rule 11). It never hides.
+3. **Method line.** Meta, muted, from the backend. It names the process and its parameters, such as "Illustrative snow-avalanche runout on 26 m terrain: α–β reach angle 19°, Voellmy sled (μ 0.16, ξ 1360 m/s²). Not a forecast of timing." (UX.md rule 11, Sep 27, 2026). It never hides.
 4. **Steps.** The label "Steps", then one row per step in order. The rows reuse the [agent card](#agent-pipeline) glyphs: a hollow circle for steps not reached, the 8 px dot with the work pulse for the current step, a check for steps passed. Each row has a title at body size, then a meta line with the simulated time and the step's values, 12 px apart. A trail step adds the level dot and word of the flow where it crosses. Steps never take a risk-colored glyph or background.
 5. **Callouts.** The label "Callouts", then each callout as its step is reached. See [Callouts](#callouts).
 6. **Status line.** When playback ends: "Simulation finished. The flow ran 1.4 mi and crossed 2 trails." in the status line style from [States](#states).

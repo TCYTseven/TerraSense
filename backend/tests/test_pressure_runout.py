@@ -4,7 +4,8 @@ import pytest
 
 from app.ml import pressure, runout
 from app.ml.pressure import rank_pressure_points
-from app.ml.runout import METHOD_TRAIL, METHOD_TRAIL_TERRAIN, trace_runout
+from app.ml.runout import METHOD_TRAIL, method_trail_terrain, trace_runout
+from app.ml.runout_physics import DEBRIS_FLOW
 from app.risk import cap_probability
 from app.simulation_communities import fallback_community_callout
 from app.simulations import template_callouts
@@ -155,7 +156,7 @@ def test_runout_releases_at_the_top_and_never_flows_up(monkeypatch):
     monkeypatch.setattr(runout, "sample_elevations", heights)
     point = rank_pressure_points([CREST])[0]
     traced = trace_runout(point, [CREST])
-    assert traced["method"] == METHOD_TRAIL_TERRAIN
+    assert traced["method"] == method_trail_terrain(DEBRIS_FLOW)
     assert traced["release"]["elevation_m"] == pytest.approx(1500, abs=15)
     assert abs(traced["release"]["lat"] - 46.805) < 0.001
     # It takes the longer drop (north), stops in the dip, and never climbs the knob.
@@ -176,7 +177,7 @@ def test_trail_field_sweeps_downhill_and_decodes():
     from app.ml import flow_field
 
     samples = [(-121.76, 46.85, 0.0), (-121.76, 46.845, 555.0), (-121.755, 46.84, 1200.0)]
-    field = flow_field.trail_field(samples, lambda dist: 20 + dist * 0.02, 5, 240)
+    field = flow_field.trail_field(samples, lambda dist: 20 + dist * 0.02, lambda dist: dist / 5, 240)
     width, height = field["width"], field["height"]
     cover = np.frombuffer(base64.b64decode(field["cover"]), np.uint8).reshape(height, width)
     arrival = np.frombuffer(base64.b64decode(field["arrival"]), "<u2").reshape(height, width)
