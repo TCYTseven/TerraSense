@@ -17,6 +17,12 @@ BIN_EDGES = (0.2, 0.45, 0.7)
 # The lower edge of "high": the segments a bypass avoids and the cells a hazard zone holds.
 HIGH_THRESHOLD = BIN_EDGES[1]
 
+# Model ceiling. Raw scores above the knee are squeezed linearly into [knee, ceiling], so a
+# model that says 0.93 or 1.0 reads 0.78 or 0.80: still "extreme", still ranked, never certain.
+# Every bin edge sits at or below the knee, so levels and thresholds do not move.
+PROBABILITY_KNEE = 0.70
+PROBABILITY_CEILING = 0.80
+
 # Level colors from Design Language. The backend needs them for the map tiles. The frontend
 # keeps its own copies in globals.css and lib/theme.ts.
 RISK_HEX: dict[RiskLevel, str] = {
@@ -33,6 +39,14 @@ def risk_level(probability: float) -> RiskLevel:
         if probability < edge:
             return level
     return "extreme"
+
+
+def cap_probability(probability: float) -> float:
+    """A 0-1 model score with everything above PROBABILITY_KNEE compressed under PROBABILITY_CEILING."""
+    value = min(1.0, max(0.0, float(probability)))
+    if value <= PROBABILITY_KNEE:
+        return value
+    return PROBABILITY_KNEE + (PROBABILITY_CEILING - PROBABILITY_KNEE) * (value - PROBABILITY_KNEE) / (1.0 - PROBABILITY_KNEE)
 
 
 def level_index(level: RiskLevel) -> int:

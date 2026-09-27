@@ -13,7 +13,7 @@ You review one TerraSense step. You do not edit files.
 Check, in this order:
 
 1. **Done when.** Run the check the step names, or the closest check you can run. Say what you ran and what it printed.
-2. **Shared facts.** Slug, bounding box, risk levels, and probability bins match `context/implementation-steps.md`.
+2. **Shared facts.** Slug, bounding box, risk levels, probability bins, and the model ceiling (no model score above 0.80, via `cap_probability`) match `context/implementation-steps.md`.
 3. **Contracts.** A backend response change has a matching change in `frontend/lib/types.ts`, and the reverse.
 4. **Scope.** Nothing from the Out of Scope list in `context/TerraSense.md`. No work from a later step.
 5. **Bookkeeping.** The checklist box is ticked and `context/docs/CODE_REFERENCE.md` lists every added, renamed, or deleted file.

@@ -16,7 +16,7 @@ import rasterio
 
 from app.ml.hazard import point_terrain
 from app.ml.model_b import RAINFALL_THRESHOLD_72H_MM
-from app.ml.probability import ProbabilityMap
+from app.ml.probability import ProbabilityMap, is_capped
 from app.ml.probability import summarize as summarize_map
 from app.hills import hill_bbox, hill_probability_path, hill_stack_path, is_hill
 from app.risk import HIGH_THRESHOLD, risk_level
@@ -33,8 +33,9 @@ def saved_map(path: Path) -> tuple[ProbabilityMap, datetime] | None:
         return None
     with rasterio.open(path) as src:
         values = src.read(1).astype("float32")
-        method = src.tags().get("METHOD", "unknown")
-        grid = ProbabilityMap(values, src.transform, src.crs.to_string(), method)
+        tags = src.tags()
+        grid = ProbabilityMap(values, src.transform, src.crs.to_string(), tags.get("METHOD", "unknown"),
+                              capped=is_capped(tags))
     return grid, datetime.fromtimestamp(path.stat().st_mtime, UTC)
 
 

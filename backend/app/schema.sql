@@ -236,3 +236,9 @@ CREATE INDEX IF NOT EXISTS previous_runs_domain_idx ON previous_runs (domain, st
 CREATE INDEX IF NOT EXISTS previous_runs_mountain_domain_idx
   ON previous_runs (mountain_slug, domain, started_at DESC);
 CREATE INDEX IF NOT EXISTS hazards_domain_idx ON hazards (mountain_id, domain, created_at DESC);
+
+-- Model ceiling (app/risk.py PROBABILITY_CEILING). New writes arrive already capped; this pulls
+-- rows saved before the cap down to the ceiling. Safe to re-run. previous_runs is the verbatim
+-- history log and keeps what each run said at the time.
+UPDATE trail_segments SET probability = 0.8 WHERE probability > 0.8;
+UPDATE hazards SET probability = 0.8 WHERE probability > 0.8;

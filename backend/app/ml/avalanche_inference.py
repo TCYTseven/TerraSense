@@ -28,6 +28,7 @@ from app.ml.avalanche_contract import (
     PredictionState,
 )
 from app.ml.avalanche_features import avalanche_dynamic_features
+from app.risk import cap_probability
 from app.weather import HourlyRain, as_of, try_hourly_rain
 
 _configured_artifacts = os.environ.get("AVALANCHE_ARTIFACT_DIR", "").strip()
@@ -100,7 +101,7 @@ def _reported_probability(value: float) -> tuple[float, bool, float]:
     """Apply the API headline floor without changing calibrated model semantics."""
     configured = _env_float("MIN_REPORTED_HAZARD_PROBABILITY", DEFAULT_MIN_REPORTED_PROBABILITY)
     floor = max(DEFAULT_MIN_REPORTED_PROBABILITY, min(1.0, configured))
-    bounded = max(0.0, min(1.0, float(value)))
+    bounded = cap_probability(value)
     return round(max(floor, bounded), 4), bounded < floor, floor
 
 
@@ -357,6 +358,6 @@ def predict_location(latitude: float, longitude: float, timestamp: datetime | No
     state: PredictionState = "UNCERTAIN" if reasons or quality < _env_float("AVALANCHE_MIN_DATA_QUALITY", DEFAULT_MIN_DATA_QUALITY) else ("HIGH_RISK" if probability >= float(threshold) else "NOT_HIGH_RISK")
     uncertainty = min(0.45, 0.08 + (ood_score or 0.0) * 0.5 + (1.0 - quality) * 0.4)
     reported_probability, floor_applied, floor = _reported_probability(probability)
-    return AvalanchePrediction(latitude, longitude, start, start + timedelta(hours=PREDICTION_HORIZON_HOURS), state, reported_probability, threshold, round(max(0.0, probability - uncertainty), 4), round(min(1.0, probability + uncertainty), 4), quality, ood_score, list(dict.fromkeys(reasons)), _drivers(model, features), {
+    return AvalanchePrediction(latitude, longitude, start, start + timedelta(hours=PREDICTION_HORIZON_HOURS), state, reported_probability, threshold, round(cap_probability(probability - uncertainty), 4), round(cap_probability(probability + uncertainty), 4), quality, ood_score, list(dict.fromkeys(reasons)), _drivers(model, features), {
         "snow_depth_m": features.get("snow_depth_m"), "new_snow_24h_cm": features.get("new_snow_24h_cm"), "forecast_snowfall_72h_cm": features.get("forecast_snowfall_0_72h"), "wind_loading_proxy_24h": features.get("wind_loading_proxy_24h"),
-    }, sources, {"available": True, "version": metadata.get("model_version"), "trained_at": metadata.get("training_date"), "calibration_method": calibration.get("method"), "validation": metadata.get("validation")}, calibrated_probability=round(probability, 4), probability_floor_applied=floor_applied, probability_floor=floor)
+    }, sources, {"available": True, "version": metadata.get("model_version"), "trained_at": metadata.get("training_date"), "calibration_method": calibration.get("method"), "validation": metadata.get("validation")}, calibrated_probability=round(cap_probability(probability), 4), probability_floor_applied=floor_applied, probability_floor=floor)
