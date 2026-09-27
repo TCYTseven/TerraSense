@@ -72,6 +72,7 @@ export default function MountainTerrainView({
         flowField={flowField}
         playhead={playhead}
         flowActive={flowActive}
+        flowPalette={mountain.kind === "mountain" ? "snow" : "debris"}
       />
     </div>
   );

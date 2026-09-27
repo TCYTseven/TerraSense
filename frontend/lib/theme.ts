@@ -34,6 +34,19 @@ export const HOME_THEME = {
  */
 export const FLOW_COLORS = ["#4A2C16", "#6B4226", "#8B5E3C", "#AD8358", "#CDAE84"] as const;
 
+/**
+ * The same runout on a mountain, drawn as an avalanche: light blue at the deep core,
+ * paling toward white as the snow thins and spreads. Indexed like FLOW_COLORS.
+ */
+export const AVALANCHE_COLORS = ["#7FB8E0", "#99C8E8", "#B4D8F0", "#CFE7F6", "#EAF5FC"] as const;
+
+/** Which ramp a runout is drawn in: dirt for landslides, snow for mountain avalanches. */
+export type FlowPalette = "debris" | "snow";
+
+export function flowColors(palette: FlowPalette): readonly string[] {
+  return palette === "snow" ? AVALANCHE_COLORS : FLOW_COLORS;
+}
+
 /** Risk colors. They mark risk and nothing else. */
 export const RISK_COLORS = {
   low: "#22C55E",

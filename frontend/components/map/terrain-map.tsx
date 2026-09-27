@@ -6,6 +6,7 @@ import {
   type ImageSource,
   type RasterTileSource,
   MapLibreMap,
+  type ExpressionSpecification,
   type MapMouseEvent,
   type MapSourceDataEvent,
   Marker,
@@ -15,7 +16,7 @@ import {
 } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
-import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
+import { type FlowPalette, flowColors, RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import { type Playhead, playheadTime, RunoutMesh } from "@/lib/runout-field";
 import type { ReleaseCamera } from "@/lib/use-simulation";
@@ -103,6 +104,8 @@ export interface TerrainMapProps {
   playhead?: Playhead | null;
   /** Dims the probability heat map while the flow is on screen. */
   flowActive?: boolean;
+  /** Dirt for a landslide, pale blue snow for an avalanche on a mountain. */
+  flowPalette?: FlowPalette;
 }
 
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
@@ -328,6 +331,7 @@ export default function TerrainMap({
   flowField = null,
   playhead = null,
   flowActive = false,
+  flowPalette = "debris",
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -451,9 +455,25 @@ export default function TerrainMap({
       return;
     }
     const data = flow ?? EMPTY_FLOW;
+    const colors = flowColors(flowPalette);
+    // Darkest at the core, paling toward the sides. Bands stack edge first.
+    const fillColor: ExpressionSpecification = [
+      "match",
+      ["get", "shade"],
+      0,
+      colors[0],
+      1,
+      colors[1],
+      2,
+      colors[2],
+      3,
+      colors[3],
+      colors[4],
+    ];
     const source = map.getSource<GeoJSONSource>(SOURCE.flow);
     if (source) {
       source.setData(data);
+      map.setPaintProperty(LAYER.flow, "fill-color", fillColor);
       if (map.getLayer(LAYER.flowEdge)) {
         map.setFilter(LAYER.flowEdge, ["==", ["get", "rim"], true]);
       }
@@ -466,20 +486,7 @@ export default function TerrainMap({
         type: "fill",
         source: SOURCE.flow,
         paint: {
-          // Dirt brown at the core, paling toward the sides. Bands stack edge first.
-          "fill-color": [
-            "match",
-            ["get", "shade"],
-            0,
-            FLOW_COLORS[0],
-            1,
-            FLOW_COLORS[1],
-            2,
-            FLOW_COLORS[2],
-            3,
-            FLOW_COLORS[3],
-            FLOW_COLORS[4],
-          ],
+          "fill-color": fillColor,
           "fill-opacity": 0.85,
         },
       },
@@ -495,7 +502,7 @@ export default function TerrainMap({
       },
       LAYER.otherTrails,
     );
-  }, [map, flow]);
+  }, [map, flow, flowPalette]);
 
   // The runout field as a triangle mesh: flat-toned triangles, clipped along the outline and
   // the moving front, rebuilt from the playhead every FLOW_REDRAW_MS so the front sweeps down.
@@ -503,7 +510,7 @@ export default function TerrainMap({
     if (!map || !flowField || !playhead) {
       return;
     }
-    const mesh = new RunoutMesh(flowField, playhead.durationS);
+    const mesh = new RunoutMesh(flowField, playhead.durationS, flowPalette);
     map.addSource(SOURCE.flowField, { type: "geojson", data: mesh.at(playheadTime(playhead, performance.now())) });
     map.addLayer(
       {
@@ -540,7 +547,7 @@ export default function TerrainMap({
         map.removeSource(SOURCE.flowField);
       }
     };
-  }, [map, flowField, playhead]);
+  }, [map, flowField, playhead, flowPalette]);
 
   useEffect(() => {
     const layer = map?.getLayer(LAYER.susceptibility)
