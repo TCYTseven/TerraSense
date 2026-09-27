@@ -26,7 +26,7 @@ import AnalyzeButton from "@/components/pipeline/analyze-button";
 import SimulateButton from "@/components/pipeline/simulate-button";
 import ResponsePlanModal from "@/components/pipeline/response-plan-modal";
 import SimulationBar from "@/components/map/simulation-bar";
-import LandslideRiskCard from "@/components/panel/landslide-risk-card";
+import CellRiskCard from "@/components/panel/cell-risk-card";
 import { getHillRiskSummary, getRiskSummary } from "@/lib/api";
 import { buildMountainView } from "@/lib/mountain-view-build";
 import type { CameraFocus, TrailLetter } from "@/lib/mountain-view";
@@ -213,7 +213,8 @@ export default function MountainCard({
           <div className="shrink-0">
             <MountainHeader hill={hill} />
             <OverallRisk hill={hill} />
-            <LandslideRiskCard
+            <CellRiskCard
+              placeKind={mountain.kind}
               latitude={riskLocation.latitude}
               longitude={riskLocation.longitude}
               mountainSlug={mountain.slug}
@@ -237,7 +238,8 @@ export default function MountainCard({
               />
             )}
             {live && (
-              <LandslideRiskCard
+              <CellRiskCard
+                placeKind={mountain.kind}
                 latitude={riskLocation.latitude}
                 longitude={riskLocation.longitude}
                 mountainSlug={mountain.slug}
@@ -296,7 +298,8 @@ export default function MountainCard({
               <PreventativeMeasures items={hill.preventative} />
             )}
             {!agentsSessionActive && !live && (
-              <LandslideRiskCard
+              <CellRiskCard
+                placeKind={mountain.kind}
                 latitude={riskLocation.latitude}
                 longitude={riskLocation.longitude}
                 mountainSlug={mountain.slug}

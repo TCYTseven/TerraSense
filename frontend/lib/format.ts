@@ -5,6 +5,20 @@ export function riskLabel(level: RiskLevel): string {
   return level.charAt(0).toUpperCase() + level.slice(1);
 }
 
+/** Shared probability bins for spot-check cards (matches backend `risk_level`). */
+export function probabilityRiskLevel(probability: number): RiskLevel {
+  if (probability < 0.2) {
+    return "low";
+  }
+  if (probability < 0.45) {
+    return "moderate";
+  }
+  if (probability < 0.7) {
+    return "high";
+  }
+  return "extreme";
+}
+
 const UTC_FORMAT = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
