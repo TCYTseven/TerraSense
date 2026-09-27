@@ -348,6 +348,29 @@ export default function TerrainMap({
   const rasterProbability = probability;
   const hasRasterHeat = Boolean(rasterSusceptibility || rasterProbability);
   const [instantHeat, setInstantHeat] = useState<SyntheticHeatOverlay | null>(null);
+  /** Live tiles skip low/steep cells; terrain-based fill under the rasters keeps the summit warm. */
+  const [auraHeat, setAuraHeat] = useState<SyntheticHeatOverlay | null>(null);
+  useEffect(() => {
+    if (!isLive || !hasRasterHeat) {
+      setAuraHeat(null);
+      return;
+    }
+    let cancelled = false;
+    buildSyntheticHeatOverlay(
+      slug ?? name,
+      lon,
+      lat,
+      heatDrapeBounds(lon, lat, elevationM),
+      overallRiskScore,
+    ).then((overlay) => {
+      if (!cancelled) {
+        setAuraHeat(overlay);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [isLive, hasRasterHeat, slug, name, lon, lat, elevationM, overallRiskScore]);
   // Places with no rendered tiles get a drape built from the elevation tiles under them.
   useEffect(() => {
     if (hasRasterHeat) {
@@ -604,14 +627,15 @@ export default function TerrainMap({
       return;
     }
     const opacity = flowActive ? 0.35 : 1;
-    for (const layerId of [LAYER.susceptibility, LAYER.probability] as const) {
+    for (const layerId of [LAYER.syntheticAura, LAYER.susceptibility, LAYER.probability] as const) {
       if (!map.getLayer(layerId)) {
         continue;
       }
+      const layerOpacity = layerId === LAYER.syntheticAura ? opacity * 0.58 : opacity;
       map.setPaintProperty(layerId, "raster-opacity-transition", { duration: 0, delay: 0 });
-      map.setPaintProperty(layerId, "raster-opacity", opacity);
+      map.setPaintProperty(layerId, "raster-opacity", layerOpacity);
     }
-  }, [map, flowActive, rasterSusceptibility, rasterProbability, instantHeat]);
+  }, [map, flowActive, rasterSusceptibility, rasterProbability, instantHeat, auraHeat]);
 
   // Live peaks: susceptibility under probability so low weekly scores (transparent tiles) still show terrain heat.
   useEffect(() => {
@@ -622,6 +646,30 @@ export default function TerrainMap({
 
     const cleanups: (() => void)[] = [];
     const opacity = flowActive ? 0.35 : 1;
+    const auraOpacity = opacity * 0.58;
+
+    if (auraHeat?.url) {
+      const auraSource = SOURCE.syntheticAura;
+      const auraLayer = LAYER.syntheticAura;
+      removeHeatLayer(map, auraLayer, auraSource);
+      map.addSource(auraSource, {
+        type: "image",
+        url: auraHeat.url,
+        coordinates: auraHeat.coordinates,
+      });
+      map.addLayer(
+        {
+          id: auraLayer,
+          type: "raster",
+          source: auraSource,
+          paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
+        },
+        LAYER.otherTrails,
+      );
+      cleanups.push(fadeIn(map, auraLayer, auraSource, auraOpacity));
+    } else {
+      removeHeatLayer(map, LAYER.syntheticAura, SOURCE.syntheticAura);
+    }
 
     const attach = (tiles: LayerTiles, layerId: string, sourceId: string) => {
       removeHeatLayer(map, layerId, sourceId);
@@ -659,7 +707,7 @@ export default function TerrainMap({
         cleanup();
       }
     };
-  }, [map, hasRasterHeat, rasterSusceptibility, rasterProbability, flowActive]);
+  }, [map, hasRasterHeat, rasterSusceptibility, rasterProbability, flowActive, auraHeat]);
 
   // Catalog peaks: one canvas image drawn from the terrain, loaded in one shot with no tile pop-in.
   useEffect(() => {

@@ -17,8 +17,10 @@ const EARTH_CIRCUMFERENCE_M = 40075016.686;
 const BIN_SHARES = [0.12, 0.3, 0.22, 0.36] as const;
 const BIN_EDGES = [0, 0.2, 0.45, 0.7, 1] as const;
 
-/** The drape fades out between these fractions of its half-width, into the map's surround wash. */
-const FADE = { start: 0.76, end: 0.98 } as const;
+/** Soft edge (km) on the ground so the drape reads circular, not like a square bbox. */
+const RADIAL_FADE_KM = 2.5;
+const KM_PER_DEG_LAT = 111.32;
+const EARTH_RADIUS_KM = 6371;
 
 /**
  * Same bins as the live probability tiles. Opacity ramps gently at low scores (pale amber);
@@ -30,7 +32,7 @@ const LEVELS = [
   { min: 0.7, max: 1, color: RISK_COLORS.extreme, alpha: 0.66 },
 ] as const;
 
-const LOW_WASH = { floor: 0.03, ceiling: 0.22, alpha: 0.42 } as const;
+const LOW_WASH = { floor: 0.03, ceiling: 0.22, alpha: 0.48 } as const;
 
 export interface SyntheticHeatOverlay {
   url: string;
@@ -331,6 +333,35 @@ function quantile(sorted: Float32Array, q: number): number {
   return sorted[Math.min(sorted.length - 1, Math.max(0, Math.floor(q * (sorted.length - 1))))];
 }
 
+function distanceKm(centerLon: number, centerLat: number, lon: number, lat: number): number {
+  const clat = (centerLat * Math.PI) / 180;
+  const latR = (lat * Math.PI) / 180;
+  const dLat = ((lat - centerLat) * Math.PI) / 180;
+  const dLon = ((lon - centerLon) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(clat) * Math.cos(latR) * Math.sin(dLon / 2) ** 2;
+  return EARTH_RADIUS_KM * 2 * Math.asin(Math.sqrt(a));
+}
+
+/** 0–1 mask: full inside a circle inscribed in the bounds, feathered at the rim. */
+function radialGroundMask(bounds: [number, number, number, number], lon: number, lat: number): number {
+  const [west, south, east, north] = bounds;
+  const centerLon = (west + east) / 2;
+  const centerLat = (south + north) / 2;
+  const kmPerDegLon = KM_PER_DEG_LAT * Math.cos((centerLat * Math.PI) / 180);
+  const halfEw = ((east - west) * kmPerDegLon) / 2;
+  const halfNs = ((north - south) * KM_PER_DEG_LAT) / 2;
+  const radiusKm = Math.min(halfEw, halfNs);
+  const fadeKm = Math.max(RADIAL_FADE_KM, radiusKm * 0.08);
+  const dist = distanceKm(centerLon, centerLat, lon, lat);
+  if (dist >= radiusKm) {
+    return 0;
+  }
+  if (dist <= radiusKm - fadeKm) {
+    return 1;
+  }
+  return (radiusKm - dist) / fadeKm;
+}
+
 /**
  * Raw susceptibility from the terrain: steep ground first (failures peak around 35-45 degrees and
  * ease off on bare cliffs), then height up the mountain, then gullies, with seeded noise for grain.
@@ -375,11 +406,12 @@ function rawScores(
       const gx = x0 + (x / (SIZE - 1)) * (x1 - x0);
       const nx = (x / (SIZE - 1)) * 2 - 1;
       const slope = bilinear(slopeDeg, grid.width, grid.height, gx, gy);
-      const steep = smoothstep(8, 38, slope) * (1 - 0.35 * smoothstep(50, 70, slope));
+      const steep = smoothstep(8, 38, slope) * (1 - 0.22 * smoothstep(52, 72, slope));
       const height = Math.max(0, Math.min(1, (sampled[y * SIZE + x] - low) / (high - low)));
+      const heightTerm = height * (0.7 + 0.3 * height);
       const gully = Math.max(0, bilinear(hollow, grid.width, grid.height, gx, gy));
       const grain = fbm(nx * 2.5, ny * 2.5, field.octaves) - 0.5;
-      raw[y * SIZE + x] = 0.55 * steep + 0.2 * height + 0.15 * gully + 0.35 * grain;
+      raw[y * SIZE + x] = 0.48 * steep + 0.3 * heightTerm + 0.14 * gully + 0.32 * grain;
     }
   }
   return raw;
@@ -441,10 +473,10 @@ export async function buildSyntheticHeatOverlay(
   const scores = scaleToOverall(scoresFromRanks(rawScores(grid, bounds, field)), overallScore);
   const image = ctx.createImageData(SIZE, SIZE);
   for (let y = 0; y < SIZE; y += 1) {
-    const ny = (y / (SIZE - 1)) * 2 - 1;
+    const pxLat = north - (y / (SIZE - 1)) * (north - south);
     for (let x = 0; x < SIZE; x += 1) {
-      const nx = (x / (SIZE - 1)) * 2 - 1;
-      const mask = 1 - smoothstep(FADE.start, FADE.end, Math.hypot(nx, ny));
+      const pxLon = west + (x / (SIZE - 1)) * (east - west);
+      const mask = radialGroundMask(bounds, pxLon, pxLat);
       const i = (y * SIZE + x) * 4;
       if (mask <= 0.01) {
         image.data[i + 3] = 0;

@@ -151,7 +151,7 @@ export default function MountainCard({
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:h-full md:w-[45%] md:min-w-0 md:flex-none md:border-l md:border-t-0">
         <div className="shrink-0">
           <MountainHeader hill={hill} />
-          <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
+          <OverallRisk hill={hill} />
           <LandslideRiskCard
             latitude={riskLocation.latitude}
             longitude={riskLocation.longitude}
