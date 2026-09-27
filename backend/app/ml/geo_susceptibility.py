@@ -29,7 +29,7 @@ from rasterio.windows import Window
 
 from app.config import REPO_ROOT
 from app.hills import hill_model_input, hill_stack_path, is_hill
-from app.risk import RiskLevel, risk_level
+from app.risk import RiskLevel, cap_probability, risk_level
 
 MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility_lgbm.txt"
 CALIBRATION_PATH = REPO_ROOT / "ml" / "artifacts" / "susceptibility_calibration.json"
@@ -175,7 +175,7 @@ def _placeholder_features(slug: str, features: list[str]) -> dict[str, float] | 
 
 def _predict(booster: Any, features: list[str], values: dict[str, float],
              x_thresholds: np.ndarray, y_thresholds: np.ndarray) -> tuple[float, float]:
-    """(raw booster score, calibrated probability), mirroring apply_susceptibility_map.py."""
+    """(raw booster score, calibrated probability under the shared cap), mirroring apply_susceptibility_map.py."""
     row = []
     for name in features:
         value = values[name]
@@ -187,7 +187,7 @@ def _predict(booster: Any, features: list[str], values: dict[str, float],
     probability = float(np.clip(np.interp(raw, x_thresholds, y_thresholds), 0.0, 1.0))
     if int(values["landcover"]) == WATER_CLASS:
         probability = 0.0
-    return raw, probability
+    return raw, cap_probability(probability)
 
 
 def _drivers(booster: Any, features: list[str], values: dict[str, float]) -> list[dict[str, Any]]:

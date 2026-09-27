@@ -15,6 +15,7 @@ Before you write code:
 While you build:
 
 - Use the shared bounding box and risk bins as named constants.
+- Any probability that reaches the API passes `app.risk.cap_probability` (or `ProbabilityMap`, which caps on construction), so nothing reads above 0.80.
 - Large files go to `data/raw/` or `data/processed/`, which are gitignored. Commit only small seed files and scripts.
 - Record every download in `data/seed/sources.md` with its URL and access date.
 - Report the metric you measure. Do not tune a number to hit a target.

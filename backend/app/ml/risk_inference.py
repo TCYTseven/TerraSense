@@ -42,7 +42,7 @@ from app.ml.risk_contract import (
     PredictionState,
 )
 from app.ml.risk_features import hourly_dynamic_features
-from app.risk import HIGH_THRESHOLD, RiskLevel, risk_level
+from app.risk import HIGH_THRESHOLD, RiskLevel, cap_probability, risk_level
 from app.weather import HourlyRain, as_of, try_hourly_rain
 
 RISK_MODEL_PATH = REPO_ROOT / "ml" / "artifacts" / "landslide_risk_lgbm.txt"
@@ -79,6 +79,7 @@ def _reported_probability(value: float) -> tuple[float, bool, float]:
     """Apply the API headline floor without changing calibrated model semantics."""
     configured = _env_float("MIN_REPORTED_HAZARD_PROBABILITY", DEFAULT_MIN_REPORTED_PROBABILITY)
     floor = max(DEFAULT_MIN_REPORTED_PROBABILITY, min(1.0, configured))
+    # Both inputs arrive capped: the classifier score from _classify, and every ProbabilityMap pixel.
     bounded = max(0.0, min(1.0, float(value)))
     return round(max(floor, bounded), 4), bounded < floor, floor
 
@@ -414,7 +415,7 @@ def _estimate_drivers(terms: dict[str, float], susceptibility: float) -> list[di
 
     rows = [
         ("terrain", "Terrain susceptibility",
-         f"{susceptibility:.2f} calibrated relative susceptibility (relief, roughness, drainage, land cover)"),
+         f"{cap_probability(susceptibility):.2f} calibrated relative susceptibility (relief, roughness, drainage, land cover)"),
         ("forecast_rain", "Forecast rain, next week",
          f"{terms['next_72h_mm']:.1f} mm against a {terms['threshold_72h_mm']:.1f} mm trigger threshold"),
         ("antecedent_moisture", "Rain in the past 7 days",
@@ -471,7 +472,7 @@ def _model_b_estimate(
         "calibrated": False,
         "unit": "30 m pixel",
         "pixel_probability": round(pixel, 4),
-        "susceptibility": None if susceptibility is None else round(susceptibility, 4),
+        "susceptibility": None if susceptibility is None else round(cap_probability(susceptibility), 4),
         "cell": cell,
         "rain": None if terms is None else {
             "source": rain.source,
@@ -499,8 +500,10 @@ def _load_hill_probability(slug: str) -> ProbabilityMap:
     with rasterio.open(path) as src:
         masked = src.read(1, masked=True)
         values = np.asarray(masked.filled(np.nan), dtype="float32")
-        method = src.tags().get("METHOD") or "regional LightGBM and Model B"
-        return ProbabilityMap(values, src.transform, src.crs.to_string() if src.crs else "", method)
+        tags = src.tags()
+        method = tags.get("METHOD") or "regional LightGBM and Model B"
+        return ProbabilityMap(values, src.transform, src.crs.to_string() if src.crs else "", method,
+                              capped=probability_seam.is_capped(tags))
 
 
 def _pixel_on_grid(grid: ProbabilityMap, latitude: float, longitude: float) -> float | None:
@@ -725,10 +728,11 @@ def _classify(
     else:
         state = "HIGH_RISK" if probability >= float(threshold) else "NOT_HIGH_RISK"
     uncertainty = min(0.45, 0.08 + (ood_score or 0.0) * 0.5 + (1.0 - quality_score) * 0.4)
+    # State used the exact score above. What leaves the model is capped, bounds included.
     return RiskPrediction(
         latitude, longitude, start, start + timedelta(hours=PREDICTION_HORIZON_HOURS), state,
-        round(probability, 4), threshold,
-        round(max(0.0, probability - uncertainty), 4), round(min(1.0, probability + uncertainty), 4),
+        round(cap_probability(probability), 4), threshold,
+        round(cap_probability(probability - uncertainty), 4), round(cap_probability(probability + uncertainty), 4),
         quality_score, ood_score, list(dict.fromkeys(reasons)), drivers, sources,
         {"available": True, "version": metadata.get("model_version"), "trained_at": metadata.get("training_date"), "calibration_method": calibration.get("method"), "validation": metadata.get("validation", {}).get("test")},
     ), rain
