@@ -341,19 +341,16 @@ export default function TerrainMap({
   const [map, setMap] = useState<MapLibreMap | null>(null);
   const [webgl] = useState(hasWebGL);
   const [status, setStatus] = useState<MapStatus>(webgl ? "loading" : "no-webgl");
-  const renderedHeat = useMemo(() => {
-    if (probability) {
-      return probability;
-    }
-    if (susceptibility && !isProceduralHeat(susceptibility)) {
-      return susceptibility;
-    }
-    return null;
-  }, [probability, susceptibility]);
+  const rasterSusceptibility = useMemo(
+    () => (susceptibility && !isProceduralHeat(susceptibility) ? susceptibility : null),
+    [susceptibility],
+  );
+  const rasterProbability = probability;
+  const hasRasterHeat = Boolean(rasterSusceptibility || rasterProbability);
   const [instantHeat, setInstantHeat] = useState<SyntheticHeatOverlay | null>(null);
   // Places with no rendered tiles get a drape built from the elevation tiles under them.
   useEffect(() => {
-    if (renderedHeat) {
+    if (hasRasterHeat) {
       return;
     }
     let cancelled = false;
@@ -365,7 +362,7 @@ export default function TerrainMap({
     return () => {
       cancelled = true;
     };
-  }, [renderedHeat, slug, name, lon, lat, elevationM, overallRiskScore]);
+  }, [hasRasterHeat, slug, name, lon, lat, elevationM, overallRiskScore]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -603,52 +600,70 @@ export default function TerrainMap({
   }, [map, flowField, playhead, flowPalette]);
 
   useEffect(() => {
-    const layer = map?.getLayer(LAYER.susceptibility)
-      ? LAYER.susceptibility
-      : map?.getLayer(LAYER.probability)
-        ? LAYER.probability
-        : null;
-    if (!map || !layer) {
+    if (!map) {
       return;
     }
-    map.setPaintProperty(layer, "raster-opacity-transition", { duration: 0, delay: 0 });
-    map.setPaintProperty(layer, "raster-opacity", flowActive ? 0.35 : 1);
-  }, [map, flowActive, renderedHeat, instantHeat]);
+    const opacity = flowActive ? 0.35 : 1;
+    for (const layerId of [LAYER.susceptibility, LAYER.probability] as const) {
+      if (!map.getLayer(layerId)) {
+        continue;
+      }
+      map.setPaintProperty(layerId, "raster-opacity-transition", { duration: 0, delay: 0 });
+      map.setPaintProperty(layerId, "raster-opacity", opacity);
+    }
+  }, [map, flowActive, rasterSusceptibility, rasterProbability, instantHeat]);
 
-  // Live peaks: saved probability tiles, or the pack's rendered susceptibility tiles.
+  // Live peaks: susceptibility under probability so low weekly scores (transparent tiles) still show terrain heat.
   useEffect(() => {
-    if (!map || !renderedHeat) {
+    if (!map || !hasRasterHeat) {
       return;
     }
     removeHeatLayer(map, LAYER.probability, SOURCE.syntheticProbability);
-    removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
 
-    const isProbability = renderedHeat.layer === "probability";
-    const layerId = isProbability ? LAYER.probability : LAYER.susceptibility;
-    const sourceId = isProbability ? SOURCE.probability : SOURCE.susceptibility;
-    removeHeatLayer(map, layerId, sourceId);
+    const cleanups: (() => void)[] = [];
+    const opacity = flowActive ? 0.35 : 1;
 
-    const source = map.getSource<RasterTileSource>(sourceId);
-    if (source) {
-      source.setTiles([renderedHeat.tiles]);
+    const attach = (tiles: LayerTiles, layerId: string, sourceId: string) => {
+      removeHeatLayer(map, layerId, sourceId);
+      const source = map.getSource<RasterTileSource>(sourceId);
+      if (source) {
+        source.setTiles([tiles.tiles]);
+      } else {
+        map.addSource(sourceId, rasterSource(tiles));
+        map.addLayer(
+          {
+            id: layerId,
+            type: "raster",
+            source: sourceId,
+            paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
+          },
+          LAYER.otherTrails,
+        );
+      }
+      cleanups.push(fadeIn(map, layerId, sourceId, opacity));
+    };
+
+    if (rasterSusceptibility) {
+      attach(rasterSusceptibility, LAYER.susceptibility, SOURCE.susceptibility);
     } else {
-      map.addSource(sourceId, rasterSource(renderedHeat));
-      map.addLayer(
-        {
-          id: layerId,
-          type: "raster",
-          source: sourceId,
-          paint: { "raster-opacity": 0, "raster-fade-duration": 0 },
-        },
-        LAYER.otherTrails,
-      );
+      removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
     }
-    return fadeIn(map, layerId, sourceId, flowActive ? 0.35 : 1);
-  }, [map, renderedHeat, flowActive]);
+    if (rasterProbability) {
+      attach(rasterProbability, LAYER.probability, SOURCE.probability);
+    } else {
+      removeHeatLayer(map, LAYER.probability, SOURCE.probability);
+    }
+
+    return () => {
+      for (const cleanup of cleanups) {
+        cleanup();
+      }
+    };
+  }, [map, hasRasterHeat, rasterSusceptibility, rasterProbability, flowActive]);
 
   // Catalog peaks: one canvas image drawn from the terrain, loaded in one shot with no tile pop-in.
   useEffect(() => {
-    if (!map || renderedHeat || !instantHeat?.url) {
+    if (!map || hasRasterHeat || !instantHeat?.url) {
       return;
     }
     removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
@@ -675,7 +690,7 @@ export default function TerrainMap({
       );
     }
     return fadeIn(map, LAYER.probability, sourceId, flowActive ? 0.35 : 1);
-  }, [map, renderedHeat, instantHeat, flowActive]);
+  }, [map, hasRasterHeat, instantHeat, flowActive]);
 
   // The hazard zone's outline, under the trails so the trail colors stay readable across it.
   useEffect(() => {
