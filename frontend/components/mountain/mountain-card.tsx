@@ -2,6 +2,25 @@
 
 import dynamic from "next/dynamic";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+
+/** Animates height to zero so content above agents can collapse without layout jumps. */
+function Collapsible({ show, children }: { show: boolean; children: ReactNode }) {
+  return (
+    <div
+      className={`grid transition-[grid-template-rows] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+        show ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+      }`}
+    >
+      <div
+        className={`min-h-0 overflow-hidden transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+          show ? "opacity-100" : "opacity-0"
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
 import SimulateButton from "@/components/pipeline/simulate-button";
@@ -55,6 +74,13 @@ export default function MountainCard({
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
   const finished = pipeline.state.orchestrator === "done";
+  /** Response tab while a run is in flight or finished — collapses risk cards so agents fill the panel. */
+  const agentsSessionActive =
+    tab === "response" &&
+    (pipeline.running ||
+      pipeline.state.orchestrator === "running" ||
+      pipeline.state.orchestrator === "done" ||
+      pipeline.state.orchestrator === "error");
   const [planOpen, setPlanOpen] = useState(false);
   const planReady = finished && pipeline.state.advisory != null && pipeline.state.measures != null;
 
@@ -157,18 +183,24 @@ export default function MountainCard({
       </section>
 
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:h-full md:w-[45%] md:min-w-0 md:flex-none md:border-l md:border-t-0">
-        <div className="shrink-0">
-          <MountainHeader hill={hill} />
-          <OverallRisk hill={hill} />
-          <LandslideRiskCard
-            latitude={riskLocation.latitude}
-            longitude={riskLocation.longitude}
-            mountainSlug={mountain.slug}
-            panelLayout="summary"
-          />
-        </div>
+        <Collapsible show={!agentsSessionActive}>
+          <div className="shrink-0">
+            <MountainHeader hill={hill} />
+            <OverallRisk hill={hill} />
+            <LandslideRiskCard
+              latitude={riskLocation.latitude}
+              longitude={riskLocation.longitude}
+              mountainSlug={mountain.slug}
+              panelLayout="summary"
+            />
+          </div>
+        </Collapsible>
         {showPanelTabs && <PanelTabs active={tab} onChange={setTab} />}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        <div
+          className={`min-h-0 flex-1 overflow-y-auto overscroll-contain transition-[padding] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+            agentsSessionActive ? "flex flex-col" : ""
+          }`}
+        >
           <TabPanel tab="prevention" active={tab}>
             {hill.trails.length > 0 && (
               <TrailList
@@ -187,16 +219,29 @@ export default function MountainCard({
               />
             )}
           </TabPanel>
-          <TabPanel tab="response" active={tab}>
-            <section id="agents" aria-labelledby="agents-heading" className="border-t border-border px-5 py-4">
-              <h2 id="agents-heading" className="text-sm text-muted-foreground">
-                Agents
-              </h2>
-              <div className="mt-2">
-                <AgentPipeline state={pipeline.state} />
+          <TabPanel tab="response" active={tab} fill={agentsSessionActive}>
+            <section
+              id="agents"
+              aria-labelledby="agents-heading"
+              className={`border-t border-border px-5 transition-[padding,flex-grow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+                agentsSessionActive ? "flex min-h-0 flex-1 flex-col border-t-0 py-5 md:py-6" : "py-4"
+              }`}
+            >
+              {!agentsSessionActive && (
+                <h2 id="agents-heading" className="text-sm text-muted-foreground">
+                  Agents
+                </h2>
+              )}
+              {agentsSessionActive && (
+                <h2 id="agents-heading" className="sr-only">
+                  Agents
+                </h2>
+              )}
+              <div className={`${agentsSessionActive ? "min-h-0 flex-1" : "mt-2"}`}>
+                <AgentPipeline state={pipeline.state} expandedLayout={agentsSessionActive} />
               </div>
             </section>
-            {planReady && (
+            {!agentsSessionActive && planReady && (
               <section className="border-t border-border px-5 py-4">
                 <button
                   type="button"
@@ -210,10 +255,21 @@ export default function MountainCard({
                 </button>
               </section>
             )}
-            {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
+            {agentsSessionActive && planReady && (
+              <section className="shrink-0 border-t border-border px-5 py-3">
+                <button
+                  type="button"
+                  onClick={() => setPlanOpen(true)}
+                  className="w-full rounded-md bg-primary/15 px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-primary/20"
+                >
+                  View response plan
+                </button>
+              </section>
+            )}
+            {!agentsSessionActive && live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
               <PreventativeMeasures items={hill.preventative} />
             )}
-            {!live && (
+            {!agentsSessionActive && !live && (
               <LandslideRiskCard
                 latitude={riskLocation.latitude}
                 longitude={riskLocation.longitude}
@@ -268,12 +324,27 @@ export default function MountainCard({
 }
 
 /** One tab's section. Every tab stays mounted, so its scroll, fetches, and open traces survive a switch. */
-function TabPanel({ tab, active, children }: { tab: PanelTab; active: PanelTab; children: ReactNode }) {
+function TabPanel({
+  tab,
+  active,
+  fill,
+  children,
+}: {
+  tab: PanelTab;
+  active: PanelTab;
+  fill?: boolean;
+  children: ReactNode;
+}) {
   if (tab !== active) {
     return null;
   }
   return (
-    <div role="tabpanel" id={tabPanelId(tab)} aria-labelledby={tabId(tab)} className="[&>section:first-child]:border-t-0">
+    <div
+      role="tabpanel"
+      id={tabPanelId(tab)}
+      aria-labelledby={tabId(tab)}
+      className={`[&>section:first-child]:border-t-0 ${fill ? "flex min-h-0 flex-1 flex-col" : ""}`}
+    >
       {children}
     </div>
   );

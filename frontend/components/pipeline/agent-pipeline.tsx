@@ -73,17 +73,25 @@ function modelLine(state: PipelineState): string | null {
  * fill in as the run streams. A card opens its reasoning trace beneath it, one at a time.
  * Reactive Measures follow once the orchestrator finishes.
  */
-export default function AgentPipeline({ state }: { state: PipelineState }) {
+export default function AgentPipeline({
+  state,
+  expandedLayout = false,
+}: {
+  state: PipelineState;
+  expandedLayout?: boolean;
+}) {
   const [expanded, setExpanded] = useState<PipelineAgentId | null>(null);
 
   const failed = state.orchestrator === "error";
 
   return (
-    <div>
+    <div className={expandedLayout ? "flex h-full min-h-0 flex-col" : undefined}>
       <div
         role="status"
         aria-live="polite"
-        className="flex items-start gap-3 rounded-md border border-border bg-card px-3 py-2.5"
+        className={`flex items-start gap-3 rounded-md border border-border bg-card ${
+          expandedLayout ? "px-4 py-3.5" : "px-3 py-2.5"
+        }`}
       >
         <span className="mt-0.5 shrink-0">
           <StatusGlyph status={state.orchestrator} />
@@ -98,7 +106,7 @@ export default function AgentPipeline({ state }: { state: PipelineState }) {
         </span>
       </div>
 
-      <ol aria-label="Agents" className="mt-0">
+      <ol aria-label="Agents" className={`mt-0 ${expandedLayout ? "min-h-0 flex-1 pb-2" : ""}`}>
         {ROWS.map((row, index) => {
           const last = index === ROWS.length - 1;
           const rail = (
