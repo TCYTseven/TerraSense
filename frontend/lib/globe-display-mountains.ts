@@ -2,13 +2,13 @@ import type { Mountain } from "@/lib/types";
 
 /**
  * Max markers on the home globe. Set in the repo root `.env` as
- * `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT`. `0` or invalid values show every peak.
- * Default 50 when the variable is missing.
+ * `NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT`. `0`, unset, or invalid values show every peak.
+ * Set a positive integer to cap markers on the globe (search still lists all).
  */
 export function globeMountainLimit(): number {
   const raw = process.env.NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT?.trim();
   if (raw === undefined || raw === "") {
-    return 50;
+    return 0;
   }
   const parsed = Number.parseInt(raw, 10);
   if (!Number.isFinite(parsed) || parsed <= 0) {
