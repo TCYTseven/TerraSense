@@ -36,6 +36,32 @@ const AXIAL_TILT_RADIANS = 0.41;
 
 const EARTH_RADIUS = 1;
 
+/**
+ * Orbit zoom limits, as camera distance from the globe's center. The surface is at 1, so the
+ * closest view frames about one region (northern Italy and the Alps), close enough to pick
+ * apart peaks in one range without the blurry texture filling the screen.
+ */
+const MIN_CAMERA_DISTANCE = 1.25;
+const MAX_CAMERA_DISTANCE = 5;
+
+/** Drag speed at the default view's height above the surface. It slows as the camera nears the ground. */
+const ROTATE_SPEED = 0.45;
+const ROTATE_SPEED_REFERENCE_ALTITUDE = 2.4;
+
+/** Scales the drag speed with altitude, so one drag moves the same distance on screen at any zoom. */
+function AltitudeRotateSpeed() {
+  useFrame((state) => {
+    const { camera } = state;
+    const controls = state.controls as { rotateSpeed: number } | null;
+    if (!controls) {
+      return;
+    }
+    const altitude = camera.position.length() - EARTH_RADIUS;
+    controls.rotateSpeed = ROTATE_SPEED * Math.min(1, altitude / ROTATE_SPEED_REFERENCE_ALTITUDE);
+  });
+  return null;
+}
+
 /** How much the day texture lights itself, 0 to 1. Keeps the whole globe readable. */
 const EARTH_GLOW = 0.45;
 
@@ -190,7 +216,7 @@ export default function SpinningGlobe({
 
   return (
     <Canvas
-      camera={{ position: [0, 0.25, 3.4], fov: 40 }}
+      camera={{ position: [0, 0.25, 3.4], fov: 40, near: 0.01 }}
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
@@ -218,14 +244,16 @@ export default function SpinningGlobe({
       <CameraFlight target={flyTarget} earth={earthRef} onArrive={onArrive} />
       <Atmosphere glowColor={atmosphereColor} />
       <OrbitControls
+        makeDefault
         enabled={!flying}
         enablePan={false}
         enableDamping
         dampingFactor={0.08}
-        rotateSpeed={0.45}
-        minDistance={1.7}
-        maxDistance={5}
+        rotateSpeed={ROTATE_SPEED}
+        minDistance={MIN_CAMERA_DISTANCE}
+        maxDistance={MAX_CAMERA_DISTANCE}
       />
+      <AltitudeRotateSpeed />
     </Canvas>
   );
 }

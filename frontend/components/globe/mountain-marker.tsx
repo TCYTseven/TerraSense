@@ -46,7 +46,7 @@ const FADE_END = 0.03;
  * size on screen while the gaps between neighboring peaks open up as you zoom.
  */
 const FULL_SIZE_DISTANCE = 2.4;
-const MIN_ZOOM_SCALE = 0.2;
+const MIN_ZOOM_SCALE = 0.03;
 
 /** Extra scale on the hovered marker. */
 const HOVER_SCALE = 1.35;

@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
-import { globeMountainLimit, selectGlobeMountains } from "@/lib/globe-display-mountains";
+import { selectGlobeMountains } from "@/lib/globe-display-mountains";
 import { prefetchSatellitePreviews } from "@/lib/satellite-preview";
 import { HOME_THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
@@ -22,8 +22,7 @@ type LoadState =
   | { status: "error" };
 
 /**
- * The globe screen: spaced markers from GET /mountains (see NEXT_PUBLIC_GLOBE_MOUNTAIN_LIMIT),
- * search over the full list, and the fly-in.
+ * The globe screen: one marker per GET /mountains row, search over the same list, and the fly-in.
  * A marker click or a search pick flies the camera to the place, fading to the page
  * background over the last part of the flight, then opens /hills/[slug] or /mountains/[slug].
  * The globe is browser-only because WebGL cannot render during server rendering.
@@ -50,11 +49,7 @@ export default function GlobeView() {
   }, [attempt]);
 
   const allMountains = state.status === "ready" ? state.mountains : [];
-  const globeLimit = globeMountainLimit();
-  const globeMountains = useMemo(
-    () => selectGlobeMountains(allMountains, globeLimit),
-    [allMountains, globeLimit],
-  );
+  const globeMountains = useMemo(() => selectGlobeMountains(allMountains), [allMountains]);
 
   useEffect(() => {
     if (globeMountains.length > 0) {
