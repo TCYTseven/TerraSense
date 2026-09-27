@@ -30,12 +30,15 @@ export async function generateMetadata({
   try {
     const hill = await loadHill(slug);
     if (!hill) {
-      return { title: "Hill not found" };
+      return { title: "Hill not found — TerraSense" };
     }
-    const suffix = hill.is_live ? "Live hazard map" : "Hill profile";
-    return { title: `${hill.name} — ${suffix}` };
+    const suffix = hill.is_live ? "Live hazard map" : "Landslide risk profile";
+    return {
+      title: `${hill.name} — ${suffix}`,
+      description: `${hill.name} (${hill.region}): terrain map, trail risk, and hazard context.`,
+    };
   } catch {
-    return { title: "Hill unavailable" };
+    return { title: "Hill unavailable — TerraSense" };
   }
 }
 

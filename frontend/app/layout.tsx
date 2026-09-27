@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { siteIcons, SITE_ICON_PATH } from "@/lib/site-metadata";
 import { THEME } from "@/lib/theme";
 import "./globals.css";
 
@@ -22,14 +23,11 @@ export const metadata: Metadata = {
   },
   description:
     "Explore mountains worldwide. Landslide hazard intelligence for hikers and park rangers, live on Mount Rainier.",
-  icons: {
-    icon: [{ url: "/terrasenselogo.png", type: "image/png" }],
-    apple: "/terrasenselogo.png",
-  },
+  icons: siteIcons,
   openGraph: {
     title: "TerraSense",
     description: "Landslide hazard intelligence for hikers and park rangers.",
-    images: [{ url: "/terrasenselogo.png", width: 512, height: 512, alt: "TerraSense" }],
+    images: [{ url: SITE_ICON_PATH, width: 512, height: 512, alt: "TerraSense" }],
   },
 };
 
@@ -45,6 +43,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        <link rel="icon" href={SITE_ICON_PATH} type="image/png" sizes="any" />
+        <link rel="apple-touch-icon" href={SITE_ICON_PATH} />
+      </head>
       <body
         className="flex min-h-full flex-col overflow-x-hidden bg-background text-foreground"
         suppressHydrationWarning

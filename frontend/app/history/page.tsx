@@ -5,7 +5,10 @@ import HistoryRow from "@/components/history/history-row";
 import { getHistory } from "@/lib/api";
 import type { HistoryPage } from "@/lib/types";
 
-export const metadata: Metadata = { title: "Run history" };
+export const metadata: Metadata = {
+  title: "Analysis run history",
+  description: "Past TerraSense agent runs, model outputs, and advisories.",
+};
 
 // Every visit shows what the database holds right now, not a build-time snapshot.
 export const dynamic = "force-dynamic";

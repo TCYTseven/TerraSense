@@ -33,12 +33,15 @@ export async function generateMetadata({
   try {
     const mountain = await loadMountain(slug);
     if (!mountain) {
-      return { title: "Mountain not found" };
+      return { title: "Mountain not found — TerraSense" };
     }
-    const suffix = mountain.is_live ? "Live hazard map" : "Mountain profile";
-    return { title: `${mountain.name} — ${suffix}` };
+    const suffix = mountain.is_live ? "Live hazard map" : "Landslide risk profile";
+    return {
+      title: `${mountain.name} — ${suffix}`,
+      description: `${mountain.name} (${mountain.region}): terrain map, trail risk, and ranger analysis.`,
+    };
   } catch {
-    return { title: "Mountain unavailable" };
+    return { title: "Mountain unavailable — TerraSense" };
   }
 }
 
