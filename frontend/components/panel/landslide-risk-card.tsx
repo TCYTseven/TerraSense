@@ -143,15 +143,24 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
       <p className="mt-2 font-mono text-xs text-foreground">{formatLatLon(latitude, longitude)}</p>
       <p className="text-xs text-muted-foreground">Click anywhere on the map to check that spot.</p>
 
-      {prediction && settled?.error === null && (
+      {prediction && settled?.error === null && hasRiskDetails(prediction) && (
         <div className={`mt-3 space-y-3 text-sm ${loading ? "opacity-50" : ""}`}>
           <Source prediction={prediction} />
           {prediction.probability !== null && prediction.estimate && <EstimateDetails estimate={prediction.estimate} />}
-          <ClassifierAudit prediction={prediction} />
+          {prediction.state !== "UNCERTAIN" && <ClassifierAudit prediction={prediction} />}
         </div>
       )}
     </section>
   );
+}
+
+function hasRiskDetails(prediction: LandslideRiskPrediction): boolean {
+  const hasSource =
+    prediction.probability_source === "calibrated_classifier" ||
+    prediction.probability_source === "model_b_estimate";
+  const hasEstimate = prediction.probability !== null && prediction.estimate !== null;
+  const hasClassifierAudit = prediction.state !== "UNCERTAIN";
+  return hasSource || hasEstimate || hasClassifierAudit;
 }
 
 function HeadlineSkeleton() {
