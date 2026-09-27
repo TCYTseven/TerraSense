@@ -1,40 +1,44 @@
 import type { PipelineAgentState, ReactiveMeasure } from "@/lib/mountain-view";
 import type { Advisory, Channel, RiskLevel } from "@/lib/types";
 
-export interface PlanAgentChip {
-  agent: string;
-  fact: string;
+export interface PlanStat {
+  label: string;
+  value: string;
+}
+
+export interface PlanAction {
+  text: string;
 }
 
 export interface PlanPriorityBlock {
   rank: number;
   title: string;
-  bullets: string[];
   emphasis: "critical" | "standard";
-  chips: PlanAgentChip[];
+  actions: PlanAction[];
 }
 
 export interface ResponsePlan {
   mountain: string;
   region: string;
   severity: RiskLevel;
-  headline: string;
+  modeLabel: string;
+  heroLine: string;
   serious: boolean;
-  agentStrip: PlanAgentChip[];
+  stats: PlanStat[];
+  analysisSeconds: number | null;
   priorities: PlanPriorityBlock[];
-  fieldBullets: string[];
-  publicDraft: { title: string; line: string } | null;
+  fieldTags: string[];
 }
 
 const CHANNEL_LABEL: Record<Channel, string> = {
-  newsletter: "park newsletter",
-  website_banner: "park website banner",
-  trailhead_signage: "trailhead signs",
-  visitor_center_briefing: "visitor center briefings",
-  ranger_radio: "ranger radio net",
-  social_media: "official social channels",
-  press_release: "press desk",
-  emergency_broadcast: "emergency broadcast",
+  newsletter: "Newsletter",
+  website_banner: "Web",
+  trailhead_signage: "Trailheads",
+  visitor_center_briefing: "Visitor center",
+  ranger_radio: "Ranger radio",
+  social_media: "Social",
+  press_release: "Press",
+  emergency_broadcast: "EAS",
 };
 
 function isSerious(advisory: Advisory): boolean {
@@ -47,169 +51,176 @@ function isSerious(advisory: Advisory): boolean {
   );
 }
 
-function channelList(channels: Channel[]): string {
-  const labels = channels.slice(0, 4).map((c) => CHANNEL_LABEL[c]);
-  if (labels.length === 0) {
-    return "trailhead signage and the visitor center";
+function clip(text: string, max: number): string {
+  const one = text.replace(/\s+/g, " ").trim();
+  if (one.length <= max) {
+    return one;
   }
-  if (labels.length === 1) {
-    return labels[0]!;
-  }
-  return `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}`;
+  return `${one.slice(0, max - 1).trimEnd()}…`;
 }
 
-function agentStrip(advisory: Advisory, agents: Record<string, PipelineAgentState>): PlanAgentChip[] {
-  const chips: PlanAgentChip[] = [];
-  const hazard = advisory.hazard;
-  if (hazard?.drivers.length) {
-    chips.push({ agent: "Terrain", fact: hazard.drivers.slice(0, 2).join("; ") });
-  } else if (agents.terrain?.summary) {
-    chips.push({ agent: "Terrain", fact: agents.terrain.summary });
-  }
-  const rain = advisory.conditions;
-  if (rain) {
-    chips.push({
-      agent: "Weather",
-      fact: `${rain.rain_past_72h_mm.toFixed(1)} mm past 72 h · ${rain.rain_next_24h_mm.toFixed(1)} mm next 24 h (${rain.source})`,
-    });
-  } else if (agents.weather?.summary) {
-    chips.push({ agent: "Weather", fact: agents.weather.summary });
-  }
-  const worst = advisory.avoid[0];
-  if (worst) {
-    chips.push({
-      agent: "Trails",
-      fact: `${worst.trail} peaks at ${(worst.max_probability * 100).toFixed(0)}% on ${worst.share_at_high * 100}% of miles`,
-    });
-  } else if (agents.trails?.summary) {
-    chips.push({ agent: "Trails", fact: agents.trails.summary });
-  }
-  if (agents.synthesizer?.summary) {
-    chips.push({ agent: "Synthesizer", fact: agents.synthesizer.summary });
-  }
-  return chips.slice(0, 5);
+/** Judge-facing: one short phrase per LLM action, not full sentences. */
+function compressAction(text: string): string {
+  let t = text.replace(/\s+/g, " ").trim();
+  t = t.replace(/^(Field rangers?|Visitor center staff|Patrol rangers?)\s+/i, "");
+  const chunk = t.split(/[,;]/)[0] ?? t;
+  return clip(chunk, 52);
 }
 
-function closureBullets(measures: ReactiveMeasure[]): string[] {
+function uniqueActions(raw: string[], limit: number): PlanAction[] {
+  const seen = new Set<string>();
+  const out: PlanAction[] = [];
+  for (const line of raw) {
+    const text = compressAction(line);
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    out.push({ text });
+    if (out.length >= limit) {
+      break;
+    }
+  }
+  return out;
+}
+
+function measureTags(measures: ReactiveMeasure[]): string[] {
   return measures
     .filter((m) => m.category === "closures" && m.timing === "now")
-    .slice(0, 4)
-    .map((m) => m.title.replace(/^Keep hikers off /i, "Close "));
+    .map((m) => clip(m.title.replace(/^Keep hikers off /i, ""), 22))
+    .slice(0, 3);
 }
 
-function coordinationBullets(measures: ReactiveMeasure[]): string[] {
-  return measures
-    .filter((m) => m.category === "coordination")
-    .slice(0, 3)
-    .map((m) => m.title);
+function buildStats(advisory: Advisory): PlanStat[] {
+  const hazard = advisory.hazard;
+  const rain = advisory.conditions;
+  const stats: PlanStat[] = [];
+  if (hazard) {
+    stats.push({ label: "Hotspot", value: clip(hazard.place, 24) });
+    stats.push({ label: "Peak", value: `${Math.round(hazard.max_probability * 100)}%` });
+  }
+  if (rain) {
+    stats.push({ label: "Rain 72h", value: `${Math.round(rain.rain_past_72h_mm)} mm` });
+  } else if (advisory.avoid[0]) {
+    stats.push({ label: "Focus trail", value: clip(advisory.avoid[0].trail, 18) });
+  }
+  return stats.slice(0, 3);
+}
+
+function heroLine(advisory: Advisory): string {
+  const h = advisory.hazard;
+  if (h) {
+    const miles =
+      h.start_mile != null && h.end_mile != null ? ` · mi ${h.start_mile}–${h.end_mile}` : "";
+    return clip(`${h.type.replace("_", " ")} · ${h.place}${miles}`, 64);
+  }
+  return clip(advisory.summary, 64);
+}
+
+function analysisSeconds(agents: Record<string, PipelineAgentState>): number | null {
+  const rows = Object.values(agents);
+  const starts = rows.map((a) => a.startedAt).filter((t): t is number => t != null);
+  const ends = rows.map((a) => a.finishedAt).filter((t): t is number => t != null);
+  if (starts.length === 0 || ends.length === 0) {
+    return null;
+  }
+  return Math.round((Math.max(...ends) - Math.min(...starts)) / 100) / 10;
+}
+
+function splitActions(actions: string[]): [string[], string[]] {
+  if (actions.length <= 2) {
+    return [actions, []];
+  }
+  const mid = Math.ceil(actions.length / 2);
+  return [actions.slice(0, mid), actions.slice(mid)];
 }
 
 /**
- * Builds a mountain-specific response plan from the finished advisory and agent row summaries.
+ * Builds a minimal pitch plan from the server advisory (LLM actions, heavily shortened for UI).
  */
 export function buildResponsePlan(
   advisory: Advisory,
   measures: ReactiveMeasure[],
   agents: Record<string, PipelineAgentState>,
-  region: string,
+  _region: string,
 ): ResponsePlan {
   const serious = isSerious(advisory);
-  const hazard = advisory.hazard;
-  const channels = channelList(advisory.response.channels);
-  const strip = agentStrip(advisory, agents);
+  const llm = advisory.response.actions;
+  const [forRangers, forPublic] = splitActions(llm);
 
-  const scaleLine = hazard
-    ? `${hazard.place} on ${hazard.trail ?? "mapped trails"} · model peak ${(hazard.max_probability * 100).toFixed(0)}%`
-    : advisory.response.headline;
+  const rangersFallback = serious
+    ? [clip(advisory.response.staffing, 52), clip(advisory.response.escalate_if, 52)]
+    : [clip(advisory.response.timeline, 52)];
+
+  const publicFallback = serious
+    ? [
+        advisory.alert.hiker ? compressAction(advisory.alert.hiker) : compressAction(advisory.alert.what),
+        advisory.avoid[0] ? `Limit ${clip(advisory.avoid[0].trail, 20)}` : "",
+      ]
+    : [
+        compressAction(advisory.alert.how_to_avoid || advisory.alert.body),
+        advisory.safe[0] ? `Prefer ${clip(advisory.safe[0].trail, 20)}` : "",
+      ];
+
+  const channelHint = advisory.response.channels[0]
+    ? CHANNEL_LABEL[advisory.response.channels[0]]
+    : "Trailheads";
 
   const priorities: PlanPriorityBlock[] = serious
     ? [
         {
           rank: 1,
-          title: "Alert rangers and scale the response",
+          title: "Rangers · scale up",
           emphasis: "critical",
-          chips: strip.filter((c) => c.agent === "Terrain" || c.agent === "Weather"),
-          bullets: [
-            `Dispatch ${advisory.response.priority} priority to field rangers: ${scaleLine}.`,
-            `Staffing: ${advisory.response.staffing}`,
-            `Escalate if ${advisory.response.escalate_if}`,
-            ...coordinationBullets(measures),
-          ],
+          actions: uniqueActions([...forRangers, ...rangersFallback.filter(Boolean)], 2),
         },
         {
           rank: 2,
-          title: "Draft evacuations and hiker alerts",
+          title: "Public · evacuate & alert",
           emphasis: "critical",
-          chips: strip.filter((c) => c.agent === "Trails" || c.agent === "Synthesizer"),
-          bullets: [
-            `Push ${channels} with posture ${advisory.response.posture.replaceAll("_", " ")}.`,
-            advisory.alert.hiker || advisory.alert.what,
-            ...advisory.avoid.slice(0, 3).map((r) => `Avoid ${r.trail}: ${r.guidance}`),
-          ],
+          actions: uniqueActions(
+            [...forPublic, ...publicFallback.filter(Boolean), `Notify via ${channelHint}`],
+            2,
+          ),
         },
       ]
     : [
         {
           rank: 1,
-          title: "Alert park rangers",
+          title: "Rangers · brief & patrol",
           emphasis: "standard",
-          chips: strip.slice(0, 2),
-          bullets: [
-            `Brief rangers on ${advisory.mountain}: ${advisory.summary}`,
-            hazard ? `Watch ${hazard.place} (${hazard.severity} on ${hazard.trail ?? "trails"}).` : advisory.response.headline,
-            `Timeline: ${advisory.response.timeline}`,
-          ],
+          actions: uniqueActions([...forRangers, ...rangersFallback.filter(Boolean)], 2),
         },
         {
           rank: 2,
-          title: "Tell the community board to stay careful",
+          title: "Community · stay careful",
           emphasis: "standard",
-          chips: strip.filter((c) => c.agent === "Trails" || c.agent === "Synthesizer"),
-          bullets: [
-            `Post a ${advisory.response.posture.replaceAll("_", " ")} notice via ${channels}.`,
-            advisory.alert.how_to_avoid || advisory.alert.body,
-            ...advisory.safe.slice(0, 2).map((r) => `Safer option: ${r.trail} — ${r.guidance}`),
-          ],
+          actions: uniqueActions([...forPublic, ...publicFallback.filter(Boolean)], 2),
         },
       ];
 
-  const fieldBullets = [...closureBullets(measures), ...measures.filter((m) => m.category === "monitoring").map((m) => m.title)].slice(
-    0,
-    5,
-  );
-
-  const publicMeasure = measures.find((m) => m.category === "public");
-
   return {
     mountain: advisory.mountain,
-    region,
+    region: _region,
     severity: advisory.severity,
-    headline: advisory.response.headline,
+    modeLabel: serious ? "Elevated response" : "Watchful response",
+    heroLine: heroLine(advisory),
     serious,
-    agentStrip: strip,
+    stats: buildStats(advisory),
+    analysisSeconds: analysisSeconds(agents),
     priorities,
-    fieldBullets,
-    publicDraft: publicMeasure
-      ? { title: publicMeasure.title, line: publicMeasure.detail.split(/(?<=[.!?])\s+/)[0] ?? publicMeasure.detail }
-      : { title: advisory.alert.title, line: advisory.alert.hiker || advisory.alert.body },
+    fieldTags: measureTags(measures),
   };
 }
 
-/** Fake dispatch tasks shown after the user approves the plan. */
+/** Simulated dispatch after approve (UI only). */
 export function dispatchTasks(plan: ResponsePlan, advisory: Advisory): string[] {
-  const tasks = [
-    "Orchestrator · locking plan version",
-    `Alerter · queuing ${CHANNEL_LABEL[advisory.response.channels[0] ?? "trailhead_signage"]}`,
-    "Trails agent · updating closure list in ops dashboard",
-    "Weather agent · attaching rain totals to the bulletin",
-  ];
-  if (plan.serious) {
-    tasks.push("Mass channel · drafting EVACUATE language for town contacts");
-    tasks.push("Maps liaison · flagging visitor POIs near downvalley channels (simulated)");
-  } else {
-    tasks.push("Community board · posting WATCH notice for hikers and gateway towns");
-    tasks.push("Maps liaison · soft-updating trail status pins (simulated)");
-  }
-  tasks.push("Ranger net · dispatch notification sent (simulated)");
+  const channel = advisory.response.channels[0];
+  const channelLabel = channel ? CHANNEL_LABEL[channel] : "Trailheads";
+  const tasks = ["Plan locked", `${channelLabel}`, "Closures board", "Rain snapshot"];
+  tasks.push(plan.serious ? "Evacuation draft" : "Community watch");
+  tasks.push("Maps status (sim)");
+  tasks.push("Ranger net (sim)");
   return tasks;
 }
