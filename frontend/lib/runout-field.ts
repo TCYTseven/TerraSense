@@ -1,4 +1,4 @@
-import { FLOW_COLORS } from "./theme";
+import { type FlowPalette, flowColors } from "./theme";
 import type { Position, RunoutField } from "./types";
 
 /** One flat-colored triangle, or the clipped part of one, per feature. */
@@ -42,10 +42,21 @@ function css([r, g, b]: RGB): string {
   return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
 }
 
-// FLOW_COLORS runs dark core first, so depth 1 is index 0. Each triangle takes one flat tone.
-const TONES = FLOW_COLORS.map(hexRgb);
-const TONE_CSS = TONES.map(css);
-const SNOUT_CSS = TONES.map((tone) => css(tone.map((c, i) => c + (SNOUT[i] - c) * SNOUT_MIX) as RGB));
+interface Tones {
+  base: string[];
+  /** The tone at the moving front, or null when the front is drawn like the rest. */
+  snout: string[] | null;
+}
+
+// Each ramp runs core first, so depth 1 is index 0. Each triangle takes one flat tone.
+function tonesFor(palette: FlowPalette): Tones {
+  const rgb = flowColors(palette).map(hexRgb);
+  return {
+    base: rgb.map(css),
+    // Snow has no wet snout: darkening it toward dirt would muddy the blue.
+    snout: palette === "snow" ? null : rgb.map((tone) => css(tone.map((c, i) => c + (SNOUT[i] - c) * SNOUT_MIX) as RGB)),
+  };
+}
 
 function decode(base64: string): Uint8Array {
   const raw = atob(base64);
@@ -85,8 +96,12 @@ export class RunoutMesh {
   private readonly triangles: Int32Array;
   private readonly earliest: Float32Array;
   private readonly soft: number;
+  private readonly palette: FlowPalette;
+  private readonly tones: Tones;
+  /** The last arrival anywhere in the flow, so snow can pale with how far it has spread. */
+  private readonly lastArrival: number;
 
-  constructor(field: RunoutField, durationS: number) {
+  constructor(field: RunoutField, durationS: number, palette: FlowPalette = "debris") {
     const { width, height } = field;
     const stride = Math.max(1, Math.ceil(Math.max(width, height) / MAX_MESH_SIDE));
     const cols = Math.ceil(width / stride);
@@ -94,6 +109,8 @@ export class RunoutMesh {
     this.cols = cols;
     this.rows = rows;
     this.soft = Math.max(2, durationS * 0.035);
+    this.palette = palette;
+    this.tones = tonesFor(palette);
 
     const coverSrc = decode(field.cover);
     const depthSrc = decode(field.depth);
@@ -141,6 +158,13 @@ export class RunoutMesh {
         }
       }
     }
+    let lastArrival = 0;
+    for (const a of this.arrival) {
+      if (Number.isFinite(a)) {
+        lastArrival = Math.max(lastArrival, a);
+      }
+    }
+    this.lastArrival = Math.max(lastArrival, 1e-6);
     const first = (tri: number[]) => Math.min(...tri.map((k) => this.arrival[k]));
     tris.sort((p, q) => first(p) - first(q));
     this.triangles = Int32Array.from(tris.flat());
@@ -176,11 +200,17 @@ export class RunoutMesh {
           reached += 1;
         }
       }
-      const tone = Math.round((1 - Math.min(1, Math.max(0, depth))) * (TONES.length - 1));
-      const fresh = reached > 0 && t - arrive / reached < this.soft * 2.5;
+      let pale = 1 - Math.min(1, Math.max(0, depth));
+      if (this.palette === "snow" && reached > 0) {
+        // Snow pales both where it thins and the farther it has run from the release.
+        pale = Math.max(pale, Math.min(1, arrive / reached / this.lastArrival));
+      }
+      const { base, snout } = this.tones;
+      const tone = Math.round(pale * (base.length - 1));
+      const fresh = snout !== null && reached > 0 && t - arrive / reached < this.soft * 2.5;
       features.push({
         type: "Feature",
-        properties: { color: fresh ? SNOUT_CSS[tone] : TONE_CSS[tone] },
+        properties: { color: fresh ? snout[tone] : base[tone] },
         geometry: { type: "Polygon", coordinates: [ring] },
       });
     }

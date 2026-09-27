@@ -6,6 +6,7 @@ import {
   type ImageSource,
   type RasterTileSource,
   MapLibreMap,
+  type ExpressionSpecification,
   type MapMouseEvent,
   type MapSourceDataEvent,
   Marker,
@@ -15,7 +16,7 @@ import {
 } from "maplibre-gl";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { hazardLabel, riskLabel } from "@/lib/format";
-import { FLOW_COLORS, RISK_COLORS, THEME } from "@/lib/theme";
+import { type FlowPalette, flowColors, RISK_COLORS, THEME } from "@/lib/theme";
 import type { CameraFocus, TrailLetter, TrailRisk } from "@/lib/mountain-view";
 import { type Playhead, playheadTime, RunoutMesh } from "@/lib/runout-field";
 import type { ReleaseCamera } from "@/lib/use-simulation";
@@ -29,7 +30,7 @@ import type {
   RunoutField,
   Trail,
 } from "@/lib/types";
-import { buildSyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
+import { buildSyntheticHeatOverlay, type SyntheticHeatOverlay } from "@/lib/synthetic-heatmap";
 import {
   bypassFeatures,
   CAMERA,
@@ -103,6 +104,8 @@ export interface TerrainMapProps {
   playhead?: Playhead | null;
   /** Dims the probability heat map while the flow is on screen. */
   flowActive?: boolean;
+  /** Dirt for a landslide, pale blue snow for an avalanche on a mountain. */
+  flowPalette?: FlowPalette;
 }
 
 const NO_TRAIL_MARKERS: TrailRisk[] = [];
@@ -328,6 +331,7 @@ export default function TerrainMap({
   flowField = null,
   playhead = null,
   flowActive = false,
+  flowPalette = "debris",
 }: TerrainMapProps) {
   const container = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<MapLibreMap | null>(null);
@@ -342,16 +346,22 @@ export default function TerrainMap({
     }
     return null;
   }, [probability, susceptibility]);
-  const instantHeat = useMemo(() => {
-    const drapeBounds = heatDrapeBounds(lon, lat, elevationM);
+  const [instantHeat, setInstantHeat] = useState<SyntheticHeatOverlay | null>(null);
+  // Places with no rendered tiles get a drape built from the elevation tiles under them.
+  useEffect(() => {
     if (renderedHeat) {
-      return null;
+      return;
     }
-    if (susceptibility && isProceduralHeat(susceptibility)) {
-      return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
-    }
-    return buildSyntheticHeatOverlay(slug ?? name, lon, lat, drapeBounds);
-  }, [renderedHeat, susceptibility, slug, name, lon, lat, elevationM]);
+    let cancelled = false;
+    buildSyntheticHeatOverlay(slug ?? name, lon, lat, heatDrapeBounds(lon, lat, elevationM)).then((overlay) => {
+      if (!cancelled) {
+        setInstantHeat(overlay);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [renderedHeat, slug, name, lon, lat, elevationM]);
   // The camera frames the markers the page opened with. Later updates only move the markers.
   const markersAtOpen = useRef(trailMarkers);
   // The latest callbacks, so listeners registered once always call the current ones.
@@ -451,9 +461,25 @@ export default function TerrainMap({
       return;
     }
     const data = flow ?? EMPTY_FLOW;
+    const colors = flowColors(flowPalette);
+    // Darkest at the core, paling toward the sides. Bands stack edge first.
+    const fillColor: ExpressionSpecification = [
+      "match",
+      ["get", "shade"],
+      0,
+      colors[0],
+      1,
+      colors[1],
+      2,
+      colors[2],
+      3,
+      colors[3],
+      colors[4],
+    ];
     const source = map.getSource<GeoJSONSource>(SOURCE.flow);
     if (source) {
       source.setData(data);
+      map.setPaintProperty(LAYER.flow, "fill-color", fillColor);
       if (map.getLayer(LAYER.flowEdge)) {
         map.setFilter(LAYER.flowEdge, ["==", ["get", "rim"], true]);
       }
@@ -466,20 +492,7 @@ export default function TerrainMap({
         type: "fill",
         source: SOURCE.flow,
         paint: {
-          // Dirt brown at the core, paling toward the sides. Bands stack edge first.
-          "fill-color": [
-            "match",
-            ["get", "shade"],
-            0,
-            FLOW_COLORS[0],
-            1,
-            FLOW_COLORS[1],
-            2,
-            FLOW_COLORS[2],
-            3,
-            FLOW_COLORS[3],
-            FLOW_COLORS[4],
-          ],
+          "fill-color": fillColor,
           "fill-opacity": 0.85,
         },
       },
@@ -495,7 +508,7 @@ export default function TerrainMap({
       },
       LAYER.otherTrails,
     );
-  }, [map, flow]);
+  }, [map, flow, flowPalette]);
 
   // The runout field as a triangle mesh: flat-toned triangles, clipped along the outline and
   // the moving front, rebuilt from the playhead every FLOW_REDRAW_MS so the front sweeps down.
@@ -503,7 +516,7 @@ export default function TerrainMap({
     if (!map || !flowField || !playhead) {
       return;
     }
-    const mesh = new RunoutMesh(flowField, playhead.durationS);
+    const mesh = new RunoutMesh(flowField, playhead.durationS, flowPalette);
     map.addSource(SOURCE.flowField, { type: "geojson", data: mesh.at(playheadTime(playhead, performance.now())) });
     map.addLayer(
       {
@@ -540,7 +553,7 @@ export default function TerrainMap({
         map.removeSource(SOURCE.flowField);
       }
     };
-  }, [map, flowField, playhead]);
+  }, [map, flowField, playhead, flowPalette]);
 
   useEffect(() => {
     const layer = map?.getLayer(LAYER.susceptibility)
@@ -586,9 +599,9 @@ export default function TerrainMap({
     return fadeIn(map, layerId, sourceId, flowActive ? 0.35 : 1);
   }, [map, renderedHeat, flowActive]);
 
-  // Catalog peaks: one canvas image (same seed as synthetic tiles, loads in one shot — no chunking).
+  // Catalog peaks: one canvas image drawn from the terrain, loaded in one shot with no tile pop-in.
   useEffect(() => {
-    if (!map || !instantHeat?.url) {
+    if (!map || renderedHeat || !instantHeat?.url) {
       return;
     }
     removeHeatLayer(map, LAYER.susceptibility, SOURCE.susceptibility);
@@ -615,7 +628,7 @@ export default function TerrainMap({
       );
     }
     return fadeIn(map, LAYER.probability, sourceId, flowActive ? 0.35 : 1);
-  }, [map, instantHeat, flowActive]);
+  }, [map, renderedHeat, instantHeat, flowActive]);
 
   // The hazard zone's outline, under the trails so the trail colors stay readable across it.
   useEffect(() => {
