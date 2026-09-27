@@ -63,8 +63,8 @@ function clip(text: string, max: number): string {
 function compressAction(text: string): string {
   let t = text.replace(/\s+/g, " ").trim();
   t = t.replace(/^(Field rangers?|Visitor center staff|Patrol rangers?)\s+/i, "");
-  const chunk = t.split(/[,;]/)[0] ?? t;
-  return clip(chunk, 52);
+  const chunk = t.split(/[;]/)[0] ?? t;
+  return clip(chunk, 96);
 }
 
 function uniqueActions(raw: string[], limit: number): PlanAction[] {
@@ -88,7 +88,7 @@ function uniqueActions(raw: string[], limit: number): PlanAction[] {
 function measureTags(measures: ReactiveMeasure[]): string[] {
   return measures
     .filter((m) => m.category === "closures" && m.timing === "now")
-    .map((m) => clip(m.title.replace(/^Keep hikers off /i, ""), 22))
+    .map((m) => clip(m.title.replace(/^Keep hikers off /i, ""), 28))
     .slice(0, 3);
 }
 
@@ -97,7 +97,7 @@ function buildStats(advisory: Advisory): PlanStat[] {
   const rain = advisory.conditions;
   const stats: PlanStat[] = [];
   if (hazard) {
-    stats.push({ label: "Hotspot", value: clip(hazard.place, 24) });
+    stats.push({ label: "Hotspot", value: clip(hazard.place, 34) });
     stats.push({ label: "Peak", value: `${Math.round(hazard.max_probability * 100)}%` });
   }
   if (rain) {
@@ -150,8 +150,8 @@ export function buildResponsePlan(
   const [forRangers, forPublic] = splitActions(llm);
 
   const rangersFallback = serious
-    ? [clip(advisory.response.staffing, 52), clip(advisory.response.escalate_if, 52)]
-    : [clip(advisory.response.timeline, 52)];
+    ? [clip(advisory.response.staffing, 96), clip(advisory.response.escalate_if, 96)]
+    : [clip(advisory.response.timeline, 96)];
 
   const publicFallback = serious
     ? [

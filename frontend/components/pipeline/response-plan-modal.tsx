@@ -1,71 +1,41 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { CheckIcon, TriangleAlertIcon } from "@/components/icons";
-import { LEVEL_TEXT, LevelWord } from "@/components/panel/level";
+import { CheckIcon } from "@/components/icons";
 import type { MountainView, PipelineState, ReactiveMeasure } from "@/lib/mountain-view";
 import { buildResponsePlan, dispatchTasks, type PlanPriorityBlock, type ResponsePlan } from "@/lib/response-plan";
 import type { Advisory } from "@/lib/types";
 
 type Phase = "plan" | "dispatch" | "done";
 
-function StatBlock({ label, value }: { label: string; value: string }) {
+function PriorityBlock({ block }: { block: PlanPriorityBlock }) {
+  const [group, verb] = block.title.split("·").map((s) => s.trim());
   return (
-    <div className="flex flex-col items-center justify-center px-2 py-3">
-      <span className="text-2xl font-semibold tabular-nums tracking-tight text-foreground">{value}</span>
-      <span className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-function PriorityColumn({ block }: { block: PlanPriorityBlock }) {
-  const critical = block.emphasis === "critical";
-  return (
-    <article
-      className={`flex min-h-[140px] flex-col rounded-2xl border p-4 ${
-        critical ? "border-amber-500/35 bg-gradient-to-b from-amber-500/12 to-transparent" : "border-border/70 bg-muted/20"
-      }`}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-            critical ? "bg-amber-500 text-amber-950" : "bg-foreground/10 text-foreground"
-          }`}
-        >
-          {block.rank}
-        </span>
-        <h3 className="text-sm font-semibold uppercase tracking-wide text-foreground">{block.title}</h3>
+    <section className="flex gap-4 py-4">
+      <span className="mt-1 w-[2px] shrink-0 rounded-full bg-foreground/55" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          <span className="text-foreground">{group}</span>
+          {verb ? ` — ${verb}` : ""}
+        </h3>
+        <ul className="mt-2.5 space-y-2">
+          {block.actions.map((action) => (
+            <li key={action.text} className="flex gap-2.5 text-[0.9375rem] leading-relaxed text-foreground/90">
+              <CheckIcon className="mt-[0.3rem] size-3.5 shrink-0 text-foreground/70" strokeWidth={3} />
+              <span>{action.text}</span>
+            </li>
+          ))}
+          {block.actions.length === 0 && (
+            <li className="text-[0.9375rem] text-muted-foreground">No extra actions — monitor conditions.</li>
+          )}
+        </ul>
       </div>
-      <ul className="mt-4 flex flex-1 flex-col justify-center gap-2.5">
-        {block.actions.map((action) => (
-          <li key={action.text} className="flex items-start gap-2 text-sm leading-snug text-foreground/90">
-            <CheckIcon className="mt-0.5 size-4 shrink-0 text-primary" strokeWidth={2.5} />
-            <span>{action.text}</span>
-          </li>
-        ))}
-        {block.actions.length === 0 && (
-          <li className="text-sm text-muted-foreground">No extra actions — monitor conditions.</li>
-        )}
-      </ul>
-    </article>
+    </section>
   );
-}
-
-function severityGlow(severity: ResponsePlan["severity"]): string {
-  switch (severity) {
-    case "extreme":
-      return "shadow-[0_0_80px_-20px] shadow-risk-extreme/40";
-    case "high":
-      return "shadow-[0_0_80px_-20px] shadow-risk-high/35";
-    case "moderate":
-      return "shadow-[0_0_60px_-24px] shadow-risk-moderate/30";
-    default:
-      return "";
-  }
 }
 
 /**
- * Pitch-ready response plan: wide card, hero + stats, two priority columns, minimal copy.
+ * Response plan: editorial layout — white accent rail, inline meta, ranked actions, no scroll.
  */
 export default function ResponsePlanModal({
   open,
@@ -84,7 +54,7 @@ export default function ResponsePlanModal({
   onClose: () => void;
   onRevise: () => void;
 }) {
-  const plan = useMemo(
+  const plan: ResponsePlan = useMemo(
     () => buildResponsePlan(advisory, measures, pipeline.agents, hill.region),
     [advisory, measures, pipeline.agents, hill.region],
   );
@@ -116,13 +86,26 @@ export default function ResponsePlanModal({
     setTaskIndex(0);
   }, []);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
   if (!open) {
     return null;
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-md sm:items-center sm:p-8"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/65 p-0 backdrop-blur-md sm:items-center sm:p-8"
       role="dialog"
       aria-modal="true"
       aria-labelledby="response-plan-title"
@@ -132,66 +115,61 @@ export default function ResponsePlanModal({
         }
       }}
     >
-      <div
-        className={`relative flex max-h-[min(88dvh,640px)] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-border/80 bg-card sm:rounded-3xl ${severityGlow(plan.severity)}`}
-      >
-        <header className="relative shrink-0 border-b border-border/60 px-6 pb-4 pt-6 sm:px-8">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">{hill.name}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-3">
-                <TriangleAlertIcon className={`size-8 ${LEVEL_TEXT[plan.severity]}`} strokeWidth={1.75} />
-                <h2 id="response-plan-title" className="text-2xl font-bold tracking-tight sm:text-[1.65rem]">
-                  {plan.modeLabel}
-                </h2>
-              </div>
-              <p className="mt-2 max-w-xl text-base font-medium text-foreground/85">{plan.heroLine}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <LevelWord level={plan.severity} className="text-sm font-semibold" />
-              <button
-                type="button"
-                onClick={onClose}
-                className="rounded-full p-2 text-muted-foreground hover:bg-muted"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
+      <div className="relative flex w-full max-w-xl flex-col overflow-hidden rounded-t-2xl border border-border bg-card sm:rounded-2xl">
+        <span className="absolute inset-x-0 top-0 h-px bg-foreground/40" aria-hidden />
+
+        <header className="shrink-0 px-7 pb-5 pt-7">
+          <div className="flex items-baseline justify-between gap-4">
+            <p className="truncate text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+              {hill.name}
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="-mr-2 rounded-md px-2 py-1 text-lg leading-none text-muted-foreground transition-colors hover:text-foreground"
+              aria-label="Close"
+            >
+              ×
+            </button>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 divide-x divide-border/60 rounded-2xl border border-border/60 bg-background/40">
+          <h2 id="response-plan-title" className="mt-3 text-[1.75rem] font-semibold leading-tight tracking-tight">
+            {plan.modeLabel}
+          </h2>
+          <p className="mt-1.5 text-[0.9375rem] leading-snug text-muted-foreground">{plan.heroLine}</p>
+
+          <dl className="mt-5 flex flex-wrap items-baseline gap-x-6 gap-y-2 border-t border-border pt-4">
             {plan.stats.map((stat) => (
-              <StatBlock key={stat.label} label={stat.label} value={stat.value} />
+              <div key={stat.label} className="flex min-w-0 items-baseline gap-2">
+                <dt className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  {stat.label}
+                </dt>
+                <dd className="truncate text-[15px] font-semibold tabular-nums text-foreground">{stat.value}</dd>
+              </div>
             ))}
-          </div>
+          </dl>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5 sm:px-8">
+        <div className="px-7 pb-6">
           {phase === "plan" && (
             <>
-              <p className="mb-3 text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
-                Priority actions
-              </p>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="divide-y divide-border border-t border-border">
                 {plan.priorities.map((block) => (
-                  <PriorityColumn key={block.rank} block={block} />
+                  <PriorityBlock key={block.rank} block={block} />
                 ))}
               </div>
 
               {plan.fieldTags.length > 0 && (
-                <div className="mt-5 flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Closures</span>
-                  {plan.fieldTags.map((tag) => (
-                    <span key={tag} className="rounded-full bg-foreground/8 px-3 py-1 text-xs font-medium text-foreground/80">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
+                <p className="mt-5 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[0.875rem] text-foreground/75">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Closures
+                  </span>
+                  {plan.fieldTags.join(" · ")}
+                </p>
               )}
 
               {plan.analysisSeconds != null && (
-                <p className="mt-4 text-center text-[11px] text-muted-foreground">
+                <p className="mt-6 text-[11px] text-muted-foreground/70">
                   Built from a {plan.analysisSeconds}s agent run · approve simulates outbound alerts
                 </p>
               )}
@@ -199,47 +177,54 @@ export default function ResponsePlanModal({
           )}
 
           {(phase === "dispatch" || phase === "done") && (
-            <div aria-live="polite">
-              <p className="text-lg font-semibold">{phase === "done" ? "Dispatched" : "Dispatching…"}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div aria-live="polite" className="border-t border-border pt-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                {phase === "done" ? "Dispatched" : "Dispatching…"}
+              </p>
+              <ul className="mt-3 space-y-2">
                 {tasks.map((task, index) => {
                   const done = index < taskIndex;
                   const active = index === taskIndex && phase === "dispatch";
                   return (
-                    <span
+                    <li
                       key={task}
-                      className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
-                        done
-                          ? "bg-primary text-primary-foreground"
-                          : active
-                            ? "bg-primary/20 text-foreground ring-2 ring-primary/50 animate-pulse"
-                            : "bg-muted text-muted-foreground"
+                      className={`flex items-center gap-2.5 text-[0.9375rem] transition-colors ${
+                        done ? "text-foreground" : active ? "text-foreground/80" : "text-muted-foreground/50"
                       }`}
                     >
-                      {done ? "✓ " : ""}
+                      {done ? (
+                        <CheckIcon className="size-3.5 shrink-0 text-primary" strokeWidth={3} />
+                      ) : (
+                        <span
+                          aria-hidden
+                          className={`size-3.5 shrink-0 rounded-full border ${
+                            active ? "animate-pulse border-primary" : "border-border"
+                          }`}
+                        />
+                      )}
                       {task}
-                    </span>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             </div>
           )}
         </div>
 
-        <footer className="shrink-0 flex gap-3 border-t border-border/60 px-6 py-5 sm:px-8">
+        <footer className="flex shrink-0 gap-2 border-t border-border bg-background/30 px-7 py-4">
           {phase === "plan" ? (
             <>
               <button
                 type="button"
                 onClick={approve}
-                className="flex-[1.2] rounded-2xl bg-primary py-3.5 text-sm font-bold uppercase tracking-wide text-primary-foreground shadow-lg shadow-primary/20 hover:brightness-105"
+                className="flex-[1.4] rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110"
               >
                 Approve plan
               </button>
               <button
                 type="button"
                 onClick={onRevise}
-                className="flex-1 rounded-2xl border border-border py-3.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground"
+                className="flex-1 rounded-lg border border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 Revise
               </button>
@@ -248,7 +233,8 @@ export default function ResponsePlanModal({
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-2xl bg-primary py-3.5 text-sm font-bold text-primary-foreground"
+              disabled={phase !== "done"}
+              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40"
             >
               Done
             </button>
