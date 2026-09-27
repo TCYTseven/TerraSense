@@ -16,20 +16,29 @@ export function tabPanelId(tab: PanelTab) {
 }
 
 /** The side panel's two sections, under the header and overall risk. Arrow keys move between them, as in any tab list. */
-export default function PanelTabs({ active, onChange }: { active: PanelTab; onChange: (tab: PanelTab) => void }) {
+export default function PanelTabs({
+  active,
+  onChange,
+  tabs = PANEL_TABS,
+}: {
+  active: PanelTab;
+  onChange: (tab: PanelTab) => void;
+  /** Response first when there is nothing to prevent (no mapped trails). */
+  tabs?: readonly { id: PanelTab; label: string }[];
+}) {
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
     const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
     if (!step) return;
     event.preventDefault();
-    const index = PANEL_TABS.findIndex((tab) => tab.id === active);
-    const next = PANEL_TABS[(index + step + PANEL_TABS.length) % PANEL_TABS.length].id;
+    const index = tabs.findIndex((tab) => tab.id === active);
+    const next = tabs[(index + step + tabs.length) % tabs.length].id;
     onChange(next);
     document.getElementById(tabId(next))?.focus();
   }
 
   return (
     <div role="tablist" aria-label="Panel sections" onKeyDown={onKeyDown} className="flex shrink-0 border-y border-border px-5">
-      {PANEL_TABS.map((tab) => {
+      {tabs.map((tab) => {
         const selected = tab.id === active;
         return (
           <button
