@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckIcon } from "@/components/icons";
 import type { MountainView, PipelineState, ReactiveMeasure } from "@/lib/mountain-view";
-import { buildResponsePlan, dispatchTasks, type PlanPriorityBlock, type ResponsePlan } from "@/lib/response-plan";
+import { buildResponsePlan, type PlanPriorityBlock, type ResponsePlan } from "@/lib/response-plan";
 import type { Advisory } from "@/lib/types";
 
-type Phase = "plan" | "dispatch" | "done";
+type Phase = "plan" | "submitting" | "confirmed";
+
+const SUBMIT_MS = 900;
 
 function PriorityBlock({ block }: { block: PlanPriorityBlock }) {
   const [group, verb] = block.title.split("·").map((s) => s.trim());
@@ -59,31 +61,23 @@ export default function ResponsePlanModal({
     [advisory, measures, pipeline.agents, hill.region],
   );
   const [phase, setPhase] = useState<Phase>("plan");
-  const [taskIndex, setTaskIndex] = useState(0);
-  const tasks = useMemo(() => dispatchTasks(plan, advisory), [plan, advisory]);
 
   useEffect(() => {
     if (!open) {
       setPhase("plan");
-      setTaskIndex(0);
     }
   }, [open]);
 
   useEffect(() => {
-    if (phase !== "dispatch") {
+    if (phase !== "submitting") {
       return;
     }
-    if (taskIndex >= tasks.length) {
-      const done = window.setTimeout(() => setPhase("done"), 450);
-      return () => window.clearTimeout(done);
-    }
-    const tick = window.setTimeout(() => setTaskIndex((i) => i + 1), 550);
-    return () => window.clearTimeout(tick);
-  }, [phase, taskIndex, tasks.length]);
+    const timer = window.setTimeout(() => setPhase("confirmed"), SUBMIT_MS);
+    return () => window.clearTimeout(timer);
+  }, [phase]);
 
   const approve = useCallback(() => {
-    setPhase("dispatch");
-    setTaskIndex(0);
+    setPhase("submitting");
   }, []);
 
   useEffect(() => {
@@ -176,37 +170,21 @@ export default function ResponsePlanModal({
             </>
           )}
 
-          {(phase === "dispatch" || phase === "done") && (
-            <div aria-live="polite" className="border-t border-border pt-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                {phase === "done" ? "Dispatched" : "Dispatching…"}
-              </p>
-              <ul className="mt-3 space-y-2">
-                {tasks.map((task, index) => {
-                  const done = index < taskIndex;
-                  const active = index === taskIndex && phase === "dispatch";
-                  return (
-                    <li
-                      key={task}
-                      className={`flex items-center gap-2.5 text-[0.9375rem] transition-colors ${
-                        done ? "text-foreground" : active ? "text-foreground/80" : "text-muted-foreground/50"
-                      }`}
-                    >
-                      {done ? (
-                        <CheckIcon className="size-3.5 shrink-0 text-primary" strokeWidth={3} />
-                      ) : (
-                        <span
-                          aria-hidden
-                          className={`size-3.5 shrink-0 rounded-full border ${
-                            active ? "animate-pulse border-primary" : "border-border"
-                          }`}
-                        />
-                      )}
-                      {task}
-                    </li>
-                  );
-                })}
-              </ul>
+          {phase === "submitting" && (
+            <div aria-live="polite" className="border-t border-border py-10">
+              <p className="text-center text-sm text-muted-foreground">Sending plan to server…</p>
+              <div className="mx-auto mt-4 h-0.5 w-32 overflow-hidden rounded-full bg-muted">
+                <div className="h-full w-full origin-left animate-[plan-submit_0.9s_ease-out_forwards] bg-foreground/50" />
+              </div>
+            </div>
+          )}
+
+          {phase === "confirmed" && (
+            <div aria-live="polite" className="border-t border-border py-8">
+              <div className="flex items-center gap-3 text-[0.9375rem] text-foreground">
+                <CheckIcon className="size-5 shrink-0 text-foreground/80" strokeWidth={2.5} aria-hidden />
+                <p className="font-medium">Plan confirmed and sent to server</p>
+              </div>
             </div>
           )}
         </div>
@@ -229,12 +207,15 @@ export default function ResponsePlanModal({
                 Revise
               </button>
             </>
+          ) : phase === "submitting" ? (
+            <button type="button" disabled className="w-full rounded-lg bg-primary/50 py-3 text-sm font-semibold text-primary-foreground">
+              Sending…
+            </button>
           ) : (
             <button
               type="button"
               onClick={onClose}
-              disabled={phase !== "done"}
-              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40"
+              className="w-full rounded-lg bg-primary py-3 text-sm font-semibold text-primary-foreground"
             >
               Done
             </button>

@@ -112,6 +112,15 @@
       opacity: 1;
     }
   }
+
+  @keyframes plan-submit {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
 }
 
 /* next/font sets --font-geist-* on <html>, so these resolve inline. */

@@ -213,14 +213,3 @@ export function buildResponsePlan(
     fieldTags: measureTags(measures),
   };
 }
-
-/** Simulated dispatch after approve (UI only). */
-export function dispatchTasks(plan: ResponsePlan, advisory: Advisory): string[] {
-  const channel = advisory.response.channels[0];
-  const channelLabel = channel ? CHANNEL_LABEL[channel] : "Trailheads";
-  const tasks = ["Plan locked", `${channelLabel}`, "Closures board", "Rain snapshot"];
-  tasks.push(plan.serious ? "Evacuation draft" : "Community watch");
-  tasks.push("Maps status (sim)");
-  tasks.push("Ranger net (sim)");
-  return tasks;
-}

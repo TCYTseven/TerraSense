@@ -82,6 +82,7 @@ export default function MountainCard({
       pipeline.state.orchestrator === "done" ||
       pipeline.state.orchestrator === "error");
   const [planOpen, setPlanOpen] = useState(false);
+  const [reanalyzeBanner, setReanalyzeBanner] = useState(false);
   const planReady = finished && pipeline.state.advisory != null && pipeline.state.measures != null;
 
   useEffect(() => {
@@ -89,6 +90,12 @@ export default function MountainCard({
       setPlanOpen(true);
     }
   }, [planReady]);
+
+  useEffect(() => {
+    if (pipeline.running) {
+      setReanalyzeBanner(false);
+    }
+  }, [pipeline.running]);
 
   // A finished run saves a new map, so the trail scores are read again.
   useEffect(() => {
@@ -183,6 +190,25 @@ export default function MountainCard({
       </section>
 
       <aside className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-border bg-card md:h-full md:w-[45%] md:min-w-0 md:flex-none md:border-l md:border-t-0">
+        {reanalyzeBanner && (
+          <div
+            role="alert"
+            className="flex shrink-0 items-start justify-between gap-3 border-b border-primary/25 bg-primary/10 px-5 py-2.5 text-sm text-foreground"
+          >
+            <p>
+              Parameters changed — please click <span className="font-semibold">Analyze now</span> on the Agents
+              page to refresh the plan.
+            </p>
+            <button
+              type="button"
+              onClick={() => setReanalyzeBanner(false)}
+              className="shrink-0 text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
         <Collapsible show={!agentsSessionActive}>
           <div className="shrink-0">
             <MountainHeader hill={hill} />
@@ -315,6 +341,8 @@ export default function MountainCard({
             onClose={() => setPlanOpen(false)}
             onRevise={() => {
               setPlanOpen(false);
+              setReanalyzeBanner(true);
+              setTab("response");
             }}
           />
         )}
