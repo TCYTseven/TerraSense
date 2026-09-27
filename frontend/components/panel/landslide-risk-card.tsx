@@ -77,13 +77,26 @@ interface Settled {
   error: string | null;
 }
 
+export type LandslideRiskPanelLayout = "full" | "summary" | "detailsOnly";
+
 /**
  * The landslide risk at the last map click. The headline is the calibrated probability when the
  * strict classifier has one, else the Model B risk index the heat map is drawn from, shown on its
  * 0 to 1 scale with its held-out skill. The classifier's own state sits in the audit disclosure
  * and is never shown as safe.
+ *
+ * `summary` keeps score plus two hint lines for the fixed header above Prevention / Response tabs.
+ * `detailsOnly` is the model breakdown for the scrollable tab body. `full` is both blocks.
  */
-export default function LandslideRiskCard({ latitude, longitude }: { latitude: number; longitude: number }) {
+export default function LandslideRiskCard({
+  latitude,
+  longitude,
+  panelLayout = "full",
+}: {
+  latitude: number;
+  longitude: number;
+  panelLayout?: LandslideRiskPanelLayout;
+}) {
   const [attempt, setAttempt] = useState(0);
   const [settled, setSettled] = useState<Settled | null>(null);
   const key = `${latitude},${longitude},${attempt}`;
@@ -107,44 +120,61 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
 
   const prediction = settled?.prediction ?? null;
   const level = prediction?.probability !== null ? (prediction?.risk_level ?? null) : null;
+  const summary = panelLayout === "summary";
+  const detailsOnly = panelLayout === "detailsOnly";
+  const showSummary = !detailsOnly;
+  const showDetails = !summary;
+
+  if (detailsOnly) {
+    if (!settled || settled.error !== null || loading || !prediction || !hasRiskDetails(prediction)) {
+      return null;
+    }
+  }
 
   return (
     <section
-      aria-labelledby="cell-risk-heading"
-      className={`border-t border-border px-5 py-4 ${level ? LEVEL_TREATMENT[level] : ""}`}
+      aria-labelledby={showSummary ? "cell-risk-heading" : undefined}
+      className={`border-t border-border px-5 ${summary ? "py-3" : "py-4"} ${level && !summary ? LEVEL_TREATMENT[level] : ""}`}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <h2 id="cell-risk-heading" className="text-sm text-muted-foreground">
-          Landslide risk · next week
-        </h2>
-        {loading && settled && <span className="text-xs text-muted-foreground">Checking…</span>}
-      </div>
+      {showSummary && (
+        <>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="cell-risk-heading" className="text-sm text-muted-foreground">
+              Landslide risk · next week
+            </h2>
+            {loading && settled && <span className="text-xs text-muted-foreground">Checking…</span>}
+          </div>
 
-      <div aria-live="polite" aria-busy={loading} className={loading && settled ? "opacity-50" : ""}>
-        {!settled ? (
-          <HeadlineSkeleton />
-        ) : settled.error !== null ? (
-          <p role="alert" className="mt-2 text-sm text-muted-foreground">
-            Could not check this spot: {settled.error}{" "}
-            <button
-              type="button"
-              onClick={() => setAttempt((n) => n + 1)}
-              disabled={loading}
-              className="font-medium text-primary underline decoration-1 underline-offset-3 disabled:opacity-40"
-            >
-              Retry
-            </button>
+          <div aria-live="polite" aria-busy={loading} className={loading && settled ? "opacity-50" : ""}>
+            {!settled ? (
+              <HeadlineSkeleton compact={summary} />
+            ) : settled.error !== null ? (
+              <p role="alert" className="mt-2 text-sm text-muted-foreground">
+                Could not check this spot: {settled.error}{" "}
+                <button
+                  type="button"
+                  onClick={() => setAttempt((n) => n + 1)}
+                  disabled={loading}
+                  className="font-medium text-primary underline decoration-1 underline-offset-3 disabled:opacity-40"
+                >
+                  Retry
+                </button>
+              </p>
+            ) : (
+              prediction && <Headline prediction={prediction} compact={summary} />
+            )}
+          </div>
+
+          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+            <span className="font-mono text-foreground">{formatLatLon(latitude, longitude)}</span>
+            {" · "}
+            Click the map to move this spot check.
           </p>
-        ) : (
-          prediction && <Headline prediction={prediction} />
-        )}
-      </div>
+        </>
+      )}
 
-      <p className="mt-2 font-mono text-xs text-foreground">{formatLatLon(latitude, longitude)}</p>
-      <p className="text-xs text-muted-foreground">Click anywhere on the map to check that spot.</p>
-
-      {prediction && settled?.error === null && (
-        <div className={`mt-3 space-y-3 text-sm ${loading ? "opacity-50" : ""}`}>
+      {showDetails && prediction && settled?.error === null && (
+        <div className={`space-y-3 text-sm ${detailsOnly ? "" : "mt-3"} ${loading ? "opacity-50" : ""}`}>
           <Source prediction={prediction} />
           {prediction.probability !== null && prediction.estimate && <EstimateDetails estimate={prediction.estimate} />}
           {prediction.state !== "UNCERTAIN" && <ClassifierAudit prediction={prediction} />}
@@ -154,20 +184,35 @@ export default function LandslideRiskCard({ latitude, longitude }: { latitude: n
   );
 }
 
-function HeadlineSkeleton() {
+function hasRiskDetails(prediction: LandslideRiskPrediction): boolean {
+  if (
+    prediction.probability_source === "calibrated_classifier" ||
+    prediction.probability_source === "model_b_estimate"
+  ) {
+    return true;
+  }
+  if (prediction.probability !== null && prediction.estimate) {
+    return true;
+  }
+  return prediction.state !== "UNCERTAIN";
+}
+
+function HeadlineSkeleton({ compact = false }: { compact?: boolean }) {
   return (
     <div className="mt-2 space-y-2" aria-label="Checking this spot">
-      <div className="h-10 w-36 animate-work rounded-sm bg-muted motion-reduce:animate-none" />
-      <div className="h-4 w-56 animate-work rounded-sm bg-muted motion-reduce:animate-none" />
+      <div
+        className={`animate-work rounded-sm bg-muted motion-reduce:animate-none ${compact ? "h-8 w-28" : "h-10 w-36"}`}
+      />
+      {!compact && <div className="h-4 w-56 animate-work rounded-sm bg-muted motion-reduce:animate-none" />}
     </div>
   );
 }
 
-function Headline({ prediction }: { prediction: LandslideRiskPrediction }) {
+function Headline({ prediction, compact = false }: { prediction: LandslideRiskPrediction; compact?: boolean }) {
   const { probability, risk_level: level, reason_codes: reasons } = prediction;
   if (probability === null) {
     if (reasons.includes("OUT_OF_DISTRIBUTION")) {
-      return <p className="mt-2 text-base">Outside the Mount Rainier study area. Click inside the mapped area.</p>;
+      return <p className="mt-2 text-base">Outside this peak&apos;s mapped study box. Click inside the heat map.</p>;
     }
     if (reasons.includes("WEATHER_FEED_UNAVAILABLE")) {
       return (
@@ -186,11 +231,13 @@ function Headline({ prediction }: { prediction: LandslideRiskPrediction }) {
     );
   }
   return (
-    <p className="mt-2 flex items-baseline gap-3">
-      <span className={`font-mono text-4xl/10 font-semibold tracking-tight ${level ? LEVEL_TEXT[level] : ""}`}>
+    <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+      <span
+        className={`font-mono font-semibold tracking-tight ${compact ? "text-3xl/9" : "text-4xl/10"} ${level ? LEVEL_TEXT[level] : ""}`}
+      >
         {prediction.probability_source === "model_b_estimate" ? formatIndex(probability) : formatPercent(probability)}
       </span>
-      {level && <LevelWord level={level} className="text-base font-semibold" />}
+      {level && <LevelWord level={level} className={compact ? "text-sm font-semibold" : "text-base font-semibold"} />}
     </p>
   );
 }

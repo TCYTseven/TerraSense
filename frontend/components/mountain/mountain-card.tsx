@@ -16,7 +16,7 @@ import { useSimulation } from "@/lib/use-simulation";
 import type { LayerTiles, MountainDetail, MountainRiskSummary } from "@/lib/types";
 import MountainHeader from "./mountain-header";
 import OverallRisk from "./overall-risk";
-import PanelTabs, { type PanelTab, PANEL_TABS, tabId, tabPanelId } from "./panel-tabs";
+import PanelTabs, { type PanelTab, tabId, tabPanelId } from "./panel-tabs";
 import PreventativeMeasures from "./preventative-measures";
 import SimulationUnsupportedDialog from "./simulation-unsupported-dialog";
 import TrailList from "./trail-list";
@@ -49,10 +49,7 @@ export default function MountainCard({
   const [summary, setSummary] = useState(riskSummary);
   const hill = useMemo(() => buildMountainView(mountain, summary), [mountain, summary]);
   const hasRoutes = mountain.trails.some((trail) => (trail.geom?.coordinates?.length ?? 0) >= 2);
-  const panelTabs = useMemo(
-    () => (hasRoutes ? PANEL_TABS : ([PANEL_TABS[1], PANEL_TABS[0]] as const)),
-    [hasRoutes],
-  );
+  const showPanelTabs = hasRoutes;
   const [focus, setFocus] = useState<CameraFocus | null>(null);
   const [tab, setTab] = useState<PanelTab>(() => (hasRoutes ? "prevention" : "response"));
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
@@ -75,6 +72,11 @@ export default function MountainCard({
     );
     return () => controller.abort();
   }, [finished, mountain.slug, mountain.is_live, mountain.kind]);
+  useEffect(() => {
+    if (!hasRoutes && tab !== "response") {
+      setTab("response");
+    }
+  }, [hasRoutes, tab]);
   const simulation = useSimulation(mountain.slug);
   // MapLibre DOM markers can inflate document scrollHeight; lock the page while this view is open.
   useEffect(() => {
@@ -150,9 +152,13 @@ export default function MountainCard({
         <div className="shrink-0">
           <MountainHeader hill={hill} />
           <OverallRisk hill={hill} mappedTrails={mountain.trails.length} />
-          <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} />
+          <LandslideRiskCard
+            latitude={riskLocation.latitude}
+            longitude={riskLocation.longitude}
+            panelLayout="summary"
+          />
         </div>
-        <PanelTabs active={tab} onChange={setTab} tabs={panelTabs} />
+        {showPanelTabs && <PanelTabs active={tab} onChange={setTab} />}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           <TabPanel tab="prevention" active={tab}>
             {hill.trails.length > 0 && (
@@ -161,6 +167,13 @@ export default function MountainCard({
                 selected={selected}
                 onView={view}
                 variant={hill.scoring ? "risk" : "mapped"}
+              />
+            )}
+            {live && (
+              <LandslideRiskCard
+                latitude={riskLocation.latitude}
+                longitude={riskLocation.longitude}
+                panelLayout="detailsOnly"
               />
             )}
           </TabPanel>
@@ -178,6 +191,9 @@ export default function MountainCard({
             )}
             {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
               <PreventativeMeasures items={hill.preventative} />
+            )}
+            {!live && (
+              <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} panelLayout="full" />
             )}
           </TabPanel>
         </div>

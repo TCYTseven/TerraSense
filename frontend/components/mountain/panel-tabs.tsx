@@ -23,7 +23,7 @@ export default function PanelTabs({
 }: {
   active: PanelTab;
   onChange: (tab: PanelTab) => void;
-  /** Response first when there is nothing to prevent (no mapped trails). */
+  /** Defaults to both tabs; pass one tab when Prevention does not apply. */
   tabs?: readonly { id: PanelTab; label: string }[];
 }) {
   function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
