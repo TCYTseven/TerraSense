@@ -43,6 +43,8 @@ class Mountain(BaseModel):
     model_input: str | None = None
     # Esri World Imagery preview from mountain_satellite_images (Tiger seed), when present.
     satellite_image_url: str | None = None
+    # Mapped OSM routes in Postgres; used to thin crowded globe markers.
+    trail_count: int = 0
 
 
 class TrailSegment(BaseModel):

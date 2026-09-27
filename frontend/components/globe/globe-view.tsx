@@ -5,11 +5,15 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getMountains } from "@/lib/api";
 import { selectGlobeMountains } from "@/lib/globe-display-mountains";
+import { globeRegionById, type GlobeRegionId } from "@/lib/globe-regions";
 import { prefetchSatellitePreviews } from "@/lib/satellite-preview";
 import { HOME_THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import { FADE_OUT_MS, FLY_DURATION_MS } from "./motion";
+import GlobeRegionPicker from "./globe-region-picker";
 import MountainSearch from "./mountain-search";
+
+const GLOBE_SPIN_PAUSE_MS = 5000;
 
 const SpinningGlobe = dynamic(() => import("./spinning-globe"), {
   ssr: false,
@@ -33,8 +37,31 @@ export default function GlobeView() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [flyTarget, setFlyTarget] = useState<Mountain | null>(null);
   const [globeReady, setGlobeReady] = useState(false);
+  const [regionId, setRegionId] = useState<GlobeRegionId>("world");
+  const [spinPaused, setSpinPaused] = useState(false);
   const leaving = useRef(false);
+  const spinPauseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleGlobeReady = useCallback(() => setGlobeReady(true), []);
+  const region = useMemo(() => globeRegionById(regionId), [regionId]);
+
+  const pauseGlobeSpin = useCallback(() => {
+    setSpinPaused(true);
+    if (spinPauseTimer.current) {
+      clearTimeout(spinPauseTimer.current);
+    }
+    spinPauseTimer.current = setTimeout(() => {
+      setSpinPaused(false);
+      spinPauseTimer.current = null;
+    }, GLOBE_SPIN_PAUSE_MS);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (spinPauseTimer.current) {
+        clearTimeout(spinPauseTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -101,9 +128,15 @@ export default function GlobeView() {
         onSelect={flyTo}
         onArrive={arrive}
         onReady={handleGlobeReady}
+        region={region}
+        spinPaused={spinPaused}
+        onGlobeEngage={pauseGlobeSpin}
         sceneBackground={HOME_THEME.muted}
         atmosphereColor={HOME_THEME.atmosphere}
       />
+      <div className="absolute right-4 top-5 z-10 lg:right-6">
+        <GlobeRegionPicker value={regionId} disabled={flyTarget !== null} onChange={setRegionId} />
+      </div>
       <div className="absolute inset-x-0 top-24 z-10 mx-auto w-[min(26rem,calc(100%-2rem))] lg:top-5">
         <MountainSearch
           mountains={allMountains}

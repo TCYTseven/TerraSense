@@ -54,6 +54,8 @@ export interface Mountain {
   model_input: string | null;
   /** Globe hover preview from mountain_satellite_images when seeded in Postgres. */
   satellite_image_url: string | null;
+  /** Mapped routes in Postgres; globe thinning keeps these peaks first. */
+  trail_count: number;
 }
 
 export interface TrailSegment {

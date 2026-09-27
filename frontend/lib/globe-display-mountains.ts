@@ -61,7 +61,32 @@ export function orderMountainsForBrowse(mountains: Mountain[]): Mountain[] {
   return [...live, ...interleaved];
 }
 
-/** Every peak and hill returned by GET /mountains — one marker each, no cap. */
+const GLOBE_MARKER_FRACTION = 0.75;
+
+/**
+ * Up to 75% of catalog peaks on the globe, keeping every mapped-route mountain first so
+ * clutter drops without hiding Rainier and the demo packs.
+ */
 export function selectGlobeMountains(mountains: Mountain[]): Mountain[] {
-  return orderMountainsForBrowse(mountains);
+  if (mountains.length === 0) {
+    return [];
+  }
+  const target = Math.max(1, Math.round(mountains.length * GLOBE_MARKER_FRACTION));
+  const ordered = orderMountainsForBrowse(mountains);
+  const withRoutes = ordered.filter((m) => m.trail_count > 0);
+  const withoutRoutes = ordered.filter((m) => m.trail_count === 0);
+  const picked: Mountain[] = [];
+  for (const mountain of withRoutes) {
+    if (picked.length >= target) {
+      break;
+    }
+    picked.push(mountain);
+  }
+  for (const mountain of withoutRoutes) {
+    if (picked.length >= target) {
+      break;
+    }
+    picked.push(mountain);
+  }
+  return picked;
 }

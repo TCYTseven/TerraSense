@@ -15,6 +15,9 @@ import { THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import CameraFlight from "./camera-flight";
 import MountainMarker from "./mountain-marker";
+import RegionViewCamera from "./region-view-camera";
+import { useFluidEarthMaterial } from "./use-fluid-earth-material";
+import type { GlobeRegion } from "@/lib/globe-regions";
 
 /** Drop the globe's WebGL context on unmount so the mountain map can create one. */
 function ReleaseWebGL() {
@@ -89,6 +92,17 @@ function blockPointer(event: ThreeEvent<PointerEvent> | ThreeEvent<MouseEvent>) 
   event.stopPropagation();
 }
 
+function handleGlobePointer(
+  event: ThreeEvent<PointerEvent>,
+  onEngage: (() => void) | undefined,
+) {
+  if (event.button !== 0) {
+    return;
+  }
+  blockPointer(event);
+  onEngage?.();
+}
+
 /**
  * Satellite Earth that rotates on its axis. Children ride on the surface and turn with it.
  */
@@ -96,11 +110,13 @@ function Earth({
   meshRef,
   spinning,
   onReady,
+  onGlobeEngage,
   children,
 }: {
   meshRef: RefObject<Mesh | null>;
   spinning: boolean;
   onReady: () => void;
+  onGlobeEngage?: () => void;
   children?: ReactNode;
 }) {
   const [colorMap, bumpMap] = useTexture(
@@ -111,6 +127,7 @@ function Earth({
       dayMap.anisotropy = 8;
     },
   );
+  const surfaceMaterial = useFluidEarthMaterial(colorMap, bumpMap, EARTH_GLOW);
 
   // Earth suspends until its textures load, so this runs once the globe is on screen.
   useEffect(() => {
@@ -132,20 +149,10 @@ function Earth({
         ref={meshRef}
         onPointerOver={blockPointer}
         onPointerMove={blockPointer}
-        onClick={blockPointer}
+        onPointerDown={(event) => handleGlobePointer(event, onGlobeEngage)}
       >
         <sphereGeometry args={[EARTH_RADIUS, 96, 96]} />
-        <meshStandardMaterial
-          map={colorMap}
-          // The day texture also glows faintly, so the side away from the sun never goes black.
-          emissiveMap={colorMap}
-          emissive="#ffffff"
-          emissiveIntensity={EARTH_GLOW}
-          bumpMap={bumpMap}
-          bumpScale={0.035}
-          roughness={0.9}
-          metalness={0.02}
-        />
+        <primitive object={surfaceMaterial} attach="material" />
         {children}
       </mesh>
     </group>
@@ -198,6 +205,9 @@ export default function SpinningGlobe({
   onSelect,
   onArrive,
   onReady,
+  region,
+  spinPaused,
+  onGlobeEngage,
   sceneBackground = THEME.background,
   atmosphereColor = THEME.foreground,
 }: {
@@ -206,6 +216,9 @@ export default function SpinningGlobe({
   onSelect: (mountain: Mountain) => void;
   onArrive: (mountain: Mountain) => void;
   onReady: () => void;
+  region: GlobeRegion;
+  spinPaused: boolean;
+  onGlobeEngage?: () => void;
   /** Canvas clear color; home passes HOME_THEME. */
   sceneBackground?: string;
   atmosphereColor?: string;
@@ -213,6 +226,7 @@ export default function SpinningGlobe({
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
   const earthRef = useRef<Mesh>(null);
   const flying = flyTarget !== null;
+  const idleSpin = region.allowIdleSpin && !spinPaused && hoveredSlug === null && !flying;
 
   return (
     <Canvas
@@ -224,11 +238,11 @@ export default function SpinningGlobe({
       <color attach="background" args={[sceneBackground]} />
       {/* Bright, even daylight: the whole face of the globe reads, with a soft sun for relief. */}
       <ambientLight intensity={0.9} />
-      <hemisphereLight args={["#ffffff", "#8aa2b8", 0.6]} />
+      <hemisphereLight args={["#e8f4ff", "#1a4d6e", 0.72]} />
       <directionalLight position={[4.5, 1.6, 3.2]} intensity={1.6} color="#fff4e5" />
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.7} color="#cfe0f0" />
       <Suspense fallback={null}>
-        <Earth meshRef={earthRef} spinning={hoveredSlug === null && !flying} onReady={onReady}>
+        <Earth meshRef={earthRef} spinning={idleSpin} onReady={onReady} onGlobeEngage={onGlobeEngage}>
           {mountains.map((mountain) => (
             <MountainMarker
               key={mountain.slug}
@@ -241,6 +255,7 @@ export default function SpinningGlobe({
           ))}
         </Earth>
       </Suspense>
+      <RegionViewCamera region={region} disabled={flying} earthRef={earthRef} />
       <CameraFlight target={flyTarget} earth={earthRef} onArrive={onArrive} />
       <Atmosphere glowColor={atmosphereColor} />
       <OrbitControls

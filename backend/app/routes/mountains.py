@@ -33,12 +33,18 @@ RENDER_HINT = {
 MOUNTAIN_COLUMNS = """
     m.id, m.name, m.slug, m.lat, m.lon, m.elevation_m, m.region,
     m.current_risk_level, m.last_analyzed_at, m.is_live, m.kind,
-    s.image_url AS satellite_image_url
+    s.image_url AS satellite_image_url,
+    COALESCE(tr.cnt, 0) AS trail_count
 """
 
 MOUNTAIN_FROM = """
     FROM mountains m
     LEFT JOIN mountain_satellite_images s ON s.mountain_slug = m.slug
+    LEFT JOIN (
+        SELECT mountain_id, COUNT(*)::int AS cnt
+        FROM trails
+        GROUP BY mountain_id
+    ) tr ON tr.mountain_id = m.id
 """
 
 
