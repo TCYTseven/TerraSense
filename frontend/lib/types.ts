@@ -692,6 +692,40 @@ export interface RunoutField {
   cover: string;
   arrival: string;
   depth: string;
+  /**
+   * The terrain height under each cell, base64 little-endian uint16 steps of ground_step_m
+   * above ground_base_m, so the map can light each facet. Absent on the trail ribbon.
+   */
+  ground?: string;
+  ground_base_m?: number;
+  ground_step_m?: number;
+}
+
+/**
+ * The runout's parameter set and speed result, from backend/app/ml/runout_physics.py.
+ * A mountain runs a snow avalanche, a hill a debris flow. Illustrative, not a forecast.
+ */
+export interface RunoutPhysics {
+  process: "debris_flow" | "snow_avalanche";
+  /** The published models the parameters come from. */
+  model: string;
+  /** The energy line's angle: 11° for a debris flow, alpha-beta for snow. */
+  reach_angle_deg: number;
+  /** Snow only: the angle from the release to the beta point. */
+  beta_deg: number | null;
+  /** Snow only: false when the profile never flattened below 10°, so beta ran to its end. */
+  beta_point_found: boolean | null;
+  holmgren_exponent: number;
+  persistence: "proportional" | "cosine";
+  /** Debris flow only: the speed cap. */
+  v_max_ms: number | null;
+  /** Snow only: the Voellmy sled's friction, turbulence, and flow height. */
+  mu: number | null;
+  xi_ms2: number | null;
+  flow_height_m: number | null;
+  peak_speed_ms: number;
+  /** Terrain cell size, or the trail sample spacing when the runout follows the trail. */
+  cell_m: number;
 }
 
 export interface Simulation {
@@ -707,6 +741,8 @@ export interface Simulation {
   frames: RunoutFrame[];
   /** The whole runout as one field the map sweeps smoothly. Null from an older backend. */
   field?: RunoutField | null;
+  /** How the runout was modeled. Null when no terrain could be read. */
+  physics?: RunoutPhysics | null;
   steps: RunoutStep[];
   callouts: SimulationCallout[];
   callouts_from_templates: boolean;

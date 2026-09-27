@@ -1,3 +1,15 @@
+import {
+  facetNormal,
+  hexToLinear,
+  lambertShade,
+  type LinearRgb,
+  linearToCss,
+  oklabRamp,
+  scaleLinear,
+  sunVector,
+  towardInOklab,
+  type Vec3,
+} from "./flow-shading";
 import { type FlowPalette, flowColors } from "./theme";
 import type { Position, RunoutField } from "./types";
 
@@ -28,33 +40,32 @@ const NEVER = 65535;
  */
 const MAX_MESH_SIDE = 64;
 /** Fresh debris at the snout is darker and wetter than what has settled behind it. */
-const SNOUT: RGB = [52, 30, 14];
+const SNOUT = "#341E0E";
 const SNOUT_MIX = 0.45;
-
-type RGB = [number, number, number];
-
-function hexRgb(hex: string): RGB {
-  const value = Number.parseInt(hex.slice(1), 16);
-  return [(value >> 16) & 255, (value >> 8) & 255, value & 255];
-}
-
-function css([r, g, b]: RGB): string {
-  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
-}
+/**
+ * Steps in each continuous ramp. The palette's five stops are blended in OKLab, so the core
+ * darkens into the edge smoothly instead of in five bands.
+ */
+const RAMP_STEPS = 48;
+/**
+ * The light a facet facing away from the sun still gets, as a share of full sun. Kept high
+ * so the lighting reads as relief without overpowering the core-to-edge ramp.
+ */
+const AMBIENT = 0.65;
 
 interface Tones {
-  base: string[];
-  /** The tone at the moving front, or null when the front is drawn like the rest. */
-  snout: string[] | null;
+  base: LinearRgb[];
+  /** The ramp at the moving front, or null when the front is drawn like the rest. */
+  snout: LinearRgb[] | null;
 }
 
 // Each ramp runs core first, so depth 1 is index 0. Each triangle takes one flat tone.
 function tonesFor(palette: FlowPalette): Tones {
-  const rgb = flowColors(palette).map(hexRgb);
+  const stops = flowColors(palette).map(hexToLinear);
   return {
-    base: rgb.map(css),
+    base: oklabRamp(stops, RAMP_STEPS),
     // Snow has no wet snout: darkening it toward dirt would muddy the blue.
-    snout: palette === "snow" ? null : rgb.map((tone) => css(tone.map((c, i) => c + (SNOUT[i] - c) * SNOUT_MIX) as RGB)),
+    snout: palette === "snow" ? null : oklabRamp(towardInOklab(stops, hexToLinear(SNOUT), SNOUT_MIX), RAMP_STEPS),
   };
 }
 
@@ -84,6 +95,10 @@ function toLonLat([x, y]: Position): Position {
  * flat tone. Triangles on the flow's edge and at the moving front are clipped along the
  * contour, so the outline is faceted but never stair-stepped, and the front sweeps
  * continuously. The map draws the result as ordinary polygons.
+ *
+ * When the field carries the ground, each triangle is flat-shaded: its normal comes from the
+ * terrain heights at its three corners (at the map's vertical exaggeration), and Lambert's
+ * law lights it from the hillshade's sun, so the low-poly facets read as relief.
  */
 export class RunoutMesh {
   private readonly cols: number;
@@ -100,8 +115,14 @@ export class RunoutMesh {
   private readonly tones: Tones;
   /** The last arrival anywhere in the flow, so snow can pale with how far it has spread. */
   private readonly lastArrival: number;
+  /** Each triangle's upward unit normal, three numbers per triangle. Null without ground. */
+  private readonly normals: Float32Array | null;
 
-  constructor(field: RunoutField, durationS: number, palette: FlowPalette = "debris") {
+  /**
+   * exaggeration is the map terrain's vertical exaggeration, so each facet is lit at the
+   * slope the viewer sees.
+   */
+  constructor(field: RunoutField, durationS: number, palette: FlowPalette = "debris", exaggeration = 1) {
     const { width, height } = field;
     const stride = Math.max(1, Math.ceil(Math.max(width, height) / MAX_MESH_SIDE));
     const cols = Math.ceil(width / stride);
@@ -118,7 +139,12 @@ export class RunoutMesh {
     // Little-endian on the wire and in every browser we target.
     const arrivalSrc = new Uint16Array(arrivalBytes.buffer, arrivalBytes.byteOffset, width * height);
 
+    const groundSrc = field.ground ? decode(field.ground) : null;
+    const ground = groundSrc ? new Uint16Array(groundSrc.buffer, groundSrc.byteOffset, width * height) : null;
     const [tl, tr, br, bl] = field.corners.map(toMercator);
+    // Web Mercator stretches distances by 1 / cos(latitude); this turns them back into metres.
+    const metresPerUnit = Math.cos((toLonLat([(tl[0] + br[0]) / 2, (tl[1] + br[1]) / 2])[1] * Math.PI) / 180);
+    const points: Vec3[] = [];
     this.lonlat = [];
     this.cover = new Float32Array(cols * rows);
     this.arrival = new Float32Array(cols * rows);
@@ -135,6 +161,8 @@ export class RunoutMesh {
         this.lonlat.push(toLonLat([x, y]));
         const i = r * cols + c;
         const src = srcRow * width + srcCol;
+        const z = ground ? ((field.ground_base_m ?? 0) + ground[src] * (field.ground_step_m ?? 1)) * exaggeration : 0;
+        points.push([x * metresPerUnit, y * metresPerUnit, z]);
         this.cover[i] = coverSrc[src] / 255;
         this.depth[i] = depthSrc[src] / 255;
         const a = arrivalSrc[src];
@@ -169,6 +197,7 @@ export class RunoutMesh {
     tris.sort((p, q) => first(p) - first(q));
     this.triangles = Int32Array.from(tris.flat());
     this.earliest = Float32Array.from(tris.map(first));
+    this.normals = ground ? Float32Array.from(tris.flatMap((tri) => facetNormal(points[tri[0]], points[tri[1]], points[tri[2]]))) : null;
   }
 
   /** How far inside the flow a vertex is at time t: positive inside, 0 on the outline or front. */
@@ -179,10 +208,14 @@ export class RunoutMesh {
     return Math.min(edge, front);
   }
 
-  /** The flow as it stands `t` simulated seconds after release. */
-  at(t: number): MeshFeatureCollection {
+  /**
+   * The flow as it stands `t` simulated seconds after release. bearingDeg is the map's
+   * bearing: the hillshade's sun is fixed to the viewport, so it turns with the map.
+   */
+  at(t: number, bearingDeg = 0): MeshFeatureCollection {
     const features: MeshFeatureCollection["features"] = [];
     const count = this.earliest.length;
+    const sun = sunVector(bearingDeg);
     for (let n = 0; n < count && this.earliest[n] < t; n += 1) {
       const ks = [this.triangles[n * 3], this.triangles[n * 3 + 1], this.triangles[n * 3 + 2]];
       const vals = ks.map((k) => this.inside(k, t));
@@ -208,9 +241,12 @@ export class RunoutMesh {
       const { base, snout } = this.tones;
       const tone = Math.round(pale * (base.length - 1));
       const fresh = snout !== null && reached > 0 && t - arrive / reached < this.soft * 2.5;
+      const color = fresh ? snout[tone] : base[tone];
+      const normal = this.normals ? (Array.from(this.normals.subarray(n * 3, n * 3 + 3)) as Vec3) : null;
+      const light = normal ? lambertShade(normal, sun, AMBIENT) : 1;
       features.push({
         type: "Feature",
-        properties: { color: fresh ? snout[tone] : base[tone] },
+        properties: { color: linearToCss(scaleLinear(color, light)) },
         geometry: { type: "Polygon", coordinates: [ring] },
       });
     }

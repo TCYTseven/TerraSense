@@ -1,49 +1,68 @@
-"""An illustrative debris-flow runout from one pressure point (step 27).
+"""An illustrative runout from the route most likely to fail (step 27).
 
-No model call. When a 30 m elevation grid is on disk, routing uses Holmgren
-multiple-flow-direction (exponent 4) and stops at REACH_ANGLE_DEG or MAX_RUNOUT_M.
-Without that grid, the flow follows the source route: it releases at the route's
-highest point on the terrain tiles and walks the line only while every next sample
-is no higher than the last, so it never flows uphill. When no terrain tile can be
-read, it falls back to the seed convention (lines start at the lower end). Either
-way the frames grow from the release toward the valley, and arrival time is path
-distance over FRONT_SPEED_MS.
+No model call. The process follows the place: a mountain's runout is a snow avalanche and a
+hill's is a debris flow (runout_physics.py, after context/docs/LANDSLIDE_SIMULATION.md).
+
+On the terrain grid, flow_routing.py spreads it strictly downhill from the route's highest
+point: Holmgren weights with persistence for where it goes, an energy line for where it
+stops (11 degrees for a debris flow, the alpha-beta angle for snow, capped at V_max), and
+the process's speed model for when it gets there. Without that grid, the flow follows the
+source route: it releases at the route's highest point on the terrain tiles and walks the
+line only while every next sample is no higher than the last, so it never flows uphill,
+under the same energy line and speed. When no terrain tile can be read, it falls back to
+the seed convention (lines start at the lower end) and a constant FRONT_SPEED_MS. Either way
+the frames grow from the release toward the valley.
 """
 
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 
 from app.ml import flow_field, flow_routing
+from app.ml import runout_physics as physics
 from app.ml.elevation import height_grid, sample_elevations
 from app.ml.pressure import _bearing, _haversine, _line, _move
 
-REACH_ANGLE_DEG = 11  # a common debris-flow minimum travel angle
 MAX_RUNOUT_M = 6000
-FRONT_SPEED_MS = 5  # arrival time = path distance / this
+# Only when no terrain can be read: arrival time = path distance / this.
+FRONT_SPEED_MS = 5
 MAX_FRAMES = 40
-# The diffuse end of Holmgren's range: flow fans across open slopes instead of
-# collapsing into one gully cell, so the footprint is an area, not a line.
-HOLMGREN_EXPONENT = 1.1
+# One frame per this much runout, 8 to 40 frames, so a longer runout plays longer.
+FRAME_EVERY_M = 75
 CHANNEL_M = 100
 SAMPLE_M = 80
 
-METHOD_DEM = "Illustrative runout from a travel-angle model on 26 m terrain. Not a forecast of timing."
 METHOD_TRAIL = "Illustrative runout along the trail's downhill line. Not a forecast of timing."
-METHOD_TRAIL_TERRAIN = "Illustrative runout from the route's highest point, downhill along the trail. Not a forecast of timing."
 
 M_PER_MI = 1609.344
 
 
-def trace_runout(point: dict, trails: list[dict]) -> dict:
+def method_dem(process: physics.FlowProcess, cell_m: float, reach_angle_deg: float) -> str:
+    """The method line for a runout spread over the terrain grid. It names the model it used."""
+    if process.voellmy:
+        model = f"α–β reach angle {reach_angle_deg:.0f}°, Voellmy sled (μ {process.mu:g}, ξ {process.xi_ms2:g} m/s²)"
+    else:
+        model = f"energy line at {reach_angle_deg:.0f}°, speed capped at {process.v_max_ms:g} m/s"
+    return f"Illustrative {process.label} runout on {cell_m:.0f} m terrain: {model}. Not a forecast of timing."
+
+
+def method_trail_terrain(process: physics.FlowProcess) -> str:
+    return (
+        f"Illustrative {process.label} runout from the route's highest point, downhill along the trail. "
+        "Not a forecast of timing."
+    )
+
+
+def trace_runout(point: dict, trails: list[dict], process: physics.FlowProcess = physics.DEBRIS_FLOW) -> dict:
     """Frames and steps for one pressure point. JSON-ready. Never calls a model."""
-    terrain = _over_terrain(point, trails)
+    terrain = _over_terrain(point, trails, process)
     if terrain is not None:
         return terrain
-    return _along_trail(point, trails)
+    return _along_trail(point, trails, process)
 
 
-def _over_terrain(point: dict, trails: list[dict]) -> dict | None:
+def _over_terrain(point: dict, trails: list[dict], process: physics.FlowProcess) -> dict | None:
     """The flow spread over the terrain grid from the top of the source route. None without terrain."""
     import numpy as np
 
@@ -56,23 +75,30 @@ def _over_terrain(point: dict, trails: list[dict]) -> dict | None:
     grid = height_grid(lon, lat, MAX_RUNOUT_M)
     if grid is None:
         return None
-    routed = flow_routing.spread(grid, lon, lat, HOLMGREN_EXPONENT, REACH_ANGLE_DEG, MAX_RUNOUT_M)
+    reach = _reach_angle(process, flow_routing.steepest_profile(grid, lon, lat, MAX_RUNOUT_M))
+    if reach is None:
+        return None
+    alpha, beta, beta_found = reach
+    routed = flow_routing.spread(grid, lon, lat, process, alpha, MAX_RUNOUT_M)
     if routed is None:
         return None
-    share, dist = routed
-    mask, arrive = flow_routing.footprint(grid, share, dist)
-    if mask.sum() < 3:
+    mask, arrive, when = flow_routing.footprint(grid, routed)
+    moved = (routed.share >= flow_routing.MIN_SHARE) & (routed.dist > flow_routing.RELEASE_RADIUS_M)
+    if mask.sum() < 3 or not moved.any() or not np.isfinite(when[mask]).all():
+        # Released on ground gentler than the reach angle, the flow never leaves its patch.
+        # The trail walk below still shows where the route itself runs downhill.
         return None
     heights = grid.heights
     total = float(arrive[mask].max())
+    duration = float(when[mask].max())
     level = point.get("level") or "high"
     release_level = level if level in RAMP else "high"
 
-    frame_count = min(MAX_FRAMES, max(8, int(total / FRONT_SPEED_MS / 15)))
+    frame_count = min(MAX_FRAMES, max(8, int(total / FRAME_EVERY_M)))
     frames = []
     for index in range(frame_count):
-        reach_m = total * (index + 1) / frame_count
-        visible = mask & (arrive <= reach_m + 1e-6)
+        t_s = duration * (index + 1) / frame_count
+        visible = mask & (when <= t_s + 1e-6)
         depth = flow_routing.shade_depth(visible, SHADES)
         deepest = max(1, int(depth.max()))
         features = []
@@ -90,26 +116,75 @@ def _over_terrain(point: dict, trails: list[dict]) -> dict | None:
                     "geometry": geometry,
                 }
             )
-        frames.append({"index": index, "t_s": round(reach_m / FRONT_SPEED_MS, 1), "geojson": {"type": "FeatureCollection", "features": features}})
+        frames.append({"index": index, "t_s": round(t_s, 1), "geojson": {"type": "FeatureCollection", "features": features}})
 
     # The centerline for the steps: the cell carrying the most flow in each distance band.
-    samples = [(lon, lat, 0.0)] + [sample for sample in _centerline(grid, share, dist, mask, arrive) if sample[2] > 0]
+    line = [(lon, lat, 0.0, 0.0)] + [sample for sample in _centerline(grid, routed.share, mask, arrive, when) if sample[2] > 0]
     stop_row, stop_col = np.unravel_index(np.argmax(np.where(mask, arrive, -1)), mask.shape)
     stop_lon, stop_lat = grid.lonlat(stop_row + 0.5, stop_col + 0.5)
-    samples.append((stop_lon, stop_lat, total))
+    line.append((stop_lon, stop_lat, total, duration))
+    samples = [(x, y, d) for x, y, d, _ in line]
+    clock = _clock_from([(d, t) for *_, d, t in line])
     drop_m = top_m - float(heights[stop_row, stop_col])
-    steps = _steps(point, trail, trails, samples, drop_m, _covered_miles(trail, grid, mask))
+    steps = _steps(point, trail, trails, samples, drop_m, _covered_miles(trail, grid, mask), clock)
+    cell_m = grid.cell_m(lat)
     return {
-        "method": METHOD_DEM,
+        "method": method_dem(process, cell_m, alpha),
         "source": "dem",
         "release": {"lon": lon, "lat": lat, "elevation_m": round(top_m, 1)},
-        "duration_s": round(total / FRONT_SPEED_MS, 1),
+        "duration_s": round(duration, 1),
         "distance_m": round(total, 1),
         "drop_m": round(drop_m, 1),
         "frames": frames,
-        "field": flow_field.terrain_field(grid, mask, arrive, share, FRONT_SPEED_MS, total / FRONT_SPEED_MS),
+        "field": flow_field.terrain_field(grid, mask, when, routed.share, duration),
         "steps": steps,
+        "physics": _physics_summary(process, alpha, beta, beta_found, float(routed.speed[mask].max()), cell_m),
     }
+
+
+def _reach_angle(process: physics.FlowProcess, profile: list[tuple[float, float]]) -> tuple[float, float | None, bool | None] | None:
+    """(alpha, beta, beta point found). A fixed-angle process has no beta. None when snow has no profile."""
+    if process.reach_angle_deg is not None:
+        return process.reach_angle_deg, None, None
+    if len(profile) < 2:
+        return None
+    return physics.alpha_beta(profile)
+
+
+def _physics_summary(
+    process: physics.FlowProcess,
+    alpha: float,
+    beta: float | None,
+    beta_found: bool | None,
+    peak_speed: float,
+    cell_m: float,
+) -> dict:
+    """The parameter set and the Tier B results, JSON-ready, so the run shows what it assumed."""
+    return {
+        "process": process.name,
+        "model": process.citation,
+        "reach_angle_deg": round(alpha, 1),
+        "beta_deg": None if beta is None else round(beta, 1),
+        "beta_point_found": beta_found,
+        "holmgren_exponent": process.holmgren_exponent,
+        "persistence": "cosine" if process.persistence == physics.PERSISTENCE_COSINE else "proportional",
+        "v_max_ms": process.v_max_ms,
+        "mu": process.mu,
+        "xi_ms2": process.xi_ms2,
+        "flow_height_m": process.flow_height_m,
+        "peak_speed_ms": round(peak_speed, 1),
+        "cell_m": round(cell_m, 1),
+    }
+
+
+def _clock_from(pairs: list[tuple[float, float]]) -> Callable[[float], float]:
+    """Seconds at a distance down the path, linear between (distance, seconds) pairs and never going back."""
+    import numpy as np
+
+    ordered = sorted(pairs)
+    dists = np.array([d for d, _ in ordered], dtype="float64")
+    times = np.maximum.accumulate(np.array([t for _, t in ordered], dtype="float64"))
+    return lambda dist: float(np.interp(dist, dists, times))
 
 
 def _route_top(coords: list[list[float]]) -> tuple[float, float, float] | None:
@@ -124,7 +199,8 @@ def _route_top(coords: list[list[float]]) -> tuple[float, float, float] | None:
     return line[index][0], line[index][1], heights[index]
 
 
-def _centerline(grid, share, dist, mask, arrive) -> list[tuple[float, float, float]]:
+def _centerline(grid, share, mask, arrive, when) -> list[tuple[float, float, float, float]]:
+    """(lon, lat, metres, seconds) at the cell carrying the most flow in each SAMPLE_M band."""
     import numpy as np
 
     routed = mask & (share >= flow_routing.MIN_SHARE)
@@ -137,7 +213,7 @@ def _centerline(grid, share, dist, mask, arrive) -> list[tuple[float, float, flo
         best = int(np.argmax(share[cells]))
         r, c = cells[0][best], cells[1][best]
         lon, lat = grid.lonlat(r + 0.5, c + 0.5)
-        out.append((lon, lat, float(arrive[r, c])))
+        out.append((lon, lat, float(arrive[r, c]), float(when[r, c])))
     return out
 
 
@@ -155,7 +231,7 @@ def _covered_miles(trail: dict | None, grid, mask) -> tuple[float, float] | None
     return (min(hit), max(hit)) if hit else None
 
 
-def _along_trail(point: dict, trails: list[dict]) -> dict:
+def _along_trail(point: dict, trails: list[dict], process: physics.FlowProcess) -> dict:
     trail = _source_trail(point, trails)
     coords = _line(trail) if trail else []
     if len(coords) < 2:
@@ -166,9 +242,17 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
         coords = [list(pair) for pair in coords]
     trail_len = _haversine_line(coords)
     downhill = _downhill(coords)
+    summary = None
+    clock: Callable[[float], float] = lambda dist: dist / FRONT_SPEED_MS
     if downhill is not None:
-        samples, heights, miles = downhill
-        method = METHOD_TRAIL_TERRAIN
+        samples, heights, (release_mi, end_mi) = downhill
+        walked = _run_profile(samples, heights, process)
+        if walked is not None:
+            samples, heights, clock, summary = walked
+            # The energy line may stop the walk early: the covered miles end where it does.
+            end_mi = release_mi + math.copysign(samples[-1][2] / M_PER_MI, end_mi - release_mi)
+        miles = (min(release_mi, end_mi), max(release_mi, end_mi))
+        method = method_trail_terrain(process)
         drop_m = heights[0] - heights[-1]
         release = {"lon": samples[0][0], "lat": samples[0][1], "elevation_m": round(heights[0], 1)}
     else:
@@ -186,38 +270,63 @@ def _along_trail(point: dict, trails: list[dict]) -> dict:
         release = {"lon": samples[0][0], "lat": samples[0][1], "elevation_m": None}
 
     total = samples[-1][2]
-    duration = total / FRONT_SPEED_MS
-    frame_count = min(MAX_FRAMES, max(8, int(duration / 15) or 8))
+    frame_count = min(MAX_FRAMES, max(8, int(total / FRAME_EVERY_M)))
     frame_count = min(frame_count, max(2, len(samples) - 1))
+    # Each frame ends a little further down the line than the one before, so none shrinks.
+    frames = _growing(frame_count, samples, point.get("level") or "high", clock)
 
-    frames = []
-    for index in range(frame_count):
-        last = max(2, int(round((index + 1) / frame_count * (len(samples) - 1))) + 1)
-        last = min(len(samples), last)
-        chunk = samples[:last]
-        dist = chunk[-1][2]
-        frames.append(
-            {
-                "index": index,
-                "t_s": round(dist / FRONT_SPEED_MS, 1),
-                "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, point.get("level") or "high")},
-            }
-        )
-    # A later frame must not shrink. Force each end index forward.
-    frames = _growing(frames, samples, point.get("level") or "high")
-
-    steps = _steps(point, trail, trails, samples, drop_m, miles)
+    steps = _steps(point, trail, trails, samples, drop_m, miles, clock)
+    duration = clock(total)
     return {
         "method": method,
         "source": "trail",
         "release": release,
-        "duration_s": round(samples[-1][2] / FRONT_SPEED_MS, 1),
-        "distance_m": round(samples[-1][2], 1),
+        "duration_s": round(duration, 1),
+        "distance_m": round(total, 1),
         "drop_m": round(drop_m, 1),
         "frames": frames,
-        "field": flow_field.trail_field(samples, _half_width, FRONT_SPEED_MS, samples[-1][2] / FRONT_SPEED_MS),
+        "field": flow_field.trail_field(samples, _half_width, clock, duration),
         "steps": steps,
+        "physics": summary,
     }
+
+
+def _run_profile(
+    samples: list[tuple[float, float, float]],
+    heights: list[float],
+    process: physics.FlowProcess,
+) -> tuple[list[tuple[float, float, float]], list[float], Callable[[float], float], dict] | None:
+    """The downhill walk under the process's energy line and speed. None if it cannot leave the release.
+
+    The same Tier A stop and Tier B speed as the terrain grid, one sample at a time: the walk
+    ends where the energy-line head or the sled's speed runs out.
+    """
+    reach = _reach_angle(process, [(d, z) for (_, _, d), z in zip(samples, heights, strict=True)])
+    if reach is None:
+        return None
+    alpha, beta, beta_found = reach
+    tan_alpha = math.tan(math.radians(alpha))
+    head, speed, slope_in, t, peak = 0.0, 0.0, None, 0.0, 0.0
+    times = [0.0]
+    for i in range(1, len(samples)):
+        drop = heights[i - 1] - heights[i]
+        step = samples[i][2] - samples[i - 1][2]
+        next_head = physics.energy_head(head, drop, step, tan_alpha, process.z_delta_max_m)
+        if next_head <= 0 or step <= 0:
+            break
+        v = flow_routing._speed(process, speed, math.nan if slope_in is None else slope_in, drop, step, next_head)
+        if v <= 0:
+            break
+        t += physics.step_seconds(math.hypot(step, drop), speed, v)
+        head, speed, slope_in = next_head, v, math.atan2(drop, step)
+        times.append(t)
+        peak = max(peak, v)
+    if len(times) < 2:
+        return None
+    kept = len(times)
+    summary = _physics_summary(process, alpha, beta, beta_found, peak, SAMPLE_M)
+    walked = samples[:kept]
+    return walked, heights[:kept], _clock_from([(d, t) for (_, _, d), t in zip(walked, times, strict=True)]), summary
 
 
 RAMP = ("moderate", "high", "extreme")
@@ -228,9 +337,8 @@ CORE_WIDTH_M = 24
 INTENSITY = {"moderate": 0.40, "high": 0.55, "extreme": 0.70}
 
 
-def _growing(frames: list[dict], samples: list[tuple[float, float, float]], level: str) -> list[dict]:
-    """Rebuild frames so each corridor contains every sample of the one before it."""
-    count = len(frames)
+def _growing(count: int, samples: list[tuple[float, float, float]], level: str, clock: Callable[[float], float]) -> list[dict]:
+    """count frames, each corridor holding every sample of the one before it and one more."""
     out = []
     prev = 1
     for index in range(count):
@@ -241,7 +349,7 @@ def _growing(frames: list[dict], samples: list[tuple[float, float, float]], leve
         out.append(
             {
                 "index": index,
-                "t_s": round(chunk[-1][2] / FRONT_SPEED_MS, 1),
+                "t_s": round(clock(chunk[-1][2]), 1),
                 "geojson": {"type": "FeatureCollection", "features": _corridor(chunk, level)},
             }
         )
@@ -296,8 +404,8 @@ def _downhill(coords: list[list[float]]) -> tuple[list[tuple[float, float, float
 
     Samples the whole line, releases at the highest sample, then takes whichever way
     along the line drops further. The walk stops at the first sample higher than the
-    one before it, so heights never rise from release to stop. Also returns the mile
-    range the flow covers, in the line's own mileage.
+    one before it, so heights never rise from release to stop. Also returns the miles of
+    the release and of the walk's end, in the line's own mileage.
     """
     line = _sample(coords, SAMPLE_M, limit_m=math.inf)
     if len(line) < 2:
@@ -321,8 +429,8 @@ def _downhill(coords: list[list[float]]) -> tuple[list[tuple[float, float, float
     if len(best) < 2:
         return None
     samples = [(line[i][0], line[i][1], abs(line[i][2] - line[top][2])) for i in best]
-    miles = sorted((line[best[0]][2] / M_PER_MI, line[best[-1]][2] / M_PER_MI))
-    return samples, [heights[i] for i in best], (miles[0], miles[1])
+    # The release's mile first, then the walk's end, in the line's own mileage.
+    return samples, [heights[i] for i in best], (line[best[0]][2] / M_PER_MI, line[best[-1]][2] / M_PER_MI)
 
 
 def _steps(
@@ -332,8 +440,12 @@ def _steps(
     samples: list[tuple[float, float, float]],
     drop_m: float,
     miles: tuple[float, float] | None,
+    clock: Callable[[float], float],
 ) -> list[dict]:
-    """miles is the source route's range the flow covers; None leaves out the step for it."""
+    """miles is the source route's range the flow covers; None leaves out the step for it.
+
+    clock gives the front's arrival, in seconds, at a distance down the path.
+    """
     release = samples[0]
     stop = samples[-1]
     name = (trail or {}).get("name") or point.get("trail_name") or "the trail"
@@ -344,7 +456,7 @@ def _steps(
             "channel",
             "channel",
             "Flow enters the channel",
-            _time_at(samples, CHANNEL_M),
+            _time_at(samples, CHANNEL_M, clock),
             _sample_at(samples, CHANNEL_M),
             min(CHANNEL_M, stop[2]),
             drop_m * min(1, CHANNEL_M / max(stop[2], 1)),
@@ -357,7 +469,7 @@ def _steps(
             "trail-source",
             "trail",
             f"Reaches {name}, mi {lower:.1f}–{upper:.1f}",
-            _time_at(samples, max(CHANNEL_M, stop[2] * 0.15)),
+            _time_at(samples, max(CHANNEL_M, stop[2] * 0.15), clock),
             _sample_at(samples, max(CHANNEL_M, stop[2] * 0.15)),
             stop[2] * 0.15,
             drop_m * 0.15,
@@ -369,14 +481,14 @@ def _steps(
     ]
     if miles is None:
         steps.pop()
-    for extra in _crossed(trail, trails, samples)[:3]:
+    for extra in _crossed(trail, trails, samples, clock)[:3]:
         steps.append(extra)
     steps.append(
         _step(
             "stop",
             "stop",
             "Flow stops",
-            round(stop[2] / FRONT_SPEED_MS, 1),
+            round(clock(stop[2]), 1),
             stop,
             stop[2],
             drop_m,
@@ -390,7 +502,12 @@ def _steps(
     return steps
 
 
-def _crossed(source: dict | None, trails: list[dict], samples: list[tuple[float, float, float]]) -> list[dict]:
+def _crossed(
+    source: dict | None,
+    trails: list[dict],
+    samples: list[tuple[float, float, float]],
+    clock: Callable[[float], float],
+) -> list[dict]:
     found: list[dict] = []
     source_id = None if source is None else str(source.get("id"))
     for trail in trails:
@@ -415,7 +532,7 @@ def _crossed(source: dict | None, trails: list[dict], samples: list[tuple[float,
                 f"trail-{trail['id']}",
                 "trail",
                 f"Reaches {trail.get('name')}, mi {max(0, miles - 0.2):.1f}–{miles:.1f}",
-                round(dist / FRONT_SPEED_MS, 1),
+                round(clock(dist), 1),
                 (coord[0], coord[1], dist),
                 dist,
                 None,
@@ -453,8 +570,8 @@ def _sample_at(samples: list[tuple[float, float, float]], dist: float) -> tuple[
     return samples[-1]
 
 
-def _time_at(samples: list[tuple[float, float, float]], dist: float) -> float:
-    return round(min(dist, samples[-1][2]) / FRONT_SPEED_MS, 1)
+def _time_at(samples: list[tuple[float, float, float]], dist: float, clock: Callable[[float], float]) -> float:
+    return round(clock(min(dist, samples[-1][2])), 1)
 
 
 def _trail_miles(trail: dict | None, samples: list[tuple[float, float, float]]) -> float:

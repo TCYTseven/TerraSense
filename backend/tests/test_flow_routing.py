@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 
 from app.ml import flow_routing, runout
+from app.ml import runout_physics as physics
 from app.ml.elevation import Grid, _pixel_xy
 from app.ml.pressure import rank_pressure_points
 
@@ -48,7 +49,8 @@ def terrain(monkeypatch):
 
 
 def test_spread_only_moves_downhill(terrain):
-    share, dist = flow_routing.spread(terrain, LON, LAT, 1.1, 11, 6000)
+    routed = flow_routing.spread(terrain, LON, LAT, physics.DEBRIS_FLOW, 11, 6000)
+    share, dist = routed.share, routed.dist
     r0, c0 = terrain.cell_of(LON, LAT)
     top = terrain.heights[r0, c0]
     reached = share > 0
@@ -68,7 +70,8 @@ def test_footprint_is_an_area_with_nested_brown_bands(terrain):
     point = rank_pressure_points([ROUTE])[0]
     traced = runout.trace_runout(point, [ROUTE])
     assert traced["source"] == "dem"
-    assert traced["method"] == runout.METHOD_DEM
+    assert traced["method"].startswith("Illustrative debris-flow runout")
+    assert traced["method"].endswith("Not a forecast of timing.")
     # Released at the route's highest point, the north end.
     assert traced["release"]["lat"] == pytest.approx(LAT, abs=0.0006)
     last = traced["frames"][-1]["geojson"]["features"]

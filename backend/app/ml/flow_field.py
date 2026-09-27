@@ -9,7 +9,10 @@ the edge is soft and the flow never jumps.
 Wire format (JSON-ready): corners are [lon, lat] for top-left, top-right,
 bottom-right, bottom-left. `cover` and `depth` are base64 uint8 rows, top row
 first. `arrival` is base64 little-endian uint16: seconds / duration_s * 65534,
-and 65535 where the flow never arrives.
+and 65535 where the flow never arrives. On terrain the field also carries `ground`,
+the height under each cell as base64 little-endian uint16 steps of `ground_step_m`
+above `ground_base_m`, so the map can light each facet of the flow from the terrain's
+own slope. The trail ribbon has no ground, and the map leaves it unlit.
 """
 
 from __future__ import annotations
@@ -40,8 +43,11 @@ def blur(values, passes: int = 1):
     return out
 
 
-def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: float) -> dict | None:
-    """The routed footprint as a field, cropped to the flow plus a small margin."""
+def terrain_field(grid, mask, arrive_s, share, duration_s: float) -> dict | None:
+    """The routed footprint as a field, cropped to the flow plus a small margin.
+
+    arrive_s is each cell's arrival time in seconds, from the process's speed model.
+    """
     import numpy as np
 
     if not mask.any():
@@ -57,8 +63,8 @@ def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: floa
     cover = blur(solid, BLUR_PASSES)
     # Arrival averaged over flow cells only (normalized convolution), so the soft rim
     # takes its neighbours' time and the 8-direction fronts round off.
-    arrive = np.where(inside, arrive_m[r0:r1, c0:c1], 0.0)
-    arrive = blur(arrive * solid, BLUR_PASSES) / np.maximum(cover, 1e-9) / speed_ms
+    arrive = np.where(inside, arrive_s[r0:r1, c0:c1], 0.0)
+    arrive = blur(arrive * solid, BLUR_PASSES) / np.maximum(cover, 1e-9)
 
     # Deep where the cell sits far in from the edge and where most flow passes.
     inward = flow_routing.shade_depth(inside, DEPTH_LEVELS) / (DEPTH_LEVELS - 1)
@@ -70,15 +76,30 @@ def terrain_field(grid, mask, arrive_m, share, speed_ms: float, duration_s: floa
     depth = depth / max(float(depth.max()), 1e-9)
 
     corners = [grid.lonlat(r0, c0), grid.lonlat(r0, c1), grid.lonlat(r1, c1), grid.lonlat(r1, c0)]
-    return encode(corners, cover, np.where(cover > 0, arrive, np.nan), depth, duration_s)
+    field = encode(corners, cover, np.where(cover > 0, arrive, np.nan), depth, duration_s)
+    return {**field, **encode_ground(grid.heights[r0:r1, c0:c1])}
 
 
-def trail_field(samples: list[tuple[float, float, float]], half_width_m, speed_ms: float, duration_s: float) -> dict | None:
+def encode_ground(heights) -> dict:
+    """Heights as uint16 steps above the lowest cell: 1 cm steps, coarser only over 655 m of relief."""
+    import numpy as np
+
+    base = math.floor(float(heights.min()) * 100) / 100
+    # Round the step up, so the highest cell still fits in 16 bits after rounding.
+    step = max(0.01, math.ceil((float(heights.max()) - base) / (NEVER - 1) * 1e4) / 1e4)
+    return {
+        "ground": _b64(np.clip(np.round((heights - base) / step), 0, NEVER).astype("<u2")),
+        "ground_base_m": base,
+        "ground_step_m": step,
+    }
+
+
+def trail_field(samples: list[tuple[float, float, float]], half_width_m, clock, duration_s: float) -> dict | None:
     """A ribbon along the sampled path, widening downhill, on a z13 Mercator grid.
 
     samples are (lon, lat, metres along). half_width_m(dist) gives the ribbon's half
-    width at that distance. Arrival is the distance along the path at the nearest
-    point, over the front speed.
+    width at that distance. clock(dist) is the front's arrival in seconds at a distance
+    along the path; each pixel takes the arrival at its nearest point on the path.
     """
     import numpy as np
 
@@ -111,7 +132,7 @@ def trail_field(samples: list[tuple[float, float, float]], half_width_m, speed_m
     # 1 at the centerline, 0.5 at the ribbon edge, 0 at twice the half width.
     cover = np.clip(1 - best / 2, 0, 1)
     depth = np.clip(1 - best, 0, 1) ** 0.8
-    arrive = np.where(cover > 0, best_along / speed_ms, np.nan)
+    arrive = np.where(cover > 0, np.vectorize(clock, otypes=[float])(best_along), np.nan)
     corners = [_lonlat(x0, y0), _lonlat(x1, y0), _lonlat(x1, y1), _lonlat(x0, y1)]
     return encode(corners, cover, arrive, depth, duration_s)
 

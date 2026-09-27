@@ -47,6 +47,7 @@ import {
   openingZoomFloor,
   rasterSource,
   SOURCE,
+  TERRAIN_EXAGGERATION,
   trailFeatures,
 } from "./map-style";
 import { useIdleOrbit } from "./use-idle-orbit";
@@ -581,12 +582,16 @@ export default function TerrainMap({
 
   // The runout field as a triangle mesh: flat-toned triangles, clipped along the outline and
   // the moving front, rebuilt from the playhead every FLOW_REDRAW_MS so the front sweeps down.
+  // Each facet is lit from the hillshade's sun, which turns with the map's bearing.
   useEffect(() => {
     if (!map || !flowField || !playhead) {
       return;
     }
-    const mesh = new RunoutMesh(flowField, playhead.durationS, flowPalette);
-    map.addSource(SOURCE.flowField, { type: "geojson", data: mesh.at(playheadTime(playhead, performance.now())) });
+    const mesh = new RunoutMesh(flowField, playhead.durationS, flowPalette, TERRAIN_EXAGGERATION);
+    map.addSource(SOURCE.flowField, {
+      type: "geojson",
+      data: mesh.at(playheadTime(playhead, performance.now()), map.getBearing()),
+    });
     map.addLayer(
       {
         id: LAYER.flowField,
@@ -606,15 +611,29 @@ export default function TerrainMap({
       const done = t >= playhead.durationS;
       if (done || now - drawnAt >= FLOW_REDRAW_MS) {
         drawnAt = now;
-        source?.setData(mesh.at(t));
+        source?.setData(mesh.at(t, map.getBearing()));
       }
       if (!done) {
         frame = window.requestAnimationFrame(step);
       }
     };
     frame = window.requestAnimationFrame(step);
+    // After playback, turning the map still relights the facets, at most once per redraw.
+    let relit = 0;
+    const relight = () => {
+      if (relit || playheadTime(playhead, performance.now()) < playhead.durationS) {
+        return;
+      }
+      relit = window.requestAnimationFrame(() => {
+        relit = 0;
+        source?.setData(mesh.at(playhead.durationS, map.getBearing()));
+      });
+    };
+    map.on("rotate", relight);
     return () => {
       window.cancelAnimationFrame(frame);
+      window.cancelAnimationFrame(relit);
+      map.off("rotate", relight);
       if (map.getLayer(LAYER.flowField)) {
         map.removeLayer(LAYER.flowField);
       }

@@ -199,7 +199,7 @@ That work is already on `origin/step-10-local-nasa-export` (landslide points, a 
 **Build.**
 
 - `backend/app/ml/runout.py`: from the point's cells at High or above, spread downslope on the 30 m DEM with multiple-flow-direction routing (Holmgren, exponent 4). Stop where the travel angle from the release drops below `REACH_ANGLE_DEG` (11) or the path passes `MAX_RUNOUT_M` (6000).
-- Arrival time is path distance over `FRONT_SPEED_MS` (5). Intensity is the flow share through a cell, 0 to 1. All four constants are named and documented.
+- Arrival time is path distance over `FRONT_SPEED_MS` (5). Intensity is the flow share through a cell, 0 to 1. All four constants are named and documented. (Sep 27, 2026: arrival now comes from the process's speed model in `runout_physics.py`; `FRONT_SPEED_MS` is only the no-terrain fallback.)
 - Frames: the footprint every `FRAME_S` of simulated time, at most 40, as GeoJSON polygons with a `level` property on the shared bins (below Moderate left out).
 - Steps: release, channel entry (first cell within 100 m of a D8 channel), each trail crossing (trail, mile range, flow level there), and stop (distance, drop). Each has a time and a point.
 

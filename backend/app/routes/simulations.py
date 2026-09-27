@@ -26,7 +26,7 @@ class SimulationStarted(BaseModel):
 def _trails(conn: psycopg.Connection[DictRow], slug: str) -> tuple[dict | None, list[dict]]:
     mountain = conn.execute(
         """
-        SELECT id, slug, name, lat, lon, elevation_m, region
+        SELECT id, slug, name, lat, lon, elevation_m, region, kind
         FROM mountains WHERE slug = %s
         """,
         (slug,),
