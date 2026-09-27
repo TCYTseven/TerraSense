@@ -24,7 +24,7 @@ Read the repo root [`AGENTS.md`](../AGENTS.md) first for the team rules and shar
 | `seed/trail_network.geojson` | 19 | `backend/app/bypass.py`. Written by `ml/scripts/build_trail_network.py` |
 | `seed/landslides.geojson` | 10, used in 14 | Historical map pins and a source catalog. The event-time builder applies dated rainfall-trigger filters before using records as 72-hour labels. See `seed/sources.md` |
 | `seed/sources.md` | 10 | People. One entry per downloaded file |
-| `seed/hills.json` | 38 | `backend/app/seed.py` `load_hills`. Turtle Mountain stays live. The other rows are static hill and cliff markers (`is_live` false), the same pattern as the mountain catalog. A mountain reseed does not drop them. |
+| `seed/hills.json` | 38 | `backend/app/seed.py` `load_hills`. Turtle Mountain stays live. The other rows are static hill and cliff markers (`is_live` false), the same pattern as the mountain catalog, written by `ml/scripts/build_hill_catalog.py`. A mountain reseed does not drop them. |
 | `seed/packs/index.json` | 32 | `backend/app/packs.py`. Written by `python ml/scripts/mountain_packs.py --write-index`: one row per pack (name, peak, bbox, UTM zone, hero trail or null) |
 | `seed/packs/<slug>/…` | 32 | One folder per demo peak with the same four files in the same formats: `trails.geojson`, `trail_segments.geojson`, `trail_network.geojson`, `landslides.geojson` (may be an empty collection). Written by `python ml/scripts/build_pack.py <slug>` |
 
@@ -47,7 +47,11 @@ The two static peaks, Huascarán (`high`) and Mount Fuji (`low`), are globe mark
 
 Static hills use the same placeholder field. The color comes from recorded NASA Global Landslide Catalog fatalities within 10 km of the site: none is `low`, 1–19 is `moderate`, 20–99 is `high`, and 100 or more is `extreme`. That is a catalog color, not a model score. Only Turtle Mountain has a scored window.
 
-Named paths for a hill, when OpenStreetMap has them, live in `seed/hills/<slug>/trails.geojson` and load with the pack trail files. Hills with no named path have no trail file.
+Every static hill is pinned to a Wikidata item and has a documented landslide or rockfall record. `ml/scripts/build_hill_catalog.py` holds that list, checks each item against its OpenStreetMap summit or cliff, and writes the rows, the trail files, the hill rows of `seed/satellite_images.json`, and the table under Static hills in `seed/sources.md`. Add or drop a hill there and rerun it; do not hand-edit a static row. A place that is only an OpenStreetMap point, a pass, a gorge, or a building is not a hill.
+
+The script refuses a hill, and writes nothing, when its Wikidata item is not typed as a landform (`LANDFORM_TYPES`: hill, mountain, cliff, volcano, and the like; an untyped item passes only when its OSM feature is a landform), when its OSM feature sits over 3 km from the item, or when a catalog mountain is within 5 km (the globe already marks that place). A record is either written by hand with the source it was checked against, or left out, in which case the script writes it from the deadliest NASA catalog event within 5 km, placed to 5 km or better, and states the distance and accuracy. A hill with neither is refused. Catalog rows whose fatality count contradicts their own description are corrected in `GLC_FATALITY_FIXES`.
+
+Named paths for a hill, when OpenStreetMap has them, live in `seed/hills/<slug>/trails.geojson` and load with the pack trail files: named foot ways and walking-route relations within 1.5 km of the point, cut to 2.5 km, up to 12, closest first. Each line starts at its lower end on the Terrarium tiles, and `elevation_gain_m` is the climb along it. Hills with no named path have no trail file.
 
 `seed/satellite_images.json` is a list, one entry per mountain in the active catalog:
 
