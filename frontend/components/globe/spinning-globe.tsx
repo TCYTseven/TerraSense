@@ -2,7 +2,16 @@
 
 import { OrbitControls, useTexture } from "@react-three/drei";
 import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { type ReactNode, type RefObject, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  type RefObject,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AdditiveBlending,
   BackSide,
@@ -224,9 +233,14 @@ export default function SpinningGlobe({
   atmosphereColor?: string;
 }) {
   const [hoveredSlug, setHoveredSlug] = useState<string | null>(null);
+  const [regionTransition, setRegionTransition] = useState(false);
   const earthRef = useRef<Mesh>(null);
   const flying = flyTarget !== null;
-  const idleSpin = region.allowIdleSpin && !spinPaused && hoveredSlug === null && !flying;
+  const onRegionTransition = useCallback((active: boolean) => {
+    setRegionTransition(active);
+  }, []);
+  const idleSpin =
+    region.allowIdleSpin && !spinPaused && hoveredSlug === null && !flying && !regionTransition;
 
   return (
     <Canvas
@@ -255,15 +269,20 @@ export default function SpinningGlobe({
           ))}
         </Earth>
       </Suspense>
-      <RegionViewCamera region={region} disabled={flying} earthRef={earthRef} />
+      <RegionViewCamera
+        region={region}
+        disabled={flying}
+        earthRef={earthRef}
+        onTransitionChange={onRegionTransition}
+      />
       <CameraFlight target={flyTarget} earth={earthRef} onArrive={onArrive} />
       <Atmosphere glowColor={atmosphereColor} />
       <OrbitControls
         makeDefault
-        enabled={!flying}
+        enabled={!flying && !regionTransition}
         enablePan={false}
         enableDamping
-        dampingFactor={0.08}
+        dampingFactor={0.1}
         rotateSpeed={ROTATE_SPEED}
         minDistance={MIN_CAMERA_DISTANCE}
         maxDistance={MAX_CAMERA_DISTANCE}

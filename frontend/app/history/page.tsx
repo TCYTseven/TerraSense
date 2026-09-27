@@ -109,7 +109,10 @@ export default async function HistoryRoute({ searchParams }: PageProps<"/history
 
   return (
     <main className="mx-auto w-full max-w-6xl px-6 py-10">
-      <header className="flex items-center gap-3">
+      <Link href="/" className="text-sm text-primary underline decoration-1 underline-offset-3">
+        Back to main page
+      </Link>
+      <header className="mt-4 flex items-center gap-3">
         <Link href="/" aria-label="TerraSense home">
           <BrandLogo size={40} className="shrink-0" />
         </Link>
