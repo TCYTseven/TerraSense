@@ -2,78 +2,83 @@
 
 import { useFrame, useThree } from "@react-three/fiber";
 import { type RefObject, useEffect, useRef } from "react";
-import { type Mesh, Quaternion, Vector3 } from "three";
+import { type Mesh, Vector3 } from "three";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import type { GlobeRegion } from "@/lib/globe-regions";
 import { latLonToVector3 } from "./geo";
 
-/** Pull back outside the normal zoom band so the camera arcs around the hull, not through it. */
-const RETREAT_DISTANCE = 4.2;
-const TRANSITION_MS = 3200;
+const TRANSITION_MS = 2600;
+/** Extra camera distance at mid-move, on top of the start→end lerp, so the pull-back overlaps the turn. */
+const ARC = 0.9;
 
-const scratchDir = new Vector3();
-const scratchQuat = new Quaternion();
-const scratchStartQuat = new Quaternion();
-const scratchEndQuat = new Quaternion();
-const scratchAxis = new Vector3(0, 0, 1);
+const scratchLocal = new Vector3();
+const scratchWorld = new Vector3();
+const scratchStartDir = new Vector3();
+const scratchEndDir = new Vector3();
 
-/** Perlin-style smoothstep for C¹ continuity at endpoints. */
 function smootherStep(t: number): number {
   const x = Math.min(1, Math.max(0, t));
   return x * x * x * (x * (x * 6 - 15) + 10);
 }
 
-/** Unit vector from the globe center toward the camera for a preset. */
-function viewDirection(region: GlobeRegion, target: Vector3): Vector3 {
-  if (region.id === "world") {
-    return target.set(0, 0.25, 1).normalize();
-  }
-  return latLonToVector3(region.lat, region.lon, 1).normalize();
+function lerpAngle(from: number, to: number, t: number): number {
+  const delta = Math.atan2(Math.sin(to - from), Math.cos(to - from));
+  return from + delta * t;
 }
 
-function cameraPosition(region: GlobeRegion, direction: Vector3, distance: number, target: Vector3): Vector3 {
-  if (region.id === "world") {
-    return target.set(0, 0.25 * (distance / region.distance), distance);
-  }
-  return target.copy(direction).multiplyScalar(distance);
+/** World-space direction of a lat/lon after a given earth Y spin. Restores the mesh rotation. */
+function worldDirectionAtY(earth: Mesh, lat: number, lon: number, rotationY: number, out: Vector3): Vector3 {
+  const savedY = earth.rotation.y;
+  earth.rotation.y = rotationY;
+  earth.updateWorldMatrix(true, false);
+  scratchLocal.copy(latLonToVector3(lat, lon, 1));
+  out.copy(earth.localToWorld(scratchLocal)).normalize();
+  earth.rotation.y = savedY;
+  earth.updateWorldMatrix(true, false);
+  return out;
 }
 
-function slerpDirection(from: Vector3, to: Vector3, t: number, out: Vector3): Vector3 {
-  scratchStartQuat.setFromUnitVectors(scratchAxis, from);
-  scratchEndQuat.setFromUnitVectors(scratchAxis, to);
-  scratchQuat.copy(scratchStartQuat).slerp(scratchEndQuat, smootherStep(t));
-  return out.copy(scratchAxis).applyQuaternion(scratchQuat).normalize();
+/**
+ * Y spin that brings (lat, lon) as close as possible to `face`, using a fresh local point each sample.
+ * Axial tilt means Y spin alone cannot hit every latitude, so the camera finishes on the point itself.
+ */
+function targetEarthRotationY(earth: Mesh, lat: number, lon: number, face: Vector3): number {
+  const savedY = earth.rotation.y;
+  const local = latLonToVector3(lat, lon, 1);
+  let bestY = savedY;
+  let bestDot = -Infinity;
+  const steps = 720;
+  for (let i = 0; i <= steps; i += 1) {
+    earth.rotation.y = (i / steps) * Math.PI * 2;
+    earth.updateWorldMatrix(true, false);
+    scratchLocal.copy(local);
+    scratchWorld.copy(earth.localToWorld(scratchLocal)).normalize();
+    const dot = scratchWorld.dot(face);
+    if (dot > bestDot) {
+      bestDot = dot;
+      bestY = earth.rotation.y;
+    }
+  }
+  earth.rotation.y = savedY;
+  earth.updateWorldMatrix(true, false);
+  return bestY;
 }
 
-/** Distance eases out, holds wide, then eases in — one continuous curve, no phase seams. */
-function transitionDistance(u: number, startDistance: number, endDistance: number): number {
-  const peak = RETREAT_DISTANCE;
-  if (u < 0.32) {
-    const t = smootherStep(u / 0.32);
-    return startDistance + (peak - startDistance) * t;
-  }
-  if (u < 0.58) {
-    return peak;
-  }
-  const t = smootherStep((u - 0.58) / 0.42);
-  return peak + (endDistance - peak) * t;
-}
-
-/** Bearing change runs mostly while the camera is pulled back. */
-function transitionDirectionT(u: number): number {
-  return smootherStep(Math.min(1, Math.max(0, (u - 0.18) / 0.72)));
+/** One curve: zoom and turn share the same t. A sine arc pulls the camera out while the globe turns. */
+function transitionDistance(t: number, startDistance: number, endDistance: number): number {
+  const base = startDistance + (endDistance - startDistance) * t;
+  return base + Math.sin(Math.PI * t) * ARC;
 }
 
 interface Transition {
   startedAt: number;
-  startDistance: number;
-  startDirection: Vector3;
-  endDirection: Vector3;
-  endDistance: number;
-  endRegion: GlobeRegion;
+  startCamera: Vector3;
+  endCamera: Vector3;
+  startEarthY: number;
+  endEarthY: number;
 }
 
-/** Zoom out, orbit around the globe, then ease in — no straight line through the core. */
+/** Pull the camera out and turn the globe in the same motion, then settle on the region. */
 export default function RegionViewCamera({
   region,
   disabled,
@@ -82,18 +87,15 @@ export default function RegionViewCamera({
 }: {
   region: GlobeRegion;
   disabled: boolean;
-  /** Kept for API symmetry with other globe cameras; region moves are camera-only. */
   earthRef: RefObject<Mesh | null>;
   onTransitionChange?: (active: boolean) => void;
 }) {
-  void earthRef;
   const { camera } = useThree();
   const controls = useThree((state) => state.controls as OrbitControlsImpl | null);
   const transition = useRef<Transition | null>(null);
-  const endDirection = useRef(new Vector3());
-  const endPosition = useRef(new Vector3());
   const lastRegionId = useRef(region.id);
   const transitionActiveRef = useRef(false);
+  const heldEarthY = useRef<number | null>(null);
 
   const setTransitionActive = (active: boolean) => {
     if (transitionActiveRef.current === active) {
@@ -109,27 +111,34 @@ export default function RegionViewCamera({
     }
     lastRegionId.current = region.id;
 
-    const startDirection = camera.position.clone().normalize();
-    viewDirection(region, endDirection.current);
+    const earth = earthRef.current;
+    const startDir = camera.position.clone().normalize();
+    const startEarthY = earth?.rotation.y ?? 0;
+    let endEarthY = startEarthY;
+    const endDir = startDir.clone();
+    if (earth && region.id !== "world") {
+      endEarthY = targetEarthRotationY(earth, region.lat, region.lon, startDir);
+      worldDirectionAtY(earth, region.lat, region.lon, endEarthY, endDir);
+    }
+
+    const endCam = endDir.multiplyScalar(region.distance);
     transition.current = {
       startedAt: performance.now(),
-      startDistance: camera.position.length(),
-      startDirection,
-      endDirection: endDirection.current.clone(),
-      endDistance: region.distance,
-      endRegion: region,
+      startCamera: camera.position.clone(),
+      endCamera: endCam,
+      startEarthY,
+      endEarthY,
     };
+    heldEarthY.current = null;
     setTransitionActive(true);
-  }, [region, camera]);
+  }, [region, camera, earthRef]);
 
-  useFrame((_, delta) => {
+  useFrame(() => {
     if (disabled) {
       return;
     }
 
-    viewDirection(region, endDirection.current);
-    cameraPosition(region, endDirection.current, region.distance, endPosition.current);
-
+    const earth = earthRef.current;
     const active = transition.current;
     const transitioning = active !== null;
 
@@ -138,31 +147,41 @@ export default function RegionViewCamera({
     }
     setTransitionActive(transitioning);
 
-    if (!active) {
-      const settle = 1 - Math.exp(-4 * Math.min(delta, 0.05));
-      camera.position.lerp(endPosition.current, settle);
+    if (active && earth) {
+      const elapsed = performance.now() - active.startedAt;
+      const u = Math.min(1, elapsed / TRANSITION_MS);
+      const moveT = smootherStep(u);
+      const dist = transitionDistance(moveT, active.startCamera.length(), active.endCamera.length());
+
+      earth.rotation.y = lerpAngle(active.startEarthY, active.endEarthY, moveT);
+
+      scratchStartDir.copy(active.startCamera).normalize();
+      scratchEndDir.copy(active.endCamera).normalize();
+      scratchWorld.copy(scratchStartDir).lerp(scratchEndDir, moveT).normalize();
+      camera.position.copy(scratchWorld).multiplyScalar(dist);
       camera.lookAt(0, 0, 0);
+      camera.updateProjectionMatrix();
+
+      if (u >= 1) {
+        transition.current = null;
+        earth.rotation.y = active.endEarthY;
+        heldEarthY.current = active.endEarthY;
+        camera.position.copy(active.endCamera);
+        camera.lookAt(0, 0, 0);
+        if (controls) {
+          controls.target.set(0, 0, 0);
+          controls.update();
+        }
+      }
       return;
     }
 
-    const elapsed = performance.now() - active.startedAt;
-    const u = Math.min(1, elapsed / TRANSITION_MS);
-    const distance = transitionDistance(u, active.startDistance, active.endDistance);
-    const directionT = transitionDirectionT(u);
+    if (!active && region.id !== "world" && heldEarthY.current !== null && earth) {
+      earth.rotation.y = heldEarthY.current;
+    }
 
-    slerpDirection(active.startDirection, active.endDirection, directionT, scratchDir);
-    cameraPosition(active.endRegion, scratchDir, distance, camera.position);
-    camera.lookAt(0, 0, 0);
-    camera.updateProjectionMatrix();
-
-    if (u >= 1) {
-      transition.current = null;
-      camera.position.copy(endPosition.current);
-      camera.lookAt(0, 0, 0);
-      if (controls) {
-        controls.target.set(0, 0, 0);
-        controls.update();
-      }
+    if (!active && region.id === "world") {
+      heldEarthY.current = null;
     }
   });
 
