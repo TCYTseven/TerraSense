@@ -198,22 +198,42 @@ export function orderMountainsForBrowse(mountains: Mountain[]): Mountain[] {
 
 /**
  * Pick up to `limit` mountains for the globe with continental spread and few polar pins.
- * Every hill is included, then every other live mountain. Static peaks fill whatever
- * room is left. Search still uses the full API list.
+ * Live peaks always show. Catalog mountains fill most of the budget. Hills are capped so
+ * sub-3k reclassification does not crowd out major summits. Search still uses the full list.
  */
 export function selectGlobeMountains(mountains: Mountain[], limit: number): Mountain[] {
   if (limit <= 0 || mountains.length <= limit) {
     return orderMountainsForBrowse(mountains);
   }
 
-  const hills = mountains.filter((m) => m.kind === "hill");
-  const live = mountains.filter((m) => m.is_live && m.kind !== "hill");
-  const pinned = [...hills, ...live];
+  const live = mountains.filter((m) => m.is_live);
+  const hills = mountains.filter((m) => !m.is_live && m.kind === "hill");
   const catalog = mountains.filter((m) => !m.is_live && m.kind !== "hill");
-  const budget = limit - pinned.length;
-  if (budget <= 0) {
-    return pinned.slice(0, limit);
+  const hillCap = Math.min(hills.length, Math.max(6, Math.round(limit * 0.15)));
+
+  const picked: Mountain[] = [];
+  const used = new Set<string>();
+  const take = (list: Mountain[]) => {
+    for (const mountain of list) {
+      if (picked.length >= limit) {
+        break;
+      }
+      if (used.has(mountain.slug)) {
+        continue;
+      }
+      used.add(mountain.slug);
+      picked.push(mountain);
+    }
+  };
+
+  take(live);
+  take(pickRegionalCatalog(catalog, Math.max(0, limit - picked.length - hillCap)));
+  take(pickRegionalCatalog(hills, Math.max(0, limit - picked.length)));
+
+  if (picked.length < limit) {
+    const rest = mountains.filter((m) => !used.has(m.slug));
+    take(pickRegionalCatalog(rest, limit - picked.length));
   }
 
-  return [...pinned, ...pickRegionalCatalog(catalog, budget)];
+  return picked;
 }

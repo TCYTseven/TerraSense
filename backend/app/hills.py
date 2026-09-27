@@ -12,9 +12,19 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+from typing import Literal
+
 from app.config import REPO_ROOT
 
 HILLS_PATH = REPO_ROOT / "data" / "seed" / "hills.json"
+# Summits below this elevation are kind=hill in Postgres; 3000 m and above are mountains.
+HILL_MAX_ELEVATION_M = 3000
+
+
+def kind_for_elevation(elevation_m: int) -> Literal["hill", "mountain"]:
+    return "hill" if elevation_m < HILL_MAX_ELEVATION_M else "mountain"
+
+
 # Shared facts. EPSG:4326, [west, south, east, north].
 TURTLE_SLUG = "turtle-mountain"
 TURTLE_BBOX = (-114.48, 49.54, -114.34, 49.64)

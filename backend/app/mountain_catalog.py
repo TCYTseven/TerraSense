@@ -31,6 +31,7 @@ from typing import Any, Literal
 import psycopg
 
 from app.config import REPO_ROOT
+from app.hills import kind_for_elevation
 
 log = logging.getLogger(__name__)
 
@@ -632,10 +633,10 @@ def upsert_mountains(conn: psycopg.Connection, mountains: list[dict]) -> int:
         conn.execute(
             """
             INSERT INTO mountains
-              (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live)
+              (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live, kind)
             VALUES
               (%(name)s, %(slug)s, %(lat)s, %(lon)s, %(elevation_m)s, %(region)s,
-               %(current_risk_level)s, %(is_live)s)
+               %(current_risk_level)s, %(is_live)s, %(kind)s)
             ON CONFLICT (slug) DO UPDATE SET
               name = EXCLUDED.name,
               lat = EXCLUDED.lat,
@@ -643,12 +644,13 @@ def upsert_mountains(conn: psycopg.Connection, mountains: list[dict]) -> int:
               elevation_m = EXCLUDED.elevation_m,
               region = EXCLUDED.region,
               is_live = EXCLUDED.is_live,
+              kind = EXCLUDED.kind,
               current_risk_level = CASE
                 WHEN mountains.last_analyzed_at IS NULL THEN EXCLUDED.current_risk_level
                 ELSE mountains.current_risk_level
               END
             """,
-            mountain,
+            {**mountain, "kind": kind_for_elevation(mountain["elevation_m"])},
         )
     return len(mountains)
 

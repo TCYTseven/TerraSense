@@ -377,49 +377,90 @@ export default function TerrainMap({
     if (!container.current || !webgl) {
       return;
     }
-    setWorkerUrl(WORKER_URL);
-    // Open on the mountain's footprint, sized from its elevation, plus the trail markers near it.
-    const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
-    const bearing = openingBearing(lon, lat, slug);
-    const instance = new MapLibreMap({
-      container: container.current,
-      style: mountainStyle({ summitM: elevationM, lon, lat, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
-      center: [lon, lat],
-      zoom: CAMERA.zoom,
-      pitch: CAMERA.pitch,
-      bearing,
-      maxPitch: CAMERA.maxPitch,
-      bounds,
-      fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing },
-      attributionControl: { compact: true },
-    });
-    // The opening frame is the widest view that still reads as this mountain.
-    instance.setMinZoom(instance.getZoom() - CAMERA.zoomOutRoom);
-    instance.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
-    instance.addControl(new ScaleControl({ unit: "imperial" }), "bottom-right");
-    new Marker({ element: summitLabel(name), anchor: "bottom", offset: [0, -4] }).setLngLat([lon, lat]).addTo(instance);
-    instance.once("load", () => {
-      const zoomFloor = openingZoomFloor(slug);
-      if (instance.getZoom() < zoomFloor) {
-        instance.jumpTo({
-          center: [lon, lat],
-          zoom: zoomFloor,
-          pitch: CAMERA.pitch,
-          bearing,
-        });
-      }
-      setMap(instance);
-      setStatus("ready");
-    });
-    instance.on("error", (event) => {
-      // A tile that fails to load is not fatal: the map fills in around it.
-      if ("sourceId" in event || "tile" in event) {
+    let instance: MapLibreMap | null = null;
+    let cancelled = false;
+    let frame = 0;
+
+    const mountMap = () => {
+      const el = container.current;
+      if (cancelled || !el || el.clientWidth === 0 || el.clientHeight === 0) {
+        frame = window.requestAnimationFrame(mountMap);
         return;
       }
-      setStatus((current) => (current === "ready" ? current : "error"));
+      setWorkerUrl(WORKER_URL);
+      // Open on the mountain's footprint, sized from its elevation, plus the trail markers near it.
+      const bounds = openingBounds(lon, lat, elevationM, markersAtOpen.current.map((trail) => trail.center));
+      const bearing = openingBearing(lon, lat, slug);
+      instance = new MapLibreMap({
+        container: el,
+        style: mountainStyle({ summitM: elevationM, lon, lat, mapboxToken: process.env.NEXT_PUBLIC_MAPBOX_TOKEN || undefined }),
+        center: [lon, lat],
+        zoom: CAMERA.zoom,
+        pitch: CAMERA.pitch,
+        bearing,
+        maxPitch: CAMERA.maxPitch,
+        bounds,
+        fitBoundsOptions: { padding: CAMERA.padding, pitch: CAMERA.pitch, bearing },
+        attributionControl: { compact: true },
+      });
+      // The opening frame is the widest view that still reads as this mountain.
+      instance.setMinZoom(instance.getZoom() - CAMERA.zoomOutRoom);
+      instance.addControl(new NavigationControl({ visualizePitch: true }), "top-right");
+      instance.addControl(new ScaleControl({ unit: "imperial" }), "bottom-right");
+      new Marker({ element: summitLabel(name), anchor: "bottom", offset: [0, -4] }).setLngLat([lon, lat]).addTo(instance);
+      instance.once("load", () => {
+        if (cancelled || !instance) {
+          return;
+        }
+        const zoomFloor = openingZoomFloor(slug);
+        if (instance.getZoom() < zoomFloor) {
+          instance.jumpTo({
+            center: [lon, lat],
+            zoom: zoomFloor,
+            pitch: CAMERA.pitch,
+            bearing,
+          });
+        }
+        instance.resize();
+        instance.triggerRepaint();
+        setMap(instance);
+        setStatus("ready");
+      });
+      instance.on("error", (event) => {
+        // A tile that fails to load is not fatal: the map fills in around it.
+        if ("sourceId" in event || "tile" in event) {
+          return;
+        }
+        setStatus((current) => (current === "ready" ? current : "error"));
+      });
+    };
+
+    // Wait until layout has sized the panel (and any prior WebGL view has unmounted).
+    frame = window.requestAnimationFrame(() => {
+      frame = window.requestAnimationFrame(mountMap);
     });
-    return () => instance.remove();
+
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      instance?.remove();
+    };
   }, [name, slug, lon, lat, elevationM, webgl]);
+
+  useEffect(() => {
+    if (!map || !container.current) {
+      return;
+    }
+    const el = container.current;
+    const resize = () => {
+      map.resize();
+      map.triggerRepaint();
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [map]);
 
   useEffect(() => {
     map?.getSource<GeoJSONSource>(SOURCE.trails)?.setData(trailFeatures(trails));

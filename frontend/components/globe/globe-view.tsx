@@ -87,7 +87,15 @@ export default function GlobeView() {
   }
 
   function arrive(mountain: Mountain) {
-    router.push(placeHref(mountain));
+    if (leaving.current) {
+      return;
+    }
+    leaving.current = true;
+    setFlyTarget(null);
+    // Let the globe release WebGL before MapLibre opens on the mountain page.
+    window.requestAnimationFrame(() => {
+      router.push(placeHref(mountain));
+    });
   }
 
   return (

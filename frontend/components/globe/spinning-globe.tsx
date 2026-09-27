@@ -1,7 +1,7 @@
 "use client";
 
 import { OrbitControls, useTexture } from "@react-three/drei";
-import { Canvas, type ThreeEvent, useFrame } from "@react-three/fiber";
+import { Canvas, type ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { type ReactNode, type RefObject, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   AdditiveBlending,
@@ -15,6 +15,18 @@ import { THEME } from "@/lib/theme";
 import type { Mountain } from "@/lib/types";
 import CameraFlight from "./camera-flight";
 import MountainMarker from "./mountain-marker";
+
+/** Drop the globe's WebGL context on unmount so the mountain map can create one. */
+function ReleaseWebGL() {
+  const { gl } = useThree();
+  useEffect(() => {
+    return () => {
+      gl.forceContextLoss();
+      gl.dispose();
+    };
+  }, [gl]);
+  return null;
+}
 
 /** Radians per second. One full turn takes about 100 seconds. */
 const IDLE_SPIN_RADIANS_PER_SECOND = 0.06;
@@ -182,6 +194,7 @@ export default function SpinningGlobe({
       dpr={[1, 2]}
       gl={{ antialias: true, alpha: false }}
     >
+      <ReleaseWebGL />
       <color attach="background" args={[sceneBackground]} />
       {/* Bright, even daylight: the whole face of the globe reads, with a soft sun for relief. */}
       <ambientLight intensity={0.9} />

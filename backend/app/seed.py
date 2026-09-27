@@ -21,7 +21,7 @@ from psycopg.types.json import Jsonb
 from app import packs
 from app.config import REPO_ROOT
 from app.db import connect
-from app.hills import HILLS_PATH
+from app.hills import HILL_MAX_ELEVATION_M, HILLS_PATH, kind_for_elevation
 from app.mountain_catalog import read_seed_file, upsert_mountains
 
 SEED_DIR = REPO_ROOT / "data" / "seed"
@@ -71,15 +71,25 @@ def load_mountains(conn: psycopg.Connection) -> int:
             "(mountainstest → mountains_test.json, reseed → mountains.json). "
             "Run: python -m app.mountain_catalog --write-seed"
         )
+    catalog_slugs = [m["slug"] for m in mountains]
+    hill_slugs = _hill_seed_slugs()
     count = upsert_mountains(conn, mountains)
     conn.execute(
         """
         DELETE FROM mountains
-        WHERE is_live = false AND kind = 'mountain' AND slug <> ALL(%s::text[])
+        WHERE is_live = false AND kind = 'mountain'
+          AND slug <> ALL(%s::text[])
+          AND slug <> ALL(%s::text[])
         """,
-        ([m["slug"] for m in mountains],),
+        (catalog_slugs, hill_slugs),
     )
     return count
+
+
+def _hill_seed_slugs() -> list[str]:
+    if not HILLS_PATH.is_file():
+        return []
+    return [row["slug"] for row in json.loads(HILLS_PATH.read_text(encoding="utf-8"))]
 
 
 def load_hills(conn: psycopg.Connection) -> int:
@@ -96,13 +106,14 @@ def load_hills(conn: psycopg.Connection) -> int:
     for hill in hills:
         if hill.get("kind") != "hill":
             raise SystemExit(f"{hill.get('slug')!r} in hills.json must have kind 'hill'")
+        row = {**hill, "kind": kind_for_elevation(hill["elevation_m"])}
         conn.execute(
             """
             INSERT INTO mountains
               (name, slug, lat, lon, elevation_m, region, current_risk_level, is_live, kind)
             VALUES
               (%(name)s, %(slug)s, %(lat)s, %(lon)s, %(elevation_m)s, %(region)s,
-               %(current_risk_level)s, %(is_live)s, 'hill')
+               %(current_risk_level)s, %(is_live)s, %(kind)s)
             ON CONFLICT (slug) DO UPDATE SET
               name = EXCLUDED.name,
               lat = EXCLUDED.lat,
@@ -110,20 +121,38 @@ def load_hills(conn: psycopg.Connection) -> int:
               elevation_m = EXCLUDED.elevation_m,
               region = EXCLUDED.region,
               is_live = EXCLUDED.is_live,
-              kind = 'hill',
+              kind = EXCLUDED.kind,
               current_risk_level = CASE
                 WHEN mountains.last_analyzed_at IS NULL THEN EXCLUDED.current_risk_level
                 ELSE mountains.current_risk_level
               END
             """,
-            hill,
+            row,
         )
         slugs.append(hill["slug"])
+    catalog_slugs = [m["slug"] for m in (read_seed_file() or [])]
     conn.execute(
-        "DELETE FROM mountains WHERE kind = 'hill' AND slug <> ALL(%s::text[])",
-        (slugs,),
+        """
+        DELETE FROM mountains
+        WHERE is_live = false AND kind = 'hill'
+          AND slug <> ALL(%s::text[])
+          AND slug <> ALL(%s::text[])
+        """,
+        (slugs, catalog_slugs),
     )
     return len(hills)
+
+
+def sync_kind_by_elevation(conn: psycopg.Connection) -> None:
+    """Align kind with summit elevation across every row."""
+    conn.execute(
+        "UPDATE mountains SET kind = 'hill' WHERE elevation_m < %s",
+        (HILL_MAX_ELEVATION_M,),
+    )
+    conn.execute(
+        "UPDATE mountains SET kind = 'mountain' WHERE elevation_m >= %s",
+        (HILL_MAX_ELEVATION_M,),
+    )
 
 
 def load_trails(conn: psycopg.Connection) -> int:
@@ -302,6 +331,7 @@ def main() -> None:
     with connect() as conn:
         load_mountains(conn)
         hill_count = load_hills(conn)
+        sync_kind_by_elevation(conn)
         live = mark_packs_live(conn)
         load_trails(conn)
         load_trail_segments(conn)
