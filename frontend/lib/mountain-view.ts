@@ -4,7 +4,7 @@
  * scores every trail on the saved one-week map.
  */
 
-import type { LineString, Position, RiskLevel } from "./types";
+import type { Advisory, LineString, Position, RiskLevel } from "./types";
 
 export const TRAIL_LETTERS = ["A", "B", "C", "D", "E"] as const;
 export type TrailLetter = (typeof TRAIL_LETTERS)[number];
@@ -132,6 +132,8 @@ export interface ReactiveMeasure {
 export interface PipelineState {
   orchestrator: PipelineStatus;
   agents: Record<PipelineAgentId, PipelineAgentState>;
+  /** The finished run conclusion; drives the response plan modal. */
+  advisory: Advisory | null;
   /** Null until the Alerter finishes. */
   measures: ReactiveMeasure[] | null;
   /** The backend classifier result projected from the finished advisory. */

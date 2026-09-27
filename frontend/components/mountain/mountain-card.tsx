@@ -5,7 +5,7 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import AgentPipeline from "@/components/pipeline/agent-pipeline";
 import AnalyzeButton from "@/components/pipeline/analyze-button";
 import SimulateButton from "@/components/pipeline/simulate-button";
-import ReactiveMeasures from "@/components/pipeline/reactive-measures";
+import ResponsePlanModal from "@/components/pipeline/response-plan-modal";
 import SimulationBar from "@/components/map/simulation-bar";
 import LandslideRiskCard from "@/components/panel/landslide-risk-card";
 import { getHillRiskSummary, getRiskSummary } from "@/lib/api";
@@ -55,6 +55,14 @@ export default function MountainCard({
   const [riskLocation, setRiskLocation] = useState({ latitude: mountain.lat, longitude: mountain.lon });
   const pipeline = usePipeline(hill);
   const finished = pipeline.state.orchestrator === "done";
+  const [planOpen, setPlanOpen] = useState(false);
+  const planReady = finished && pipeline.state.advisory != null && pipeline.state.measures != null;
+
+  useEffect(() => {
+    if (planReady) {
+      setPlanOpen(true);
+    }
+  }, [planReady]);
 
   // A finished run saves a new map, so the trail scores are read again.
   useEffect(() => {
@@ -188,8 +196,19 @@ export default function MountainCard({
                 <AgentPipeline state={pipeline.state} />
               </div>
             </section>
-            {pipeline.state.orchestrator === "done" && pipeline.state.measures && (
-              <ReactiveMeasures measures={pipeline.state.measures} level={hill.risk.level} trails={hill.trails} />
+            {planReady && (
+              <section className="border-t border-border px-5 py-4">
+                <button
+                  type="button"
+                  onClick={() => setPlanOpen(true)}
+                  className="w-full rounded-md border border-primary/40 bg-primary/10 px-4 py-3 text-left text-sm font-semibold text-foreground hover:bg-primary/15"
+                >
+                  View response plan
+                  <span className="mt-0.5 block text-xs font-normal text-muted-foreground">
+                    Priority actions from the agent run — not sent until you approve
+                  </span>
+                </button>
+              </section>
             )}
             {live && pipeline.state.orchestrator === "done" && hill.preventative.length > 0 && (
               <PreventativeMeasures items={hill.preventative} />
@@ -230,6 +249,19 @@ export default function MountainCard({
           analyzeAvailable={live}
           onClose={() => setSimulateUnsupportedOpen(false)}
         />
+        {planReady && pipeline.state.advisory && pipeline.state.measures && (
+          <ResponsePlanModal
+            open={planOpen}
+            hill={hill}
+            advisory={pipeline.state.advisory}
+            measures={pipeline.state.measures}
+            pipeline={pipeline.state}
+            onClose={() => setPlanOpen(false)}
+            onRevise={() => {
+              setPlanOpen(false);
+            }}
+          />
+        )}
       </aside>
     </main>
   );

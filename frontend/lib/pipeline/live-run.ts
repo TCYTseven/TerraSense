@@ -131,6 +131,7 @@ function project(
   events: Partial<Record<AgentName, AgentEvent>>,
   orchestrator: PipelineState["orchestrator"],
   error: string | null,
+  advisory: Advisory | null,
   measures: ReactiveMeasure[] | null,
   model: PipelineState["model"],
 ): PipelineState {
@@ -161,7 +162,7 @@ function project(
       finishedAt: status === "done" || status === "error" ? (finished.length ? Math.max(...finished) : Date.now()) : null,
     };
   }
-  return { orchestrator, agents, measures, model, error };
+  return { orchestrator, agents, advisory, measures, model, error };
 }
 
 function measuresFromAdvisory(advisory: Advisory): ReactiveMeasure[] {
@@ -207,13 +208,14 @@ export function runLiveAnalysis(
   const publish = (
     orchestrator: PipelineState["orchestrator"],
     error: string | null,
+    advisory: Advisory | null,
     measures: ReactiveMeasure[] | null,
     model: PipelineState["model"] = null,
   ) => {
     if (signal.aborted) {
       return;
     }
-    onUpdate(project(events, orchestrator, error, measures, model));
+    onUpdate(project(events, orchestrator, error, advisory, measures, model));
   };
 
   return new Promise((resolve) => {
@@ -234,7 +236,7 @@ export function runLiveAnalysis(
         stop = followRun(runId, {
           onEvent(event) {
             events[event.agent] = event;
-            publish("running", null, null);
+            publish("running", null, null, null);
           },
           onRun(run: Run) {
             for (const event of Object.values(run.agents)) {
@@ -243,11 +245,11 @@ export function runLiveAnalysis(
               }
             }
             if (run.status === "running") {
-              publish("running", null, null);
+              publish("running", null, null, null);
               return;
             }
             if (run.status === "error") {
-              publish("error", run.error ?? run.message, null);
+              publish("error", run.error ?? run.message, null, null);
               finish();
               return;
             }
@@ -255,6 +257,7 @@ export function runLiveAnalysis(
             publish(
               "done",
               null,
+              run.advisory ?? null,
               run.advisory ? measuresFromAdvisory(run.advisory) : null,
               advisoryModel
                 ? {
@@ -269,7 +272,7 @@ export function runLiveAnalysis(
             finish();
           },
           onLost() {
-            publish("error", "Lost the analysis stream. The API may still be running the agents.", null);
+            publish("error", "Lost the analysis stream. The API may still be running the agents.", null, null);
             finish();
           },
         });
