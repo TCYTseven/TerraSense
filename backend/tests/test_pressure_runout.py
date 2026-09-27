@@ -5,6 +5,7 @@ import pytest
 from app.ml import pressure, runout
 from app.ml.pressure import rank_pressure_points
 from app.ml.runout import METHOD_TRAIL, METHOD_TRAIL_TERRAIN, trace_runout
+from app.risk import cap_probability
 from app.simulation_communities import fallback_community_callout
 from app.simulations import template_callouts
 
@@ -132,7 +133,8 @@ def test_worst_route_follows_the_highest_probability_on_the_line(monkeypatch, tm
     monkeypatch.setattr(pressure, "_raster_path", lambda: path)
     point = pressure.worst_route([STEEP, GENTLE])
     assert point["trail_name"] == "Skyline Trail"
-    assert point["peak"] == 0.8
+    # An untagged raster is read as uncapped, so its 0.8 comes back through the ceiling.
+    assert point["peak"] == round(cap_probability(0.8), 2)
     assert point["level"] == "extreme"
 
 

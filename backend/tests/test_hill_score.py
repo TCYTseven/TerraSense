@@ -9,6 +9,7 @@ from app.hills import TURTLE_BBOX, TURTLE_SLUG, hill_probability_path, hill_susc
 from app.ml import risk_inference
 from app.ml.probability import ProbabilityMap, write
 from app.packs import probability_path, susceptibility_path
+from app.risk import cap_probability
 from app.risk_summary import risk_summary
 
 from .conftest import storm_rain
@@ -55,6 +56,6 @@ def test_a_hill_with_no_trails_scores_the_map(db_conn, tmp_path):
 
     assert summary["overall"]["trails_scored"] == 0
     assert summary["trails"] == []
-    assert summary["overall"]["score"] == pytest.approx(0.81, abs=1e-4)
+    assert summary["overall"]["score"] == pytest.approx(cap_probability(0.81), abs=1e-4)
     assert summary["bbox"] == list(TURTLE_BBOX)
     assert summary["method"] == "regional LightGBM and Model B"

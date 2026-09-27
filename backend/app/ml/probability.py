@@ -23,7 +23,7 @@ import rasterio
 from affine import Affine
 
 from app.config import REPO_ROOT
-from app.risk import BIN_EDGES, RISK_LEVELS
+from app.risk import BIN_EDGES, PROBABILITY_CEILING, PROBABILITY_KNEE, RISK_LEVELS
 from app.weather import HourlyRain
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,19 @@ MODEL_B_VALIDATION_PATH = REPO_ROOT / "ml" / "artifacts" / "model_b_validation.j
 
 MODEL_B_METHOD = "model b"
 STAND_IN_METHOD = "susceptibility stand-in (Model B pending)"
+CAPPED_TAG = "1"  # GeoTIFF tag write() sets: the values already passed cap_grid
+
+
+def is_capped(tags: dict[str, str]) -> bool:
+    """Whether a saved raster's values already passed cap_grid. Files from before the cap did not."""
+    return tags.get("CAPPED") == CAPPED_TAG
+
+
+def cap_grid(values: np.ndarray) -> np.ndarray:
+    """app.risk.cap_probability over a float32 grid. NaN (outside the data) stays NaN."""
+    grid = np.clip(np.asarray(values, dtype="float32"), 0.0, 1.0)
+    squeezed = PROBABILITY_KNEE + (PROBABILITY_CEILING - PROBABILITY_KNEE) * (grid - PROBABILITY_KNEE) / (1.0 - PROBABILITY_KNEE)
+    return np.where(grid > PROBABILITY_KNEE, squeezed, grid).astype("float32")
 
 
 @dataclass(frozen=True)
@@ -43,6 +56,13 @@ class ProbabilityMap:
     transform: Affine
     crs: str
     method: str  # MODEL_B_METHOD, or STAND_IN_METHOD while step 17 is out
+    # True once cap_grid has run. A saved map carries CAPPED=1 so a read does not squeeze twice.
+    capped: bool = False
+
+    def __post_init__(self) -> None:
+        if not self.capped:
+            object.__setattr__(self, "values", cap_grid(self.values))
+            object.__setattr__(self, "capped", True)
 
     @property
     def is_stand_in(self) -> bool:
@@ -169,6 +189,6 @@ def write(probability: ProbabilityMap, path: Path = PROBABILITY_PATH) -> Path:
     with rasterio.open(partial, "w", **profile) as dst:
         dst.write(probability.values, 1)
         dst.set_band_description(1, "probability_72h")
-        dst.update_tags(METHOD=probability.method)
+        dst.update_tags(METHOD=probability.method, CAPPED=CAPPED_TAG)
     partial.replace(path)
     return path

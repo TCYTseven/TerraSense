@@ -118,7 +118,7 @@
         {
           "trail": "North Puyallup Trail",
           "level": "extreme",
-          "max_probability": 1.0,
+          "max_probability": 0.8,
           "note": "88% of it sits at high or above."
         }
       ],

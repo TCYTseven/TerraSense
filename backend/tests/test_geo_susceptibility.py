@@ -12,7 +12,7 @@ import pytest
 import rasterio
 
 from app.ml import geo_susceptibility as geo
-from app.risk import BIN_EDGES
+from app.risk import BIN_EDGES, PROBABILITY_CEILING, cap_probability
 
 pytestmark = pytest.mark.skipif(
     geo._artifacts_stamp() is None or not geo.STACK_PATH.is_file(),
@@ -54,7 +54,7 @@ def test_prediction_matches_the_baked_map():
         lon, lat = (c[0] for c in warp_transform(crs, "EPSG:4326", [x], [y]))
         result = geo.predict_summit(f"parity-{x:.0f}-{y:.0f}", lat, lon)
         assert result["input_source"] == geo.REAL_INPUT
-        assert result["probability"] == pytest.approx(expected, abs=2e-4)
+        assert result["probability"] == pytest.approx(cap_probability(expected), abs=2e-4)
 
 
 def test_placeholder_is_deterministic_and_labeled():
@@ -71,6 +71,7 @@ def test_placeholder_varies_by_slug():
     slugs = ["mount-everest", "kilimanjaro", "denali", "aconcagua", "mont-blanc"]
     values = {geo.predict_summit(slug, *EVEREST_PEAK)["probability"] for slug in slugs}
     assert len(values) > 1  # different slugs sample different ground
+    assert max(values) <= PROBABILITY_CEILING
 
 
 def test_risk_level_matches_shared_bins():

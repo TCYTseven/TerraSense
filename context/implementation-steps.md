@@ -73,6 +73,7 @@ Use these values everywhere so the globe, the model, and the map describe the sa
 | Static markers | Two other peaks. Name, lat, lon, and a fixed risk level only |
 | Risk levels | `low`, `moderate`, `high`, `extreme` |
 | Probability bins | Low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7 |
+| Model ceiling | Model scores above 0.7 are squeezed linearly into 0.7–0.8 (1.0 reads 0.80, 0.93 reads 0.78). `app/risk.py` `cap_probability`, `PROBABILITY_KNEE`, `PROBABILITY_CEILING` |
 | Tiles | XYZ, EPSG:3857, so they sit on the map's 3D terrain |
 
 Rainier bounding box as numbers: `[-121.93, 46.76, -121.54, 46.96]`.

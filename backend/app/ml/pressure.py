@@ -12,7 +12,7 @@ import math
 from pathlib import Path
 
 from app.config import REPO_ROOT
-from app.risk import risk_level
+from app.risk import cap_probability, risk_level
 
 MAX_PRESSURE_POINTS = 5
 MIN_CLUSTER_KM2 = 0.05
@@ -73,11 +73,15 @@ def _route_peaks(path: Path, trails: list[dict]) -> list[tuple[float, dict]]:
     import rasterio
     from rasterio.warp import transform
 
+    from app.ml.probability import cap_grid, is_capped
+
     scored: list[tuple[float, dict]] = []
     with rasterio.open(path) as src:
         values = src.read(1).astype("float32")
         if src.nodata is not None:
             values[values == src.nodata] = np.nan
+        if not is_capped(src.tags()):
+            values = cap_grid(values)
         height, width = values.shape
         for trail in trails:
             points = _densify(_line(trail), ROUTE_SAMPLE_M)
@@ -130,10 +134,10 @@ def _densify(coords: list[list[float]], step_m: float) -> list[list[float]]:
 
 
 def peak_for_steepness(meters_per_km: float) -> float:
-    """Map trail grade onto the shared 0–1 bins. 80 m/km → 0.45, 200 m/km → 0.75."""
+    """Map trail grade onto the shared 0–1 bins. 80 m/km → 0.45, 200 m/km → 0.72 after the cap."""
     span = STEEP_HIGH_M_PER_KM - STEEP_MODERATE_M_PER_KM
     peak = 0.45 + (meters_per_km - STEEP_MODERATE_M_PER_KM) * (0.30 / span)
-    return max(0.22, min(0.92, peak))
+    return cap_probability(max(0.22, min(0.92, peak)))
 
 
 def _from_trails(trails: list[dict]) -> list[dict]:
@@ -192,10 +196,14 @@ def _from_raster(path: Path, trails: list[dict]) -> list[dict]:
 
     from pyproj import Transformer
 
+    from app.ml.probability import cap_grid, is_capped
+
     with rasterio.open(path) as src:
         values = src.read(1).astype("float32")
         if src.nodata is not None:
             values[values == src.nodata] = np.nan
+        if not is_capped(src.tags()):
+            values = cap_grid(values)
         mask = np.isfinite(values) & (values >= 0.2)
         if not mask.any():
             return []

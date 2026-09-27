@@ -58,6 +58,7 @@ Copy these. Do not re-derive them.
 - Live mountain: Mount Rainier, slug `mount-rainier`, peak 46.8523, -121.7603, elevation 4392 m.
 - Bounding box `[-121.93, 46.76, -121.54, 46.96]` (west, south, east, north).
 - Risk levels `low`, `moderate`, `high`, `extreme`. Probability bins: low < 0.2, moderate 0.2–0.45, high 0.45–0.7, extreme > 0.7.
+- Model ceiling: no model score leaves the backend above 0.80. Scores above 0.7 are squeezed linearly into 0.7–0.8 by `cap_probability` in `backend/app/risk.py` (grids: `cap_grid` in `backend/app/ml/probability.py`). Apply it to any new model output.
 - Map tiles are XYZ PNG in EPSG:3857.
 
 ## Setup

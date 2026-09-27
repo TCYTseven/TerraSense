@@ -17,6 +17,7 @@ While you build:
 - Keep the API thin. Geometry is GeoJSON in `jsonb`. Run state lives in the API process.
 - A change to a response shape is a contract change. Update `frontend/lib/types.ts` in the same commit and say so.
 - Read secrets from the root `.env`. Never print them.
+- A model probability that reaches a response or the database passes `app.risk.cap_probability` (grids: `ProbabilityMap`, which caps itself). Nothing leaves the API above 0.80.
 
 Before you report back:
 
