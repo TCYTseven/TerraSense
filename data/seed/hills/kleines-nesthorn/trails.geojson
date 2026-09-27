@@ -1,0 +1,201 @@
+{
+  "type": "FeatureCollection",
+  "attribution": "© OpenStreetMap contributors",
+  "license": "ODbL-1.0",
+  "source": "https://www.openstreetmap.org/copyright",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "kleines-nesthorn",
+        "name": "Nordgrat",
+        "length_km": 0.56,
+        "elevation_gain_m": 293,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            7.84818,
+            46.39604
+          ],
+          [
+            7.84849,
+            46.39586
+          ],
+          [
+            7.84862,
+            46.39566
+          ],
+          [
+            7.84905,
+            46.39531
+          ],
+          [
+            7.8495,
+            46.39468
+          ],
+          [
+            7.84967,
+            46.39389
+          ],
+          [
+            7.8498,
+            46.3937
+          ],
+          [
+            7.84983,
+            46.39326
+          ],
+          [
+            7.85014,
+            46.3928
+          ],
+          [
+            7.8501,
+            46.39262
+          ],
+          [
+            7.85031,
+            46.3925
+          ],
+          [
+            7.85029,
+            46.39232
+          ],
+          [
+            7.85036,
+            46.39219
+          ],
+          [
+            7.85076,
+            46.39183
+          ],
+          [
+            7.85082,
+            46.39157
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "kleines-nesthorn",
+        "name": "Westgrat",
+        "length_km": 0.91,
+        "elevation_gain_m": 542,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            7.83932,
+            46.39004
+          ],
+          [
+            7.83957,
+            46.39011
+          ],
+          [
+            7.83983,
+            46.38993
+          ],
+          [
+            7.84001,
+            46.38992
+          ],
+          [
+            7.84104,
+            46.39041
+          ],
+          [
+            7.8428,
+            46.39101
+          ],
+          [
+            7.84457,
+            46.39152
+          ],
+          [
+            7.84624,
+            46.39211
+          ],
+          [
+            7.84831,
+            46.39236
+          ],
+          [
+            7.84872,
+            46.39235
+          ],
+          [
+            7.84914,
+            46.39255
+          ],
+          [
+            7.84981,
+            46.39264
+          ],
+          [
+            7.8501,
+            46.39262
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mountain_slug": "kleines-nesthorn",
+        "name": "Firnvariante",
+        "length_km": 0.34,
+        "elevation_gain_m": 242,
+        "source": "© OpenStreetMap contributors"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            7.85363,
+            46.3985
+          ],
+          [
+            7.85279,
+            46.39816
+          ],
+          [
+            7.85271,
+            46.39803
+          ],
+          [
+            7.85232,
+            46.39786
+          ],
+          [
+            7.85181,
+            46.39772
+          ],
+          [
+            7.85135,
+            46.39749
+          ],
+          [
+            7.85072,
+            46.39739
+          ],
+          [
+            7.85021,
+            46.39736
+          ],
+          [
+            7.84975,
+            46.39727
+          ]
+        ]
+      }
+    }
+  ]
+}
