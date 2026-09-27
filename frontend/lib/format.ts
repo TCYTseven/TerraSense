@@ -47,17 +47,34 @@ export function displayRiskLevel(
   return mountain.current_risk_level;
 }
 
+/** A score inside the catalog seed bin so the panel shows a number beside the seeded level. */
+export function catalogRepresentativeScore(level: RiskLevel): number {
+  switch (level) {
+    case "low":
+      return 0.1;
+    case "moderate":
+      return 0.325;
+    case "high":
+      return 0.575;
+    case "extreme":
+      return 0.75;
+  }
+}
+
 /** Summit score for the mountain card when the model level is shown; null for catalog seed only. */
 export function displayRiskScore(
-  mountain: Pick<Mountain, "model_probability" | "last_analyzed_at" | "model_risk_level">,
+  mountain: Pick<
+    Mountain,
+    "model_probability" | "last_analyzed_at" | "model_risk_level" | "current_risk_level"
+  >,
 ): number | null {
   if (mountain.last_analyzed_at) {
     return null;
   }
-  if (mountain.model_risk_level != null) {
+  if (mountain.model_risk_level != null && mountain.model_probability != null) {
     return mountain.model_probability;
   }
-  return null;
+  return catalogRepresentativeScore(mountain.current_risk_level);
 }
 
 /** "Model 0.47": the model's summit line, or null before it has an answer. */

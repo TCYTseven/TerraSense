@@ -107,3 +107,20 @@ def servable(slug: str) -> bool:
 
 def servable_slugs() -> list[str]:
     return [slug for slug in packs() if servable(slug)]
+
+
+def in_pack_bbox(slug: str, latitude: float, longitude: float) -> bool:
+    """True when the point lies inside this pack's WGS84 bbox."""
+    pack = get(slug)
+    if pack is None:
+        return False
+    west, south, east, north = pack.bbox
+    return west <= longitude <= east and south <= latitude <= north
+
+
+def pack_covering(latitude: float, longitude: float) -> str | None:
+    """The servable pack whose bbox contains this point, if any."""
+    for slug in servable_slugs():
+        if in_pack_bbox(slug, latitude, longitude):
+            return slug
+    return None

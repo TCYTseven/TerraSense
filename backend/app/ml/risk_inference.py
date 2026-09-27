@@ -29,6 +29,7 @@ from rasterio.warp import transform as warp_transform
 
 from app.config import REPO_ROOT
 from app.hills import hill_probability_path, hill_susceptibility_path, hills, in_hill_bbox
+from app.packs import pack_covering, probability_path, servable, susceptibility_path
 from app.ml import probability as probability_seam
 from app.ml.probability import ProbabilityMap
 from app.ml.risk_contract import (
@@ -506,6 +507,20 @@ def _load_hill_probability(slug: str) -> ProbabilityMap:
                               capped=probability_seam.is_capped(tags))
 
 
+def _load_pack_probability(slug: str) -> ProbabilityMap:
+    """The saved pack probability raster, or susceptibility when weather has not run yet."""
+    path = probability_path(slug)
+    if not path.is_file():
+        path = susceptibility_path(slug)
+    with rasterio.open(path) as src:
+        masked = src.read(1, masked=True)
+        values = np.asarray(masked.filled(np.nan), dtype="float32")
+        tags = src.tags()
+        method = tags.get("METHOD") or "regional LightGBM and Model B"
+        return ProbabilityMap(values, src.transform, src.crs.to_string() if src.crs else "", method,
+                              capped=probability_seam.is_capped(tags))
+
+
 def _pixel_on_grid(grid: ProbabilityMap, latitude: float, longitude: float) -> float | None:
     x, y = warp_transform("EPSG:4326", grid.crs, [longitude], [latitude])
     x, y = float(x[0]), float(y[0])
@@ -575,6 +590,62 @@ def _predict_hill_click(
     )
 
 
+def _predict_pack_click(
+    prediction: RiskPrediction,
+    slug: str,
+    latitude: float,
+    longitude: float,
+    rain_override: HourlyRain | None,
+    probability_override: ProbabilityMap | None,
+) -> RiskPrediction:
+    """Keep the classifier fail-closed and fill probability from this pack's raster."""
+    rain = rain_override
+    if rain is None:
+        rain, _error = try_hourly_rain(latitude, longitude)
+    try:
+        grid = probability_override or _load_pack_probability(slug)
+    except (OSError, ValueError, RasterioError):
+        return prediction
+    if rain is None:
+        pixel = _pixel_on_grid(grid, latitude, longitude)
+        if pixel is None:
+            return prediction
+        estimate = {
+            "method": grid.method,
+            "calibrated": False,
+            "unit": "30 m pixel",
+            "pixel_probability": round(pixel, 4),
+            "susceptibility": None,
+            "cell": None,
+            "rain": None,
+            "drivers": [],
+            "validation": None,
+        }
+        return replace(
+            prediction,
+            probability=round(min(1.0, max(0.0, pixel)), 4),
+            probability_source="model_b_estimate",
+            risk_level=risk_level(pixel),
+            estimate=estimate,
+        )
+    estimate, headline, reasons = _model_b_estimate(
+        latitude, longitude, rain, grid,
+        susceptibility_path=susceptibility_path(slug),
+        attach_validation=False,
+    )
+    if estimate is not None:
+        estimate["validation"] = None
+    probability = None if headline is None else round(min(1.0, max(0.0, headline)), 4)
+    return replace(
+        prediction,
+        probability=probability,
+        probability_source=None if probability is None else "model_b_estimate",
+        risk_level=None if probability is None else risk_level(probability),
+        estimate=estimate,
+        reason_codes=list(dict.fromkeys([*prediction.reason_codes, *reasons])),
+    )
+
+
 def predict_location(
     latitude: float,
     longitude: float,
@@ -582,6 +653,7 @@ def predict_location(
     *,
     rain_override: HourlyRain | None = None,
     probability_override: ProbabilityMap | None = None,
+    mountain_slug: str | None = None,
 ) -> RiskPrediction:
     """The classifier's fail-closed state, plus the probability to show and where it came from."""
     prediction, rain = _classify(latitude, longitude, timestamp, rain_override)
@@ -589,6 +661,11 @@ def predict_location(
     if hill_slug is not None and "OUT_OF_DISTRIBUTION" in prediction.reason_codes:
         return _predict_hill_click(
             prediction, hill_slug, latitude, longitude, rain_override, probability_override,
+        )
+    pack_slug = mountain_slug if mountain_slug and servable(mountain_slug) else pack_covering(latitude, longitude)
+    if pack_slug is not None and "OUT_OF_DISTRIBUTION" in prediction.reason_codes:
+        return _predict_pack_click(
+            prediction, pack_slug, latitude, longitude, rain_override, probability_override,
         )
     if rain is None:
         return prediction

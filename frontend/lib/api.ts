@@ -184,12 +184,18 @@ export function getLandslideRisk(
   latitude: number,
   longitude: number,
   timestamp?: string,
-  init?: RequestInit,
+  init?: RequestInit & { mountainSlug?: string },
 ): Promise<LandslideRiskPrediction> {
+  const { mountainSlug, ...requestInit } = init ?? {};
   return postJson<LandslideRiskPrediction>("/api/v1/landslide-risk", {
-    ...init,
-    body: JSON.stringify({ latitude, longitude, ...(timestamp ? { timestamp } : {}) }),
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+    ...requestInit,
+    body: JSON.stringify({
+      latitude,
+      longitude,
+      ...(timestamp ? { timestamp } : {}),
+      ...(mountainSlug ? { mountain_slug: mountainSlug } : {}),
+    }),
+    headers: { "Content-Type": "application/json", ...(requestInit.headers ?? {}) },
   });
 }
 

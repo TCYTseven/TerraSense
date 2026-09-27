@@ -155,6 +155,7 @@ export default function MountainCard({
           <LandslideRiskCard
             latitude={riskLocation.latitude}
             longitude={riskLocation.longitude}
+            mountainSlug={mountain.slug}
             panelLayout="summary"
           />
         </div>
@@ -173,6 +174,7 @@ export default function MountainCard({
               <LandslideRiskCard
                 latitude={riskLocation.latitude}
                 longitude={riskLocation.longitude}
+                mountainSlug={mountain.slug}
                 panelLayout="detailsOnly"
               />
             )}
@@ -193,7 +195,12 @@ export default function MountainCard({
               <PreventativeMeasures items={hill.preventative} />
             )}
             {!live && (
-              <LandslideRiskCard latitude={riskLocation.latitude} longitude={riskLocation.longitude} panelLayout="full" />
+              <LandslideRiskCard
+                latitude={riskLocation.latitude}
+                longitude={riskLocation.longitude}
+                mountainSlug={mountain.slug}
+                panelLayout="full"
+              />
             )}
           </TabPanel>
         </div>

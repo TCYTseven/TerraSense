@@ -91,10 +91,13 @@ export type LandslideRiskPanelLayout = "full" | "summary" | "detailsOnly";
 export default function LandslideRiskCard({
   latitude,
   longitude,
+  mountainSlug,
   panelLayout = "full",
 }: {
   latitude: number;
   longitude: number;
+  /** When set, spot checks outside Rainier use this pack's heat map raster. */
+  mountainSlug?: string;
   panelLayout?: LandslideRiskPanelLayout;
 }) {
   const [attempt, setAttempt] = useState(0);
@@ -105,7 +108,10 @@ export default function LandslideRiskCard({
   useEffect(() => {
     const controller = new AbortController();
     const requestKey = `${latitude},${longitude},${attempt}`;
-    getLandslideRisk(latitude, longitude, undefined, { signal: controller.signal }).then(
+    getLandslideRisk(latitude, longitude, undefined, {
+      signal: controller.signal,
+      mountainSlug,
+    }).then(
       (prediction) => {
         if (!controller.signal.aborted) setSettled({ key: requestKey, prediction, error: null });
       },
@@ -116,7 +122,7 @@ export default function LandslideRiskCard({
       },
     );
     return () => controller.abort();
-  }, [latitude, longitude, attempt]);
+  }, [latitude, longitude, attempt, mountainSlug]);
 
   const prediction = settled?.prediction ?? null;
   const level = prediction?.probability !== null ? (prediction?.risk_level ?? null) : null;

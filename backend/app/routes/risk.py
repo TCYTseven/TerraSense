@@ -12,5 +12,10 @@ router = APIRouter(prefix="/api/v1", tags=["landslide-risk"])
 def landslide_risk(request: RiskPredictionRequest) -> LandslideRiskPrediction:
     """Estimate calibrated next-week rainfall-triggered landslide risk at a 1 km cell."""
     return LandslideRiskPrediction.model_validate(
-        predict_location(request.latitude, request.longitude, request.timestamp).to_dict()
+        predict_location(
+            request.latitude,
+            request.longitude,
+            request.timestamp,
+            mountain_slug=request.mountain_slug,
+        ).to_dict()
     )

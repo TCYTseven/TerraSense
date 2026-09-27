@@ -1,4 +1,4 @@
-import { displayRiskLevel, displayRiskScore } from "./format";
+import { catalogRepresentativeScore, displayRiskLevel, displayRiskScore } from "./format";
 import { TRAIL_LETTERS, type MountainView, type TrailRisk } from "./mountain-view";
 import type { MountainDetail, MountainRiskSummary } from "./types";
 
@@ -14,11 +14,12 @@ function trailCenter(geom: MountainDetail["trails"][number]["geom"] | null, lon:
 /** Lettered markers for seeded routes when there is no saved risk map (hills and static peaks). */
 function buildMappedTrails(mountain: MountainDetail, level: ReturnType<typeof displayRiskLevel>): TrailRisk[] {
   const sorted = [...mountain.trails].sort((a, b) => a.name.localeCompare(b.name));
+  const score = catalogRepresentativeScore(level);
   return sorted.slice(0, TRAIL_LETTERS.length).map((trail, index) => ({
     id: trail.id,
     letter: TRAIL_LETTERS[index],
     name: trail.name,
-    score: 0,
+    score,
     level,
     slopeDeg: null,
     primaryFactor: null,
