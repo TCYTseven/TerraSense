@@ -2,7 +2,27 @@
 
 Landslide hazard intelligence for Mount Rainier.
 
-Predicts landslides up to 72 hours ahead, using ML and multiple agents for risk and trail safety recommendations.
+Surfaces 72-hour landslide-risk indices using ML, forecast rainfall, and multiple agents for risk and trail-safety recommendations.
+
+## Product preview
+
+TerraSense combines a 3D globe, terrain and hazard layers, trail-level risk context, a seven-agent
+analysis run, and a persistent run history. These captures show the current frontend and local
+demo data; they are product screenshots rather than model-accuracy benchmarks.
+
+<table>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/globe-overview.png" alt="TerraSense globe overview" width="100%"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/rainier-risk.png" alt="TerraSense Mount Rainier risk view" width="100%"></td>
+    <td><img src="docs/screenshots/mountain-analysis.png" alt="TerraSense mountain analysis view" width="100%"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/agent-analysis.png" alt="TerraSense agent analysis view" width="100%"></td>
+    <td><img src="docs/screenshots/run-history.png" alt="TerraSense run history view" width="100%"></td>
+  </tr>
+</table>
 
 ```bash
 curl 'http://localhost:8000/mountains/mount-rainier/advisory'
